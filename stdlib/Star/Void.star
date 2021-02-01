@@ -1,0 +1,1 @@
+class Void is native[repr: `void`] {}

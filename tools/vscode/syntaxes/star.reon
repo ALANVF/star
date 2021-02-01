@@ -1,0 +1,632 @@
+; I just need to redo all of this at some point
+
+#(
+	name "Star"
+	scopeName "source.star"
+	fileTypes ["star"]
+	
+	patterns [
+		#(include #root)
+	]
+
+	repository #(
+		builtin-types #(
+			patterns [
+				#(
+					match "\b[A-Z]\w*\b"
+					name "entity.name.type.star"
+				)
+			]
+		)
+
+		func-literal #(
+			begin "(\{)(\|)([^^|]*)(\|)"
+			beginCaptures #(
+				1 #(name "punctuation.section.scope.begin.star")
+				2 #(name "punctuation.section.scope.begin.star")
+				3 #(
+					patterns [
+						#(
+							match "\b(?:[a-z_]\w*'*)(?!\s*[\[{}\]):])"
+							name "variable.parameter.star"
+						)
+						#(include #expressions)
+					]
+				)
+				4 #(name "punctuation.section.scope.end.star")
+			)
+
+			end "\}"
+			endCaptures #(
+				0 #(name "punctuation.section.scope.end.star")
+			)
+
+			patterns [
+				#(include "$self")
+			]
+		)
+
+		code-block #(
+			begin "#?\{"
+			beginCaptures #(
+				0 #(name "punctuation.section.scope.begin.star")
+			)
+
+			end "\}"
+			endCaptures #(
+				0 #(name "punctuation.section.scope.end.star")
+			)
+
+			patterns [
+				#(include "$self")
+			]
+		)
+		
+		comments #(
+			patterns [
+				#(
+					begin ";\["
+					beginCaptures #(
+						0 #(name "punctuation.definition.comment.begin.star")
+					)
+
+					end "\]"
+					endCaptures #(
+						0 #(name "punctuation.definition.comment.end.star")
+					)
+
+					name "comment.block.star"
+					
+					patterns [
+						#(include #nested)
+					]
+				)
+				#(
+					begin "(^^[ \t]+)?(?=;(?!\[))"
+					beginCaptures #(
+						1 #(name "punctuation.whitespace.comment.leading.star")
+					)
+					
+					end "(?!\G)"
+					
+					patterns [
+						#(
+							begin ";=>"
+							beginCaptures #(
+								0 #(name "punctuation.definition.comment.star")
+							)
+							
+							end "^^"
+							
+							name "comment.line.result.documentation.star"
+						)
+						#(
+							begin ";(?:--|==|@@)"
+							beginCaptures #(
+								0 #(name "punctuation.definition.comment.star")
+							)
+							
+							end "^^"
+							
+							name "comment.line.documentation.star"
+						)
+						#(
+							begin ";(?!\[)"
+							beginCaptures #(
+								0 #(name "punctuation.definition.comment.star")
+							)
+							
+							end "^^"
+							
+							name "comment.line.star"
+						)
+					]
+				)
+			]
+
+			repository #(
+				nested #(
+					begin "\["
+
+					end "\]"
+					
+					patterns [
+						#(include #nested)
+					]
+				)
+			)
+		)
+
+		expressions #(
+			patterns [
+				#(include #comments)
+				#(include #func-literal)
+				#(include #code-block)
+				#(include #closure-parameter)
+				#(include #literals)
+				#(include #operators)
+				#(include #builtin-types)
+				#(include #keywords)
+				#(include #method-call)
+				#(include #parenthesized-expression)
+				#(include #array-literal)
+				#(include #hash-literal)
+				#(include #member-reference)
+				#(
+					match "\b_\b(?!')"
+					name "constant.language.discard-value.star"
+				)
+				#(
+					match "\b(?<!\w:)[a-z_]\w*(?!:)(?:'+|\b(?!'))"
+					name "identifier"
+				)
+			]
+
+			repository #(
+				closure-parameter #(
+					match "\$\.*\d+"
+					name "constant.language.closure-parameter.star"
+				)
+
+				expression-element-list #(
+					patterns [
+						#(include #comments)
+						#(
+							; an element with a label
+							
+							begin "\b([a-z_]\w*'*)(:)"
+							beginCaptures #(
+								1 #(name "support.function.any-method.star")
+								2 #(name "punctuation.separator.argument-label.star")
+							)
+
+							end "(?=[,\s\]]|[a-z_]\w*'*:|:[a-z_])"
+
+							patterns [
+								#(include #expressions)
+							]
+						)
+						#(
+							match "(:)([a-z_]\w*'*)(?!:)"
+							captures #(
+								1 #(name "punctuation.separator.argument-label.star")
+								2 #(name "support.function.any-method.star")
+							)
+						)
+						#(
+							; an element without a label (i.e. anything else)
+							
+							begin "(?![,\s\]]|[a-z_]\w*'*:|:[a-z_])(?=\S)"
+							
+							end "(?=[,\s\]]|[a-z_]\w*'*:|:[a-z_])"
+							
+							patterns [
+								#(include #expressions)
+							]
+						)
+					]
+				)
+
+				method-call #(
+					patterns [
+						#(
+							match "(?<![#@])(\[)\s*([a-z_]\w*'*)\s*(\])"
+							captures #(
+								1 #(name "punctuation.definition.arguments.begin.star")
+								2 #(name "support.function.any-method.star")
+								3 #(name "punctuation.definition.arguments.end.star")
+							)
+						)
+						#(
+							begin "(?<![#@])\["
+							beginCaptures #(
+								0 #(name "punctuation.definition.arguments.begin.star")
+							)
+
+							end "\]"
+							endCaptures #(
+								0 #(name "punctuation.definition.arguments.end.star")
+							)
+
+							name "meta.function-call.star"
+							
+							patterns [
+								#(include #expression-element-list)
+							]
+						)
+						#(
+							begin "(?<=[\])}])(\[)"
+							beginCaptures #(
+								1 #(name "punctuation.definition.arguments.begin.star")
+							)
+							
+							end "\]"
+							endCaptures #(
+								0 #(name "punctuation.definition.arguments.end.star")
+							)
+
+							name "meta.function-call.star"
+							
+							patterns [
+								#(include #expression-element-list)
+							]
+						)
+					]
+				)
+
+				member-reference #(
+					patterns [
+						#(
+							name "variable.other.star"
+							match "(?<=\.)([a-z_]\w*'*)"
+						)
+					]
+				)
+
+				parenthesized-expression #(
+					begin "(?<![#@])\("
+					beginCaptures #(
+						0 #(name "punctuation.section.paren.begin.star")
+					)
+
+					end "\)"
+					endCaptures #(
+						0 #(name "punctuation.section.paren.end.star")
+					)
+					
+					patterns [
+						#(include #expressions)
+					]
+				)
+
+				array-literal #(
+					begin "#\["
+					beginCaptures #(
+						0 #(name "punctuation.section.array.begin.star")
+					)
+					
+					end "\]"
+					endCaptures #(
+						0 #(name "punctuation.section.array.end.star")
+					)
+					
+					patterns [
+						#(include #expressions)
+					]
+				)
+
+				hash-literal #(
+					begin "#\("
+					beginCaptures #(
+						0 #(name "punctuation.section.hash.begin.star")
+					)
+					
+					end "\)"
+					endCaptures #(
+						0 #(name "punctuation.section.hash.end.star")
+					)
+					
+					patterns [
+						#(include #expressions)
+					]
+				)
+			)
+		)
+
+		keywords #(
+			patterns [
+				#(
+					match "(?<!\.)\b(?:if|orif|else|case|match|at)\b(?!')"
+					name "keyword.control.branch.star"
+				)
+				#(
+					match "(?<!\.)\b(?:next|break|return)\b(?!')"
+					name "keyword.control.transfer.star"
+				)
+				#(
+					match "(?<!\.)\bwhile\b(?!')"
+					name "keyword.control.loop.star"
+				)
+				#(
+					begin "(?<!\.)\bfor\b(?![A-Z'])"
+					beginCaptures #(
+						0 #(name "keyword.control.loop.star")
+					)
+					
+					end "^^"
+					
+					patterns [
+						#(
+							match "\b(in|from|after|(?:up|down)?to|by|while)(:)"
+							captures #(
+								1 #(name "entity.name.function.label.star")
+								2 #(name "punctuation.separator.label.star")
+							)
+						)
+						#(include #expressions)
+					]
+				)
+				#(
+					match "(?<!\.)\b(?:catch|throw|try)\b(?!')"
+					name "keyword.control.exception.star"
+				)
+				#(
+					match "(?<!\.)\bdo\b(?!')"
+					name "keyword.control.exception.star"
+				)
+				#(
+					match "(?<!\.)\b(my)\s+([a-z_]\w*(?:'+|\b))"
+					captures #(
+						1 #(name "keyword.var-decl.star")
+						2 #(name "variable.star")
+					)
+				)
+				#(
+					match "(?<!\.)\b(class|kind|category|protocol|type|alias|module)\b(?=[ \t]+[A-Z])"
+					name "keyword.decl.star"
+				)
+				#(
+					match "(?<!\.)\b(is)\s+(static|hidden|readonly|friend|unordered|getter|setter|main|inline|noinherit|asm|native|flags|uncounted|strong|sealed)\b(?!')"
+					captures #(
+						1 #(name "keyword.other.attribute")
+						2 #(name "entity.other.attribute-name")
+					)
+				)
+				#(
+					match "(?<!\.)\b(?:on|init|deinit|operator|macro)\b(?!')"
+					name "keyword.routine.star"
+				)
+				#(
+					match "(?<!\.)\b(has)\s+([a-z_]\w*'*)"
+					captures #(
+						1 #(name "keyword.case.star")
+						2 #(name "constant.language.star")
+					)
+				)
+				#(
+					match "(?<!\.)\bmy\b(?!')"
+					name "keyword.variable-declaration.star"
+				)
+				#(
+					match "(?<!\.)\bhas\b(?!')"
+					name "keyword.case.star"
+				)
+				#(
+					match "(?<!\.)\bthis\b(?!')"
+					name "variable.language.star"
+				)
+				#(
+					begin "(?<!\.)\buse\b(?!')"
+					beginCaptures #(
+						0 #(name "keyword.statement.use.star")
+					)
+					
+					end "^^"
+					
+					patterns [
+						#(
+							match "\b(from)(:)"
+							captures #(
+								1 #(name "entity.name.function.label.star")
+								2 #(name "punctuation.separator.label.star")
+							)
+						)
+						#(include #expressions)
+					]
+				)
+				#(
+					match "(?<!\.)\bof\b(?!')"
+					name "keyword.other.star"
+				)
+			]
+		)
+
+		literals #(
+			patterns [
+				#(include #boolean)
+				#(include #numeric)
+				#(include #char)
+				#(include #string)
+				#(
+					match "#[a-z_]\w*"
+					name "variable.tag"
+				)
+				#(
+					match "@[a-z_]\w*"
+					name "variable.other"
+				)
+				#(
+					match "`[^^`]+`"
+					name "constant.other.symbol"
+				)
+			]
+
+			repository #(
+				boolean #(
+					match "\b(?:true|false)\b(?!')"
+					name "constant.language.boolean.star"
+				)
+
+				numeric #(
+					patterns [
+						#(
+							match "(?:\B-|\b)\d+(?:\.\d+)?(?:e[-+]?\d+)?\b(?!\.\d)"
+							name "constant.numeric.star"
+						)
+						#(
+							match "(?:\B-|\b)0x\h+\b"
+							name "constant.numeric.hexadecimal.star"
+						)
+						#(
+							match "(?:\B-|\b)\d[\w\.]*"
+							name "invalid.illegal.star"
+						)
+					]
+				)
+
+				escapes #(
+					patterns [
+						#(
+							match {\\["\\0nrtveab]}
+							name "constant.character.escape.star"
+						)
+						#(
+							match "\\u\h{4}"
+							name "constant.character.escape.unicode.star"
+						)
+						#(
+							match "\\x\h{2}"
+							name "constant.character.escape.hexadecimal.star"
+						)
+						#(
+							match "\\o[0-7]{3}"
+							name "constant.character.escape.octal.star"
+						)
+					]
+				)
+
+				char #(
+					begin {#"}
+					beginCaptures #(
+						0 #(name "string.character.begin.star")
+					)
+					
+					end {"}
+					endCaptures #(
+						0 #(name "string.character.end.star")
+					)
+
+					patterns [
+						#(include #escapes)
+						#(
+							match "\\."
+							name "invalid.illegal.star"
+						)
+						#(
+							match {[^^"\\]}
+							name "string.character.star"
+						)
+					]
+				)
+
+				string #(
+					patterns [
+						#(
+							begin {"}
+							beginCaptures #(
+								0 #(name "punctuation.definition.string.begin.star")
+							)
+
+							end {"}
+							endCaptures #(
+								0 #(name "punctuation.definition.string.end.star")
+							)
+							
+							name "string.quoted.double.star"
+							
+							patterns [
+								#(include #string-guts)
+							]
+						)
+					]
+
+					repository #(
+						string-guts #(
+							patterns [
+								#(include #escapes)
+								#(
+									begin "\\\("
+									beginCaptures #(
+										0 #(name "punctuation.section.embedded.begin.star")
+									)
+									
+									end "\)"
+									endCaptures #(
+										0 #(name "punctuation.section.embedded.end.star")
+									)
+									
+									name "meta.template.expression.star"
+									
+									patterns [
+										#(include #expressions)
+									]
+								)
+								#(
+									match "\\."
+									name "invalid.illegal.star"
+								)
+							]
+						)
+					)
+				)
+			)
+		)
+
+		operators #(
+			patterns [
+				#(
+					match "-+>"
+					name "keyword.operator.channel"
+				)
+				#(
+					match "\+\+|\-\-"
+					name "keyword.operator.arithmetic.increment-or-decrement.star"
+				)
+				#(
+					match "[+\-]"
+					name "keyword.operator.arithmetic.unary.star"
+				)
+				#(
+					match "~"
+					name "keyword.operator.bitwise.not.star"
+				)
+				#(
+					match "=="
+					name "invalid.illegal.star"
+				)
+				#(
+					match "=(?!=)>?"
+					name "keyword.operator.assignment.star"
+				)
+				#(
+					match "(\+|\-|\*\*?|//?|%%?|<<|>>|&|\^^|\||&&|\|\||\^^\^^)="
+					name "keyword.operator.assignment.star"
+				)
+				#(
+					match "\+|\-|\*\*?|//?"
+					name "keyword.operator.arithmetic.star"
+				)
+				#(
+					match "%%?"
+					name "keyword.operator.arithmetic.remainder.star"
+				)
+				#(
+					match "[?!<>]=|<|>"
+					name "keyword.operator.comparison.star"
+				)
+				#(
+					match "&&|\|\||\^^\^^"
+					name "keyword.operator.logical.star"
+				)
+				#(
+					match "[&|^^]|<<|>>"
+					name "keyword.operator.bitwise.star"
+				)
+				#(
+					match "!"
+					name "keyword.operator.logical.not.star"
+				)
+				#(
+					match "\?"
+					name "keyword.operator.logical.null-check.star"
+				)
+			]
+		)
+		
+		root #(
+			patterns [
+				#(include #expressions)
+			]
+		)
+	)
+)

@@ -1,0 +1,7 @@
+-cp src
+-D analyzer-optimize
+--dce full
+--library haxe-strings
+-main Main
+--hl bin/main.hl
+--cmd hl bin/main.hl

@@ -1,0 +1,7 @@
+- Logo
+- Website
+- More documentation
+- More examples
+- Finish stdlib
+- Write compiler and StarVM runtime
+- Write LLVM backend

@@ -1,0 +1,18 @@
+[comments]
+str1=;[
+str2=]
+styles_cmt=Comment
+styles_str=String
+
+[map]
+Symbol=Symbol
+LitSym=Id3
+Number=Number
+String=String
+Id label=Id1
+Id attr=Id2
+Id=Id
+Id type=Id4
+Id keyword=IdKeyword
+Comment=Comment
+Bracket BG=BracketBG

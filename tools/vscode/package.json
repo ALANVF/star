@@ -1,0 +1,51 @@
+{
+	"name": "language-star",
+	"displayName": "Star",
+	"description": "Star language support",
+	"version": "0.1.0",
+	"publisher": "theangryepicbanana",
+	"engines": {
+		"vscode": "^1.19.0"
+	},
+	"categories": [
+		"Programming Languages"
+	],
+	"contributes": {
+		"languages": [
+			{
+				"id": "star",
+				"aliases": [
+					"Star",
+					"star"
+				],
+				"extensions": [
+					".star"
+				],
+				"configuration": "./language-configuration.json"
+			}
+		],
+		"grammars": [
+			{
+				"language": "star",
+				"scopeName": "source.star",
+				"path": "./syntaxes/star.json"
+			},
+			{
+				"scopeName": "markdown.star.codeblock",
+				"path": "./syntaxes/star-markdown-codeblock.json",
+				"injectTo": [
+					"text.html.markdown"
+				],
+				"embeddedLanguages": {
+					"meta.embedded.block.star": "star"
+				}
+			}
+		]
+	},
+	"scripts": {
+		"compile": "reon-convert tj syntaxes/star.reon"
+	},
+	"devDependencies": {
+		"reon-convert": "0.1.12"
+	}
+}
