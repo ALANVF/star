@@ -8,7 +8,7 @@
 		}
 	],
 	"repository": {
-		"builtin-types": {
+		"types": {
 			"patterns": [
 				{
 					"match": "\\b[A-Z]\\w*\\b",
@@ -20,7 +20,7 @@
 			"begin": "(\\{)(\\|)([^|]*)(\\|)",
 			"beginCaptures": {
 				"1": {
-					"name": "punctuation.section.scope.begin.star"
+					"name": "punctuation.section.closure.begin.star"
 				},
 				"2": {
 					"name": "punctuation.section.scope.begin.star"
@@ -28,7 +28,7 @@
 				"3": {
 					"patterns": [
 						{
-							"match": "\\b(?:[a-z_]\\w*'*)(?!\\s*[\\[{}\\]):])",
+							"match": "\\b(?:[a-z_][\\w']*)(?!\\s*[\\[{}\\]):])",
 							"name": "variable.parameter.star"
 						},
 						{
@@ -41,11 +41,11 @@
 				}
 			},
 			"end": "\\}",
-			"endCaptures": {
-				"0": {
-					"name": "punctuation.section.scope.end.star"
+			"endCaptures": [
+				{
+					"name": "punctuation.section.closure.end.star"
 				}
-			},
+			],
 			"patterns": [
 				{
 					"include": "$self"
@@ -54,17 +54,17 @@
 		},
 		"code-block": {
 			"begin": "#?\\{",
-			"beginCaptures": {
-				"0": {
+			"beginCaptures": [
+				{
 					"name": "punctuation.section.scope.begin.star"
 				}
-			},
+			],
 			"end": "\\}",
-			"endCaptures": {
-				"0": {
+			"endCaptures": [
+				{
 					"name": "punctuation.section.scope.end.star"
 				}
-			},
+			],
 			"patterns": [
 				{
 					"include": "$self"
@@ -75,17 +75,17 @@
 			"patterns": [
 				{
 					"begin": ";\\[",
-					"beginCaptures": {
-						"0": {
+					"beginCaptures": [
+						{
 							"name": "punctuation.definition.comment.begin.star"
 						}
-					},
+					],
 					"end": "\\]",
-					"endCaptures": {
-						"0": {
+					"endCaptures": [
+						{
 							"name": "punctuation.definition.comment.end.star"
 						}
-					},
+					],
 					"name": "comment.block.star",
 					"patterns": [
 						{
@@ -94,45 +94,34 @@
 					]
 				},
 				{
-					"begin": "(^[ \\t]+)?(?=;(?!\\[))",
-					"beginCaptures": {
-						"1": {
-							"name": "punctuation.whitespace.comment.leading.star"
+					"begin": ";=>",
+					"beginCaptures": [
+						{
+							"name": "punctuation.definition.comment.star"
 						}
-					},
-					"end": "(?!\\G)",
-					"patterns": [
+					],
+					"end": "^",
+					"name": "comment.line.result.documentation.star"
+				},
+				{
+					"begin": ";(?:--|==|@@)",
+					"beginCaptures": [
 						{
-							"begin": ";=>",
-							"beginCaptures": {
-								"0": {
-									"name": "punctuation.definition.comment.star"
-								}
-							},
-							"end": "^",
-							"name": "comment.line.result.documentation.star"
-						},
-						{
-							"begin": ";(?:--|==|@@)",
-							"beginCaptures": {
-								"0": {
-									"name": "punctuation.definition.comment.star"
-								}
-							},
-							"end": "^",
-							"name": "comment.line.documentation.star"
-						},
-						{
-							"begin": ";(?!\\[)",
-							"beginCaptures": {
-								"0": {
-									"name": "punctuation.definition.comment.star"
-								}
-							},
-							"end": "^",
-							"name": "comment.line.star"
+							"name": "punctuation.definition.comment.star"
 						}
-					]
+					],
+					"end": "^",
+					"name": "comment.line.documentation.star"
+				},
+				{
+					"begin": ";(?!\\[)",
+					"beginCaptures": [
+						{
+							"name": "punctuation.definition.comment.star"
+						}
+					],
+					"end": "^",
+					"name": "comment.line.star"
 				}
 			],
 			"repository": {
@@ -168,7 +157,7 @@
 					"include": "#operators"
 				},
 				{
-					"include": "#builtin-types"
+					"include": "#types"
 				},
 				{
 					"include": "#keywords"
@@ -193,7 +182,7 @@
 					"name": "constant.language.discard-value.star"
 				},
 				{
-					"match": "\\b(?<!\\w:)[a-z_]\\w*(?!:)(?:'+|\\b(?!'))",
+					"match": "\\b(?<![\\w']:)[a-z_][\\w']*(?!:)(?:(?<=')|\\b)",
 					"name": "identifier"
 				}
 			],
@@ -202,22 +191,22 @@
 					"match": "\\$\\.*\\d+",
 					"name": "constant.language.closure-parameter.star"
 				},
-				"expression-element-list": {
+				"multi-method-call": {
 					"patterns": [
 						{
 							"include": "#comments"
 						},
 						{
-							"begin": "\\b([a-z_]\\w*'*)(:)",
+							"begin": "\\b([a-z_][\\w']*)(:)",
 							"beginCaptures": {
 								"1": {
-									"name": "support.function.any-method.star"
+									"name": "entity.name.function.label.star"
 								},
 								"2": {
-									"name": "punctuation.separator.argument-label.star"
+									"name": "punctuation.separator.label.star"
 								}
 							},
-							"end": "(?=[,\\s\\]]|[a-z_]\\w*'*:|:[a-z_])",
+							"end": "(?=[,\\s\\]]|[a-z_][\\w']*:|:[a-z_])",
 							"patterns": [
 								{
 									"include": "#expressions"
@@ -225,19 +214,19 @@
 							]
 						},
 						{
-							"match": "(:)([a-z_]\\w*'*)(?!:)",
+							"match": "(:)([a-z_][\\w']*)(?!:)",
 							"captures": {
 								"1": {
-									"name": "punctuation.separator.argument-label.star"
+									"name": "punctuation.separator.label.star"
 								},
 								"2": {
-									"name": "support.function.any-method.star"
+									"name": "entity.name.function.label.star"
 								}
 							}
 						},
 						{
-							"begin": "(?![,\\s\\]]|[a-z_]\\w*'*:|:[a-z_])(?=\\S)",
-							"end": "(?=[,\\s\\]]|[a-z_]\\w*'*:|:[a-z_])",
+							"begin": "(?![,\\s\\]]|[a-z_][\\w']*:|:[a-z_])(?=\\S)",
+							"end": "(?=[,\\s\\]]|[a-z_][\\w']*:|:[a-z_])",
 							"patterns": [
 								{
 									"include": "#expressions"
@@ -247,60 +236,39 @@
 					]
 				},
 				"method-call": {
+					"begin": "(?<![#@])\\[",
+					"beginCaptures": [
+						{
+							"name": "punctuation.definition.arguments.begin.star"
+						}
+					],
+					"end": "\\]",
+					"endCaptures": [
+						{
+							"name": "punctuation.definition.arguments.end.star"
+						}
+					],
 					"patterns": [
 						{
-							"match": "(?<![#@])(\\[)\\s*([a-z_]\\w*'*)\\s*(\\])",
-							"captures": {
-								"1": {
-									"name": "punctuation.definition.arguments.begin.star"
-								},
-								"2": {
-									"name": "support.function.any-method.star"
-								},
-								"3": {
-									"name": "punctuation.definition.arguments.end.star"
-								}
-							}
-						},
-						{
-							"begin": "(?<![#@])\\[",
-							"beginCaptures": {
-								"0": {
-									"name": "punctuation.definition.arguments.begin.star"
-								}
-							},
-							"end": "\\]",
-							"endCaptures": {
-								"0": {
-									"name": "punctuation.definition.arguments.end.star"
-								}
-							},
-							"name": "meta.function-call.star",
+							"begin": "(?=[a-z_][\\w']*:|:[a-z_])",
+							"end": "(?=\\])",
 							"patterns": [
 								{
-									"include": "#expression-element-list"
+									"include": "#multi-method-call"
 								}
 							]
 						},
 						{
-							"begin": "(?<=[\\])}])(\\[)",
-							"beginCaptures": {
-								"1": {
-									"name": "punctuation.definition.arguments.begin.star"
-								}
-							},
-							"end": "\\]",
-							"endCaptures": {
-								"0": {
-									"name": "punctuation.definition.arguments.end.star"
-								}
-							},
-							"name": "meta.function-call.star",
-							"patterns": [
+							"begin": "\\b(?:[a-z][\\w']*|_[\\w']+)(?=\\s*\\])",
+							"beginCaptures": [
 								{
-									"include": "#expression-element-list"
+									"name": "entity.name.function.star"
 								}
-							]
+							],
+							"end": "(?=\\])"
+						},
+						{
+							"include": "#expressions"
 						}
 					]
 				},
@@ -308,23 +276,23 @@
 					"patterns": [
 						{
 							"name": "variable.other.star",
-							"match": "(?<=\\.)([a-z_]\\w*'*)"
+							"match": "(?<=\\.)([a-z_][\\w']*)(?:(?<=')|\\b)"
 						}
 					]
 				},
 				"parenthesized-expression": {
 					"begin": "(?<![#@])\\(",
-					"beginCaptures": {
-						"0": {
+					"beginCaptures": [
+						{
 							"name": "punctuation.section.paren.begin.star"
 						}
-					},
+					],
 					"end": "\\)",
-					"endCaptures": {
-						"0": {
+					"endCaptures": [
+						{
 							"name": "punctuation.section.paren.end.star"
 						}
-					},
+					],
 					"patterns": [
 						{
 							"include": "#expressions"
@@ -333,17 +301,17 @@
 				},
 				"array-literal": {
 					"begin": "#\\[",
-					"beginCaptures": {
-						"0": {
+					"beginCaptures": [
+						{
 							"name": "punctuation.section.array.begin.star"
 						}
-					},
+					],
 					"end": "\\]",
-					"endCaptures": {
-						"0": {
+					"endCaptures": [
+						{
 							"name": "punctuation.section.array.end.star"
 						}
-					},
+					],
 					"patterns": [
 						{
 							"include": "#expressions"
@@ -352,17 +320,17 @@
 				},
 				"hash-literal": {
 					"begin": "#\\(",
-					"beginCaptures": {
-						"0": {
+					"beginCaptures": [
+						{
 							"name": "punctuation.section.hash.begin.star"
 						}
-					},
+					],
 					"end": "\\)",
-					"endCaptures": {
-						"0": {
+					"endCaptures": [
+						{
 							"name": "punctuation.section.hash.end.star"
 						}
-					},
+					],
 					"patterns": [
 						{
 							"include": "#expressions"
@@ -387,11 +355,11 @@
 				},
 				{
 					"begin": "(?<!\\.)\\bfor\\b(?![A-Z'])",
-					"beginCaptures": {
-						"0": {
+					"beginCaptures": [
+						{
 							"name": "keyword.control.loop.star"
 						}
-					},
+					],
 					"end": "^",
 					"patterns": [
 						{
@@ -449,7 +417,7 @@
 					"name": "keyword.routine.star"
 				},
 				{
-					"match": "(?<!\\.)\\b(has)\\s+([a-z_]\\w*'*)",
+					"match": "(?<!\\.)\\b(has)\\s+([a-z_][\\w']*)",
 					"captures": {
 						"1": {
 							"name": "keyword.case.star"
@@ -473,11 +441,11 @@
 				},
 				{
 					"begin": "(?<!\\.)\\buse\\b(?!')",
-					"beginCaptures": {
-						"0": {
+					"beginCaptures": [
+						{
 							"name": "keyword.statement.use.star"
 						}
-					},
+					],
 					"end": "^",
 					"patterns": [
 						{
@@ -572,17 +540,17 @@
 				},
 				"char": {
 					"begin": "#\"",
-					"beginCaptures": {
-						"0": {
+					"beginCaptures": [
+						{
 							"name": "string.character.begin.star"
 						}
-					},
+					],
 					"end": "\"",
-					"endCaptures": {
-						"0": {
+					"endCaptures": [
+						{
 							"name": "string.character.end.star"
 						}
-					},
+					],
 					"patterns": [
 						{
 							"include": "#escapes"
@@ -601,17 +569,17 @@
 					"patterns": [
 						{
 							"begin": "\"",
-							"beginCaptures": {
-								"0": {
+							"beginCaptures": [
+								{
 									"name": "punctuation.definition.string.begin.star"
 								}
-							},
+							],
 							"end": "\"",
-							"endCaptures": {
-								"0": {
+							"endCaptures": [
+								{
 									"name": "punctuation.definition.string.end.star"
 								}
-							},
+							],
 							"name": "string.quoted.double.star",
 							"patterns": [
 								{
@@ -628,17 +596,17 @@
 								},
 								{
 									"begin": "\\\\\\(",
-									"beginCaptures": {
-										"0": {
+									"beginCaptures": [
+										{
 											"name": "punctuation.section.embedded.begin.star"
 										}
-									},
+									],
 									"end": "\\)",
-									"endCaptures": {
-										"0": {
+									"endCaptures": [
+										{
 											"name": "punctuation.section.embedded.end.star"
 										}
-									},
+									],
 									"name": "meta.template.expression.star",
 									"patterns": [
 										{
@@ -716,8 +684,148 @@
 				}
 			]
 		},
+		"decls": {
+			"patterns": [
+				{
+					"begin": "\\b(on|init)\\s*(\\[)",
+					"beginCaptures": {
+						"1": {
+							"name": "keyword.star"
+						},
+						"2": {
+							"name": "punctuation.definition.parameters.begin.star"
+						}
+					},
+					"end": "\\]",
+					"endCaptures": [
+						{
+							"name": "punctuation.definition.parameters.end.star"
+						}
+					],
+					"patterns": [
+						{
+							"include": "#comments"
+						},
+						{
+							"begin": "(?=[a-z_][\\w']*:)",
+							"end": "(?=\\])",
+							"patterns": [
+								{
+									"include": "#comments"
+								},
+								{
+									"begin": "\\b([a-z_][\\w']*)(:)(?:\\s*([a-z_][\\w']*))?",
+									"beginCaptures": {
+										"1": {
+											"name": "entity.name.function.label.star"
+										},
+										"2": {
+											"name": "punctuation.separator.label.star"
+										},
+										"3": {
+											"name": "variable.parameter.star"
+										}
+									},
+									"end": "(?=[,\\]]|[a-z_][\\w']*:)",
+									"patterns": [
+										{
+											"include": "#expressions"
+										}
+									]
+								},
+								{
+									"begin": "\\b[a-z_][\\w']*(?!:)",
+									"beginCaptures": [
+										{
+											"name": "variable.parameter.star"
+										}
+									],
+									"end": "(?=[,\\]]|[a-z_][\\w']*:)",
+									"patterns": [
+										{
+											"include": "#expressions"
+										}
+									]
+								},
+								{
+									"include": "#expressions"
+								}
+							]
+						},
+						{
+							"begin": "\\b(?:[a-z][\\w']*|_[\\w']+)(?!:)",
+							"beginCaptures": [
+								{
+									"name": "entity.name.function.label.star"
+								}
+							],
+							"end": "(?=\\])",
+							"patterns": [
+								{
+									"include": "#comments"
+								}
+							]
+						},
+						{
+							"begin": "(?=(?:_\\.)*[A-Z])",
+							"end": "(?=\\])",
+							"patterns": [
+								{
+									"include": "#expressions"
+								}
+							]
+						}
+					]
+				},
+				{
+					"begin": "\\b(operator)\\s*(`[^`]+`)\\s*(\\[)",
+					"beginCaptures": {
+						"1": {
+							"name": "keyword.star"
+						},
+						"2": {
+							"name": "constant.other.symbol.star"
+						},
+						"3": {
+							"name": "punctuation.definition.parameters.begin.star"
+						}
+					},
+					"end": "\\]",
+					"endCaptures": [
+						{
+							"name": "punctuation.definition.parameters.end.star"
+						}
+					],
+					"patterns": [
+						{
+							"include": "#comments"
+						},
+						{
+							"begin": "\\b(?:[a-z][\\w']*|_[\\w']+)(?!:)",
+							"beginCaptures": [
+								{
+									"name": "variable.parameter.star"
+								}
+							],
+							"end": "(?=\\])",
+							"patterns": [
+								{
+									"include": "#comments"
+								},
+								{
+									"include": "#expressions"
+								}
+							]
+						}
+					]
+				}
+			]
+		},
 		"root": {
 			"patterns": [
+				{
+					"include": "#decls"
+				},
 				{
 					"include": "#expressions"
 				}
