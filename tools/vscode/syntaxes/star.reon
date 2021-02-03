@@ -290,7 +290,7 @@
 					name "keyword.control.exception.star"
 				)
 				#(
-					match "(?<!\.)\b(my)\s+([a-z_]\w*(?:'+|\b))"
+					match "(?<!\.)\b(my)\s+([a-z_][\w']*)(?:(?<=')|\b)"
 					captures #(
 						1 #(name "keyword.var-decl.star")
 						2 #(name "variable.star")
