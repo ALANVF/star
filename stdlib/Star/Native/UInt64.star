@@ -1,8 +1,9 @@
-class Int64 of Core.Ordered is native[repr: `int` bits: 64 signed: false] {
+class Int64 of Core.Ordered is native[repr: `int` bits: 64 signed: false] is strong {
 	on [next] (This) is native `u64_succ`
 	on [previous] (This) is native `u64_pred`
 	
 
+	operator `?` (Core.Bool) is native `u64_truthy`
 	operator `-` (This) is native `u64_neg`
 	operator `~` (This) is native `u64_compl`
 	
@@ -37,4 +38,6 @@ class Int64 of Core.Ordered is native[repr: `int` bits: 64 signed: false] {
 	on [Int64] is native `cast_u64_i64`
 	on [Core.Dec] is native `cast_u64_d64`
 	on [Core.Str] is native `cast_u64_str`
+	type T
+	on [Ptr[T]] is native `cast_u64_ptr`
 }

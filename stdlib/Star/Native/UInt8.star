@@ -3,6 +3,7 @@ class UInt8 of Core.Ordered is native[repr: `int` bits: 8 signed: false] {
 	on [previous] (This) is native `u8_pred`
 
 	
+	operator `?` (Core.Bool) is native `u8_truthy`
 	operator `-` (This) is native `u8_neg`
 	operator `~` (This) is native `u8_compl`
 	

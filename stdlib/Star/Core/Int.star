@@ -13,8 +13,8 @@ class Int of Native.Int32, Num {
 		return this[Dec][sqrt]
 	}
 	
-	on [rootOf: root (Num)] (Dec) is inline {
-		return this[Dec][rootOf: root]
+	on [rootOf: (Num)] (Dec) is inline {
+		return this[Dec][:rootOf]
 	}
 	
 	on [exp] (Dec) is inline {
@@ -45,8 +45,6 @@ class Int of Native.Int32, Num {
 		return this[Dec][atan]
 	}
 	
-	;on [atan2: (This)] (This)
-	
 	on [floor] (Dec) is inline {
 		return this[Dec][floor]
 	}
@@ -54,13 +52,17 @@ class Int of Native.Int32, Num {
 	on [ceiling] (Dec) is inline {
 		return this[Dec][ceiling]
 	}
+
+	on [truncate] (Dec) is inline {
+		return this[Dec][truncate]
+	}
 	
 	on [round] (Dec) is inline {
 		return this[Dec][round]
 	}
 	
-	on [round: digits (Int)] (Dec) {
-		return this[Dec][round: digits]
+	on [round: (Int)] (Dec) is inline {
+		return this[Dec][:round]
 	}
 	
 	on [ln] (Dec) is inline {
@@ -71,8 +73,8 @@ class Int of Native.Int32, Num {
 		return this[Dec][log]
 	}
 
-	on [log: base (Int)] (This) is inline {
-		return this[Dec][log: base]
+	on [log: (Int)] (This) is inline {
+		return this[Dec][:log]
 	}
 
 	on [gcd: other (This)] (This) {

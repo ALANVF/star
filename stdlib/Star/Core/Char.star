@@ -50,8 +50,6 @@ class Char of Ordered is native[repr: `int` bits: 8 signed: true] is strong {
 	on [UInt32] is native `cast_u8_u32`
 	on [Int64] is native `cast_u8_i64`
 	on [UInt64] is native `cast_u8_u64`
-	on [Int128] is native `cast_u8_i128`
-	on [UInt128] is native `cast_u8_u128`
 	on [Int] is native `cast_u8_i32`
 	on [Str] is native `cast_char_str`
 }

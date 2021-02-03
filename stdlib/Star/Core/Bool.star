@@ -38,6 +38,5 @@ class Bool of Comparable is native[repr: `bool`] is strong {
 	on [Int64] is native `cast_bool_i64`
 	on [UInt64] is native `cast_bool_u64`
 	on [Str] is native `cast_bool_str`
-
 	on [Int] is native `cast_bool_i32`
 }

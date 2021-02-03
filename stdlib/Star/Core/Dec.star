@@ -1,6 +1,6 @@
 use Native
 
-class Dec of Num is native[repr: `dec` bits: 64] {
+class Dec of Num is native[repr: `dec` bits: 64] is strong {
 	on [pi] (Dec) is static is getter is native `d64_pi`
 
 
@@ -14,7 +14,22 @@ class Dec of Num is native[repr: `dec` bits: 64] {
 
 	on [abs] (This) is native `d64_abs`
 	on [sqrt] (This) is native `d64_sqrt`
-	;on [rootOf: root (Num)] (This)
+
+	on [rootOf: root (Num)] (This) {
+		my x = this / root
+		my m = root - 1
+
+		while true {
+			my x' = (m * x + this / x ** m) / root
+
+			if [x' - x abs] < [x * 1e-9 abs] {
+				return x'
+			}
+			
+			x = x'
+		}
+	}
+	
 	on [exp] (This) is native `d64_exp`
 	on [sin] (This) is native `d64_sin`
 	on [cos] (This) is native `d64_cos`
@@ -22,7 +37,6 @@ class Dec of Num is native[repr: `dec` bits: 64] {
 	on [asin] (This) is native `d64_asin`
 	on [acos] (This) is native `d64_acos`
 	on [atan] (This) is native `d64_atan`
-	;on [atan2: (This)] (This)
 	on [floor] (This) is native `d64_floor`
 	on [ceiling] (This) is native `d64_ceil`
 	on [truncate] (This) is native `d64_trunc`
@@ -45,6 +59,7 @@ class Dec of Num is native[repr: `dec` bits: 64] {
 	on [previous] (This) is native `d64_pred`
 
 
+	operator `?` (Bool) is native `d64_truthy`
 	operator `-` (This) is native `d64_neg`
 	
 	operator `+` [other (This)] (This) is native `d64_add`
