@@ -14,5 +14,5 @@ category Power for Num {
 	}
 
 	;-- Maybe add this:
-	; https://github.com/crystal-lang/crystal/blob/master/src/number.cr#L210
+	; https://github.com/crystal-lang/crystal/blob/f0901e1c825de1095d77998ffe8890bfca66def0/src/number.cr#L370
 }
