@@ -38,7 +38,7 @@ One of the most important goals of Star is that it's designed to be completely c
 - Structured loop constructs reduce off-by-one errors
 
 
-### Syntax
+### A word on syntax
 
 Before you click away because of how weird the syntax might look, please just give Star a chance. It may seem weird at first,
 but every aspect of Star's syntax has a purpose. None of it exists "just for decoration" or anything ridiculous like that.
