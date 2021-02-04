@@ -108,6 +108,21 @@ category Power for Int {
 		return this // base ** exponent % base
 	}
 
+	on [nth] (Str) {
+		return this[Str] + {
+			if 11 <= this <= 13 {
+				return "th"
+			} else {
+				match this % 10 {
+					at 1 => return "st"
+					at 2 => return "nd"
+					at 3 => return "rd"
+					else => return "th"
+				}
+			}
+		}
+	}
+
 
 	;-- Other things to look at adding:
 	; https://github.com/russellallen/self/blob/master/objects/core/integer.self#L401
