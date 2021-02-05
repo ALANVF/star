@@ -1,5 +1,7 @@
 # Star
 
+![](logo.png)
+
 Star is an experimental programming language that's made to be powerful, productive, and predictable:
 - Powerful: Get stuff done with less boilerplate
 - Productive: Get stuff done quickly without working against the language
