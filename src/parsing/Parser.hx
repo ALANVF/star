@@ -477,6 +477,12 @@ class Parser {
 								rest2 = rest3;
 							case err: return cast err;
 						},
+						at([T_Is(_2), T_Friend(_3), @_ rest3]) => switch parseTypeSpec(rest3) {
+							case Success(spec, rest4):
+								attrs[AliasAttr.IsFriend(spec)] = Span.range(_2, _3);
+								rest2 = rest4;
+							case err: return cast err;
+						},
 						_ => {}
 					);
 
@@ -506,6 +512,12 @@ class Parser {
 							case Failure(_, _):
 								attrs[AliasAttr.IsHidden(None)] = Span.range(_2, _3);
 								rest = rest2;
+							case err: return cast err;
+						},
+						at([T_Is(_2), T_Friend(_3), @_ rest2]) => switch parseTypeSpec(rest2) {
+							case Success(spec, rest3):
+								attrs[AliasAttr.IsFriend(spec)] = Span.range(_2, _3);
+								rest = rest3;
 							case err: return cast err;
 						},
 						_ => {}
