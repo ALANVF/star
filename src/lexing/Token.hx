@@ -3,9 +3,9 @@ package lexing;
 import text.Span;
 
 enum StrSegment {
-	SStr(/*span: Span, */str: String);
-	SChar(/*span: Span, */char: Char);
-	SCode(/*span: Span, */tokens: List<Token>);
+	SStr(str: String);
+	SChar(char: Char);
+	SCode(tokens: List<Token>);
 }
 
 @:using(Token.TokenHelper)
@@ -67,17 +67,6 @@ enum Token {
 	T_Flags(_: Span);
 	T_Uncounted(_: Span);
 	T_Strong(_: Span);
-
-	/*L_In;
-	L_From;
-	L_After;
-	L_To;
-	L_Upto;
-	L_Downto;
-	L_By;
-	L_While;
-
-	Y_Script;*/
 
 	T_Tilde(_: Span);
 	T_Dot(_: Span);

@@ -20,18 +20,4 @@ class Class {
 	final parents: Parents;
 	final attrs: Map<ClassAttr, Span>;
 	final body: DeclBody;
-	
-	/*[
-		| `Module of module_decl
-		| `Class of class_decl
-		| `Protocol of protocol_decl
-		| `Kind of kind_decl
-		| `Alias of alias_decl
-		| `Member of Member.t
-		| `Method of Method.t
-		| `Init of Init.t
-		| `Base_init of Base_method.t
-		| `Operator of Operator.t
-		| `Deinit of Base_method.t
-	] list delims_loc*/
 }

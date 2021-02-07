@@ -1,25 +1,13 @@
 package parsing.ast.decls;
 
-/*
-interface AllowsMember {}
-interface AllowsCase {}
-// ...
-interface AllowsModule {}
-interface AllowsClass {}
-interface AllowsProtocol {}
-interface AllowsCategory {}
-// ...
-*/
+enum Decl {
+	DMember(m: Member);
+	DCase(c: Case);
 
-
-enum Decl/*<T>*/ {
-	DMember(m: Member);//: Decl<AllowsMember>;
-	DCase(c: Case);//: Decl<AllowsCase>;
-
-	DModule(m: Module);//: Decl<AllowsModule>;
-	DClass(c: Class);//: Decl<AllowsClass>;
-	DProtocol(p: Protocol);//: Decl<AllowsProtocol>;
-	DCategory(c: Category);//: Decl<AllowsCategory>;
+	DModule(m: Module);
+	DClass(c: Class);
+	DProtocol(p: Protocol);
+	DCategory(c: Category);
 	DKind(k: Kind);
 	DAlias(a: Alias);
 

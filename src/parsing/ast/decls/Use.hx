@@ -14,8 +14,4 @@ class Use {
 	final generics: List<GenericParam>;
 	final span: Span;
 	final kind: UseKind;
-
-	/*@:keep function toString() {
-		return '{generics: $generics, span: $span, kind: $kind}';
-	}*/
 }

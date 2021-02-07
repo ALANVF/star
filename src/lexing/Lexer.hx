@@ -29,8 +29,6 @@ class Lexer {
 	static final LOWER_U = LOWER | '_'.code;
 	static final ALPHA_U = ALPHA | '_'.code;
 	static final ALNUM_Q = ALNUM | "'".code;
-	//static final NOT_AFTER_KW = ALNUM_Q | ':'.code;
-	//static final VSPACE_OR_COMMA = VSPACE | '_';
 	static final SINGLE_CHAR = Charset.from("()[]{}.~");
 
 	final rdr: Reader;
@@ -52,11 +50,7 @@ class Lexer {
 	public function tokenize() {
 		try {
 			while(rdr.hasNext()) {
-			//do {
-				final res = readToken();
-
-				tokens = tokens.prepend(res);
-			//} while(rdr.hasNext());
+				tokens = tokens.prepend(readToken());
 			}
 		} catch(e: Eof) {
 			trace(e.posInfos);
@@ -178,7 +172,7 @@ class Lexer {
 	}
 
 	inline function trim() {
-		while(/*@:privateAccess !rdr.isEOF() &&*/ rdr.hasNext() && HSPACE_SEMI[rdr.current]) {
+		while(rdr.hasNext() && HSPACE_SEMI[rdr.current]) {
 			if(rdr.advance() == ';'.code) readComment();
 		}
 	}
@@ -205,17 +199,7 @@ class Lexer {
 	/*inline*/ function readToken() {
 		begin = here();
 
-		/*if(@:privateAccess rdr.index == -1) {
-			if(!HSPACE[rdr.current]) {
-				rdr.next();
-			}
-		}*/
-
 		trim();
-
-		/*if(!rdr.hasNext()) {
-			throw new Eof();
-		}*/
 
 		final cur = rdr.current;
 
@@ -526,20 +510,6 @@ class Lexer {
 	}
 
 	inline function readLSep() {
-		/*trim();
-
-		if(rdr.hasNext() && VSPACE[rdr.current]) {
-			final cur = rdr.advance();
-
-			if(VSPACE[cur]) {
-				return readLSep();
-			} else if(cur == Char.COMMA) {
-				return readCSep();
-			}
-		}
-
-		return T_LSep;*/
-		
 		do {
 			rdr.skip();
 			trim();
@@ -554,15 +524,6 @@ class Lexer {
 
 	// Don't inline
 	function readCSep() {
-		/*trim();
-
-		if(rdr.hasNext() && VSPACE[rdr.current]) {
-			rdr.next();
-			return readCSep();
-		}
-
-		return T_CSep;*/
-
 		trim();
 		
 		while(rdr.hasNext() && VSPACE[rdr.current]) {
@@ -601,10 +562,7 @@ class Lexer {
 							span: span(),
 							message: "Were you wanting a hexdecimal literal here or what?",
 							isPrimary: true
-						})/*,
-						Spanned({
-							span: Span.length(begin, 2, source)
-						})*/
+						})
 					]
 				});
 			}
@@ -613,7 +571,6 @@ class Lexer {
 		}
 	}
 
-	// TODO: fix random extra char (newline?) at end of buffer 
 	inline function readHex() {
 		final hex = new Buffer();
 
@@ -682,7 +639,6 @@ class Lexer {
 						}),
 						Spanned({
 							span: new Span(begin, end.advance(-1), source),
-							//message: "Starting here",
 							isSecondary: true
 						})
 					]
@@ -845,11 +801,6 @@ class Lexer {
 	inline function readTypeName() {
 		final name = new Buffer();
 
-		/*while(ALNUM_Q[rdr.current]) {
-			//name.addChar(rdr.advance());
-			name.addChar(rdr.current);
-			if(!rdr.hasNext()) break else rdr.skip();
-		}*/
 		do {
 			name.addChar(rdr.current);
 		} while(rdr.hasNext() && ALNUM_Q[rdr.next()]);
@@ -1040,7 +991,6 @@ class Lexer {
 					trim();
 
 					var level = 1;
-					var spans = Nil;
 					var tokens = Nil;
 
 					while(level > 0) {
@@ -1081,7 +1031,7 @@ class Lexer {
 								info: [
 									Spanned({
 										span: Span.at(end, source),
-										message: 'Escape character `$c` does not exist',
+										message: 'Escape character `\\$c` does not exist',
 										isPrimary: true
 									}),
 									Spanned({
@@ -1106,7 +1056,7 @@ class Lexer {
 				info: [
 					Spanned({
 						span: Span.at(begin, source),
-						message: 'This string is never terminated',
+						message: "This string is never terminated",
 						isPrimary: true
 					})
 				]
@@ -1161,7 +1111,7 @@ class Lexer {
 				info: [
 					Spanned({
 						span: Span.at(end, source),
-						message: 'Was expecting a number here',
+						message: "Was expecting a number here",
 						isPrimary: true
 					}),
 					Spanned({

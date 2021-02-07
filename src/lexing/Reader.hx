@@ -6,7 +6,6 @@ import util.CharIterator;
 using hx.strings.Strings;
 
 class Reader extends CharIterator.StringCharIterator {
-	//@:pure
 	public function peek() {
 		return if(hasNext()) {
 			@:privateAccess inline chars._charCodeAt8Unsafe(index+1);
