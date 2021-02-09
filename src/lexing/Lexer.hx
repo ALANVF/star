@@ -121,31 +121,31 @@ class Lexer {
 	];
 
 	function retoken(tokens: List<Token>) return Util.match(tokens,
-		at([d = T_Dot(_), n = T_Name(_, _), @_ rest]) => List.of(d, n, @_ retoken(rest)),
-		//at([b = T_LBracket(_), @_ rest]) => Cons(b, retokenGroup(rest)),
+		at([d = T_Dot(_), n = T_Name(_, _), ...rest]) => List.of(d, n, ...retoken(rest)),
+		//at([b = T_LBracket(_), ...rest]) => Cons(b, retokenGroup(rest)),
 		
-		at([T_Name(span, "this"), @_ rest]) => Cons(T_This(span), retoken(rest)),
-		at([T_Name(span, "true"), @_ rest]) => Cons(T_Bool(span, true), retoken(rest)),
-		at([T_Name(span, "false"), @_ rest]) => Cons(T_Bool(span, false), retoken(rest)),
+		at([T_Name(span, "this"), ...rest]) => Cons(T_This(span), retoken(rest)),
+		at([T_Name(span, "true"), ...rest]) => Cons(T_Bool(span, true), retoken(rest)),
+		at([T_Name(span, "false"), ...rest]) => Cons(T_Bool(span, false), retoken(rest)),
 		
-		at([T_Name(span, "my"), n = T_Name(_, _), @_ rest]) => List.of(T_My(span), n, @_ retoken(rest)),
-		at([T_Name(span, "has"), n = T_Name(_, _), @_ rest]) => List.of(T_Has(span), n, @_ retoken(rest)),
+		at([T_Name(span, "my"), n = T_Name(_, _), ...rest]) => List.of(T_My(span), n, ...retoken(rest)),
+		at([T_Name(span, "has"), n = T_Name(_, _), ...rest]) => List.of(T_Has(span), n, ...retoken(rest)),
 		
-		at([T_Name(span1, "is"), T_Name(span2, ATTRS[_] => attr), @_ rest], when(attr != null)) => List.of(T_Is(span1), attr(span2), @_ retoken(rest)),
-		at([T_Name(span, KEYWORDS[_] => kw), @_ rest], when(kw != null)) => Cons(kw(span), retoken(rest)),
+		at([T_Name(span1, "is"), T_Name(span2, ATTRS[_] => attr), ...rest], when(attr != null)) => List.of(T_Is(span1), attr(span2), ...retoken(rest)),
+		at([T_Name(span, KEYWORDS[_] => kw), ...rest], when(kw != null)) => Cons(kw(span), retoken(rest)),
 		
-		at([s = T_Str(_, segs), @_ rest]) => {
+		at([s = T_Str(_, segs), ...rest]) => {
 			retokenStr(segs);
 			Cons(s, retoken(rest));
 		},
 		
-		at([token, @_ rest]) => Cons(token, retoken(rest)),
+		at([token, ...rest]) => Cons(token, retoken(rest)),
 		at([]) => Nil
 	);
 
 	/*function retokenGroup(tokens: List<Token>) return Util.match(tokens,
-		at([t = T_Dot(_) | T_TypeName(_, _) | T_LSep(_), @_ rest]) => Cons(t, retokenGroup(rest)),
-		at([n = T_Name(_, _), @_ (rest = (Cons(T_LSep(_), Cons(T_RBracket(_), _)) | Cons(T_RBracket(_), _)))]) => Cons(n, retoken(rest)),
+		at([t = T_Dot(_) | T_TypeName(_, _) | T_LSep(_), ...rest]) => Cons(t, retokenGroup(rest)),
+		at([n = T_Name(_, _), ...(rest = (Cons(T_LSep(_), Cons(T_RBracket(_), _)) | Cons(T_RBracket(_), _)))]) => Cons(n, retoken(rest)),
 		at(rest) => retoken(rest)
 	);*/
 

@@ -30,7 +30,7 @@ class Main {
 			final stopTokenize = haxe.Timer.stamp();
 
 			final tokens = lexer.tokens;
-
+			
 			final startParse = haxe.Timer.stamp();
 			final program = Parser.parse(tokens);
 			final stopParse = haxe.Timer.stamp();

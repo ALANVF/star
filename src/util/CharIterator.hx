@@ -17,7 +17,7 @@ import hx.strings.Char;
 
 using hx.strings.Strings;
 
-class CharIterator {
+abstract class CharIterator {
 	inline public static function fromString(chars: Null<AnyAsString>, prevBufferSize = 0): CharIterator {
 		if(chars == null)
 			return NullCharIterator.INSTANCE;
@@ -118,11 +118,9 @@ class CharIterator {
 		return currChar;
 	}
 
-	function getChar(): Char
-		throw "Not implemented";
+	abstract function getChar(): Char;
 
-	function isEOF(): Bool
-		throw "Not implemented";
+	abstract function isEOF(): Bool;
 }
 
 @:noCompletion
@@ -143,8 +141,11 @@ private class NullCharIterator extends CharIterator {
 	inline function new()
 		super(0);
 
-	override function isEOF(): Bool
+	function isEOF(): Bool
 		return true;
+
+	function getChar(): Char
+		throw new Eof();
 }
 
 @:noDoc @:dox(hide)
@@ -158,10 +159,10 @@ private class ArrayCharIterator extends CharIterator {
 		charsMaxIndex = chars.length - 1;
 	}
 
-	override function isEOF(): Bool
+	function isEOF(): Bool
 		return index >= charsMaxIndex;
 
-	override function getChar(): Char
+	function getChar(): Char
 		return chars[index];
 }
 
@@ -174,10 +175,10 @@ private class IteratorCharIterator extends CharIterator {
 		this.chars = chars;
 	}
 
-	override function isEOF(): Bool
+	function isEOF(): Bool
 		return !chars.hasNext();
 
-	override function getChar(): Char
+	function getChar(): Char
 		return chars.next();
 }
 
@@ -194,7 +195,7 @@ private class InputCharIterator extends CharIterator {
 		this.input = chars;
 	}
 
-	override function isEOF(): Bool {
+	function isEOF(): Bool {
 		if(nextCharAvailable == UNKNOWN) {
 			try {
 				nextChar = readUtf8Char();
@@ -206,7 +207,7 @@ private class InputCharIterator extends CharIterator {
 		return nextCharAvailable != TRUE;
 	}
 
-	override function getChar(): Char {
+	function getChar(): Char {
 		if(index != currCharIndex) {
 			currCharIndex = index;
 			nextCharAvailable = UNKNOWN;
@@ -301,9 +302,9 @@ class StringCharIterator extends CharIterator {
 		charsMaxIndex = chars.length8() - 1;
 	}
 
-	override function isEOF(): Bool
+	function isEOF(): Bool
 		return index >= charsMaxIndex;
 
-	override function getChar(): Char
+	function getChar(): Char
 		return @:privateAccess Strings._charCodeAt8Unsafe(chars, index);
 }

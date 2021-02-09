@@ -16,7 +16,7 @@ class ListHelper {
 			return macro Nil;
 		} else {
 			return switch values.last() {
-				case (macro @rest $rest) | macro @_ $rest:
+				case macro ...$rest:
 					values.pop();
 					macro ${values.foldRight(rest, (acc, v) -> macro Cons($v, $acc))};
 				

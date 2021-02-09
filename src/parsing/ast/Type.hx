@@ -8,12 +8,4 @@ enum TypeSeg {
 	Blank(_: Span, args: TypeParams);
 }
 
-@:structInit
-@:publicFields
-class Type {
-	final path: List<TypeSeg>;
-
-	function new(path) {
-		this.path = path;
-	}
-}
+typedef Type = List<TypeSeg>;

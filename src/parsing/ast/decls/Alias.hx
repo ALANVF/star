@@ -10,7 +10,7 @@ enum AliasAttr {
 enum AliasKind {
 	Opaque(body: Option<DeclBody>);
 	Direct(_: Span, type: Type);
-	Strong(type: Delims<Type>, body: Option<DeclBody>);
+	Strong(type: Type, body: Option<DeclBody>);
 }
 
 @:structInit

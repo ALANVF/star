@@ -1,5 +1,3 @@
-package util;
-
 import hx.strings.Char;
 import util.Option;
 import util.List;

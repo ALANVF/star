@@ -39,6 +39,7 @@ class Util {
 			throw new NullException();
 	}
 
+	@:noUsing
 	static macro function match<T>(value: ExprOf<T>, cases: Array<Expr>): Expr {
 		/*final elseExpr = if(cases.length % 2 != 0) {
 			Some(switch (cases.pop() : Expr) {
@@ -53,9 +54,9 @@ class Util {
 		var caseExprs: Array<Case> = [];
 		
 		for(_case in cases) {
-			switch _case {
+			while(_case.expr.match(EDisplay(_, _))) switch _case {
 				case {expr: EDisplay(e, _)}: _case = e;
-				default:
+				default: break;
 			}
 
 			switch _case {
@@ -76,7 +77,14 @@ class Util {
 			};
 		}
 
-		switch Context.typeof(value) {
+		var type = Context.typeof(value);
+
+		while(type.match(TType(_, _))) switch type {
+			case TType(_.get() => t, _): type = t.type;
+			default: break;
+		}
+
+		switch type {
 			case TEnum(_.get() => {pack: ["util"], name: "List"}, [_]):
 				caseExprs = caseExprs.map(_case -> switch _case {
 					case {values: values, guard: guard, expr: expr}: {
@@ -94,43 +102,36 @@ class Util {
 		};
 	}
 
-	private static function mapListPattern(pattern: Expr, isOuter = false) {
-		final expr = switch pattern {
-			case macro $l | $r: macro ${mapListPattern(l)} | ${mapListPattern(r)};
-			case macro []: macro Nil;
-			//case {expr: EDisplay(macro [], k), pos: pos}: {expr: EDisplay(macro Nil, k), pos: pos};
-			case macro [$a{values}]: macro ${listOf(values)};
-			//case {expr: EDisplay({expr: EArrayDecl(values)}, k), pos: pos}: {expr: EDisplay(macro ${listOf(values.map(v -> mapPattern(v)))}, k), pos: pos};
-			default: pattern;
-		};
-
-		return expr;/*{
-			expr: if(pattern.expr.match(EDisplay(_, _) | EDisplayNew(_))) {
-				expr;
-			} else {
-				EDisplay(expr, DKPattern(isOuter));
-			},
-			pos: pattern.pos
-		}*/
+	private static function mapListPattern(pattern: Expr, isOuter = false) return switch pattern {
+		case {expr: EDisplay(e, _)}: macro ${mapListPattern(e, isOuter)};
+		case macro $l | $r: macro ${mapListPattern(l)} | ${mapListPattern(r)};
+		case macro []: macro Nil;
+		case macro [$a{values}]: macro ${listOf(values)};
+		default: pattern;
 	}
 
-	private static function mapPattern(pattern: Expr, isOuter = false) return {
-		expr: EDisplay(switch pattern {
-			case macro [$a{values}]: macro $a{values.map(v -> mapPattern(v))};
-			case macro $l | $r: macro ${mapPattern(l)} | ${mapPattern(r)};
-			default: pattern;
-		}, DKPattern(isOuter)),
-		pos: pattern.pos
+	private static function mapPattern(pattern: Expr, isOuter = false) return switch pattern {
+		case {expr: EDisplay(e, _)}: macro ${mapPattern(e, isOuter)};
+		case macro [$a{values}]: macro $a{values.map(v -> mapPattern(v))};
+		case macro $l | $r: macro ${mapPattern(l)} | ${mapPattern(r)};
+		default: pattern;
 	}
 
 	private static function listOf<T>(values: Array<Expr>): ExprOf<List<T>> {
 		if(values.length == 0) {
 			return macro Nil;
 		} else {
-			return switch values.last() {
-				case (macro @rest $rest) | macro @_ $rest:
+			return switch switch values.last() {
+				case {expr: EDisplay(e, _)}: e;
+				case e: e;
+			} {
+				case macro ...$rest = $expr:
 					values.pop();
-					macro ${values.foldRight(rest, (acc, v) -> macro Cons($v, $acc))};
+					macro ${values.foldRight(macro $rest = ${mapListPattern(expr)}, (acc, v) -> macro Cons($v, $acc))};
+
+				case macro ...$rest:
+					values.pop();
+					macro ${values.foldRight(rest/*mapListPattern(rest)*/, (acc, v) -> macro Cons($v, $acc))};
 				
 				default:
 					macro ${values.foldRight(macro Nil, (acc, v) -> macro Cons($v, $acc))};
@@ -142,7 +143,7 @@ class Util {
 		final thisLevel = tab.repeat(indent);
 		final nextLevel = tab.repeat(indent + 1);
 		
-		return if((value is Array)) {
+		return if(value is Array) {
 			final array = (value : Array<Any>);
 
 			if(array.length == 0) {
@@ -165,9 +166,9 @@ class Util {
 
 				out.toString();
 			}
-		} else if((value is List)) {
+		} else if(value is List) {
 			_pretty((value : List<Any>).toArray(), indent, tab);
-		} else if((value is String)) {
+		} else if(value is String) {
 			final str = (value : String);
 			
 			str.quoteDouble().replaceAll("\n", "\\n").replaceAll("\r", "\\r").replaceAll("\t", "\\t");
