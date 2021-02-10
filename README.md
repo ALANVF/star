@@ -73,7 +73,7 @@ module Main {
 ### Running Star
 
 Things you'll need in order to run Star (or rather, the parser. the compiler and runtime don't exist yet):
-- Haxe (4.1.4 or later)
+- Haxe (4.2.0 or later)
 - [My fork of HashLink](https://github.com/ALANVF/hashlink/tree/star)
 
 
