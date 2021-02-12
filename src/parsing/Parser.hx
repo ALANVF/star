@@ -275,7 +275,7 @@ class Parser {
 				info: [
 					Spanned({
 						span: _1,
-						message: "Memebers are not allowed to be generic",
+						message: "Members are not allowed to be generic",
 						isPrimary: true
 					})
 				]
