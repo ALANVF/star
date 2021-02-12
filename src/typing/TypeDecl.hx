@@ -5,10 +5,10 @@ import parsing.ast.Ident;
 
 @:build(util.Auto.build({init: false}))
 @:autoBuild(util.Auto.build())
-abstract class TypeDecl implements ILookupType {
+abstract class TypeDecl /*implements ILookupType*/ {
 	final file: File;
 	final generics: Array<Generic>;
-	final beginSpan: Span;
+	final span: Span;
 	final name: Ident;
 	final params: Option<Array<Type>>;
 	final hidden: Option<Option<Type>>;

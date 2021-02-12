@@ -100,21 +100,31 @@ class Main {
 		final startProject = haxe.Timer.stamp();
 		final project = typing.Project.fromMainPath("stdlib");
 		final stopProject = haxe.Timer.stamp();
-		final projectTime = stopProject*1000 - startProject*1000;
-		trace('Gather sources time: ${projectTime}ms');
+		final timeProject = stopProject*1000 - startProject*1000;
+		Sys.println('Gather sources time: ${timeProject}ms');
 
 		final files = project.allFiles();
 		
 		final startSources = haxe.Timer.stamp();
 		for(file in files) file.initSource();
 		final stopSources = haxe.Timer.stamp();
-		final sourcesTime = stopSources*1000 - startSources*1000;
-		trace('Init sources time: ${sourcesTime}ms');
+		final timeSources = stopSources*1000 - startSources*1000;
+		Sys.println('Init sources time: ${timeSources}ms');
 
 		final startParse = haxe.Timer.stamp();
 		for(file in files) file.parse();
 		final stopParse = haxe.Timer.stamp();
-		final parseTime = stopParse*1000 - startParse*1000;
-		trace('Parse sources time: ${parseTime}ms');
+		final timeParse = stopParse*1000 - startParse*1000;
+		Sys.println('Parse sources time: ${timeParse}ms');
+
+		final startImports = haxe.Timer.stamp();
+		for(file in files) file.buildImports();
+		final stopImports = haxe.Timer.stamp();
+		final timeImports = stopImports*1000 - startImports*1000;
+		Sys.println('Build imports time: ${timeImports}ms');
+
+
+		Sys.println('Status: ${files.every(file -> file.status)}');
+		Sys.println('Total time: ${timeProject + timeSources + timeParse + timeImports}ms');
 	}
 }

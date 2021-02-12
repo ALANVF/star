@@ -117,7 +117,7 @@ class ListHelper {
 		case [_, Cons(_, tail)]: tail.nth(i - 1);
 	}
 
-	static inline function head<T>(list: List<T>): T return switch list {
+	static inline function head<T>(list: List<T>) return switch list {
 		case Nil: throw "Empty list!";
 		case Cons(head, _): head;
 	}
@@ -125,5 +125,11 @@ class ListHelper {
 	static inline function tail<T>(list: List<T>) return switch list {
 		case Nil: throw "Empty list!";
 		case Cons(_, tail): tail;
+	}
+
+	static function last<T>(list: List<T>) return switch list {
+		case Nil: throw "Empty list!";
+		case Cons(v, Nil): v;
+		case Cons(_, rest): rest.last();
 	}
 }
