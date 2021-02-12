@@ -8,7 +8,8 @@ import parsing.ast.Program;
 import text.SourceFile;
 
 @:build(util.Auto.build())
-class File {
+class File implements IErrors {
+	final errors: Array<Diagnostic>;
 	final dir: Dir;
 	final path: String;
 	var unit: Option<Unit>;
@@ -19,6 +20,7 @@ class File {
 	final decls: Array<TypeDecl>;
 
 	function new(dir, path, ?unit) {
+		errors = [];
 		this.dir = dir;
 		this.path = path;
 		this.unit = Option.fromNull(unit);
@@ -39,17 +41,22 @@ class File {
 			switch result {
 				case Modular([], _) | Script([], _): status = true;
 				case Modular(errors, _) | Script(errors, _): for(i => error in errors) {
-					if(i == 25) {
-						throw "Too many errors! Stopping...";
-					}
+					errors.push(error);
 
-					Main.renderer.render(error);
+					if(i == 25) {
+						errors.push(new Diagnostic({
+							severity: Severity.ERROR,
+							message: "Too many errors!",
+							info: []
+						}));
+						break;
+					}
 				}
 			}
 
 			program = Some(result);
 		} catch(diag: Diagnostic) {
-			Main.renderer.render(diag);
+			errors.push(diag);
 		}
 	}
 
@@ -68,7 +75,7 @@ class File {
 				case DUse({span: span, kind: kind, generics: generics}):
 					if(!lastWasUse) {
 						lastWasUse = true;
-						Main.renderer.render(new Diagnostic({
+						errors.push(new Diagnostic({
 							severity: Severity.WARNING,
 							message: "Unorganized code",
 							info: [
@@ -93,7 +100,7 @@ class File {
 							case Import(Many(_, imps, _)) | ImportFrom(Many(_, imps, _), _, _): imps.copy();
 							case Pragma(span2, pragma):
 								status = false;
-								Main.renderer.render(new Diagnostic({
+								errors.push(new Diagnostic({
 									severity: Severity.ERROR,
 									message: "Unknown pragma",
 									info: [

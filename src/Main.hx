@@ -123,6 +123,9 @@ class Main {
 		final timeImports = stopImports*1000 - startImports*1000;
 		Sys.println('Build imports time: ${timeImports}ms');
 
+		for(file in files) {
+			file.errors.forEach(renderer.render);
+		}
 
 		Sys.println('Status: ${files.every(file -> file.status)}');
 		Sys.println('Total time: ${timeProject + timeSources + timeParse + timeImports}ms');
