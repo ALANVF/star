@@ -57,7 +57,7 @@ class Lexer {
 			trace(e.stack);
 		}
 
-		tokens = retoken(tokens.rev());
+		return tokens = retoken(tokens.rev());
 	}
 
 

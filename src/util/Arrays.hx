@@ -235,4 +235,10 @@ class Arrays {
 	public static inline function last<T>(array: Array<T>): T {
 		return array[array.length - 1];
 	}
+
+	public static inline function pushAll<T>(array: Array<T>, values: Array<T>) {
+		for(i in 0...values.length) {
+			array.push(values[i]);
+		}
+	}
 }

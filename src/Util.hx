@@ -1,4 +1,5 @@
 import util.Buffer;
+import util.List;
 import haxe.macro.Context;
 import haxe.macro.Expr;
 
@@ -139,7 +140,7 @@ class Util {
 		}
 	}
 
-	private static function _pretty(value: Any, indent: Int, tab: String): String {
+	private static function _pretty(value: Any, indent: Int, tab: String, nested: List<Any>): String {
 		final thisLevel = tab.repeat(indent);
 		final nextLevel = tab.repeat(indent + 1);
 		
@@ -155,7 +156,7 @@ class Util {
 				
 				for(i in 0...array.length) {
 					out.add(nextLevel);
-					out.add(_pretty(array[i], indent + 1, tab));
+					out.add(_pretty(array[i], indent + 1, tab, nested));
 					if(i < array.length - 1) {
 						out.add(",");
 					}
@@ -167,7 +168,7 @@ class Util {
 				out.toString();
 			}
 		} else if(value is List) {
-			_pretty((value : List<Any>).toArray(), indent, tab);
+			_pretty((value : List<Any>).toArray(), indent, tab, nested);
 		} else if(value is String) {
 			final str = (value : String);
 			
@@ -178,8 +179,8 @@ class Util {
 
 			switch value.getParameters() {
 				case []: name;
-				case [param]: '$name(${_pretty(param, indent, tab)})';
-				case params: '$name(\n' + params.map(param -> nextLevel + _pretty(param, indent + 1, tab)).join(",\n") + '\n$thisLevel)';
+				case [param]: '$name(${_pretty(param, indent, tab, nested)})';
+				case params: '$name(\n' + params.map(param -> nextLevel + _pretty(param, indent + 1, tab, nested)).join(",\n") + '\n$thisLevel)';
 			}
 		} else {
 			switch Type.typeof(value) {
@@ -198,14 +199,14 @@ class Util {
 							out.add(nextLevel);
 							out.add(field);
 							out.add(": ");
-							out.add(_pretty(Reflect.field(value, field), indent + 1, tab));
+							out.add(_pretty(Reflect.field(value, field), indent + 1, tab, nested));
 							out.add(",\n");
 						}
 
 						out.add(nextLevel);
 						out.add(last);
 						out.add(": ");
-						out.add(_pretty(Reflect.field(value, last), indent + 1, tab));
+						out.add(_pretty(Reflect.field(value, last), indent + 1, tab, nested));
 						
 						out.add("\n");
 						out.add(thisLevel);
@@ -241,7 +242,11 @@ class Util {
 							out.add(nextLevel);
 							out.add(field);
 							out.add(": ");
-							out.add(_pretty(val, indent + 1, tab));
+							if(val == value || nested.contains(val)) {
+								out.add("...");
+							} else {
+								out.add(_pretty(val, indent + 1, tab, nested.prepend(val)));
+							}
 							out.add(",\n");
 						}
 
@@ -251,7 +256,11 @@ class Util {
 							out.add(nextLevel);
 							out.add(last);
 							out.add(": ");
-							out.add(_pretty(Reflect.getProperty(value, last), indent + 1, tab));
+							if(val == value || nested.contains(val)) {
+								out.add("...");
+							} else {
+								out.add(_pretty(val, indent + 1, tab, nested.prepend(val)));
+							}
 						}
 							
 						out.add("\n");
@@ -268,7 +277,7 @@ class Util {
 	}
 
 	static inline function pretty(value: Any, tab = "  "): String {
-		return _pretty(value, 0, tab);
+		return _pretty(value, 0, tab, Cons(value, Nil));
 	}
 
 	static inline function parseInt(str: String) {

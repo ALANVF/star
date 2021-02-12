@@ -6,7 +6,7 @@ import text.SourceFile;
 
 class Main {
 	static final stdout = Sys.stdout();
-	static final renderer = new TextDiagnosticRenderer(stdout);
+	public static final renderer = new TextDiagnosticRenderer(stdout);
 
 	static function newSource(path) {
 		return new SourceFile(path, sys.io.File.getContent(path));
@@ -85,7 +85,7 @@ class Main {
 	}
 
 	static function main() {
-		Sys.println("=== EXAMPLES ===");
+		/*Sys.println("=== EXAMPLES ===");
 
 		for(file in allFiles("examples")) {
 			parse(newSource(file), false);
@@ -95,6 +95,26 @@ class Main {
 
 		for(file in allFiles("stdlib")) {
 			parse(newSource(file), false);
-		}
+		}*/
+
+		final startProject = haxe.Timer.stamp();
+		final project = typing.Project.fromMainPath("stdlib");
+		final stopProject = haxe.Timer.stamp();
+		final projectTime = stopProject*1000 - startProject*1000;
+		trace('Gather sources time: ${projectTime}ms');
+
+		final files = project.allFiles();
+		
+		final startSources = haxe.Timer.stamp();
+		for(file in files) file.initSource();
+		final stopSources = haxe.Timer.stamp();
+		final sourcesTime = stopSources*1000 - startSources*1000;
+		trace('Init sources time: ${sourcesTime}ms');
+
+		final startParse = haxe.Timer.stamp();
+		for(file in files) file.parse();
+		final stopParse = haxe.Timer.stamp();
+		final parseTime = stopParse*1000 - startParse*1000;
+		trace('Parse sources time: ${parseTime}ms');
 	}
 }
