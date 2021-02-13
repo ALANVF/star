@@ -26,13 +26,8 @@ class Member implements IErrors {
 		final member = new Member({
 			lookup: lookup,
 			name: ast.name,
-			type: None,
+			type: ast.type.map(t -> lookup.makeTypePath(t)),
 			value: ast.value
-		});
-
-		ast.type.forEach(t -> switch lookup.lookupTypePath(t, true) {
-			case Some(t2): member.type = Some(t2);
-			case None: member.errors.push(Errors.invalidDeclType("member", declSpan, ast.name.name, t.span()));
 		});
 
 		var getterSpan = None;
@@ -43,10 +38,7 @@ class Member implements IErrors {
 
 			case IsHidden(_) if(member.hidden.isSome()): member.errors.push(Errors.duplicateAttribute("member", declSpan, ast.name.name, "hidden", span));
 			case IsHidden(None): member.hidden = Some(None);
-			case IsHidden(Some(outsideOf)): switch lookup.lookupTypePath(outsideOf, true) {
-				case Some(t): member.hidden = Some(Some(t));
-				case None: member.errors.push(Errors.invalidDeclType("member", declSpan, ast.name.name, outsideOf.span()));
-			}
+			case IsHidden(Some(outsideOf)): member.hidden = Some(Some(lookup.makeTypePath(outsideOf)));
 
 			case IsReadonly: member.isReadonly = true;
 

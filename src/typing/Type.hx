@@ -14,11 +14,11 @@ enum TypeKind {
 class Type implements ILookupType {
 	var t: TypeKind;
 
-	function lookupTypePath(path: TypePath, isBase = false): Option<Type> {
-		/*Util.match(path,
-			at([Blank(_, _), ..._]) => throw "NYI!",
-			at([Named(span, "This", )]) => 
-		);*/
-		throw "NYI!";
+	function new(t: TypeKind) {
+		this.t = t;
+	}
+
+	function makeTypePath(path: TypePath) {
+		return new Type(TPath(path, this));
 	}
 }

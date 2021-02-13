@@ -1,53 +1,26 @@
 package typing;
 
+import reporting.Diagnostic;
 import text.Span;
 import parsing.ast.Ident;
 
 @:build(util.Auto.build({init: false}))
 @:autoBuild(util.Auto.build())
-abstract class TypeDecl /*implements ILookupType*/ {
-	final file: File;
+abstract class TypeDecl
+	implements IErrors
+	implements ITypeDecl
+{
+	final errors: Array<Diagnostic> = [];
+	final lookup: ILookupType;
 	final generics: Array<Generic>;
 	final span: Span;
 	final name: Ident;
-	final params: Option<Array<Type>>;
-	final hidden: Option<Option<Type>>;
-	final friends: Array<Type>;
-	
-
+	var params: Option<Array<Type>>;
+	var hidden: Option<Option<Type>> = None;
+	final friends: Array<Type> = [];
 	
 	
 	/*
-	abstract function lookupType(span: Option<Span>, name: String, params: Option<Array<Type>>): Option<Type>;
-	
-	abstract function addType(span: Option<Span>, name: String, params: Option<Array<Type>>, type: Type): Type;
-
-	abstract function lookupOrAddType(span: Option<Span>, name: String, params: Option<Array<Type>>): Type;
-
-	function lookupTypePath(path: TypePath): Option<Type> {
-		return Util.match(path,
-			at([]) => throw "error!",
-			at([Blank(_, None), ..._]) => throw "NYI!",
-			at([Blank(_, Some(_)), ..._]) => throw "error!",
-			at([Named(span, name, params), ...rest]) => {
-				final params2 = params.map(d -> d.of.map(this.lookupOrAddTypePath));
-				switch this.lookupType(Some(span), name, params2) {
-					case None: None;
-					case Some(type): type.lookupTypePath(rest);
-				}
-			}
-		);
-	}
-	
-	function addTypePath(path: TypePath, type: Type): Type {
-		throw "todo!";
-	}
-	
-	function lookupOrAddTypePath(path: TypePath): Type {
-		throw "todo!";
-	}
-	
-	
 	function makeGenericRule(lookup: ILookupType, parserRule: parsing.ast.decls.GenericRule): GenericRule return switch parserRule {
 		case Eq(l, _, r): Eq(lookup.lookupOrAddTypePath(l), lookup.lookupOrAddTypePath(r));
 		case Ne(l, _, r): Not(Eq(lookup.lookupOrAddTypePath(l), lookup.lookupOrAddTypePath(r)));
@@ -72,4 +45,8 @@ abstract class TypeDecl /*implements ILookupType*/ {
 		case Paren(_, rule, _): makeGenericRule(lookup, rule);
 	}
 	*/
+
+	function makeTypePath(path) {
+		return new Type(TPath(path, this));
+	}
 }
