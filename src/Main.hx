@@ -8,7 +8,11 @@ class Main {
 	static final stdout = Sys.stdout();
 	public static final renderer = new TextDiagnosticRenderer(stdout);
 
-	static function newSource(path) {
+	static inline function nl() {
+		Sys.print("\n");
+	}
+
+	/*static function newSource(path) {
 		return new SourceFile(path, sys.io.File.getContent(path));
 	}
 
@@ -82,6 +86,56 @@ class Main {
 		}
 
 		return files;
+	}*/
+
+	static function testProject(path, buildDecls = false) {
+		var time = 0.0;
+
+		final startProject = haxe.Timer.stamp();
+		final project = typing.Project.fromMainPath(path);
+		final stopProject = haxe.Timer.stamp();
+		final timeProject = stopProject*1000 - startProject*1000;
+		time += timeProject;
+		Sys.println('Gather sources time: ${timeProject}ms');
+
+		final files = project.allFiles();
+		
+		final startSources = haxe.Timer.stamp();
+		for(file in files) file.initSource();
+		final stopSources = haxe.Timer.stamp();
+		final timeSources = stopSources*1000 - startSources*1000;
+		time += timeSources;
+		Sys.println('Init sources time: ${timeSources}ms');
+
+		final startParse = haxe.Timer.stamp();
+		for(file in files) file.parse();
+		final stopParse = haxe.Timer.stamp();
+		final timeParse = stopParse*1000 - startParse*1000;
+		time += timeParse;
+		Sys.println('Parse sources time: ${timeParse}ms');
+
+		final startImports = haxe.Timer.stamp();
+		for(file in files) file.buildImports();
+		final stopImports = haxe.Timer.stamp();
+		final timeImports = stopImports*1000 - startImports*1000;
+		time += timeImports;
+		Sys.println('Build imports time: ${timeImports}ms');
+
+		if(buildDecls) {
+			final startDecls = haxe.Timer.stamp();
+			for(file in files) file.buildImports();
+			final stopDecls = haxe.Timer.stamp();
+			final timeDecls = stopDecls*1000 - startDecls*1000;
+			time += timeDecls;
+			Sys.println('Build declarations time: ${timeDecls}ms');
+		}
+
+		for(file in files) {
+			file.errors.forEach(renderer.render);
+		}
+
+		Sys.println('Status: ${files.every(file -> file.status)}');
+		Sys.println('Total time: ${time}ms');
 	}
 
 	static function main() {
@@ -97,37 +151,8 @@ class Main {
 			parse(newSource(file), false);
 		}*/
 
-		final startProject = haxe.Timer.stamp();
-		final project = typing.Project.fromMainPath("stdlib");
-		final stopProject = haxe.Timer.stamp();
-		final timeProject = stopProject*1000 - startProject*1000;
-		Sys.println('Gather sources time: ${timeProject}ms');
-
-		final files = project.allFiles();
-		
-		final startSources = haxe.Timer.stamp();
-		for(file in files) file.initSource();
-		final stopSources = haxe.Timer.stamp();
-		final timeSources = stopSources*1000 - startSources*1000;
-		Sys.println('Init sources time: ${timeSources}ms');
-
-		final startParse = haxe.Timer.stamp();
-		for(file in files) file.parse();
-		final stopParse = haxe.Timer.stamp();
-		final timeParse = stopParse*1000 - startParse*1000;
-		Sys.println('Parse sources time: ${timeParse}ms');
-
-		final startImports = haxe.Timer.stamp();
-		for(file in files) file.buildImports();
-		final stopImports = haxe.Timer.stamp();
-		final timeImports = stopImports*1000 - startImports*1000;
-		Sys.println('Build imports time: ${timeImports}ms');
-
-		for(file in files) {
-			file.errors.forEach(renderer.render);
-		}
-
-		Sys.println('Status: ${files.every(file -> file.status)}');
-		Sys.println('Total time: ${timeProject + timeSources + timeParse + timeImports}ms');
+		testProject("stdlib");
+		nl();
+		testProject("tests/hello-world", true);
 	}
 }
