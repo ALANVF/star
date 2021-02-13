@@ -46,6 +46,8 @@ abstract class TypeDecl
 	}
 	*/
 
+	abstract function declName(): String;
+
 	function makeTypePath(path) {
 		return new Type(TPath(path, this));
 	}

@@ -7,9 +7,10 @@ import parsing.ast.Ident;
 import text.Span;
 
 @:build(util.Auto.build())
-class Member implements IErrors {
+class Member implements IDecl {
 	final errors: Array<Diagnostic> = [];
 	final lookup: ILookupType;
+	final span: Span;
 	final name: Ident;
 	var type: Option<Type>;
 	var isStatic: Bool = false;
@@ -25,6 +26,7 @@ class Member implements IErrors {
 
 		final member = new Member({
 			lookup: lookup,
+			span: ast.span,
 			name: ast.name,
 			type: ast.type.map(t -> lookup.makeTypePath(t)),
 			value: ast.value
@@ -36,18 +38,18 @@ class Member implements IErrors {
 		for(attr => span in ast.attrs) switch attr {
 			case IsStatic: member.isStatic = true;
 
-			case IsHidden(_) if(member.hidden.isSome()): member.errors.push(Errors.duplicateAttribute("member", declSpan, ast.name.name, "hidden", span));
+			case IsHidden(_) if(member.hidden.isSome()): member.errors.push(Errors.duplicateAttribute(member, ast.name.name, "hidden", span));
 			case IsHidden(None): member.hidden = Some(None);
 			case IsHidden(Some(outsideOf)): member.hidden = Some(Some(lookup.makeTypePath(outsideOf)));
 
 			case IsReadonly: member.isReadonly = true;
 
-			case IsGetter(_) if(member.getter.isSome()): member.errors.push(Errors.duplicateAttribute("member", declSpan, ast.name.name, "getter", span));
+			case IsGetter(_) if(member.getter.isSome()): member.errors.push(Errors.duplicateAttribute(member, ast.name.name, "getter", span));
 			case IsGetter(name):
 				member.getter = Some(name);
 				getterSpan = Some(span);
 
-			case IsSetter(_) if(member.setter.isSome()): member.errors.push(Errors.duplicateAttribute("member", declSpan, ast.name.name, "setter", span));
+			case IsSetter(_) if(member.setter.isSome()): member.errors.push(Errors.duplicateAttribute(member, ast.name.name, "setter", span));
 			case IsSetter(name):
 				member.setter = Some(name);
 				setterSpan = Some(span);
@@ -144,5 +146,9 @@ class Member implements IErrors {
 		}
 
 		return member;
+	}
+
+	inline function declName() {
+		return "member";
 	}
 }

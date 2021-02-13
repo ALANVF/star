@@ -2,14 +2,12 @@ package typing;
 
 import parsing.ast.Stmt;
 import parsing.ast.Ident;
-import text.Span;
 
-interface IAnyMethod {
+interface IAnyMethod extends IDecl {
 	final decl: ITypeDecl;
-	final span: Span;
 	var hidden: Option<Option<Type>>;
 	var noInherit: Bool;
-	var isNative: Option<Ident>;
+	var native: Option<Option<Ident>>;
 	var isAsm: Bool;
 	final body: Option<Array<Stmt>>;
 }

@@ -36,7 +36,7 @@ class Module extends TypeDecl
 		}
 
 		for(attr => span in ast.attrs) switch attr {
-			case IsHidden(_) if(module.hidden.isSome()): module.errors.push(Errors.duplicateAttribute("module", ast.span, ast.name.name, "hidden", span));
+			case IsHidden(_) if(module.hidden.isSome()): module.errors.push(Errors.duplicateAttribute(module, ast.name.name, "hidden", span));
 			case IsHidden(None): module.hidden = Some(None);
 			case IsHidden(Some(outsideOf)): module.hidden = Some(Some(lookup.makeTypePath(outsideOf)));
 
@@ -44,11 +44,11 @@ class Module extends TypeDecl
 
 			// Logical error: `is friend #[] is friend #[] ...` is technically valid.
 			// Solution: nothing because I'm lazy.
-			case IsFriend(_) if(module.friends.length != 0): module.errors.push(Errors.duplicateAttribute("module", ast.span, ast.name.name, "friend", span));
+			case IsFriend(_) if(module.friends.length != 0): module.errors.push(Errors.duplicateAttribute(module, ast.name.name, "friend", span));
 			case IsFriend(One(friend)): module.friends.push(lookup.makeTypePath(friend));
 			case IsFriend(Many(_, friends, _)): for(friend in friends) module.friends.push(lookup.makeTypePath(friend));
 
-			case IsNative(_, _) if(module.native.isSome()): module.errors.push(Errors.duplicateAttribute("module", ast.span, ast.name.name, "native", span));
+			case IsNative(_, _) if(module.native.isSome()): module.errors.push(Errors.duplicateAttribute(module, ast.name.name, "native", span));
 			case IsNative(span2, libName): module.native = Some({span: span2, name: libName});
 		}
 
@@ -65,15 +65,21 @@ class Module extends TypeDecl
 			
 			// ...
 
-			case DDefaultInit(_) if(module.staticInit.isSome()): module.errors.push(Errors.duplicateDecl("module", ast.span, ast.name.name, decl));
+			case DMethod(m): StaticMethod.fromAST(module, m).forEach(module.staticMethods.push);
+
+			case DDefaultInit(_) if(module.staticInit.isSome()): module.errors.push(Errors.duplicateDecl(module, ast.name.name, decl));
 			case DDefaultInit(i): module.staticInit = Some(StaticInit.fromAST(module, i));
 			
-			case DDeinit(_) if(module.staticInit.isSome()): module.errors.push(Errors.duplicateDecl("module", ast.span, ast.name.name, decl));
+			case DDeinit(_) if(module.staticInit.isSome()): module.errors.push(Errors.duplicateDecl(module, ast.name.name, decl));
 			case DDeinit(d): module.staticDeinit = Some(StaticDeinit.fromAST(module, d));
 			
-			default: module.errors.push(Errors.unexpectedDecl("module", ast.span, ast.name.name, decl));
+			default: module.errors.push(Errors.unexpectedDecl(module, ast.name.name, decl));
 		}
 
 		return module;
+	}
+
+	inline function declName() {
+		return "module";
 	}
 }

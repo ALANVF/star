@@ -24,7 +24,7 @@ class Errors {
 		});
 	}*/
 	
-	static inline function duplicateAttribute(decl, declSpan, name, attr, attrSpan) {
+	static inline function duplicateAttribute<T: IDecl>(decl: T, name, attr, attrSpan) {
 		return new Diagnostic({
 			severity: Severity.ERROR,
 			message: "Duplicate attribute",
@@ -35,15 +35,36 @@ class Errors {
 					isPrimary: true
 				}),
 				Spanned({
-					span: declSpan,
-					message: 'For $decl `$name`',
+					span: decl.span,
+					message: 'For ${decl.declName()} `$name`',
 					isSecondary: true
 				})
 			]
 		});
 	}
 
-	static inline function duplicateDecl(decl, declSpan, name, decl2: parsing.ast.decls.Decl) {
+	static inline function invalidAttribute<T: IDecl>(decl: T, name, attr, attrSpan) {
+		return new Diagnostic({
+			severity: Severity.ERROR,
+			message: "Invalid attribute",
+			info: [
+				Spanned({
+					span: attrSpan,
+					message: 'Invalid attribute `is $attr`',
+					isPrimary: true
+				}),
+				Spanned({
+					span: decl.span,
+					message: 'For ${decl.declName()} `$name`',
+					isSecondary: true
+				})
+			]
+		});
+	}
+
+
+	static overload extern inline function duplicateDecl<T: IDecl>(decl: T, name, decl2) return duplicateDecl_IDecl(decl, name, decl2);
+	private static inline function duplicateDecl_IDecl<T: IDecl>(decl: T, name, decl2: parsing.ast.decls.Decl) {
 		return new Diagnostic({
 			severity: Severity.ERROR,
 			message: "Duplicate declaration",
@@ -54,15 +75,31 @@ class Errors {
 					isPrimary: true
 				}),
 				Spanned({
-					span: declSpan,
-					message: 'For $decl `$name`',
+					span: decl.span,
+					message: 'For ${decl.declName()} `$name`',
 					isSecondary: true
 				})
 			]
 		});
 	}
 
-	static inline function unexpectedDecl(decl, declSpan, name, decl2: parsing.ast.decls.Decl) {
+	static overload extern inline function duplicateDecl(decl: File, decl2) return duplicateDecl_File(decl2);
+	private static inline function duplicateDecl_File(decl: parsing.ast.decls.Decl) {
+		return new Diagnostic({
+			severity: Severity.ERROR,
+			message: "Duplicate declaration",
+			info: [
+				Spanned({
+					span: decl.span(),
+					message: 'Duplicate ${decl.name()}',
+					isPrimary: true
+				})
+			]
+		});
+	}
+
+	static overload extern inline function unexpectedDecl<T: IDecl>(decl: T, name, decl2) return unexpectedDecl_IDecl(decl, name, decl2);
+	private static inline function unexpectedDecl_IDecl<T: IDecl>(decl: T, name, decl2: parsing.ast.decls.Decl) {
 		return new Diagnostic({
 			severity: Severity.ERROR,
 			message: "Unexpected declaration",
@@ -73,9 +110,24 @@ class Errors {
 					isPrimary: true
 				}),
 				Spanned({
-					span: declSpan,
-					message: 'For $decl `$name`',
+					span: decl.span,
+					message: 'For ${decl.declName()} `$name`',
 					isSecondary: true
+				})
+			]
+		});
+	}
+
+	static overload extern inline function unexpectedDecl(decl: File, decl2) return unexpectedDecl_File(decl2);
+	private static inline function unexpectedDecl_File(decl2: parsing.ast.decls.Decl) {
+		return new Diagnostic({
+			severity: Severity.ERROR,
+			message: "Unexpected declaration",
+			info: [
+				Spanned({
+					span: decl2.span(),
+					message: 'Unexpected ${decl2.name()}',
+					isPrimary: true
 				})
 			]
 		});

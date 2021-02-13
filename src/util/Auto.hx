@@ -66,48 +66,44 @@ class Auto {
 			}
 
 			if(thisClass.superClass != null) {
-				var currentSuper = thisClass.superClass;
 				var superIsOptional = false;
 				
-				while(currentSuper != null) {
-					switch currentSuper {
-						case {t: _.get() => superClass}: //if(superClass.meta.has(":auto")):
-							currentSuper = superClass.superClass;
-							switch superClass.constructor {
-								case null: break;
-								case _.get() => ctor:
-									final ctorType = switch ctor.type {
-										case TLazy(f): f();
-										case t: t;
-									};
-								
-									switch ctorType {
-										case TFun([{t: arg}], _):
-											switch arg {
-												case TAbstract(_.get().name => "Null", [t]):
-													superIsOptional = true;
-													arg = t;
-												default:
-											}
+				switch thisClass.superClass {
+					case {t: _.get() => superClass}:
+						switch superClass.constructor {
+							case null:
+							case _.get() => ctor:
+								final ctorType = switch ctor.type {
+									case TLazy(f): f();
+									case t: t;
+								};
+							
+								switch ctorType {
+									case TFun([{t: arg}], _):
+										switch arg {
+											case TAbstract(_.get().name => "Null", [t]):
+												superIsOptional = true;
+												arg = t;
+											default:
+										}
 
-											switch arg {
-												case TAnonymous(_.get() => {fields: superFields}):
-													for(field in superFields) fields.push({
-														name: field.name,
-														meta: [for(m in field.meta.extract(":optional")) m],
-														kind: FVar(Context.toComplexType(field.type), null),
-														pos: Context.currentPos()
-													});
-												
-												default:
-											}
+										switch arg {
+											case TAnonymous(_.get() => {fields: superFields}):
+												for(field in superFields) fields.push({
+													name: field.name,
+													meta: [for(m in field.meta.extract(":optional")) m],
+													kind: FVar(Context.toComplexType(field.type), null),
+													pos: Context.currentPos()
+												});
+											
+											default:
+										}
 
-										default:
-									}
-							}
-						
-						default: break;
-					}
+									default:
+								}
+						}
+					
+					default:
 				}
 
 				inits.unshift(macro super(cast init));

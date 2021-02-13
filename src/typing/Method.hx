@@ -7,4 +7,8 @@ abstract class Method extends AnyMethod implements IMethod {
 	var isSetter: Bool = false;
 	var isUnordered: Bool = false;
 	var isInline: Bool = false;
+
+	inline function declName() {
+		return "method";
+	}
 }

@@ -8,7 +8,7 @@ import parsing.ast.Program;
 import text.SourceFile;
 
 @:build(util.Auto.build())
-class File implements IErrors {
+class File implements IErrors implements ILookupType {
 	final errors: Array<Diagnostic>;
 	final dir: Dir;
 	final path: String;
@@ -123,5 +123,29 @@ class File implements IErrors {
 				default: if(lastWasUse) lastWasUse = false;
 			}
 		});
+	}
+
+	function buildDecls() {
+		program.forEach(prog -> {
+			final decls = switch prog {
+				case Modular(_, decls2): decls2;
+				case Script(_, decls2): decls2.filterMap(decl -> switch decl {
+					case SDecl(decl2): decl2;
+					default: null;
+				});
+			};
+
+			for(decl in decls) switch decl {
+				case DModule(m): this.decls.push(Module.fromAST(this, m));
+
+				// ...
+
+				default: errors.push(Errors.unexpectedDecl(this, decl));
+			}
+		});
+	}
+
+	function makeTypePath(path: TypePath) {
+		return new Type(TPath(path, this));
 	}
 }
