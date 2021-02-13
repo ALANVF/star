@@ -22,4 +22,12 @@ class Generic implements ITypeDecl {
 	function makeTypePath(path) {
 		return new Type(TPath(path, this));
 	}
+
+	function hasErrors() {
+		return errors.length != 0;
+	}
+
+	function allErrors() {
+		return errors;
+	}
 }

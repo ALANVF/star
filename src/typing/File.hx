@@ -148,4 +148,12 @@ class File implements IErrors implements ILookupType {
 	function makeTypePath(path: TypePath) {
 		return new Type(TPath(path, this));
 	}
+
+	function hasErrors() {
+		return errors.length != 0 || decls.some(d -> d.hasErrors());
+	}
+
+	function allErrors() {
+		return errors.concat(decls.flatMap(decl -> decl.allErrors()));
+	}
 }

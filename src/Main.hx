@@ -123,7 +123,7 @@ class Main {
 
 		if(buildDecls) {
 			final startDecls = haxe.Timer.stamp();
-			for(file in files) file.buildImports();
+			for(file in files) file.buildDecls();
 			final stopDecls = haxe.Timer.stamp();
 			final timeDecls = stopDecls*1000 - startDecls*1000;
 			time += timeDecls;
@@ -131,10 +131,10 @@ class Main {
 		}
 
 		for(file in files) {
-			file.errors.forEach(renderer.render);
+			file.allErrors().forEach(renderer.render);
 		}
 
-		Sys.println('Status: ${files.every(file -> file.status)}');
+		Sys.println('Status: ${files.none(file -> file.hasErrors())}');
 		Sys.println('Total time: ${time}ms');
 	}
 

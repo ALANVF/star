@@ -18,4 +18,12 @@ abstract class AnyMethod implements IAnyMethod {
 	final body: Option<Array<Stmt>>;
 
 	abstract function declName(): String;
+
+	function hasErrors() {
+		return errors.length != 0;
+	}
+
+	function allErrors() {
+		return errors;
+	}
 }

@@ -83,6 +83,27 @@ class Arrays {
 		return false;
 	}
 
+	public static function none<T>(array: Array<T>, callback: (currentValue: T) -> Bool) {
+		for(value in array)
+			if(callback(value))
+				return false;
+		return true;
+	}
+	
+	public static function nonei<T>(array: Array<T>, callback: (currentValue: T, index: Int) -> Bool) {
+		for(i => value in array)
+			if(callback(value, i))
+				return false;
+		return true;
+	}
+	
+	public static function noneia<T>(array: Array<T>, callback: (currentValue: T, index: Int, array: Array<T>) -> Bool) {
+		for(i => value in array)
+			if(callback(value, i, array))
+				return false;
+		return true;
+	}
+
 
 	public static function fill<T>(array: Array<T>, value: T, ?start: Int, ?end: Int) {
 		final len = array.length;
@@ -217,6 +238,16 @@ class Arrays {
 			if(result != null)
 				(result : U);
 		}];
+	}
+
+	public static function flatMap<T, U>(array: Array<T>, callback: (element: T) -> Array<U>) {
+		var result = [];
+
+		for(value in array) {
+			result = result.concat(callback(value));
+		}
+
+		return result;
 	}
 
 	public static inline function tryMax<T: Float>(array: Array<T>): Null<T> {

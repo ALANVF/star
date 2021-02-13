@@ -151,4 +151,12 @@ class Member implements IDecl {
 	inline function declName() {
 		return "member";
 	}
+
+	function hasErrors() {
+		return errors.length != 0;
+	}
+
+	function allErrors() {
+		return errors;
+	}
 }

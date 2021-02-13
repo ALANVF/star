@@ -3,16 +3,14 @@ package typing;
 import parsing.ast.Ident;
 import reporting.Diagnostic;
 
-class Module extends TypeDecl
+class Module extends Namespace
 	implements IParents
-	implements ITypeDecls
 	implements IStaticMembers
 	implements IStaticMethods
 	implements IStaticInit
 	implements IStaticDeinit
 {
 	final parents: Array<Type> = [];
-	final decls: Array<TypeDecl> = [];
 	final staticMembers: Array<Member> = [];
 	final staticMethods: Array<StaticMethod> = [];
 	var staticInit: Option<StaticInit> = None;
@@ -81,5 +79,18 @@ class Module extends TypeDecl
 
 	inline function declName() {
 		return "module";
+	}
+
+	override function hasErrors() {
+		return super.hasErrors() || staticMembers.some(m -> m.hasErrors()) || staticMethods.some(m -> m.hasErrors());
+	}
+
+	override function allErrors() {
+		var result = super.allErrors();
+
+		for(member in staticMembers) result = result.concat(member.allErrors());
+		for(method in staticMethods) result = result.concat(method.allErrors());
+
+		return result;
 	}
 }

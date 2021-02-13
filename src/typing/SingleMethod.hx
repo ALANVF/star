@@ -18,9 +18,9 @@ class SingleMethod extends Method {
 		});
 
 		for(attr => span in ast.attrs) switch attr {
-			case IsStatic: method.errors.push(Errors.invalidAttribute("method", ast.span, method.name.name, "static", span));
+			case IsStatic: method.errors.push(Errors.invalidAttribute(method, method.name.name, "static", span));
 			
-			case IsHidden(_) if(method.hidden.isSome()): method.errors.push(Errors.duplicateAttribute("method", ast.span, method.name.name, "hidden", span));
+			case IsHidden(_) if(method.hidden.isSome()): method.errors.push(Errors.duplicateAttribute(method, method.name.name, "hidden", span));
 			case IsHidden(None): method.hidden = Some(None);
 			case IsHidden(Some(outsideOf)): method.hidden = Some(Some(decl.makeTypePath(outsideOf)));
 
@@ -30,11 +30,11 @@ class SingleMethod extends Method {
 
 			case IsGetter: method.isGetter = true;
 
-			case IsSetter: method.errors.push(Errors.invalidAttribute("method", ast.span, method.name.name, "setter", span));
+			case IsSetter: method.errors.push(Errors.invalidAttribute(method, method.name.name, "setter", span));
 
-			case IsUnordered: method.errors.push(Errors.invalidAttribute("method", ast.span, method.name.name, "unordered", span));
+			case IsUnordered: method.errors.push(Errors.invalidAttribute(method, method.name.name, "unordered", span));
 
-			case IsNative(_) if(method.native.isSome()): method.errors.push(Errors.duplicateAttribute("method", ast.span, method.name.name, "native", span));
+			case IsNative(_) if(method.native.isSome()): method.errors.push(Errors.duplicateAttribute(method, method.name.name, "native", span));
 			case IsNative(sym): method.native = Some(sym);
 
 			case IsInline: method.isInline = true;
