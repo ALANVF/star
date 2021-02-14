@@ -132,4 +132,39 @@ class Errors {
 			]
 		});
 	}
+	
+	static overload extern inline function invalidDecl<T: IDecl>(decl: T, name, decl2) return invalidDecl_IDecl(decl, name, decl2);
+	private static inline function invalidDecl_IDecl<T: IDecl>(decl: T, name, decl2: parsing.ast.decls.Decl) {
+		return new Diagnostic({
+			severity: Severity.ERROR,
+			message: "Invalid declaration",
+			info: [
+				Spanned({
+					span: decl2.span(),
+					message: 'Invalid ${decl2.name()}',
+					isPrimary: true
+				}),
+				Spanned({
+					span: decl.span,
+					message: 'For ${decl.declName()} `$name`',
+					isSecondary: true
+				})
+			]
+		});
+	}
+
+	static overload extern inline function invalidDecl(decl: File, decl2) return invalidDecl_File(decl2);
+	private static inline function invalidDecl_File(decl2: parsing.ast.decls.Decl) {
+		return new Diagnostic({
+			severity: Severity.ERROR,
+			message: "Invalid declaration",
+			info: [
+				Spanned({
+					span: decl2.span(),
+					message: 'Invalid ${decl2.name()}',
+					isPrimary: true
+				})
+			]
+		});
+	}
 }
