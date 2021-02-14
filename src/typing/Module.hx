@@ -3,18 +3,8 @@ package typing;
 import parsing.ast.Ident;
 import reporting.Diagnostic;
 
-class Module extends Namespace
-	implements IParents
-	implements IStaticMembers
-	implements IStaticMethods
-	implements IStaticInit
-	implements IStaticDeinit
-{
+class Module extends Namespace implements IParents {
 	final parents: Array<Type> = [];
-	final staticMembers: Array<Member> = [];
-	final staticMethods: Array<StaticMethod> = [];
-	var staticInit: Option<StaticInit> = None;
-	var staticDeinit: Option<StaticDeinit> = None;
 	var isMain: Bool = false;
 	var native: Option<Ident> = None;
 
@@ -31,6 +21,12 @@ class Module extends Namespace
 
 		if(ast.params.isSome()) {
 			module.params = Some(ast.params.value().of.map(param -> module.makeTypePath(param)));
+		}
+
+		if(ast.parents.isSome()) {
+			for(parent in ast.parents.value().parents) {
+				module.parents.push(lookup.makeTypePath(parent));
+			}
 		}
 
 		for(attr => span in ast.attrs) switch attr {
@@ -50,16 +46,12 @@ class Module extends Namespace
 			case IsNative(span2, libName): module.native = Some({span: span2, name: libName});
 		}
 
-		if(ast.parents.isSome()) {
-			for(parent in ast.parents.value().parents) {
-				module.parents.push(lookup.makeTypePath(parent));
-			}
-		}
-
 		for(decl in ast.body.of) switch decl {
 			case DMember(m): module.staticMembers.push(Member.fromAST(module, m));
 
 			case DModule(m): module.decls.push(Module.fromAST(module, m));
+
+			case DClass(c): module.decls.push(Class.fromAST(module, c));
 			
 			// ...
 
@@ -79,18 +71,5 @@ class Module extends Namespace
 
 	inline function declName() {
 		return "module";
-	}
-
-	override function hasErrors() {
-		return super.hasErrors() || staticMembers.some(m -> m.hasErrors()) || staticMethods.some(m -> m.hasErrors());
-	}
-
-	override function allErrors() {
-		var result = super.allErrors();
-
-		for(member in staticMembers) result = result.concat(member.allErrors());
-		for(method in staticMethods) result = result.concat(method.allErrors());
-
-		return result;
 	}
 }
