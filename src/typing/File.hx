@@ -140,6 +140,8 @@ class File implements IErrors implements ILookupType {
 
 				case DClass(c): this.decls.push(Class.fromAST(this, c));
 
+				case DProtocol(p): this.decls.push(Protocol.fromAST(this, p));
+
 				// ...
 
 				case DUse(_):

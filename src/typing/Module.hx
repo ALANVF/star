@@ -52,6 +52,8 @@ class Module extends Namespace implements IParents {
 			case DModule(m): module.decls.push(Module.fromAST(module, m));
 
 			case DClass(c): module.decls.push(Class.fromAST(module, c));
+
+			case DProtocol(p): module.decls.push(Protocol.fromAST(module, p));
 			
 			// ...
 
