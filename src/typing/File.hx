@@ -138,6 +138,8 @@ class File implements IErrors implements ILookupType {
 			for(decl in decls) switch decl {
 				case DModule(m): this.decls.push(Module.fromAST(this, m));
 
+				case DClass(c): this.decls.push(Class.fromAST(this, c));
+
 				// ...
 
 				default: errors.push(Errors.unexpectedDecl(this, decl));
