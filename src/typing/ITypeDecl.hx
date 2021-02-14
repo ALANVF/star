@@ -1,6 +1,5 @@
 package typing;
 
-import text.Span;
 import parsing.ast.Ident;
 
 interface ITypeDecl extends ILookupType extends IDecl {

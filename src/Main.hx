@@ -151,7 +151,7 @@ class Main {
 			parse(newSource(file), false);
 		}*/
 
-		testProject("stdlib");
+		testProject("stdlib", true);
 		nl();
 		testProject("tests/hello-world", true);
 		nl();

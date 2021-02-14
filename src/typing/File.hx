@@ -18,6 +18,7 @@ class File implements IErrors implements ILookupType {
 	var status: Bool;
 	final imports: Array<Import>;
 	final decls: Array<TypeDecl>;
+	final categories: Array<Category>;
 
 	function new(dir, path, ?unit) {
 		errors = [];
@@ -28,6 +29,7 @@ class File implements IErrors implements ILookupType {
 		status = false;
 		imports = [];
 		decls = [];
+		categories = [];
 	}
 
 	function initSource() {
@@ -145,6 +147,8 @@ class File implements IErrors implements ILookupType {
 				case DKind(k): this.decls.push(Kind.fromAST(this, k));
 
 				// ...
+
+				case DCategory(c): this.categories.push(Category.fromAST(this, c));
 
 				case DUse(_):
 
