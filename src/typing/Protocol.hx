@@ -58,7 +58,7 @@ class Protocol extends Namespace
 			
 			case DKind(k): protocol.decls.push(Kind.fromAST(protocol, k));
 
-			// ...
+			case DAlias(a): protocol.decls.push(Alias.fromAST(protocol, a));
 
 			case DMethod(m) if(m.attrs.exists(IsStatic)): StaticMethod.fromAST(protocol, m).forEach(protocol.staticMethods.push);
 			case DMethod(m): protocol.methods.push(Method.fromAST(protocol, m));

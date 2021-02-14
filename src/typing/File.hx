@@ -146,7 +146,7 @@ class File implements IErrors implements ILookupType {
 
 				case DKind(k): this.decls.push(Kind.fromAST(this, k));
 
-				// ...
+				case DAlias(a): this.decls.push(Alias.fromAST(this, a));
 
 				case DCategory(c): this.categories.push(Category.fromAST(this, c));
 

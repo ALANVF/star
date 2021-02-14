@@ -117,7 +117,7 @@ class Class extends Namespace
 
 			case DKind(k): cls.decls.push(Kind.fromAST(cls, k));
 			
-			// ...
+			case DAlias(a): cls.decls.push(Alias.fromAST(cls, a));
 
 			case DMethod(m) if(m.attrs.exists(IsStatic)): StaticMethod.fromAST(cls, m).forEach(cls.staticMethods.push);
 			case DMethod(m): cls.methods.push(Method.fromAST(cls, m));

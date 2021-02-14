@@ -55,7 +55,7 @@ class Module extends Namespace implements IParents {
 
 			case DKind(k): module.decls.push(Kind.fromAST(module, k));
 			
-			// ...
+			case DAlias(a): module.decls.push(Alias.fromAST(module, a));
 
 			case DMethod(m): StaticMethod.fromAST(module, m).forEach(module.staticMethods.push);
 

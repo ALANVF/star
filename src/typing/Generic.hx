@@ -54,6 +54,31 @@ class Generic
 			rule: ast.rule.map(r -> GenericRule.fromAST(lookup, r.rule))
 		});
 
+		if(ast.body.isSome()) {
+			for(decl in ast.body.value().of) switch decl {
+				case DMember(m) if(m.attrs.exists(IsStatic)): generic.staticMembers.push(Member.fromAST(generic, m));
+				case DMember(m): generic.members.push(Member.fromAST(generic, m));
+
+				case DCase(c = {kind: Tagged(_)}): generic.taggedCases.push(TaggedCase.fromAST(generic, c));
+				case DCase(c = {kind: Scalar(_, _)}): generic.valueCases.push(ValueCase.fromAST(generic, c));
+	
+				case DMethod(m) if(m.attrs.exists(IsStatic)): StaticMethod.fromAST(generic, m).forEach(generic.staticMethods.push);
+				case DMethod(m): generic.methods.push(Method.fromAST(generic, m));
+	
+				case DInit(i): generic.inits.push(Init.fromAST(generic, i));
+	
+				case DOperator(o): Operator.fromAST(generic, o).forEach(generic.operators.push);
+	
+				case DDefaultInit(i) if(generic.staticInit.isSome()): generic.staticInit = Some(StaticInit.fromAST(generic, i));
+				case DDefaultInit(i): generic.defaultInit = Some(DefaultInit.fromAST(generic, i));
+				
+				case DDeinit(d) if(generic.staticDeinit.isSome()): generic.staticDeinit = Some(StaticDeinit.fromAST(generic, d));
+				case DDeinit(d): generic.deinit = Some(Deinit.fromAST(generic, d));
+				
+				default: generic.errors.push(Errors.unexpectedDecl(generic, ast.name.name, decl));
+			}
+		}
+
 		return generic;
 	}
 
@@ -66,10 +91,25 @@ class Generic
 	}
 
 	function hasErrors() {
-		return errors.length != 0;
+		return errors.length != 0
+			|| staticMembers.some(m -> m.hasErrors()) || staticMethods.some(m -> m.hasErrors())
+			|| members.some(m -> m.hasErrors()) || methods.some(m -> m.hasErrors())
+			|| inits.some(i -> i.hasErrors()) || operators.some(o -> o.hasErrors())
+			|| valueCases.some(c -> c.hasErrors()) || taggedCases.some(c -> c.hasErrors());
 	}
 
 	function allErrors() {
-		return errors;
+		var result = errors;
+		
+		for(member in staticMembers) result = result.concat(member.allErrors());
+		for(member in members) result = result.concat(member.allErrors());
+		for(method in staticMethods) result = result.concat(method.allErrors());
+		for(method in methods) result = result.concat(method.allErrors());
+		for(init in inits) result = result.concat(init.allErrors());
+		for(op in operators) result = result.concat(op.allErrors());
+		for(taggedCase in taggedCases) result = result.concat(taggedCase.allErrors());
+		for(valueCase in valueCases) result = result.concat(valueCase.allErrors());
+
+		return result;
 	}
 }

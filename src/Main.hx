@@ -158,5 +158,7 @@ class Main {
 		testProject("tests/classes/point", true);
 		nl();
 		testProject("tests/kinds", true);
+		nl();
+		testProject("tests/aliases", true);
 	}
 }

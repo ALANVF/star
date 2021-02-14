@@ -56,7 +56,7 @@ class ValueKind extends Kind implements IValueCases {
 
 			case DKind(k): kind.decls.push(Kind.fromAST(kind, k));
 			
-			// ...
+			case DAlias(a): kind.decls.push(Alias.fromAST(kind, a));
 
 			case DMethod(m) if(m.attrs.exists(IsStatic)): StaticMethod.fromAST(kind, m).forEach(kind.staticMethods.push);
 			case DMethod(m): kind.methods.push(Method.fromAST(kind, m));
