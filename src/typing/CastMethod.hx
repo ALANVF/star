@@ -1,14 +1,13 @@
 package typing;
 
 class CastMethod extends Method {
-	final generics: Array<Generic> = [];
+	final generics: Array<Generic>;
 	var type: Type;
 
 	static function fromAST(decl, ast: parsing.ast.decls.Method) {
-		if(ast.generics != Nil) throw "NYI!";
-
 		final method = new CastMethod({
 			decl: decl,
+			generics: ast.generics.mapArray(Generic.fromAST.bind(decl, _)),
 			span: ast.span,
 			type: switch ast.spec.of {
 				case Cast(type): decl.makeTypePath(type);

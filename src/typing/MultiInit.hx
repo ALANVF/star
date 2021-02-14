@@ -5,7 +5,7 @@ import text.Span;
 import parsing.ast.Ident;
 
 class MultiInit extends Init {
-	final generics: Array<Generic> = [];
+	final generics: Array<Generic>;
 	final params: Array<{label: Ident, name: Ident, type: Type, value: Option<Expr>}> = [];
 	final fuzzyName: String;
 	var isUnordered: Bool = true;
@@ -32,6 +32,7 @@ class MultiInit extends Init {
 		};
 		final init = new MultiInit({
 			decl: decl,
+			generics: ast.generics.mapArray(Generic.fromAST.bind(decl, _)),
 			span: ast.span,
 			params: params,
 			fuzzyName: params.map(p -> p.label + ":").join(" "),

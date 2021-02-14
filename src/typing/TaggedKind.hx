@@ -13,11 +13,9 @@ class TaggedKind extends Kind
 	var defaultInit: Option<DefaultInit> = None;
 
 	static function fromAST(lookup, ast: parsing.ast.decls.Kind) {
-		if(ast.generics != Nil) throw "NYI!";
-
 		final kind = new TaggedKind({
 			lookup: lookup,
-			generics: [],
+			generics: ast.generics.mapArray(Generic.fromAST.bind(lookup, _)),
 			span: ast.span,
 			name: ast.name,
 			params: None

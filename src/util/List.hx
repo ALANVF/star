@@ -69,6 +69,19 @@ class ListHelper {
 		case Cons(head, tail): Cons(func(head), tail.map(func));
 	}
 
+	static function mapArray<T, U>(list: List<T>, func: (T) -> U) {
+		final array = [];
+		
+		while(true) switch list {
+			case Nil: break;
+			case Cons(head, tail):
+				array.push(func(head));
+				list = tail;
+		}
+
+		return array;
+	}
+
 	static function every2<T, U>(list1: List<T>, list2: List<U>, func: (T, U) -> Bool) return switch [list1, list2] {
 		case [Nil, Nil]: true;
 		case [Cons(head1, tail1), Cons(head2, tail2)]:

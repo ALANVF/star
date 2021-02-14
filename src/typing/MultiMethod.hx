@@ -5,14 +5,12 @@ import parsing.ast.Expr;
 import parsing.ast.Ident;
 
 class MultiMethod extends Method {
-	final generics: Array<Generic> = [];
+	final generics: Array<Generic>;
 	final params: Array<{label: Ident, name: Ident, type: Type, value: Option<Expr>}> = [];
 	final fuzzyName: String;
 	var isUnordered: Bool = false;
 
 	static function fromAST(decl: ITypeDecl, ast: parsing.ast.decls.Method) {
-		if(ast.generics != Nil) throw "NYI!";
-
 		final params = switch ast.spec.of {
 			case Multi(params2): params2.map(p -> {
 				final type = decl.makeTypePath(p.type);
@@ -34,6 +32,7 @@ class MultiMethod extends Method {
 		};
 		final method = new MultiMethod({
 			decl: decl,
+			generics: ast.generics.mapArray(Generic.fromAST.bind(decl, _)),
 			span: ast.span,
 			params: params,
 			fuzzyName: params.map(p -> p.label + ":").join(" "),

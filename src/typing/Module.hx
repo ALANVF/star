@@ -9,11 +9,9 @@ class Module extends Namespace implements IParents {
 	var native: Option<Ident> = None;
 
 	static function fromAST(lookup, ast: parsing.ast.decls.Module) {
-		if(ast.generics != Nil) throw "NYI!";
-
 		final module = new Module({
 			lookup: lookup,
-			generics: [],
+			generics: ast.generics.mapArray(Generic.fromAST.bind(lookup, _)),
 			span: ast.span,
 			name: ast.name,
 			params: None

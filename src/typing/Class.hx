@@ -41,11 +41,9 @@ class Class extends Namespace
 	var isUncounted: Bool = false;
 
 	static function fromAST(lookup, ast: parsing.ast.decls.Class) {
-		if(ast.generics != Nil) throw "NYI!";
-
 		final cls = new Class({
 			lookup: lookup,
-			generics: [],
+			generics: ast.generics.mapArray(Generic.fromAST.bind(lookup, _)),
 			span: ast.span,
 			name: ast.name,
 			params: None

@@ -32,7 +32,7 @@ enum abstract BinaryOp(Int) {
 }
 
 class BinaryOperator extends Operator {
-	final generics: Array<Generic> = [];
+	final generics: Array<Generic>;
 	final op: BinaryOp;
 	final paramName: Ident;
 	final paramType: Type;
@@ -40,6 +40,7 @@ class BinaryOperator extends Operator {
 	static function fromAST(decl, op, paramName, paramType, ast: parsing.ast.decls.Operator) {
 		return new BinaryOperator({
 			decl: decl,
+			generics: ast.generics.mapArray(Generic.fromAST.bind(decl, _)),
 			span: ast.span,
 			op: op,
 			opSpan: ast.symbolSpan,

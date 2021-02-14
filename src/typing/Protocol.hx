@@ -18,11 +18,9 @@ class Protocol extends Namespace
 	var deinit: Option<Deinit> = None;
 
 	static function fromAST(lookup, ast: parsing.ast.decls.Protocol) {
-		if(ast.generics != Nil) throw "NYI!";
-
 		final protocol = new Protocol({
 			lookup: lookup,
-			generics: [],
+			generics: ast.generics.mapArray(Generic.fromAST.bind(lookup, _)),
 			span: ast.span,
 			name: ast.name,
 			params: None
