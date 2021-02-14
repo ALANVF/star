@@ -180,17 +180,8 @@ class TextDiagnosticRenderer implements IDiagnosticRenderer {
 				charIdx++;
 			}
 			
-			// ↑
-			// ˄
-			// ∧
-			// ⌊
-			// ⏡
-			// ⎡
-			// ─
-			// ─̂
 			final arrowHead =
-				if(annot.isPrimary) '⌃'
-				else if(annot.isSecondary) '⌃' //'⎺' // '‾'
+				if(annot.isPrimary || annot.isSecondary) '⌃'
 				else '-';
 			final startColumn = buffer.cursorX;
 			
@@ -199,14 +190,8 @@ class TextDiagnosticRenderer implements IDiagnosticRenderer {
 			if(annot.isPrimary) buffer.fg = Some(RED);
 			else if(annot.isSecondary) buffer.fg = Some(YELLOW);
 			
-			if(annot.isPrimary) {
-				buffer.write('↑'); // ⬆ // ↑
-				charIdx++;
-			} else if(annot.isSecondary && annot.message != null) {
-				// ├
-				// ⌈
-				// ╷̂
-				buffer.write('↑'); //┌
+			if((annot.isPrimary || annot.isSecondary) && annot.message != null) {
+				buffer.write('↑');
 				charIdx++;
 			}
 

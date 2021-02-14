@@ -70,6 +70,7 @@ class Member implements IDecl {
 						}),
 						Spanned({
 							span: declSpan,
+							message: 'For member `${member.name.name}`',
 							isSecondary: true
 						})
 					]
@@ -91,6 +92,7 @@ class Member implements IDecl {
 						}),
 						Spanned({
 							span: declSpan,
+							message: 'For member `${member.name.name}`',
 							isSecondary: true
 						})
 					]
@@ -106,17 +108,18 @@ class Member implements IDecl {
 					message: "Redundant code",
 					info: [
 						Spanned({
-							span: declSpan,
-							message: 'Unnecessary use of "is getter" along with "is setter"',
-							isSecondary: true
-						}),
-						Spanned({
 							span: getterSpan.value(),
+							message: 'Unnecessary use of "is getter" along with "is setter"',
 							isPrimary: true
 						}),
 						Spanned({
 							span: setterSpan.value(),
 							isPrimary: true
+						}),
+						Spanned({
+							span: declSpan,
+							message: 'For member `${member.name.name}`',
+							isSecondary: true
 						})
 					]
 				}));
@@ -127,17 +130,18 @@ class Member implements IDecl {
 					message: "Redundant code",
 					info: [
 						Spanned({
-							span: declSpan,
-							message: 'Unnecessary use of "is getter" along with "is setter"',
-							isSecondary: true
-						}),
-						Spanned({
 							span: getterSpan.value(),
+							message: 'Unnecessary use of "is getter" along with "is setter"',
 							isPrimary: true
 						}),
 						Spanned({
 							span: setterSpan.value(),
 							isPrimary: true
+						}),
+						Spanned({
+							span: declSpan,
+							message: 'For member `${member.name.name}`',
+							isSecondary: true
 						})
 					]
 				}));
