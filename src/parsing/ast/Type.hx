@@ -23,4 +23,13 @@ class Tools {
 			case Named(s, _, Some({end: end})) | Blank(s, Some({end: end})): Span.range(s, end);
 		}
 	);
+
+	static function simpleName(typePath: Type) {
+		return typePath.map(s -> switch s {
+			case Named(_, name, None): name;
+			case Named(_, name, Some({of: args})): '$name[${args.map(_ -> "...").join(", ")}]';
+			case Blank(_, None): "_";
+			case Blank(_, Some({of: args})): '_[${args.map(_ -> "...").join(", ")}]';
+		}).join(".");
+	}
 }

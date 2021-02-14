@@ -21,4 +21,12 @@ class Type implements ILookupType {
 	function makeTypePath(path: TypePath) {
 		return new Type(TPath(path, this));
 	}
+
+	function simpleName() return switch t {
+		case TPath(path, _): path.simpleName();
+		case TConcrete({name: {name: name}, params: None}): name;
+		case TConcrete({name: {name: name}, params: Some(params)}): '$name[${params.map(_ -> "...").join(", ")}]';
+		case TThis(_, _): "This";
+		case TErased(_): "_";
+	}
 }

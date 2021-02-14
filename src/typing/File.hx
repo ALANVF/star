@@ -41,10 +41,10 @@ class File implements IErrors implements ILookupType {
 			switch result {
 				case Modular([], _) | Script([], _): status = true;
 				case Modular(errors, _) | Script(errors, _): for(i => error in errors) {
-					errors.push(error);
+					this.errors.push(error);
 
 					if(i == 25) {
-						errors.push(new Diagnostic({
+						this.errors.push(new Diagnostic({
 							severity: Severity.ERROR,
 							message: "Too many errors!",
 							info: []
@@ -142,6 +142,8 @@ class File implements IErrors implements ILookupType {
 
 				// ...
 
+				case DUse(_):
+
 				default: errors.push(Errors.unexpectedDecl(this, decl));
 			}
 		});
@@ -152,7 +154,7 @@ class File implements IErrors implements ILookupType {
 	}
 
 	function hasErrors() {
-		return errors.length != 0 || decls.some(d -> d.hasErrors());
+		return !status || errors.length != 0 || decls.some(d -> d.hasErrors());
 	}
 
 	function allErrors() {
