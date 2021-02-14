@@ -258,7 +258,7 @@ class TextDiagnosticRenderer implements IDiagnosticRenderer {
 		final result = [];
 		
 		// We need to group the spanned informations per line
-		final groupedInfos = infos.groupBy(si -> si.span.start.line).pairs();
+		final groupedInfos = infos.groupBy(si -> si.span.start.line).pairs().sorted((a, b) -> a.key - b.key);
 		final sourceFile = infos[0].span.source.value();
 
 		// Now we collect each line primitive
