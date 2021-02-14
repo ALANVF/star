@@ -60,7 +60,7 @@ class Module extends Namespace implements IParents {
 			case DDefaultInit(_) if(module.staticInit.isSome()): module.errors.push(Errors.duplicateDecl(module, ast.name.name, decl));
 			case DDefaultInit(i): module.staticInit = Some(StaticInit.fromAST(module, i));
 			
-			case DDeinit(_) if(module.staticInit.isSome()): module.errors.push(Errors.duplicateDecl(module, ast.name.name, decl));
+			case DDeinit(_) if(module.staticDeinit.isSome()): module.errors.push(Errors.duplicateDecl(module, ast.name.name, decl));
 			case DDeinit(d): module.staticDeinit = Some(StaticDeinit.fromAST(module, d));
 			
 			default: module.errors.push(Errors.unexpectedDecl(module, ast.name.name, decl));

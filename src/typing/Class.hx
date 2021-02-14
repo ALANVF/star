@@ -26,12 +26,16 @@ class Class extends Namespace
 	implements IMethods
 	implements IInits
 	implements IOperators
+	implements IDefaultInit
+	implements IDeinit
 {
 	final parents: Array<Type> = [];
 	final members: Array<Member> = [];
 	final methods: Array<Method> = [];
 	final inits: Array<Init> = [];
 	final operators: Array<Operator> = [];
+	var defaultInit: Option<DefaultInit> = None;
+	var deinit: Option<Deinit> = None;
 	var native: Option<NativeClass> = None;
 	var isStrong: Bool = false;
 	var isUncounted: Bool = false;
@@ -120,11 +124,11 @@ class Class extends Namespace
 
 			case DOperator(o): Operator.fromAST(cls, o).forEach(cls.operators.push);
 
-			case DDefaultInit(_) if(cls.staticInit.isSome()): cls.errors.push(Errors.duplicateDecl(cls, ast.name.name, decl));
-			case DDefaultInit(i): cls.staticInit = Some(StaticInit.fromAST(cls, i));
+			case DDefaultInit(i) if(cls.staticInit.isSome()): cls.staticInit = Some(StaticInit.fromAST(cls, i));
+			case DDefaultInit(i): cls.defaultInit = Some(DefaultInit.fromAST(cls, i));
 			
-			case DDeinit(_) if(cls.staticInit.isSome()): cls.errors.push(Errors.duplicateDecl(cls, ast.name.name, decl));
-			case DDeinit(d): cls.staticDeinit = Some(StaticDeinit.fromAST(cls, d));
+			case DDeinit(d) if(cls.staticDeinit.isSome()): cls.staticDeinit = Some(StaticDeinit.fromAST(cls, d));
+			case DDeinit(d): cls.deinit = Some(Deinit.fromAST(cls, d));
 			
 			default: cls.errors.push(Errors.unexpectedDecl(cls, ast.name.name, decl));
 		}
