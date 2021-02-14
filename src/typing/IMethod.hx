@@ -5,6 +5,5 @@ interface IMethod extends IAnyMethod {
 	var isMain: Bool;
 	var isGetter: Bool;
 	var isSetter: Bool;
-	var isUnordered: Bool;
 	var isInline: Bool;
 }

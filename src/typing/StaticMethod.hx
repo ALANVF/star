@@ -5,12 +5,11 @@ abstract class StaticMethod extends AnyMethod implements IMethod {
 	var isMain: Bool = false;
 	var isGetter: Bool = false;
 	var isSetter: Bool = false;
-	var isUnordered: Bool = false;
 	var isInline: Bool = false;
 
-	static inline function fromAST(decl, ast: parsing.ast.decls.Method) return switch ast.spec.of {
+	static inline function fromAST(decl, ast: parsing.ast.decls.Method): Option<StaticMethod> return switch ast.spec.of {
 		case Single(_): Some(SingleStaticMethod.fromAST(decl, ast));
-		case Multi(_): throw "NYI!";
+		case Multi(_): Some(MultiStaticMethod.fromAST(decl, ast));
 		case Cast(_):
 			decl.errors.push(Errors.unexpectedDecl(decl, decl.name.name, DMethod(ast)));
 			None;

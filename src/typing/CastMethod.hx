@@ -1,9 +1,12 @@
 package typing;
 
 class CastMethod extends Method {
+	final generics: Array<Generic> = [];
 	var type: Type;
 
 	static function fromAST(decl, ast: parsing.ast.decls.Method) {
+		if(ast.generics != Nil) throw "NYI!";
+
 		final method = new CastMethod({
 			decl: decl,
 			span: ast.span,

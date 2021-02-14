@@ -7,6 +7,10 @@ class Point {
 		y = 0
 	}
 
+	on [offset: x' (Int), y' (Int)] {
+		return Point[x: x + x' y: y + y']
+	}
+
 	operator `-` (Point) {
 		return Point[x: -x y: -y]
 	}

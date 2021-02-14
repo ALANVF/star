@@ -33,7 +33,7 @@ class TaggedCase implements IDecl {
 						return switch [p.label, p.name] {
 							case [Some(l), Some(n)]: {label: l, name: n, type: type};
 							case [Some(l), None]: {label: l, name: l, type: type};
-							case [None, Some(n)]: {label: n, name: n, type: type};
+							case [None, Some(n)]: {label: new Ident(n.span, "_"), name: n, type: type};
 							case [None, None]:
 								final span = switch p.type {
 									case Nil: throw "Error!";

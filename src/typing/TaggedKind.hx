@@ -85,7 +85,7 @@ class TaggedKind extends Kind
 			// ...
 
 			case DMethod(m) if(m.attrs.exists(IsStatic)): StaticMethod.fromAST(kind, m).forEach(kind.staticMethods.push);
-			case DMethod(m): Method.fromAST(kind, m).forEach(kind.methods.push);
+			case DMethod(m): kind.methods.push(Method.fromAST(kind, m));
 
 			case DOperator(o): Operator.fromAST(kind, o).forEach(kind.operators.push);
 

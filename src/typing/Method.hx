@@ -5,13 +5,12 @@ abstract class Method extends AnyMethod implements IMethod {
 	var isMain: Bool = false;
 	var isGetter: Bool = false;
 	var isSetter: Bool = false;
-	var isUnordered: Bool = false;
 	var isInline: Bool = false;
 
-	static inline function fromAST(decl, ast: parsing.ast.decls.Method): Option<Method> return switch ast.spec.of {
-		case Single(_): Some(SingleMethod.fromAST(decl, ast));
-		case Multi(_): throw "NYI!";
-		case Cast(_): Some(CastMethod.fromAST(decl, ast));
+	static inline function fromAST(decl, ast: parsing.ast.decls.Method): Method return switch ast.spec.of {
+		case Single(_): SingleMethod.fromAST(decl, ast);
+		case Multi(_): MultiMethod.fromAST(decl, ast);
+		case Cast(_): CastMethod.fromAST(decl, ast);
 	}
 
 	inline function declName() {

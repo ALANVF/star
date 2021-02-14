@@ -122,9 +122,9 @@ class Class extends Namespace
 			// ...
 
 			case DMethod(m) if(m.attrs.exists(IsStatic)): StaticMethod.fromAST(cls, m).forEach(cls.staticMethods.push);
-			case DMethod(m): Method.fromAST(cls, m).forEach(cls.methods.push);
+			case DMethod(m): cls.methods.push(Method.fromAST(cls, m));
 
-			case DInit(i): Init.fromAST(cls, i).forEach(cls.inits.push);
+			case DInit(i): cls.inits.push(Init.fromAST(cls, i));
 
 			case DOperator(o): Operator.fromAST(cls, o).forEach(cls.operators.push);
 

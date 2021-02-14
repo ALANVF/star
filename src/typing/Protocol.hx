@@ -63,9 +63,9 @@ class Protocol extends Namespace
 			// ...
 
 			case DMethod(m) if(m.attrs.exists(IsStatic)): StaticMethod.fromAST(protocol, m).forEach(protocol.staticMethods.push);
-			case DMethod(m): Method.fromAST(protocol, m).forEach(protocol.methods.push);
+			case DMethod(m): protocol.methods.push(Method.fromAST(protocol, m));
 
-			case DInit(i): Init.fromAST(protocol, i).forEach(protocol.inits.push);
+			case DInit(i): protocol.inits.push(Init.fromAST(protocol, i));
 
 			case DOperator(o): Operator.fromAST(protocol, o).forEach(protocol.operators.push);
 
