@@ -116,6 +116,8 @@ class Class extends Namespace
 			case DClass(c): cls.decls.push(Class.fromAST(cls, c));
 
 			case DProtocol(p): cls.decls.push(Protocol.fromAST(cls, p));
+
+			case DKind(k): cls.decls.push(Kind.fromAST(cls, k));
 			
 			// ...
 

@@ -156,5 +156,7 @@ class Main {
 		testProject("tests/hello-world", true);
 		nl();
 		testProject("tests/classes/point", true);
+		nl();
+		testProject("tests/kinds", true);
 	}
 }
