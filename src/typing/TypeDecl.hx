@@ -6,10 +6,7 @@ import parsing.ast.Ident;
 
 @:build(util.Auto.build({init: false}))
 @:autoBuild(util.Auto.build())
-abstract class TypeDecl
-	implements IErrors
-	implements ITypeDecl
-{
+abstract class TypeDecl implements ITypeDecl {
 	final errors: Array<Diagnostic> = [];
 	final lookup: ILookupType;
 	final generics: Array<Generic>;
@@ -26,10 +23,14 @@ abstract class TypeDecl
 	}
 
 	function hasErrors() {
-		return errors.length != 0;
+		return errors.length != 0 || generics.some(g -> g.hasErrors());
 	}
 
 	function allErrors() {
-		return errors;
+		var result = errors;
+
+		for(generic in generics) result = result.concat(generic.allErrors());
+
+		return result;
 	}
 }

@@ -67,13 +67,14 @@ class Category
 	}
 
 	function hasErrors() {
-		return errors.length != 0 || staticMethods.some(m -> m.hasErrors()) || methods.some(m -> m.hasErrors())
-			|| inits.some(i -> i.hasErrors()) || operators.some(o -> o.hasErrors());
+		return errors.length != 0 || generics.some(g -> g.hasErrors()) || staticMethods.some(m -> m.hasErrors())
+			|| methods.some(m -> m.hasErrors()) || inits.some(i -> i.hasErrors()) || operators.some(o -> o.hasErrors());
 	}
 
 	function allErrors() {
 		var result = errors;
 		
+		for(generic in generics) result = result.concat(generic.allErrors());
 		for(method in staticMethods) result = result.concat(method.allErrors());
 		for(method in methods) result = result.concat(method.allErrors());
 		for(init in inits) result = result.concat(init.allErrors());
