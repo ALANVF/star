@@ -45,6 +45,14 @@ kind Maybe[T] of Iterable[T] {
 		return Maybe[none]
 	}
 
+	on [orElse: default (T)] (T) {
+		match this at Maybe[the: my value] {
+			return value
+		} else {
+			return default
+		}
+	}
+
 	; ...
 	
 
@@ -66,6 +74,17 @@ kind Maybe[T] of Iterable[T] {
 			return OnceIterator[new: value]
 		} else {
 			return EmptyIterator[new]
+		}
+	}
+}
+
+type T
+kind Maybe[Maybe[T]] {
+	on [flatten] (Maybe[T]) {
+		match this at Maybe[the: my maybe] {
+			return maybe
+		} else {
+			return Maybe[none]
 		}
 	}
 }

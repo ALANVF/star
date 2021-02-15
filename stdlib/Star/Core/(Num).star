@@ -1,4 +1,4 @@
-protocol Num of Ordered ;[is strong] {
+protocol Num of Ordered {
 	on [sign] (This)
 	on [abs] (This)
 	on [sqrt] (Num)
@@ -21,18 +21,6 @@ protocol Num of Ordered ;[is strong] {
 
 	on [next] (This)
 	on [previous] (This)
-
-	on [min: other (This)] (This) {
-		return [this < other yes: this no: other]
-	}
-
-	on [max: other (This)] (This) {
-		return [this > other yes: this no: other]
-	}
-
-	on [min: (This) max: (This)] (This) {
-		return [this < min yes: min no: [this > max yes: max no: this]]
-	}
 
 	; gcd
 	; lcm

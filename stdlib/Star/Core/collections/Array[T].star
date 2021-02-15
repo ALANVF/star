@@ -122,3 +122,23 @@ class Array[T] of Values[T] {
 		}
 	}
 }
+
+
+type T
+class Array[Array[T]] {
+	on [flatten] (This[T]) {
+		my newLength = 0
+
+		for my i from: 0 upto: length {
+			newLength += buffer[at: i].length
+		}
+
+		my result = This[T][new: newLength]
+
+		for my i from: 0 upto: length {
+			result[addAll: buffer[at: i]]
+		}
+
+		return result
+	}
+}
