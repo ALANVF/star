@@ -1038,7 +1038,7 @@ class Parser {
 						case err: return fatalIfBad(tokens, cast err);
 					},
 					at([]) => return Eof(tokens),
-					_ => switch parseTypeAnno(tokens) {
+					_ => switch parseTypeAnno(rest) {
 						case Success(type, rest3):
 							rest = rest3;
 							{label: None, name: None, type: type};
