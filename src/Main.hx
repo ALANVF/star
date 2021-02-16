@@ -12,6 +12,10 @@ class Main {
 		Sys.print("\n");
 	}
 
+	static inline function round(float: Float) {
+		return Math.fround(float * 10000) / 10000;
+	}
+
 	/*static function newSource(path) {
 		return new SourceFile(path, sys.io.File.getContent(path));
 	}
@@ -94,8 +98,8 @@ class Main {
 		final startProject = haxe.Timer.stamp();
 		final project = typing.Project.fromMainPath(path);
 		final stopProject = haxe.Timer.stamp();
-		final timeProject = stopProject*1000 - startProject*1000;
-		time += timeProject;
+		final timeProject = round(stopProject*1000 - startProject*1000);
+		time += timeProject * 10000;
 		Sys.println('Gather sources time: ${timeProject}ms');
 
 		final files = project.allFiles();
@@ -103,30 +107,30 @@ class Main {
 		final startSources = haxe.Timer.stamp();
 		for(file in files) file.initSource();
 		final stopSources = haxe.Timer.stamp();
-		final timeSources = stopSources*1000 - startSources*1000;
-		time += timeSources;
+		final timeSources = round(stopSources*1000 - startSources*1000);
+		time += timeSources * 10000;
 		Sys.println('Init sources time: ${timeSources}ms');
 
 		final startParse = haxe.Timer.stamp();
 		for(file in files) file.parse();
 		final stopParse = haxe.Timer.stamp();
-		final timeParse = stopParse*1000 - startParse*1000;
-		time += timeParse;
+		final timeParse = round(stopParse*1000 - startParse*1000);
+		time += timeParse * 10000;
 		Sys.println('Parse sources time: ${timeParse}ms');
 
 		final startImports = haxe.Timer.stamp();
 		for(file in files) file.buildImports();
 		final stopImports = haxe.Timer.stamp();
-		final timeImports = stopImports*1000 - startImports*1000;
-		time += timeImports;
+		final timeImports = round(stopImports*1000 - startImports*1000);
+		time += timeImports * 10000;
 		Sys.println('Build imports time: ${timeImports}ms');
 
 		if(buildDecls) {
 			final startDecls = haxe.Timer.stamp();
 			for(file in files) file.buildDecls();
 			final stopDecls = haxe.Timer.stamp();
-			final timeDecls = stopDecls*1000 - startDecls*1000;
-			time += timeDecls;
+			final timeDecls = round(stopDecls*1000 - startDecls*1000);
+			time += timeDecls * 10000;
 			Sys.println('Build declarations time: ${timeDecls}ms');
 		}
 
@@ -135,7 +139,7 @@ class Main {
 		}
 
 		Sys.println('Status: ${files.none(file -> file.hasErrors())}');
-		Sys.println('Total time: ${time}ms');
+		Sys.println('Total time: ${time / 10000}ms');
 	}
 
 	static function main() {
@@ -160,5 +164,7 @@ class Main {
 		testProject("tests/kinds", true);
 		nl();
 		testProject("tests/aliases", true);
+		nl();
+		testProject("star", true);
 	}
 }
