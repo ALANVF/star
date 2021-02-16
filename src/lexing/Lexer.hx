@@ -173,7 +173,7 @@ class Lexer {
 
 	inline function trim() {
 		while(rdr.hasNext() && HSPACE_SEMI[rdr.current]) {
-			if(rdr.advance() == ';'.code) readComment();
+			if(rdr.advance() == ';'.code && !VSPACE[rdr.current]) readComment();
 		}
 	}
 
