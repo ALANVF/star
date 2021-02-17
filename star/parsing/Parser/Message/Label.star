@@ -1,5 +1,5 @@
 kind Label {
-	has [name: (Ident) expr: (Expr)]
-	has [name: (Ident)]
+	has [label: (Ident) expr: (Expr)]
+	has [label: (Ident)]
 	has [expr: (Expr)]
 }
