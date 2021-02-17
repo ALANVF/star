@@ -74,8 +74,8 @@ kind Stmt {
 	has [break: (Span)]
 	has [break: (Span) depth: (Span), (Int)]
 
-	has [nest: (Span)]
-	has [nest: (Span) depth: (Span), (Int)]
+	has [next: (Span)]
+	has [next: (Span) depth: (Span), (Int)]
 
 	has [throw: (Expr)]
 
