@@ -59,6 +59,10 @@ class TaggedKind extends Kind
 			case IsFriend(One(friend)): kind.friends.push(lookup.makeTypePath(friend));
 			case IsFriend(Many(_, friends, _)): for(friend in friends) kind.friends.push(lookup.makeTypePath(friend));
 
+			case IsSealed(_) if(kind.sealed.isSome()): kind.errors.push(Errors.duplicateAttribute(kind, ast.name.name, "sealed", span));
+			case IsSealed(None): kind.sealed = Some(None);
+			case IsSealed(Some(outsideOf)): kind.sealed = Some(Some(lookup.makeTypePath(outsideOf)));
+
 			case IsFlags: kind.isFlags = true;
 
 			case IsStrong: kind.isStrong = true;

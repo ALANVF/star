@@ -7,6 +7,7 @@ class Module extends Namespace implements IParents {
 	final parents: Array<Type> = [];
 	var isMain: Bool = false;
 	var native: Option<Ident> = None;
+	var sealed: Option<Option<Type>> = None;
 
 	static function fromAST(lookup, ast: parsing.ast.decls.Module) {
 		final module = new Module({
@@ -31,6 +32,10 @@ class Module extends Namespace implements IParents {
 			case IsHidden(_) if(module.hidden.isSome()): module.errors.push(Errors.duplicateAttribute(module, ast.name.name, "hidden", span));
 			case IsHidden(None): module.hidden = Some(None);
 			case IsHidden(Some(outsideOf)): module.hidden = Some(Some(lookup.makeTypePath(outsideOf)));
+
+			case IsSealed(_) if(module.sealed.isSome()): module.errors.push(Errors.duplicateAttribute(module, ast.name.name, "sealed", span));
+			case IsSealed(None): module.sealed = Some(None);
+			case IsSealed(Some(outsideOf)): module.sealed = Some(Some(lookup.makeTypePath(outsideOf)));
 
 			case IsMain: module.isMain = true;
 

@@ -5,6 +5,7 @@ import text.Span;
 enum KindAttr {
 	IsHidden(outsideOf: Option<Type>);
 	IsFriend(spec: TypesSpec);
+	IsSealed(outsideOf: Option<Type>);
 	IsFlags;
 	IsStrong;
 	IsUncounted;

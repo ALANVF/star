@@ -487,7 +487,7 @@
 			patterns [
 				#(
 					match "-+>"
-					name "keyword.operator.channel"
+					name "keyword.operator.cascade"
 				)
 				#(
 					match "\+\+|\-\-"
@@ -539,7 +539,11 @@
 				)
 				#(
 					match "\?"
-					name "keyword.operator.logical.null-check.star"
+					name "keyword.operator.logical.truthy.star"
+				)
+				#(
+					match "\.{3}"
+					name "keyword.operator.spread"
 				)
 			]
 		)

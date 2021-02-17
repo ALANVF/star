@@ -4,4 +4,5 @@ kind Prefix {
 	has neg
 	has not
 	has compl
+	has spread
 }

@@ -51,11 +51,11 @@ kind Token {
 	has [noinherit]
 	has [pattern]
 	has [asm]
-	has [statement]
 	has [native]
 	has [flags]
 	has [uncounted]
 	has [strong]
+	has [sealed]
 
 	has [tilde]
 	has [dot]
@@ -105,6 +105,7 @@ kind Token {
 	has [ltEq]
 	has [ltLt]
 	has [ltLtEq]
+	has [dotDotDot]
 	has [cascade: depth (Int)]
 
 	has [lParen]
@@ -140,9 +141,9 @@ kind Token {
 		match this {
 			at Token[cSep] || Token[comma] => return "comma"
 			at Token[module] <= _ <= Token[catch] => return "keyword"
-			at Token[static] <= _ <= Token[strong] => return "attribute"
+			at Token[static] <= _ <= Token[sealed] => return "attribute"
 			at Token[dot] => return "dot"
-			at Token[tilde] <= _ <= Token[ltLtEq] => return "operator"
+			at Token[tilde] <= _ <= Token[dotDotDot] => return "operator"
 			at Token[cascade: _] => return "cascade"
 			at Token[lParen] => return "opening parenthesis"
 			at Token[lBracket] => return "opening bracket"

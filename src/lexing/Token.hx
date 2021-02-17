@@ -59,14 +59,11 @@ enum Token {
 	T_Noinherit(_: Span);
 	T_Pattern(_: Span);
 	T_Asm(_: Span);
-	T_Statement(_: Span);
 	T_Native(_: Span);
-	T_CStruct(_: Span);
-	T_CUnion(_: Span);
-	T_CEnum(_: Span);
 	T_Flags(_: Span);
 	T_Uncounted(_: Span);
 	T_Strong(_: Span);
+	T_Sealed(_: Span);
 
 	T_Tilde(_: Span);
 	T_Dot(_: Span);
@@ -116,6 +113,7 @@ enum Token {
 	T_LtEq(_: Span);
 	T_LtLt(_: Span);
 	T_LtLtEq(_: Span);
+	T_DotDotDot(_: Span);
 	T_Cascade(_: Span, depth: Int);
 
 	T_LParen(_: Span);
@@ -165,8 +163,8 @@ class TokenHelper {
 			| T_Break(_) | T_Next(_) | T_Throw(_) | T_Try(_) | T_Catch(_): "keyword";
 		case T_Static(_) | T_Hidden(_) | T_Readonly(_) | T_Friend(_) | T_Unordered(_)
 			| T_Getter(_) | T_Setter(_) | T_Main(_) | T_Inline(_) | T_Noinherit(_)
-			| T_Pattern(_) | T_Asm(_) | T_Statement(_) | T_Native(_) | T_CStruct(_)
-			| T_CUnion(_) | T_CEnum(_) | T_Flags(_) | T_Uncounted(_) | T_Strong(_): "attribute";
+			| T_Pattern(_) | T_Asm(_) | T_Native(_) | T_Flags(_) | T_Uncounted(_)
+			| T_Strong(_) | T_Sealed(_): "attribute";
 		case T_Dot(_): "dot";
 		case T_Tilde(_) | T_Eq(_) | T_EqGt(_)
 			| T_Plus(_) | T_PlusEq(_) | T_PlusPlus(_)
@@ -180,7 +178,8 @@ class TokenHelper {
 			| T_Bang(_) | T_BangEq(_) | T_BangBang(_) | T_BangBangEq(_)
 			| T_Question(_) | T_QuestionEq(_)
 			| T_Gt(_) | T_GtEq(_) | T_GtGt(_) | T_GtGtEq(_)
-			| T_Lt(_) | T_LtEq(_) | T_LtLt(_) | T_LtLtEq(_): "operator";
+			| T_Lt(_) | T_LtEq(_) | T_LtLt(_) | T_LtLtEq(_)
+			| T_DotDotDot(_): "operator";
 		case T_Cascade(_, _): "cascade";
 		case T_LParen(_): "opening parenthesis";
 		case T_LBracket(_): "opening bracket";

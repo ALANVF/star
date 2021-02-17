@@ -39,6 +39,7 @@ class Class extends Namespace
 	var native: Option<NativeClass> = None;
 	var isStrong: Bool = false;
 	var isUncounted: Bool = false;
+	var sealed: Option<Option<Type>> = None;
 
 	static function fromAST(lookup, ast: parsing.ast.decls.Class) {
 		final cls = new Class({
@@ -67,6 +68,10 @@ class Class extends Namespace
 			case IsFriend(_) if(cls.friends.length != 0): cls.errors.push(Errors.duplicateAttribute(cls, ast.name.name, "friend", span));
 			case IsFriend(One(friend)): cls.friends.push(lookup.makeTypePath(friend));
 			case IsFriend(Many(_, friends, _)): for(friend in friends) cls.friends.push(lookup.makeTypePath(friend));
+
+			case IsSealed(_) if(cls.sealed.isSome()): cls.errors.push(Errors.duplicateAttribute(cls, ast.name.name, "sealed", span));
+			case IsSealed(None): cls.sealed = Some(None);
+			case IsSealed(Some(outsideOf)): cls.sealed = Some(Some(lookup.makeTypePath(outsideOf)));
 
 			case IsNative(_, _, _) if(cls.native.isSome()): cls.errors.push(Errors.duplicateAttribute(cls, ast.name.name, "native", span));
 			case IsNative(_, [{label: {name: "repr"}, expr: ELitsym(_, repr)}], _): switch repr {

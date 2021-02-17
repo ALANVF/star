@@ -3,6 +3,7 @@ class Module of Namespace, Parents {
 		has [empty]
 		has [is: (Span) hidden: (Maybe[Type])]
 		has [is: (Span) friend: (TypeSpec)]
+		has [is: (Span) sealed: (Maybe[Type])]
 		has [isMain: (Span)]
 		has [is: (Span) native: (Ident)]
 	}

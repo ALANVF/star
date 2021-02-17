@@ -29,7 +29,7 @@ class Lexer {
 	static final LOWER_U = LOWER | '_'.code;
 	static final ALPHA_U = ALPHA | '_'.code;
 	static final ALNUM_Q = ALNUM | "'".code;
-	static final SINGLE_CHAR = Charset.from("()[]{}.~");
+	static final SINGLE_CHAR = Charset.from("()[]{}~");
 
 	final rdr: Reader;
 	final source: SourceFile;
@@ -110,14 +110,11 @@ class Lexer {
 		"noinherit" => T_Noinherit,
 		"pattern" => T_Pattern,
 		"asm" => T_Asm,
-		"statement" => T_Statement,
 		"native" => T_Native,
-		"c_struct" => T_CStruct,
-		"c_union" => T_CUnion,
-		"c_enum" => T_CEnum,
 		"flags" => T_Flags,
 		"uncounted" => T_Uncounted,
-		"strong" => T_Strong
+		"strong" => T_Strong,
+		"sealed" => T_Sealed
 	];
 
 	function retoken(tokens: List<Token>) return Util.match(tokens,
@@ -239,6 +236,28 @@ class Lexer {
 				readTypeName();
 			}
 
+			else if(rdr.eat('.'.code)) {
+				if(rdr.eat('.'.code)) {
+					if(rdr.eat('.'.code)) {
+						T_DotDotDot(span());
+					} else {
+						throw new Diagnostic({
+							severity: Severity.ERROR,
+							message: "Syntax error",
+							info: [
+								Spanned({
+									span: span(),
+									message: 'Invalid operator `..`',
+									isPrimary: true
+								}),
+							]
+						});
+					}
+				} else {
+					T_Dot(span());
+				}
+			}
+
 			else if(SINGLE_CHAR[cur]) {
 				switch rdr.advance(){
 					case '('.code: T_LParen(span());
@@ -247,7 +266,6 @@ class Lexer {
 					case ']'.code: T_RBracket(span());
 					case '{'.code: T_LBrace(span());
 					case '}'.code: T_RBrace(span());
-					case '.'.code: T_Dot(span());
 					case '~'.code: T_Tilde(span());
 					default: throw "error!";
 				};

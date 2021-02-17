@@ -585,6 +585,15 @@ class Parser {
 						rest = rest2;
 					case err: return cast err;
 				},
+				at([T_Is(_2), T_Sealed(_3), ...rest2]) => switch parseType(rest2) {
+					case Success(outer, rest3):
+						attrs[ModuleAttr.IsSealed(Some(outer))] = Span.range(_2, _3);
+						rest = rest3;
+					case Failure(_, _):
+						attrs[ModuleAttr.IsSealed(None)] = Span.range(_2, _3);
+						rest = rest2;
+					case err: return cast err;
+				},
 				at([T_Is(_2), T_Main(_3), ...rest2]) => {
 					attrs[ModuleAttr.IsMain] = Span.range(_2, _3);
 					rest = rest2;
@@ -638,6 +647,15 @@ class Parser {
 						rest = rest3;
 					case Failure(_, _):
 						attrs[ClassAttr.IsHidden(None)] = Span.range(_2, _3);
+						rest = rest2;
+					case err: return cast err;
+				},
+				at([T_Is(_2), T_Sealed(_3), ...rest2]) => switch parseType(rest2) {
+					case Success(outer, rest3):
+						attrs[ClassAttr.IsSealed(Some(outer))] = Span.range(_2, _3);
+						rest = rest3;
+					case Failure(_, _):
+						attrs[ClassAttr.IsSealed(None)] = Span.range(_2, _3);
 						rest = rest2;
 					case err: return cast err;
 				},
@@ -722,6 +740,15 @@ class Parser {
 						rest = rest3;
 					case Failure(_, _):
 						attrs[ProtocolAttr.IsHidden(None)] = Span.range(_2, _3);
+						rest = rest2;
+					case err: return cast err;
+				},
+				at([T_Is(_2), T_Sealed(_3), ...rest2]) => switch parseType(rest2) {
+					case Success(outer, rest3):
+						attrs[ProtocolAttr.IsSealed(Some(outer))] = Span.range(_2, _3);
+						rest = rest3;
+					case Failure(_, _):
+						attrs[ProtocolAttr.IsSealed(None)] = Span.range(_2, _3);
 						rest = rest2;
 					case err: return cast err;
 				},
@@ -827,6 +854,15 @@ class Parser {
 						rest = rest3;
 					case Failure(_, _):
 						attrs[KindAttr.IsHidden(None)] = Span.range(_2, _3);
+						rest = rest2;
+					case err: return cast err;
+				},
+				at([T_Is(_2), T_Sealed(_3), ...rest2]) => switch parseType(rest2) {
+					case Success(outer, rest3):
+						attrs[KindAttr.IsSealed(Some(outer))] = Span.range(_2, _3);
+						rest = rest3;
+					case Failure(_, _):
+						attrs[KindAttr.IsSealed(None)] = Span.range(_2, _3);
 						rest = rest2;
 					case err: return cast err;
 				},
@@ -2282,10 +2318,11 @@ class Parser {
 	 * 11:  a ?= b, a != b, a > b, a >= b, a < b, a <= b
 	 * 12:  a && b, a || b, a ^^ b, a !! b
 	 * 13:  a = b, a += b, a -= b, a *= b, a **= b, a /= b, a //= b, a %= b, a %%= b, a &= b, a |= b, a ^= b, a >>= b, a <<= b, a &&= b, a ||= b, a ^^= b, a !!= b
+	 * 14:  ...a
 	*/
 
 	static inline function parseExpr(tokens) {
-		return parseExpr13(tokens);
+		return parseExpr14(tokens);
 	}
 
 
@@ -2882,6 +2919,15 @@ class Parser {
 		}
 		case res: res;
 	}
+
+
+	static function parseExpr14(tokens: List<Token>) return match(tokens,
+		at([T_DotDotDot(_1), ...rest]) => switch parseExpr13(rest) {
+			case Success(expr, rest2): Success(EPrefix(_1, PSpread, expr), rest2);
+			case err: cast err;
+		},
+		_ => parseExpr13(tokens)
+	);
 
 
 	static function parseFullExpr(tokens: List<Token>) return switch parseExpr(tokens) {

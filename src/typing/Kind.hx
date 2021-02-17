@@ -13,6 +13,7 @@ abstract class Kind extends Namespace
 	var isFlags: Bool = false;
 	var isStrong: Bool = false;
 	var isUncounted: Bool = false;
+	var sealed: Option<Option<Type>> = None;
 
 	static function fromAST(decl: ILookupType, ast: parsing.ast.decls.Kind): Kind {
 		final cases = ast.body.of.filterMap(d -> switch d {

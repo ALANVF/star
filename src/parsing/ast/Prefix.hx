@@ -6,4 +6,5 @@ enum Prefix {
 	PNeg;
 	PNot;
 	PCompl;
+	PSpread;
 }

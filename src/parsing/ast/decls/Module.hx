@@ -4,8 +4,9 @@ import text.Span;
 
 enum ModuleAttr {
 	IsHidden(outsideOf: Option<Type>);
-	IsMain;
 	IsFriend(spec: TypesSpec);
+	IsSealed(outsideOf: Option<Type>);
+	IsMain;
 	IsNative(_: Span, lib: String);
 }
 

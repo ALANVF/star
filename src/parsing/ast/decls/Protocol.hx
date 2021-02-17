@@ -5,6 +5,7 @@ import text.Span;
 enum ProtocolAttr {
 	IsHidden(outsideOf: Option<Type>);
 	IsFriend(spec: TypesSpec);
+	IsSealed(outsideOf: Option<Type>);
 }
 
 @:structInit

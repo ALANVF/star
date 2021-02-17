@@ -16,6 +16,7 @@ class Protocol extends Namespace
 	final operators: Array<Operator> = [];
 	var defaultInit: Option<DefaultInit> = None;
 	var deinit: Option<Deinit> = None;
+	var sealed: Option<Option<Type>> = None;
 
 	static function fromAST(lookup, ast: parsing.ast.decls.Protocol) {
 		final protocol = new Protocol({
@@ -44,6 +45,10 @@ class Protocol extends Namespace
 			case IsFriend(_) if(protocol.friends.length != 0): protocol.errors.push(Errors.duplicateAttribute(protocol, ast.name.name, "friend", span));
 			case IsFriend(One(friend)): protocol.friends.push(lookup.makeTypePath(friend));
 			case IsFriend(Many(_, friends, _)): for(friend in friends) protocol.friends.push(lookup.makeTypePath(friend));
+
+			case IsSealed(_) if(protocol.sealed.isSome()): protocol.errors.push(Errors.duplicateAttribute(protocol, ast.name.name, "sealed", span));
+			case IsSealed(None): protocol.sealed = Some(None);
+			case IsSealed(Some(outsideOf)): protocol.sealed = Some(Some(lookup.makeTypePath(outsideOf)));
 		}
 
 		for(decl in ast.body.of) switch decl {
