@@ -215,6 +215,105 @@ class Str of Values[Char], Ordered is strong {
 
 		return values
 	}
+
+
+	;== Collecting
+
+	on [collect: func (Func[Char, Char, Int])] (This) {
+		return This[new: length] -> {
+			for my i from: 0 upto: _.length {
+				this[add: func[call: _.buffer[at: i], i]]
+			}
+		}
+	}
+
+	on [collectAll: func (Func[Str, Char, Int])] (This) {
+		return This[new: length] -> {
+			for my i from: 0 upto: _.length {
+				this[add: func[call: _.buffer[at: i], i]]
+			}
+		}
+	}
+
+	type T of Iterable[Char]
+	on [collectAll: func (Func[T, Char, Int])] (This) {
+		return This[new: length] -> {
+			for my i from: 0 upto: _.length {
+				this[addAll: func[call: _.buffer[at: i], i]]
+			}
+		}
+	}
+
+
+	;== Collecting *and* filtering
+
+	on [collectIf: func (Func[Maybe[Char], Char, Int])] (This) {
+		return This[new: length // 2] -> {
+			for my i from: 0 upto: _.length {
+				match func[call: _.buffer[at: i], i] at Maybe[the: my value] {
+					this[add: value]
+				}
+			}
+		}
+	}
+
+	on [collectWhile: func (Func[Maybe[Char], Char, Int])] (This) {
+		return This[new: length // 2] -> {
+			for my i from: 0 upto: _.length {
+				match func[call: _.buffer[at: i], i] at Maybe[the: my value] {
+					this[add: value]
+				} else {
+					break
+				}
+			}
+		}
+	}
+
+	on [collectAllIf: func (Func[Maybe[Str], Char, Int])] (This) {
+		return This[new: length // 2] -> {
+			for my i from: 0 upto: _.length {
+				match func[call: _.buffer[at: i], i] at Maybe[the: my value] {
+					this[add: value]
+				}
+			}
+		}
+	}
+	
+	type T of Iterable[Char]
+	on [collectAllIf: func (Func[Maybe[T], Char, Int])] (This) {
+		return This[new: length // 2] -> {
+			for my i from: 0 upto: _.length {
+				match func[call: _.buffer[at: i], i] at Maybe[the: my values] {
+					this[addAll: values]
+				}
+			}
+		}
+	}
+
+	on [collectAllWhile: func (Func[Maybe[Str], Char, Int])] (This) {
+		return This[new: length // 2] -> {
+			for my i from: 0 upto: _.length {
+				match func[call: _.buffer[at: i], i] at Maybe[the: my value] {
+					this[add: value]
+				} else {
+					break
+				}
+			}
+		}
+	}
+	
+	type T of Iterable[Char]
+	on [collectAllWhile: func (Func[Maybe[T], Char, Int])] (This) {
+		return This[new: length // 2] -> {
+			for my i from: 0 upto: _.length {
+				match func[call: _.buffer[at: i], i] at Maybe[the: my values] {
+					this[addAll: values]
+				} else {
+					break
+				}
+			}
+		}
+	}
 }
 
 ;[

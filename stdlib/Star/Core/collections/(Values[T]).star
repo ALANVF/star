@@ -153,7 +153,7 @@ protocol Values[T] of Iterable[T] {
 				length: newLength
 			]
 		} else {
-			throw RangeError[:from]
+			throw RangeError[:from to: length - 1]
 		}
 	}
 
@@ -172,7 +172,7 @@ protocol Values[T] of Iterable[T] {
 
 			values[copyInto: buffer + index]
 		} else {
-			throw RangeError[:from]
+			throw RangeError[:from to: length - 1]
 		}
 	}
 
@@ -187,7 +187,7 @@ protocol Values[T] of Iterable[T] {
 				length: to
 			]
 		} else {
-			throw RangeError[:to]
+			throw RangeError[from: 0 :to]
 		}
 	}
 
@@ -211,7 +211,7 @@ protocol Values[T] of Iterable[T] {
 
 			values[copyInto: buffer]
 		} else {
-			throw RangeError[:to]
+			throw RangeError[from: 0 :to]
 		}
 	}
 
@@ -408,6 +408,12 @@ protocol Values[T] of Iterable[T] {
 		return ValuesIterator[new: this]
 	}
 
+	on [each: func (Func[Void, T, Int])] {
+		for my i from: 0 upto: length {
+			func[call: buffer[at: i], i]
+		}
+	}
+
 
 	;== Reversing
 
@@ -425,6 +431,216 @@ protocol Values[T] of Iterable[T] {
 				for my i after: _.length downto: 0 {
 					result[add: _.buffer[at: i]]
 				}
+			}
+		}
+	}
+
+
+	;== Filtering
+
+	on [keepIf: func (Func[Bool, T, Int])] (This) {
+		return This[new: length // 2] -> {
+			for my i from: 0 upto: _.length {
+				my value = _.buffer[at: i]
+				
+				if func[call: value, i] {
+					this[add: value]
+				}
+			}
+		}
+	}
+
+	on [keepWhile: func (Func[Bool, T, Int])] (This) {
+		return This[new: length // 2] -> {
+			for my i from: 0 upto: _.length {
+				my value = _.buffer[at: i]
+				
+				if func[call: value, i] {
+					this[add: value]
+				} else {
+					break
+				}
+			}
+		}
+	}
+
+
+	;== Observing
+
+	on [all: func (Func[Bool, T, Int])] (Bool) {
+		for my i from: 0 upto: length {
+			if !func[call: buffer[at: i], i] {
+				return false
+			}
+		}
+
+		return true
+	}
+
+	on [any: func (Func[Bool, T, Int])] (Bool) {
+		for my i from: 0 upto: length {
+			if func[call: buffer[at: i], i] {
+				return true
+			}
+		}
+
+		return false
+	}
+
+	on [one: func (Func[Bool, T, Int])] (Bool) {
+		my cond = false
+
+		for my i from: 0 upto: length {
+			if func[call: buffer[at: i], i] {
+				if cond {
+					return false
+				} else {
+					cond = true
+				}
+			}
+		}
+
+		return cond
+	}
+
+	on [none: func (Func[Bool, T, Int])] (Bool) {
+		for my i from: 0 upto: length {
+			if func[call: buffer[at: i], i] {
+				return false
+			}
+		}
+
+		return true
+	}
+
+	on [contains: value (T)] (Bool) {
+		for my i from: 0 upto: length {
+			if buffer[at: i] ?= value {
+				return true
+			}
+		}
+
+		return false
+	}
+
+	on [containsIndex: index (Int)] (Bool) {
+		return 0 <= index < length
+	}
+
+
+	;== Counting
+
+	on [count: value (T)] (Int) {
+		my count = 0
+
+		for my i from: 0 upto: length {
+			if buffer[at: i] ?= value {
+				count++
+			}
+		}
+
+		return count
+	}
+
+	on [countIf: func (Func[Bool, T, Int])] (Int) {
+		my count = 0
+
+		for my i from: 0 upto: length {
+			if func[call: buffer[at: i], i] {
+				count++
+			}
+		}
+
+		return count
+	}
+
+	on [countWhile: func (Func[Bool, T, Int])] (Int) {
+		my count = 0
+
+		for my i from: 0 upto: length {
+			if !func[call: buffer[at: i], i] {
+				count++
+			} else {
+				break
+			}
+		}
+
+		return count
+	}
+
+
+	;== Finding
+
+	on [find: func (Func[Bool, T, Int])] (T) {
+		for my i from: 0 upto: length {
+			my value = buffer[at: i]
+
+			if func[call: value, i] {
+				return value
+			}
+		}
+
+		throw NotFound[new]
+	}
+
+	on [maybeFind: func (Func[Bool, T, Int])] (Maybe[T]) {
+		for my i from: 0 upto: length {
+			my value = buffer[at: i]
+
+			if func[call: value, i] {
+				return Maybe[the: value]
+			}
+		}
+
+		return Maybe[none]
+	}
+
+	on [findIndex: func (Func[Bool, T, Int])] (Int) {
+		for my i from: 0 upto: length {
+			if func[call: buffer[at: i], i] {
+				return i
+			}
+		}
+
+		throw NotFound[new]
+	}
+
+	on [maybeFindIndex: func (Func[Bool, T, Int])] (Maybe[Int]) {
+		for my i from: 0 upto: length {
+			if func[call: buffer[at: i], i] {
+				return Maybe[the: i]
+			}
+		}
+
+		return Maybe[none]
+	}
+
+
+	;== Rotating
+
+	on [rotate: offset (Int)] (This) {
+		if offset < 0 {
+			return this[rotateLeft: -offset]
+		} else {
+			return this[rotateRight: offset]
+		}
+	}
+
+	on [rotateLeft: offset (Int)] (This) {
+		case {
+			at offset ?= 0 => return this[new]
+			at offset < 0  => throw "Invalid offset"
+			else => return this[upto: offset] + this[from: offset]
+		}
+	}
+
+	on [rotateRight: offset (Int)] (This) {
+		case {
+			at offset ?= 0 => return this[new]
+			at offset < 0  => throw "Invalid offset"
+			else {
+				my offset' = length - offset
+				return this[upto: offset'] + this[from: offset']
 			}
 		}
 	}

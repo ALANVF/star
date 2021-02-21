@@ -113,7 +113,7 @@ class Series[T] of Ordered, Iterable[T] {
 		if 0 <= offset' <= buffer.length {
 			return This[:buffer offset: offset']
 		} else {
-			throw "Out of bounds!"
+			throw IndexError[at: offset']
 		}
 	}
 
