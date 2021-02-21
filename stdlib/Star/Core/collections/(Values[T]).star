@@ -628,16 +628,16 @@ protocol Values[T] of Iterable[T] {
 
 	on [rotateLeft: offset (Int)] (This) {
 		case {
-			at offset ?= 0 => return this[new]
-			at offset < 0  => throw "Invalid offset"
+			at offset < 0 => throw "Invalid offset"
+			at offset < 2 => return this[new]
 			else => return this[upto: offset] + this[from: offset]
 		}
 	}
 
 	on [rotateRight: offset (Int)] (This) {
 		case {
-			at offset ?= 0 => return this[new]
-			at offset < 0  => throw "Invalid offset"
+			at offset < 0 => throw "Invalid offset"
+			at offset < 2 => return this[new]
 			else {
 				my offset' = length - offset
 				return this[upto: offset'] + this[from: offset']
