@@ -188,8 +188,8 @@ class Lexer {
 		while(true) {
 			if(!rdr.hasNext()) throw "unterminated comment!";
 			if(rdr.eat('['.code)) readNestedComment();
-			if(rdr.eat(']'.code)) break;
-			rdr.skip();
+			else if(rdr.eat(']'.code)) break;
+			else rdr.skip();
 		}
 	}
 
