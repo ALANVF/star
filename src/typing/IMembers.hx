@@ -1,5 +1,5 @@
 package typing;
 
-interface IMembers {
+typedef IMembers = {
 	final members: Array<Member>;
 }

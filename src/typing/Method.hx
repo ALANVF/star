@@ -1,6 +1,6 @@
 package typing;
 
-abstract class Method extends AnyMethod implements IMethod {
+abstract class Method extends AnyMethod {
 	var ret: Option<Type>;
 	var isMain: Bool = false;
 	var isGetter: Bool = false;

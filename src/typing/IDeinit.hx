@@ -1,5 +1,5 @@
 package typing;
 
-interface IDeinit {
+typedef IDeinit = {
 	var deinit: Option<Deinit>;
 }

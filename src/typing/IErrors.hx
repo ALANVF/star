@@ -2,7 +2,7 @@ package typing;
 
 import reporting.Diagnostic;
 
-interface IErrors {
+typedef IErrors = {
 	final errors: Array<Diagnostic>;
 
 	function hasErrors(): Bool;

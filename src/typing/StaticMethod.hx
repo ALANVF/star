@@ -1,6 +1,6 @@
 package typing;
 
-abstract class StaticMethod extends AnyMethod implements IMethod {
+abstract class StaticMethod extends AnyMethod {
 	var ret: Option<Type>;
 	var isMain: Bool = false;
 	var isGetter: Bool = false;

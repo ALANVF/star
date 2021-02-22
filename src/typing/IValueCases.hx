@@ -1,5 +1,5 @@
 package typing;
 
-interface IValueCases extends ITypeDecl {
+typedef IValueCases = ITypeDecl & {
 	final valueCases: Array<ValueCase>;
 }

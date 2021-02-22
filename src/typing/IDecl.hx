@@ -2,7 +2,7 @@ package typing;
 
 import text.Span;
 
-interface IDecl extends IErrors {
+typedef IDecl = IErrors & {
 	final span: Span;
 	
 	function declName(): String;

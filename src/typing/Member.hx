@@ -7,7 +7,7 @@ import parsing.ast.Ident;
 import text.Span;
 
 @:build(util.Auto.build())
-class Member implements IDecl {
+class Member {
 	final errors: Array<Diagnostic> = [];
 	final lookup: ILookupType;
 	final span: Span;

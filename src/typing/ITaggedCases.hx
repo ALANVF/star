@@ -1,5 +1,5 @@
 package typing;
 
-interface ITaggedCases extends ITypeDecl {
+typedef ITaggedCases = ITypeDecl & {
 	final taggedCases: Array<TaggedCase>;
 }

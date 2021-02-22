@@ -1,5 +1,5 @@
 package typing;
 
-interface IStaticInit {
+typedef IStaticInit = {
 	var staticInit: Option<StaticInit>;
 }

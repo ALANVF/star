@@ -1,10 +1,6 @@
 package typing;
 
-class StrongAlias extends Alias
-	implements IStaticMethods
-	implements IMethods
-	implements IOperators
-{
+class StrongAlias extends Alias {
 	var type: Type;
 	final staticMethods: Array<StaticMethod> = [];
 	final methods: Array<Method> = [];

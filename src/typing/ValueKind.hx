@@ -1,6 +1,6 @@
 package typing;
 
-class ValueKind extends Kind implements IValueCases {
+class ValueKind extends Kind {
 	var repr: Option<Type> = None;
 	final valueCases: Array<ValueCase> = [];
 

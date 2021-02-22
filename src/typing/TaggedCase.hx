@@ -8,7 +8,7 @@ import parsing.ast.Ident;
 
 @:build(util.Auto.build())
 @:autoBuild(util.Auto.build())
-class TaggedCase implements IDecl {
+class TaggedCase {
 	final errors: Array<Diagnostic> = [];
 	final decl: ITaggedCases;
 	final span: Span;

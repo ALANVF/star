@@ -1,5 +1,5 @@
 package typing;
 
-interface IParents {
+typedef IParents = {
 	final parents: Array<Type>;
 }

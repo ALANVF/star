@@ -1,5 +1,5 @@
 package typing;
 
-interface IInits {
+typedef IInits = {
 	final inits: Array<Init>;
 }

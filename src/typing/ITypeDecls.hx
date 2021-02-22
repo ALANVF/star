@@ -1,5 +1,5 @@
 package typing;
 
-interface ITypeDecls {
+typedef ITypeDecls = {
 	final decls: Array<TypeDecl>;
 }

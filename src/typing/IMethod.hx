@@ -1,6 +1,6 @@
 package typing;
 
-interface IMethod extends IAnyMethod {
+typedef IMethod = IAnyMethod & {
 	var ret: Option<Type>;
 	var isMain: Bool;
 	var isGetter: Bool;

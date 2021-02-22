@@ -1,11 +1,6 @@
 package typing;
 
-abstract class Kind extends Namespace
-	implements IParents
-	implements IMethods
-	implements IOperators
-	implements IDeinit
-{
+abstract class Kind extends Namespace {
 	final parents: Array<Type> = [];
 	final methods: Array<Method> = [];
 	final operators: Array<Operator> = [];

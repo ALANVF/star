@@ -3,7 +3,7 @@ package typing;
 import parsing.ast.Ident;
 import reporting.Diagnostic;
 
-class Module extends Namespace implements IParents {
+class Module extends Namespace {
 	final parents: Array<Type> = [];
 	var isMain: Bool = false;
 	var native: Option<Ident> = None;

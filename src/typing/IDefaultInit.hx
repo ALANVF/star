@@ -1,5 +1,5 @@
 package typing;
 
-interface IDefaultInit {
+typedef IDefaultInit = {
 	var defaultInit: Option<DefaultInit>;
 }

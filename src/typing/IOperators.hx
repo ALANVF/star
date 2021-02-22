@@ -1,5 +1,5 @@
 package typing;
 
-interface IOperators {
+typedef IOperators = {
 	final operators: Array<Operator>;
 }

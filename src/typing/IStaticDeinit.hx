@@ -1,5 +1,5 @@
 package typing;
 
-interface IStaticDeinit {
+typedef IStaticDeinit = {
 	var staticDeinit: Option<StaticDeinit>;
 }

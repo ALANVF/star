@@ -1,12 +1,6 @@
 package typing;
 
-abstract class Namespace extends TypeDecl
-	implements ITypeDecls
-	implements IStaticMembers
-	implements IStaticMethods
-	implements IStaticInit
-	implements IStaticDeinit
-{
+abstract class Namespace extends TypeDecl {
 	final decls: Array<TypeDecl> = [];
 	final staticMembers: Array<Member> = [];
 	final staticMethods: Array<StaticMethod> = [];

@@ -1,5 +1,5 @@
 package typing;
 
-interface IStaticMethods {
+typedef IStaticMethods = {
 	final staticMethods: Array<StaticMethod>;
 }

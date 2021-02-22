@@ -9,21 +9,7 @@ using typing.GenericRule.Tools;
 // Dear god what have I gotten myself into
 
 @:build(util.Auto.build())
-class Generic
-	implements ITypeDecl
-	implements IDefaultInit
-	implements IDeinit
-	implements IInits
-	implements IMembers
-	implements IMethods
-	implements IOperators
-	implements IStaticDeinit
-	implements IStaticInit
-	implements IStaticMembers
-	implements IStaticMethods
-	implements ITaggedCases
-	implements IValueCases
-{
+class Generic {
 	final errors: Array<Diagnostic> = [];
 	final lookup: ILookupType;
 	final span: Span;

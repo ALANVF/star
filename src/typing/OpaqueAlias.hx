@@ -1,10 +1,6 @@
 package typing;
 
-class OpaqueAlias extends Alias
-	implements IStaticMethods
-	implements IMethods
-	implements IOperators
-{
+class OpaqueAlias extends Alias {
 	final staticMethods: Array<StaticMethod> = [];
 	final methods: Array<Method> = [];
 	final operators: Array<Operator> = [];

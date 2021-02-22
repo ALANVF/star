@@ -7,7 +7,7 @@ import text.Span;
 
 @:build(util.Auto.build())
 @:autoBuild(util.Auto.build())
-abstract class AnyMethod implements IAnyMethod {
+abstract class AnyMethod {
 	final errors: Array<Diagnostic> = [];
 	final decl: ITypeDecl;
 	final span: Span;

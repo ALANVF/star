@@ -3,11 +3,7 @@ package typing;
 import reporting.Severity;
 import reporting.Diagnostic;
 
-class TaggedKind extends Kind
-	implements ITaggedCases
-	implements IMembers
-	implements IDefaultInit
-{
+class TaggedKind extends Kind {
 	final taggedCases: Array<TaggedCase> = [];
 	final members: Array<Member> = [];
 	var defaultInit: Option<DefaultInit> = None;

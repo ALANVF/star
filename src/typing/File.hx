@@ -8,7 +8,7 @@ import parsing.ast.Program;
 import text.SourceFile;
 
 @:build(util.Auto.build())
-class File implements IErrors implements ILookupType {
+class File {
 	final errors: Array<Diagnostic>;
 	final dir: Dir;
 	final path: String;

@@ -1,14 +1,6 @@
 package typing;
 
-class Protocol extends Namespace
-	implements IParents
-	implements IMembers
-	implements IMethods
-	implements IInits
-	implements IOperators
-	implements IDefaultInit
-	implements IDeinit
-{
+class Protocol extends Namespace {
 	final parents: Array<Type> = [];
 	final members: Array<Member> = [];
 	final methods: Array<Method> = [];

@@ -1,5 +1,5 @@
 package typing;
 
-interface IStaticMembers {
+typedef IStaticMembers = {
 	final staticMembers: Array<Member>;
 }

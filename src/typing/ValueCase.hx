@@ -7,7 +7,7 @@ import text.Span;
 import parsing.ast.Ident;
 
 @:build(util.Auto.build())
-class ValueCase implements IDecl {
+class ValueCase {
 	final errors: Array<Diagnostic> = [];
 	final decl: IValueCases;
 	final span: Span;

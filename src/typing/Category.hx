@@ -5,13 +5,7 @@ import parsing.ast.Ident;
 import reporting.Diagnostic;
 
 @:build(util.Auto.build())
-class Category
-	implements ITypeDecl
-	implements IStaticMethods
-	implements IMethods
-	implements IInits
-	implements IOperators
-{
+class Category {
 	final errors: Array<Diagnostic> = [];
 	final generics: Array<Generic> = [];
 	final lookup: ILookupType;

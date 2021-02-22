@@ -1,5 +1,5 @@
 package typing;
 
-interface IMethods {
+typedef IMethods = {
 	final methods: Array<Method>;
 }

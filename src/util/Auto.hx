@@ -4,8 +4,9 @@ import haxe.macro.Expr;
 import haxe.macro.Context;
 
 class Auto {
-	public macro static function build(?options: {init: Bool}): Array<Field> {
-		final optInit = options == null || options.init;
+	public macro static function build(?options: {?init: Bool, ?keepInit: Bool}): Array<Field> {
+		final optInit = options == null || options.init == null || options.init;
+		final optKeepInit = options != null && options.keepInit != null && options.keepInit;
 		final thisClass = switch Context.getLocalClass() {
 			case null: Context.fatalError("Auto must be used on a class!", Context.currentPos());
 			case _.get() => t: t;
@@ -24,7 +25,8 @@ class Auto {
 		//thisClass.meta.add(":auto", [], Context.currentPos());
 
 		// Constructor
-		if(thisFields.find(f -> f.name == "new") == null) {
+		final oldNew = thisFields.find(f -> f.name == "new");
+		if(oldNew == null || optKeepInit) {
 			var fields: Array<Field> = [];
 			var inits = [];
 			var isOptional = true;
@@ -32,6 +34,10 @@ class Auto {
 			for(f in thisFields) {
 				final getThis = ["this", f.name];
 				final getInit = ["init", f.name];
+
+				if(f.meta.find(m -> m.name == ":ignore") != null) {
+					continue;
+				}
 
 				switch f.kind {
 					case FVar(null, _):
@@ -118,21 +124,43 @@ class Auto {
 				}
 			}
 
-			thisFields.push({
-				name: "new",
-				kind: FFun({
-					args: if(fields.length == 0) [] else [{
-						name: "init",
-						type: TAnonymous(fields),
-						opt: isOptional
-					}],
-					expr: macro $b{inits},
-					params: [],
-					ret: null
-				}),
-				access: [optInit ? APublic : APrivate],
-				pos: Context.currentPos()
-			});
+			if(oldNew != null && optKeepInit) {
+				switch oldNew.kind {
+					case FFun(f):
+						f.args = if(fields.length == 0) [] else [{
+							name: "init",
+							type: TAnonymous(fields),
+							opt: isOptional
+						}];
+						
+						f.expr = macro $b{
+							inits.concat(
+								switch f.expr {
+									case macro $b{block}: block;
+									default: [f.expr];
+								}
+							)
+						};
+
+					default:
+				}
+			} else {
+				thisFields.push({
+					name: "new",
+					kind: FFun({
+						args: if(fields.length == 0) [] else [{
+							name: "init",
+							type: TAnonymous(fields),
+							opt: isOptional
+						}],
+						expr: macro $b{inits},
+						params: [],
+						ret: null
+					}),
+					access: [optInit ? APublic : APrivate],
+					pos: Context.currentPos()
+				});
+			}
 		}
 		
 		return thisFields;
