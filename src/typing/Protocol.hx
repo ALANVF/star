@@ -13,11 +13,14 @@ class Protocol extends Namespace {
 	static function fromAST(lookup, ast: parsing.ast.decls.Protocol) {
 		final protocol = new Protocol({
 			lookup: lookup,
-			generics: ast.generics.mapArray(Generic.fromAST.bind(lookup, _)),
 			span: ast.span,
 			name: ast.name,
 			params: None
 		});
+
+		for(generic in ast.generics.mapArray(Generic.fromAST.bind(lookup, _))) {
+			protocol.generics.add(generic.name.name, generic);
+		}
 
 		if(ast.params.isSome()) {
 			protocol.params = Some(ast.params.value().of.map(param -> protocol.makeTypePath(param)));

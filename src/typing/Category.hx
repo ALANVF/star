@@ -7,7 +7,7 @@ import reporting.Diagnostic;
 @:build(util.Auto.build())
 class Category {
 	final errors: Array<Diagnostic> = [];
-	final generics: Array<Generic> = [];
+	@:ignore final generics = new MultiMap<String, Generic>();
 	final lookup: ILookupType;
 	final span: Span;
 	final name: Ident;
@@ -25,12 +25,15 @@ class Category {
 			at([Named(s, n, params)]) => {
 				final category = new Category({
 					lookup: lookup,
-					generics: ast.generics.mapArray(Generic.fromAST.bind(lookup, _)),
 					span: ast.span,
 					name: new Ident(s, n),
 					params: params.map(p -> p.of.map(lookup.makeTypePath)),
 					type: ast.type.map(lookup.makeTypePath),
 				});
+
+				for(generic in ast.generics.mapArray(Generic.fromAST.bind(lookup, _))) {
+					category.generics.add(generic.name.name, generic);
+				}
 
 				for(attr => span in ast.attrs) switch attr {
 					case IsHidden(_) if(category.hidden.isSome()): category.errors.push(Errors.duplicateAttribute(category, category.name.name, "hidden", span));
@@ -61,7 +64,7 @@ class Category {
 	}
 
 	function hasErrors() {
-		return errors.length != 0 || generics.some(g -> g.hasErrors()) || staticMethods.some(m -> m.hasErrors())
+		return errors.length != 0 || generics.allValues().some(g -> g.hasErrors()) || staticMethods.some(m -> m.hasErrors())
 			|| methods.some(m -> m.hasErrors()) || inits.some(i -> i.hasErrors()) || operators.some(o -> o.hasErrors());
 	}
 

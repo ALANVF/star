@@ -8,7 +8,7 @@ using typing.GenericRule.Tools;
 
 // Dear god what have I gotten myself into
 
-@:build(util.Auto.build())
+@:build(util.Auto.build({keepInit: true}))
 class Generic {
 	final errors: Array<Diagnostic> = [];
 	final lookup: ILookupType;
@@ -29,8 +29,13 @@ class Generic {
 	final staticMethods: Array<StaticMethod> = [];
 	final taggedCases: Array<TaggedCase> = [];
 	final valueCases: Array<ValueCase> = [];
+	@:ignore var thisType: Type;
 
-	static function fromAST(lookup, ast: parsing.ast.decls.GenericParam) {
+	function new() {
+		thisType = new Type(TGeneric(this));
+	}
+
+	static function fromAST(lookup, ast: parsing.ast.decls.GenericParam): Generic {
 		final generic = new Generic({
 			lookup: lookup,
 			span: ast.span,

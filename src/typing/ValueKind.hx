@@ -7,11 +7,14 @@ class ValueKind extends Kind {
 	static function fromAST(lookup, ast: parsing.ast.decls.Kind) {
 		final kind = new ValueKind({
 			lookup: lookup,
-			generics: ast.generics.mapArray(Generic.fromAST.bind(lookup, _)),
 			span: ast.span,
 			name: ast.name,
 			params: None
 		});
+
+		for(generic in ast.generics.mapArray(Generic.fromAST.bind(lookup, _))) {
+			kind.generics.add(generic.name.name, generic);
+		}
 
 		if(ast.params.isSome()) {
 			kind.params = Some(ast.params.value().of.map(param -> kind.makeTypePath(param)));

@@ -9,12 +9,15 @@ class StrongAlias extends Alias {
 	static function fromAST(lookup, ast: parsing.ast.decls.Alias) {
 		final alias = new StrongAlias({
 			lookup: lookup,
-			generics: ast.generics.mapArray(Generic.fromAST.bind(lookup, _)),
 			span: ast.span,
 			name: ast.name,
 			params: None,
 			type: null // Hack for partial initialization
 		});
+
+		for(generic in ast.generics.mapArray(Generic.fromAST.bind(lookup, _))) {
+			alias.generics.add(generic.name.name, generic);
+		}
 
 		final body = switch ast.kind {
 			case Strong(type, body):

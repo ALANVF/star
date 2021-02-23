@@ -1,13 +1,12 @@
 package typing;
 
 class CastMethod extends Method {
-	final generics: Array<Generic>;
+	@:ignore final generics = new MultiMap<String, Generic>();
 	var type: Type;
 
 	static function fromAST(decl, ast: parsing.ast.decls.Method) {
 		final method = new CastMethod({
 			decl: decl,
-			generics: ast.generics.mapArray(Generic.fromAST.bind(decl, _)),
 			span: ast.span,
 			type: switch ast.spec.of {
 				case Cast(type): decl.makeTypePath(type);
@@ -16,6 +15,11 @@ class CastMethod extends Method {
 			ret: None,
 			body: ast.body.map(body -> body.stmts)
 		});
+
+		for(generic in ast.generics.mapArray(Generic.fromAST.bind(decl, _))) {
+			method.generics.add(generic.name.name, generic);
+		}
+
 		final typeName = method.type.simpleName();
 
 		for(attr => span in ast.attrs) switch attr {
@@ -44,5 +48,13 @@ class CastMethod extends Method {
 		}
 
 		return method;
+	}
+
+	override function hasErrors() {
+		return super.hasErrors() || generics.allValues().some(g -> g.hasErrors());
+	}
+
+	override function allErrors() {
+		return super.allErrors().concat(generics.allValues().flatMap(g -> g.allErrors()));
 	}
 }

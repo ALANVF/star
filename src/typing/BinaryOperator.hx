@@ -32,15 +32,14 @@ enum abstract BinaryOp(Int) {
 }
 
 class BinaryOperator extends Operator {
-	final generics: Array<Generic>;
+	@:ignore final generics = new MultiMap<String, Generic>();
 	final op: BinaryOp;
 	final paramName: Ident;
 	final paramType: Type;
 
 	static function fromAST(decl, op, paramName, paramType, ast: parsing.ast.decls.Operator) {
-		return new BinaryOperator({
+		final oper = new BinaryOperator({
 			decl: decl,
-			generics: ast.generics.mapArray(Generic.fromAST.bind(decl, _)),
 			span: ast.span,
 			op: op,
 			opSpan: ast.symbolSpan,
@@ -49,14 +48,20 @@ class BinaryOperator extends Operator {
 			ret: ast.ret.map(ret -> decl.makeTypePath(ret)),
 			body: ast.body.map(body -> body.stmts)
 		});
+
+		for(generic in ast.generics.mapArray(Generic.fromAST.bind(decl, _))) {
+			oper.generics.add(generic.name.name, generic);
+		}
+
+		return oper;
 	}
 
 	override function hasErrors() {
-		return super.hasErrors() || generics.some(g -> g.hasErrors());
+		return super.hasErrors() || generics.allValues().some(g -> g.hasErrors());
 	}
 
 	override function allErrors() {
-		return super.allErrors().concat(generics.flatMap(g -> g.allErrors()));
+		return super.allErrors().concat(generics.allValues().flatMap(g -> g.allErrors()));
 	}
 
 	inline function opName() {

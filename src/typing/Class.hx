@@ -36,11 +36,14 @@ class Class extends Namespace {
 	static function fromAST(lookup, ast: parsing.ast.decls.Class) {
 		final cls = new Class({
 			lookup: lookup,
-			generics: ast.generics.mapArray(Generic.fromAST.bind(lookup, _)),
 			span: ast.span,
 			name: ast.name,
 			params: None
 		});
+
+		for(generic in ast.generics.mapArray(Generic.fromAST.bind(lookup, _))) {
+			cls.generics.add(generic.name.name, generic);
+		}
 
 		if(ast.params.isSome()) {
 			cls.params = Some(ast.params.value().of.map(param -> cls.makeTypePath(param)));

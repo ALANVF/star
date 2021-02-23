@@ -1,6 +1,7 @@
 import hx.strings.Char;
 import util.Option;
 import util.List;
+import util.MultiMap;
 import util.errors.*;
 
 using util.Maps;

@@ -5,7 +5,7 @@ import parsing.ast.Expr;
 import parsing.ast.Ident;
 
 class MultiStaticMethod extends StaticMethod {
-	final generics: Array<Generic>;
+	@:ignore final generics = new MultiMap<String, Generic>();
 	final params: Array<{label: Ident, name: Ident, type: Type, value: Option<Expr>}> = [];
 	final fuzzyName: String;
 	var isUnordered: Bool = false;
@@ -32,13 +32,16 @@ class MultiStaticMethod extends StaticMethod {
 		};
 		final method = new MultiStaticMethod({
 			decl: decl,
-			generics: ast.generics.mapArray(Generic.fromAST.bind(decl, _)),
 			span: ast.span,
 			params: params,
 			fuzzyName: params.map(p -> p.label + ":").join(" "),
 			ret: ast.ret.map(ret -> decl.makeTypePath(ret)),
 			body: ast.body.map(body -> body.stmts)
 		});
+
+		for(generic in ast.generics.mapArray(Generic.fromAST.bind(decl, _))) {
+			method.generics.add(generic.name.name, generic);
+		}
 
 		for(attr => span in ast.attrs) switch attr {
 			case IsStatic:

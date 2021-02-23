@@ -5,7 +5,7 @@ import text.Span;
 import parsing.ast.Ident;
 
 class MultiInit extends Init {
-	final generics: Array<Generic>;
+	@:ignore final generics = new MultiMap<String, Generic>();
 	final params: Array<{label: Ident, name: Ident, type: Type, value: Option<Expr>}> = [];
 	final fuzzyName: String;
 	var isUnordered: Bool = true;
@@ -32,12 +32,15 @@ class MultiInit extends Init {
 		};
 		final init = new MultiInit({
 			decl: decl,
-			generics: ast.generics.mapArray(Generic.fromAST.bind(decl, _)),
 			span: ast.span,
 			params: params,
 			fuzzyName: params.map(p -> p.label + ":").join(" "),
 			body: ast.body.map(body -> body.stmts)
 		});
+
+		for(generic in ast.generics.mapArray(Generic.fromAST.bind(decl, _))) {
+			init.generics.add(generic.name.name, generic);
+		}
 		
 		for(attr => span in ast.attrs) switch attr {
 			case IsHidden(_) if(init.hidden.isSome()): init.errors.push(Errors.duplicateAttribute(init, init.fuzzyName, "hidden", span));

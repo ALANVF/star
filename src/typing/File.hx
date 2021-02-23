@@ -95,7 +95,6 @@ class File {
 					}
 
 					imports.push(new Import({
-						generics: [],
 						span: span,
 						imports: switch kind {
 							case Import(One(imp)) | ImportFrom(One(imp), _, _): [imp];

@@ -8,11 +8,14 @@ class OpaqueAlias extends Alias {
 	static function fromAST(lookup, ast: parsing.ast.decls.Alias) {
 		final alias = new OpaqueAlias({
 			lookup: lookup,
-			generics: ast.generics.mapArray(Generic.fromAST.bind(lookup, _)),
 			span: ast.span,
 			name: ast.name,
 			params: None
 		});
+
+		for(generic in ast.generics.mapArray(Generic.fromAST.bind(lookup, _))) {
+			alias.generics.add(generic.name.name, generic);
+		}
 
 		final body = switch ast.kind {
 			case Opaque(body): body;

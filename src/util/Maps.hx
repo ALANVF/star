@@ -82,7 +82,7 @@ class Maps {
 		final ftmap = Context.followWithAbstracts(tmap);
 
 		switch ftmap {
-			case TInst(_.get() => t, _): return switch t.name {
+			case TInst(_.get() => t, p): return switch t.name {
 				case "IntMap": macro util.Maps.IntMaps.size($map);
 				case "StringMap": macro util.Maps.StringMaps.size($map);
 				case "ObjectMap": macro util.Maps.ObjectMaps.size($map);

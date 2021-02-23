@@ -4,7 +4,7 @@ import text.Span;
 
 @:build(util.Auto.build())
 class Import {
-	final generics: Array<Generic> = [];
+	@:ignore final generics = new MultiMap<String, Generic>();
 	final span: Span;
 	final imports: Array<TypePath>;
 	final from: Option<TypePath> = None;

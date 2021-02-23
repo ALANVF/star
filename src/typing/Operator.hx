@@ -100,7 +100,7 @@ abstract class Operator extends AnyMethod {
 	var isInline: Bool = false;
 
 	static function fromAST(decl: ITypeDecl, ast: parsing.ast.decls.Operator) {
-		final oper = switch ast.spec {
+		final oper: Operator = switch ast.spec {
 			case None:
 				final op: UnaryOperator.UnaryOp = switch ast.symbol {
 					case "++": Incr;

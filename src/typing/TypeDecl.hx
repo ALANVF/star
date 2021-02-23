@@ -9,8 +9,7 @@ import parsing.ast.Ident;
 abstract class TypeDecl {
 	final errors: Array<Diagnostic> = [];
 	final lookup: ILookupType;
-	final generics: Array<Generic>;
-	@:ignore final genericTypes: Array<Type>;
+	@:ignore final generics = new MultiMap<String, Generic>();
 	final span: Span;
 	final name: Ident;
 	var params: Option<Array<Type>>;
@@ -19,33 +18,27 @@ abstract class TypeDecl {
 	@:ignore var thisType: Type;
 
 	function new() {
-		genericTypes = generics.map(g -> new Type(TGeneric(g)));
 		thisType = new Type(TConcrete(this));
 	}
 	
 	abstract function declName(): String;
 
 	function findLocalType(typeName: String) {
-		final found = [for(i => generic in generics) {
-			if(generic.name.name == typeName) {
-				genericTypes[i];
-			}
-		}];
-
-		return switch found {
-			case []: None;
-			case [type]: Some(type);
-			default: Some(new Type(TMulti(found)));
+		return switch generics.find(typeName) {
+			case None: None;
+			case Some([type]): Some(type.thisType);
+			case Some(found): Some(new Type(TMulti(found.map(g -> g.thisType))));
 		}
 	}
 
 	function findType(typeName: String) {
-		/*if(typeName == name.name) {
-			return Some(thisType);
-		} else*/ if(typeName == "This") {
+		if(typeName == "This") {
 			return Some(new Type(TThis(None, this)));
 		} else {
-			return this.findLocalType(typeName);
+			return switch this.findLocalType(typeName) {
+				case t = Some(_): t;
+				case None: None;
+			}
 		}
 	}
 
@@ -54,7 +47,7 @@ abstract class TypeDecl {
 	}
 
 	function hasErrors() {
-		return errors.length != 0 || generics.some(g -> g.hasErrors());
+		return errors.length != 0 || generics.allValues().some(g -> g.hasErrors());
 	}
 
 	function allErrors() {

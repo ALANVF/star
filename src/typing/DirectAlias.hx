@@ -6,12 +6,15 @@ class DirectAlias extends Alias {
 	static function fromAST(lookup, ast: parsing.ast.decls.Alias) {
 		final alias = new DirectAlias({
 			lookup: lookup,
-			generics: ast.generics.mapArray(Generic.fromAST.bind(lookup, _)),
 			span: ast.span,
 			name: ast.name,
 			params: None,
 			type: null // Hack for partial initialization
 		});
+
+		for(generic in ast.generics.mapArray(Generic.fromAST.bind(lookup, _))) {
+			alias.generics.add(generic.name.name, generic);
+		}
 
 		switch ast.kind {
 			case Direct(_, type): alias.type = lookup.makeTypePath(type); // Fix
