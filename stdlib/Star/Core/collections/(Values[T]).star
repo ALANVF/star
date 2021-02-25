@@ -278,6 +278,8 @@ protocol Values[T] of Iterable[T] {
 	;on [from: (Int) upto: (Int) set: values (This)] is setter
 	;on [from: (Int) downto: (Int)] (This)
 	;on [from: (Int) downto: (Int) set: values (This)] is setter
+	;on [from: (Int) by: (Int)] (This)
+	;on [from: (Int) by: (Int) set: values (This)] is setter
 
 	;on [after: (Int) to: (Int)] (This)
 	;on [after: (Int) to: (Int) set: values (This)] is setter
@@ -285,6 +287,8 @@ protocol Values[T] of Iterable[T] {
 	;on [after: (Int) upto: (Int) set: values (This)] is setter
 	;on [after: (Int) downto: (Int)] (This)
 	;on [after: (Int) downto: (Int) set: values (This)] is setter
+	;on [after: (Int) by: (Int)] (This)
+	;on [after: (Int) by: (Int) set: values (This)] is setter
 
 
 	;== Removing elements
@@ -558,7 +562,7 @@ protocol Values[T] of Iterable[T] {
 		my count = 0
 
 		for my i from: 0 upto: length {
-			if !func[call: buffer[at: i], i] {
+			if func[call: buffer[at: i], i] {
 				count++
 			} else {
 				break
