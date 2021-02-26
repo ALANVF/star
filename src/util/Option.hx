@@ -44,6 +44,13 @@ class OptionHelper {
 		}
 	}
 
+	static inline function every<T>(opt: Option<T>, fn: T -> Bool) {
+		return switch opt {
+			case Some(v): fn(v);
+			case _: false;
+		}
+	}
+
 	static inline function forEach<T>(opt: Option<T>, fn: T -> Void) {
 		return switch opt {
 			case Some(v): fn(v);

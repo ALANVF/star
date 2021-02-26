@@ -3,6 +3,7 @@ package typing;
 import reporting.Diagnostic;
 import text.Span;
 import parsing.ast.Ident;
+import Util.match;
 
 @:build(util.Auto.build({keepInit: true}))
 @:autoBuild(util.Auto.build())
@@ -23,22 +24,27 @@ abstract class TypeDecl {
 	
 	abstract function declName(): String;
 
-	function findLocalType(typeName: String) {
-		return switch generics.find(typeName) {
-			case None: None;
-			case Some([type]): Some(type.thisType);
-			case Some(found): Some(new Type(TMulti(found.map(g -> g.thisType))));
-		}
-	}
-
-	function findType(typeName: String) {
-		if(typeName == "This") {
-			return Some(new Type(TThis(None, this)));
-		} else {
-			return switch this.findLocalType(typeName) {
-				case t = Some(_): t;
-				case None: None;
+	function findType(path: List<String>, absolute = false, cache: List<{}> = Nil) {
+		if(absolute) {
+			if(cache.contains(this)) {
+				return None;
+			} else {
+				cache = cache.prepend(this);
 			}
+		}
+
+		return if(absolute) {
+			match(path,
+				at(["This"]) => Some(new Type(TThis(None, this))),
+				at([typeName]) => switch generics.find(typeName) {
+					case None: lookup.findType(path, true, cache);
+					case Some([type]): Some(type.thisType);
+					case Some(found): Some(new Type(TMulti(found.map(g -> g.thisType))));
+				},
+				_ => if(absolute) lookup.findType(path, true, cache) else None
+			);
+		} else {
+			None;
 		}
 	}
 

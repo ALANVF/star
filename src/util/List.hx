@@ -82,6 +82,11 @@ class ListHelper {
 		return array;
 	}
 
+	static function some<T>(list: List<T>, func: (T) -> Bool) return switch list {
+		case Nil: false;
+		case Cons(head, tail): func(head) || tail.some(func);
+	}
+
 	static function every2<T, U>(list1: List<T>, list2: List<U>, func: (T, U) -> Bool) return switch [list1, list2] {
 		case [Nil, Nil]: true;
 		case [Cons(head1, tail1), Cons(head2, tail2)]:

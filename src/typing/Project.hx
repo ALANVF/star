@@ -18,7 +18,7 @@ class Project extends Dir {
 			throw 'Expected "$absPath" to be a directory, not a file!';
 		}
 
-		final root = new Project({path: absPath});
+		final root = new Project({name: path.substringAfterLast("/"), path: absPath});
 		
 		root.buildUnits();
 

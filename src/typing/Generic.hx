@@ -77,6 +77,20 @@ class Generic {
 		return "generic type";
 	}
 
+	function findType(path: List<String>, absolute = false, cache: List<{}> = Nil) {
+		if(cache.contains(this)) {
+			return None;
+		} else {
+			cache = cache.prepend(this);
+		}
+
+		return if(absolute) {
+			lookup.findType(path, true, cache);
+		} else {
+			None;
+		}
+	}
+
 	function makeTypePath(path) {
 		return new Type(TPath(path, this));
 	}

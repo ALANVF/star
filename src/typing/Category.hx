@@ -3,6 +3,7 @@ package typing;
 import text.Span;
 import parsing.ast.Ident;
 import reporting.Diagnostic;
+import Util.match;
 
 @:build(util.Auto.build())
 class Category {
@@ -82,6 +83,27 @@ class Category {
 
 	inline function declName() {
 		return "category";
+	}
+
+	function findType(path: List<String>, absolute = false, cache: List<{}> = Nil) {
+		if(cache.contains(this)) {
+			return None;
+		} else {
+			cache = cache.prepend(this);
+		}
+
+		return if(absolute) {
+			match(path,
+				at([typeName]) => switch generics.find(typeName) {
+					case None: lookup.findType(path, true, cache);
+					case Some([type]): Some(type.thisType);
+					case Some(found): Some(new Type(TMulti(found.map(g -> g.thisType))));
+				},
+				_ => lookup.findType(path, true, cache)
+			);
+		} else {
+			None;
+		}
 	}
 
 	function makeTypePath(path) {

@@ -1,5 +1,6 @@
 package typing;
 
+import text.Span;
 import reporting.Severity;
 import reporting.Diagnostic;
 
@@ -162,6 +163,23 @@ class Errors {
 				Spanned({
 					span: decl2.span(),
 					message: 'Invalid ${decl2.name()}',
+					isPrimary: true
+				})
+			]
+		});
+	}
+
+	static inline function invalidTypeLookup(
+		span: Span,
+		why = "Invalid type lookup"
+	) {
+		return new Diagnostic({
+			severity: Severity.ERROR,
+			message: "Invalid type lookup",
+			info: [
+				Spanned({
+					span: span,
+					message: why,
 					isPrimary: true
 				})
 			]

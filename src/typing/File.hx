@@ -6,6 +6,9 @@ import parsing.Parser;
 import lexing.Lexer;
 import parsing.ast.Program;
 import text.SourceFile;
+import Util.match;
+
+using hx.strings.Strings;
 
 @:build(util.Auto.build())
 class File {
@@ -17,7 +20,7 @@ class File {
 	var program: Option<Program>;
 	var status: Bool;
 	final imports: Array<Import>;
-	final decls: Array<TypeDecl>;
+	final decls: MultiMap<String, TypeDecl>;
 	final categories: Array<Category>;
 
 	function new(dir, path, ?unit) {
@@ -28,7 +31,7 @@ class File {
 		program = None;
 		status = false;
 		imports = [];
-		decls = [];
+		decls = new MultiMap();
 		categories = [];
 	}
 
@@ -137,15 +140,15 @@ class File {
 			};
 
 			for(decl in decls) switch decl {
-				case DModule(m): this.decls.push(Module.fromAST(this, m));
+				case DModule(m): this.addTypeDecl(Module.fromAST(this, m));
 
-				case DClass(c): this.decls.push(Class.fromAST(this, c));
+				case DClass(c): this.addTypeDecl(Class.fromAST(this, c));
 
-				case DProtocol(p): this.decls.push(Protocol.fromAST(this, p));
+				case DProtocol(p): this.addTypeDecl(Protocol.fromAST(this, p));
 
-				case DKind(k): this.decls.push(Kind.fromAST(this, k));
+				case DKind(k): this.addTypeDecl(Kind.fromAST(this, k));
 
-				case DAlias(a): this.decls.push(Alias.fromAST(this, a));
+				case DAlias(a): this.addTypeDecl(Alias.fromAST(this, a));
 
 				case DCategory(c): this.categories.push(Category.fromAST(this, c));
 
@@ -156,15 +159,45 @@ class File {
 		});
 	}
 
+	function addTypeDecl(decl: TypeDecl) {
+		decls.add(decl.name.name, decl);
+	}
+
+	function findType(path: List<String>, absolute = false, cache: List<{}> = Nil) {
+		if(absolute) {
+			if(cache.contains(this)) {
+				return None;
+			} else {
+				cache = cache.prepend(this);
+			}
+		}
+
+		return match(path,
+			at([typeName]) => switch decls.find(typeName) {
+				case None: if(absolute) dir.findType(path, true, cache) else None;
+				case Some([decl]): Some(decl.thisType);
+				case Some(found): Some(new Type(TMulti(found.map(d -> d.thisType))));
+			},
+			at([typeName, ...rest]) => switch decls.find(typeName) {
+				case None: if(absolute) dir.findType(path, true, cache) else None;
+				case Some([decl]): decl.findType(rest, false, cache);
+				case Some(found): throw "NYI!";
+			},
+			_ => if(absolute) dir.findType(path, true, cache) else None
+		);
+	}
+
 	function makeTypePath(path: TypePath) {
 		return new Type(TPath(path, this));
 	}
 
 	function hasErrors() {
-		return !status || errors.length != 0 || decls.some(d -> d.hasErrors());
+		return !status || errors.length != 0 || decls.allValues().some(d -> d.hasErrors()) || categories.some(c -> c.hasErrors());
 	}
 
 	function allErrors() {
-		return errors.concat(decls.flatMap(decl -> decl.allErrors()));
+		return errors
+			.concat(decls.allValues().flatMap(decl -> decl.allErrors()))
+			.concat(categories.flatMap(c -> c.allErrors()));
 	}
 }
