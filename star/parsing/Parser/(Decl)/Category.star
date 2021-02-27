@@ -1,4 +1,4 @@
-class Category of Namespace, Generic {
+class Category of Decl, Generic;[, Parametric] {
 	kind Attrs is flags {
 		has [empty]
 		has [is: (Span) hidden: (Maybe[Type])]

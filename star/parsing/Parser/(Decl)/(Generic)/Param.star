@@ -1,7 +1,8 @@
-class Param of Parents {
-	my span (Span)
-	my name (Ident)
-	my params (Maybe[Type.Params])
+class Param of Decl, Named, Parents, Parametric {
 	my rule (Maybe[Tuple[Span, Rule]])
 	my body (Maybe[Body])
+
+	on [displayName] (Str) is getter {
+		return "local generic"
+	}
 }
