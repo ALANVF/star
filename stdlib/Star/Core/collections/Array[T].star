@@ -88,6 +88,67 @@ class Array[T] of Values[T] {
 			}
 		}
 	}
+
+
+	;== Chunking
+
+	on [
+		every: size (Int)
+		by: offset (Int) = 0
+		allowPartial: (Bool) = true
+	] (This'[This]) {
+		if size <= 0 {
+			throw "Invalid size"
+		}
+
+		if offset + size <= 0 {
+			throw "Invalid offset"
+		}
+
+		;-- Thanks to @somebody1234 for helping me figure out this algorithm
+
+		;[
+		==| Whether to add 1: Does the size of 1..size-1 equal size - 1?
+		==|
+		==| |--------------------------------------------------------------|
+		==| | length % (size + offset) |     status     | whether to add 1 |
+		==| |--------------------------|----------------|------------------|
+		==| | 0                        | chunk finished | no               |
+		==| | 1..size-1                | partial chunk  | yes              |
+		==| | size..size+offset        | current chunk  | no               |
+		==|
+		==| |--------------------------------------------------------------------|
+		==| | (length - 1) % (size + offset) |     status     | whether to add 1 |
+		==| |--------------------------------|----------------|------------------|
+		==| | 1..size-1                      | partial chunk  | yes              |
+		==| | size..size+offset              | current chunk  | no               |
+		==| | 0                              | chunk finished | no               |
+		]
+
+		my partialOffset = {
+			my shouldAdd1 = (length - 1) % (size + by) < size - 1
+			
+			if allowPartial && shouldAdd1 {
+				return 1
+			} else {
+				return 0
+			}
+		}
+		my newSize = (length + by) // (size + by) + partialOffset
+		my result = This'[This][new: newSize]
+		my i = 0
+
+		while i + size <= length {
+			result[add: this[from: i by: size]]
+			i += size + by
+		}
+
+		if allowPartial && i < length {
+			result[add: this[from: i]]
+		}
+
+		return result
+	}
 }
 
 
