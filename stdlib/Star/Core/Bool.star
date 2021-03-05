@@ -1,18 +1,14 @@
 use Native
 
 class Bool of Comparable is native[repr: `bool`] is strong {
-	;[type T
-	macro [yes: (T) no: (T)] (T) is unordered {
-		return @{
-			{
-				if @this {
-					return @yes
-				} else {
-					return @no
-				}
-			}
+	type T
+	on [yes: (T) no: (T)] (T) is macro {
+		if #expand this {
+			return #expand yes
+		} else {
+			return #expand no
 		}
-	}]
+	}
 
 
 	operator `!` (Bool) is native `bool_not`
@@ -27,6 +23,57 @@ class Bool of Comparable is native[repr: `bool`] is strong {
 	operator `>=` [bool (Bool)] (Bool) is native `bool_ge`
 	operator `<` [bool (Bool)] (Bool) is native `bool_lt`
 	operator `<=` [bool (Bool)] (Bool) is native `bool_le`
+
+	operator `&&` [cond (Bool)] (Bool) is macro {
+		if #expand this {
+			return #expand cond
+		} else {
+			return false
+		}
+	}
+
+	operator `||` [cond (Bool)] (Bool) is macro {
+		if #expand this {
+			return true
+		} else {
+			return #expand cond
+		}
+	}
+
+	operator `^^` [cond (Bool)] (Bool) is macro {
+		match cond at #quote (my left ^^ my right) {
+			;-- We don't want to expand `left` twice, so save it for later
+			my leftCond = #expand left
+
+			if #expand this != leftCond {
+				return leftCond ^^ right
+			} else {
+				return false
+			}
+		} else {
+			return #expand this != #expand cond 
+		}
+	}
+
+	operator `!!` [cond (Bool)] (Bool) is macro {
+		match cond at #quote (my left !! my right) {
+			my result = #expand this || #expand left
+
+			while true {
+				match right at #quote (my left' !! my right') {
+					result ||= #expand left'
+					right = right'
+				} else {
+					result ||= #expand right'
+					break
+				}
+			}
+
+			return !result
+		} else {
+			return !(#expand this || #expand cond)
+		}
+	}
 
 
 	on [Int8] is native `cast_bool_i8`
