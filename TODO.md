@@ -1,4 +1,3 @@
-- Logo
 - Website
 - More documentation
 - More examples
