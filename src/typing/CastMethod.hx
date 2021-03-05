@@ -45,6 +45,8 @@ class CastMethod extends Method {
 			case IsInline: method.isInline = true;
 
 			case IsAsm: method.isAsm = true;
+
+			case IsMacro: method.isMacro = true;
 		}
 
 		return method;

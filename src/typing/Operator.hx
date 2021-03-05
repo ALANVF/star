@@ -98,6 +98,7 @@ abstract class Operator extends AnyMethod {
 	var ret: Option<Type>;
 	final opSpan: Span;
 	var isInline: Bool = false;
+	var isMacro: Bool = false;
 
 	static function fromAST(decl: ITypeDecl, ast: parsing.ast.decls.Operator) {
 		final oper: Operator = switch ast.spec {
@@ -109,10 +110,10 @@ abstract class Operator extends AnyMethod {
 					case "!": Not;
 					case "~": Compl;
 					case "?": Truthy;
-					case "+" | "*" | "**" | "/" | "//" | "%" | "%%" | "&" | "|" | "^" | "<<" | ">>" | "?=" | "!=" | ">" | ">=" | "<" | "<=":
+					case "+" | "*" | "**" | "/" | "//" | "%" | "%%" | "&" | "|" | "^" | "<<" | ">>" | "?=" | "!=" | ">" | ">=" | "<" | "<=" | "&&" | "||" | "^^" | "!!":
 						decl.errors.push(needsParameter(decl, ast));
 						return None;
-					case "+=" | "-=" | "*=" | "**=" | "/=" | "//=" | "%=" | "%%=" | "&=" | "|=" | "^=" | "<<=" | ">>=" | "&&" | "||" | "^^" | "!!":
+					case "+=" | "-=" | "*=" | "**=" | "/=" | "//=" | "%=" | "%%=" | "&=" | "|=" | "^=" | "<<=" | ">>=" | "&&=" | "||=" | "^^=" | "!!=":
 						decl.errors.push(notOverloadable(decl, ast));
 						return None;
 					default:
@@ -143,10 +144,14 @@ abstract class Operator extends AnyMethod {
 					case ">=": Ge;
 					case "<": Lt;
 					case "<=": Le;
+					case "&&": And;
+					case "||": Or;
+					case "^^": Xor;
+					case "!!": Nor;
 					case "++" | "--" | "!" | "~" | "?":
 						decl.errors.push(excludeParameter(decl, ast));
 						return None;
-					case "+=" | "-=" | "*=" | "**=" | "/=" | "//=" | "%=" | "%%=" | "&=" | "|=" | "^=" | "<<=" | ">>=" | "&&" | "||" | "^^" | "!!":
+					case "+=" | "-=" | "*=" | "**=" | "/=" | "//=" | "%=" | "%%=" | "&=" | "|=" | "^=" | "<<=" | ">>=" | "&&=" | "||=" | "^^=" | "!!=":
 						decl.errors.push(notOverloadable(decl, ast));
 						return None;
 					default:
@@ -170,6 +175,8 @@ abstract class Operator extends AnyMethod {
 			case IsInline: oper.isInline = true;
 
 			case IsAsm: oper.isAsm = true;
+
+			case IsMacro: oper.isMacro = true;
 		}
 
 		return Some(oper);

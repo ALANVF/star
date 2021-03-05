@@ -6,4 +6,5 @@ typedef IMethod = IAnyMethod & {
 	var isGetter: Bool;
 	var isSetter: Bool;
 	var isInline: Bool;
+	var isMacro: Bool;
 }

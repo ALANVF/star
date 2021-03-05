@@ -41,10 +41,10 @@ syn region    starBlock       start="{"   end="}"  transparent fold
 
 syn keyword   starAttribute   contained static hidden readonly friend sealed
 syn keyword   starAttribute   contained unordered getter setter main inline noinherit
-syn keyword   starAttribute   contained asm native
+syn keyword   starAttribute   contained asm native macro
 syn keyword   starAttribute   contained flags uncounted strong
 
-syn keyword   starKeyword     module macro my on return init deinit operator
+syn keyword   starKeyword     module my on return init deinit operator
 syn keyword   starKeyword     class alias type kind category protocol
 syn keyword   starKeyword     is of use has
 

@@ -1288,6 +1288,10 @@ class Parser {
 					attrs[MethodAttr.IsAsm] = Span.range(_2, _3);
 					rest = rest2;
 				},
+				at([T_Is(_2), T_Macro(_3), ...rest2]) => {
+					attrs[MethodAttr.IsMacro] = Span.range(_2, _3);
+					rest = rest2;
+				},
 				_ => break
 			);
 
@@ -1453,6 +1457,10 @@ class Parser {
 				},
 				at([T_Is(_3), T_Asm(_4), ...rest2]) => {
 					attrs[OperatorAttr.IsAsm] = Span.range(_3, _4);
+					rest = rest2;
+				},
+				at([T_Is(_3), T_Macro(_4), ...rest2]) => {
+					attrs[OperatorAttr.IsMacro] = Span.range(_3, _4);
 					rest = rest2;
 				},
 				_ => break

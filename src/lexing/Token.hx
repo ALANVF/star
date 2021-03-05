@@ -15,7 +15,6 @@ enum Token {
 	T_LSep(_: Span);
 
 	T_Module(_: Span);
-	T_Macro(_: Span);
 	T_My(_: Span);
 	T_On(_: Span);
 	T_Return(_: Span);
@@ -64,6 +63,7 @@ enum Token {
 	T_Uncounted(_: Span);
 	T_Strong(_: Span);
 	T_Sealed(_: Span);
+	T_Macro(_: Span);
 
 	T_Tilde(_: Span);
 	T_Dot(_: Span);
@@ -155,7 +155,7 @@ class TokenHelper {
 	static function basicTokenName(token: Token) return switch token {
 		case T_CSep(_) | T_Comma(_): "comma";
 		case T_LSep(_): "newline";
-		case T_Module(_) | T_Macro(_) | T_My(_) | T_On(_) | T_Return(_)
+		case T_Module(_) | T_My(_) | T_On(_) | T_Return(_)
 			| T_Init(_) | T_Deinit(_) | T_Operator(_) | T_Class(_) | T_Alias(_)
 			| T_Type(_) | T_Kind(_) | T_Category(_) | T_Protocol(_) | T_Is(_)
 			| T_Of(_) | T_Use(_) | T_Has(_) | T_If(_) | T_Orif(_) | T_Else(_)
@@ -164,7 +164,7 @@ class TokenHelper {
 		case T_Static(_) | T_Hidden(_) | T_Readonly(_) | T_Friend(_) | T_Unordered(_)
 			| T_Getter(_) | T_Setter(_) | T_Main(_) | T_Inline(_) | T_Noinherit(_)
 			| T_Pattern(_) | T_Asm(_) | T_Native(_) | T_Flags(_) | T_Uncounted(_)
-			| T_Strong(_) | T_Sealed(_): "attribute";
+			| T_Strong(_) | T_Sealed(_) | T_Macro(_): "attribute";
 		case T_Dot(_): "dot";
 		case T_Tilde(_) | T_Eq(_) | T_EqGt(_)
 			| T_Plus(_) | T_PlusEq(_) | T_PlusPlus(_)
@@ -209,7 +209,6 @@ class TokenHelper {
 
 	static function asSoftName(token: Token) return switch token {
 		case T_Module(span): T_Name(span, "module");
-		case T_Macro(span): T_Name(span, "macro");
 		case T_On(span): T_Name(span, "on");
 		case T_Init(span): T_Name(span, "init");
 		case T_Deinit(span): T_Name(span, "deinit");
@@ -229,7 +228,6 @@ class TokenHelper {
 
 	static function asAnyName(token: Token) return switch token {
 		case T_Module(span): T_Name(span, "module");
-		case T_Macro(span): T_Name(span, "macro");
 		case T_My(span): T_Name(span, "my");
 		case T_On(span): T_Name(span, "on");
 		case T_Return(span): T_Name(span, "return");

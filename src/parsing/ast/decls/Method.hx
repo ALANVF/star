@@ -13,6 +13,7 @@ enum MethodAttr {
 	IsNative(sym: Option<Ident>);
 	IsInline;
 	IsAsm;
+	IsMacro;
 }
 
 enum MethodKind {

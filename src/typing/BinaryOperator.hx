@@ -23,8 +23,12 @@ enum abstract BinaryOp(Int) {
 	var Ge;
 	var Lt;
 	var Le;
+	var And;
+	var Or;
+	var Xor;
+	var Nor;
 
-	static final SYMBOLS = ["+", "-", "*", "**", "/", "//", "%", "%%", "&", "|", "^", "<<", ">>", "?=", "!=", ">", ">=", "<", "<="];
+	static final SYMBOLS = ["+", "-", "*", "**", "/", "//", "%", "%%", "&", "|", "^", "<<", ">>", "?=", "!=", ">", ">=", "<", "<=", "&&", "||", "^^", "!!"];
 
 	public inline function symbol() {
 		return SYMBOLS[this];

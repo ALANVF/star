@@ -8,6 +8,7 @@ enum OperatorAttr {
 	IsNative(sym: Option<Ident>);
 	IsInline;
 	IsAsm;
+	IsMacro;
 }
 
 @:structInit

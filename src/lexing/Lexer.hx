@@ -64,7 +64,6 @@ class Lexer {
 	// TODO: replace these all with indexes since those are probably faster than closures
 	static final KEYWORDS = [
 		"module" => T_Module,
-		"macro" => T_Macro,
 		"my" => T_My,
 		"on" => T_On,
 		"return" => T_Return,
@@ -114,7 +113,8 @@ class Lexer {
 		"flags" => T_Flags,
 		"uncounted" => T_Uncounted,
 		"strong" => T_Strong,
-		"sealed" => T_Sealed
+		"sealed" => T_Sealed,
+		"macro" => T_Macro
 	];
 
 	function retoken(tokens: List<Token>) return Util.match(tokens,

@@ -2,7 +2,7 @@
 	"name": "language-star",
 	"displayName": "Star",
 	"description": "Star language support",
-	"version": "0.2.1",
+	"version": "0.2.2",
 	"publisher": "theangryepicbanana",
 	"engines": {
 		"vscode": "^1.19.0"

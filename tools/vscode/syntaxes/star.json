@@ -11,7 +11,7 @@
 		"types": {
 			"patterns": [
 				{
-					"match": "\\b[A-Z]\\w*\\b",
+					"match": "\\b[A-Z][\\w']*(?:(?<=')|\\b)",
 					"name": "entity.name.type.star"
 				}
 			]
@@ -402,7 +402,7 @@
 					"name": "keyword.decl.star"
 				},
 				{
-					"match": "(?<!\\.)\\b(is)\\s+(static|hidden|readonly|friend|unordered|getter|setter|main|inline|noinherit|asm|native|flags|uncounted|strong|sealed)\\b(?!')",
+					"match": "(?<!\\.)\\b(is)\\s+(static|hidden|readonly|friend|unordered|getter|setter|main|inline|noinherit|asm|native|flags|uncounted|strong|sealed|macro)\\b(?!')",
 					"captures": {
 						"1": {
 							"name": "keyword.other.attribute"
@@ -413,7 +413,7 @@
 					}
 				},
 				{
-					"match": "(?<!\\.)\\b(?:on|init|deinit|operator|macro)\\b(?!')",
+					"match": "(?<!\\.)\\b(?:on|init|deinit|operator)\\b(?!')",
 					"name": "keyword.routine.star"
 				},
 				{

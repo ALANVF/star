@@ -128,7 +128,7 @@ object SyntAnal3: TLibSyntAnalyzer
 			DisplayName = 'Attribute'
 			StyleName = 'Id attr'
 			TokenType = 2
-			Expression = '(?-i)(?<=is\s+)(static|hidden|readonly|friend|sealed|unordered|getter|setter|main|noinherit|inline|asm|native|flags|uncounted|strong)\b'
+			Expression = '(?-i)(?<=is\s+)(static|hidden|readonly|friend|sealed|unordered|getter|setter|main|noinherit|inline|asm|native|macro|flags|uncounted|strong)\b'
 			ColumnFrom = 0
 			ColumnTo = 0
 		end
@@ -230,7 +230,6 @@ object SyntAnal3: TLibSyntAnalyzer
 						'init'
 						'is'
 						'kind'
-						'macro'
 						'module'
 						'my'
 						'of'
@@ -328,7 +327,6 @@ object SyntAnal3: TLibSyntAnalyzer
 						'kind'
 						'category'
 						'init'
-						'macro'
 						'module'
 						'on'
 						'operator'

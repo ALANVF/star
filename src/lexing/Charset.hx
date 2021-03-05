@@ -5,15 +5,14 @@ import hx.strings.Char;
 
 using util.Strings;
 
-@:struct
 @:publicFields
 private class _Charset {
 	var bytes: Bytes;
 	var size: Int;
 
 	function new(size) {
-		this.bytes = new Bytes(size);
-		this.bytes.fill(0, size, 0);
+		bytes = new Bytes(size);
+		bytes.fill(0, size, 0);
 		this.size = size;
 	}
 
