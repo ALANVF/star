@@ -17,6 +17,8 @@ class Main {
 	}
 	
 	static function testProject(path, buildDecls = false, ?callback: (typing.Project) -> Void) {
+		Sys.println('Path: $path');
+		
 		var time = 0.0;
 
 		final startProject = haxe.Timer.stamp();

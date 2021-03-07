@@ -1,6 +1,9 @@
 use Native
 
 class Bool of Comparable is native[repr: `bool`] is strong {
+	; These macros exist purely for documentation purposes until Star is
+	; bootstrapped and macros are implemented
+
 	type T
 	on [yes: (T) no: (T)] (T) is macro {
 		if #expand this {
@@ -12,7 +15,10 @@ class Bool of Comparable is native[repr: `bool`] is strong {
 
 
 	operator `!` (Bool) is native `bool_not`
-	operator `?` (Bool) is native `bool_truthy`
+	
+	operator `?` (Bool) is inline {
+		return this
+	}
 
 	operator `&` [bool (Bool)] (Bool) is native `bool_and`
 	operator `|` [bool (Bool)] (Bool) is native `bool_or`
