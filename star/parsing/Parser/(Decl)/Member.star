@@ -14,6 +14,10 @@ class Member of Decl, Named {
 	my attrs (Attrs)
 
 	on [displayName] (Str) is getter {
-		return "member"
+		match attrs at Attrs[isStatic: _] & _ {
+			return "static member"
+		} else {
+			return "instance member"
+		}
 	}
 }

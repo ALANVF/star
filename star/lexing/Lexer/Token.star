@@ -6,7 +6,6 @@ kind Token {
 	has [lSep]
 
 	has [module]
-	has [macro]
 	has [my]
 	has [on]
 	has [return]
@@ -56,6 +55,7 @@ kind Token {
 	has [uncounted]
 	has [strong]
 	has [sealed]
+	has [macro]
 
 	has [tilde]
 	has [dot]
@@ -141,7 +141,7 @@ kind Token {
 		match this {
 			at Token[cSep] || Token[comma] => return "comma"
 			at Token[module] <= _ <= Token[catch] => return "keyword"
-			at Token[static] <= _ <= Token[sealed] => return "attribute"
+			at Token[static] <= _ <= Token[macro] => return "attribute"
 			at Token[dot] => return "dot"
 			at Token[tilde] <= _ <= Token[dotDotDot] => return "operator"
 			at Token[cascade: _] => return "cascade"
@@ -175,7 +175,6 @@ kind Token {
 	on [asSoftName] (Token) {
 		match this {
 			at Token[module] => return Token[:span name: "module"]
-			at Token[macro] => return Token[:span name: "macro"]
 			at Token[on] => return Token[:span name: "on"]
 			at Token[init] => return Token[:span name: "init"]
 			at Token[deinit] => return Token[:span name: "deinit"]
@@ -195,7 +194,6 @@ kind Token {
 	on [asAnyName] (Token) {
 		match this {
 			at Token[module] => return Token[:span name: "module"]
-			at Token[macro] => return Token[:span name: "macro"]
 			at Token[my] => return Token[:span name: "my"]
 			at Token[on] => return Token[:span name: "on"]
 			at Token[return] => return Token[:span name: "return"]

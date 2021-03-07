@@ -1,7 +1,7 @@
 kind Case of Decl {
 	kind Tag {
-		has [single: name (Ident)]
-		has [multi: params (Array[Maybe[Ident], Maybe[Ident], Type])]
+		has [single: (Ident)]
+		has [multi: (Multi.Params)]
 	}
 
 	my init (Maybe[Block])
