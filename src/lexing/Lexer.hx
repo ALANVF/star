@@ -282,7 +282,7 @@ class Lexer {
 				if(rdr.current.isLowerCase()) readTag()
 				else if(rdr.eat('('.code)) T_HashLParen(span())
 				else if(rdr.eat('['.code)) T_HashLBracket(span())
-				else if(rdr.eat('{'.code)) T_LBrace(span())
+				else if(rdr.eat('{'.code)) T_HashLBrace(span())
 				else if(rdr.eat('"'.code)) readChar()
 				else throw new Diagnostic({
 					severity: Severity.ERROR,
