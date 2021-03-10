@@ -575,6 +575,26 @@ protocol Values[T] of Iterable[T] {
 
 	;== Finding
 
+	on [indexOf: value (T)] (Int) {
+		for my i from: 0 upto: length {
+			if buffer[at: i] ?= value {
+				return i
+			}
+		}
+
+		throw NotFound[new]
+	}
+
+	on [maybeIndexOf: value (T)] (Int) {
+		for my i from: 0 upto: length {
+			if buffer[at: i] ?= value {
+				return Maybe[the: i]
+			}
+		}
+
+		return Maybe[none]
+	}
+
 	on [find: func (Func[Bool, T, Int])] (T) {
 		for my i from: 0 upto: length {
 			my value = buffer[at: i]

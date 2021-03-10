@@ -1,6 +1,6 @@
 class Cursor {
 	my pos = Pos[new]
-	my lastWasCR = false
+	my lastWasCR is hidden = false
 
 	init [new: pos (Pos)] {
 		this.pos = pos

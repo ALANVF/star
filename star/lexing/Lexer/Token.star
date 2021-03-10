@@ -227,6 +227,7 @@ kind Token {
 			at Token[bool: true] => return Token[:span name: "true"]
 			at Token[bool: false] => return Token[:span name: "false"]
 			at Token[this] => return Token[:span name: "this"]
+			else => return this
 		}
 	}
 }

@@ -151,4 +151,71 @@ class Series[T] of Ordered, Iterable[T] {
 	on [Iterator[T]] is inline {
 		return ValuesIterator[Unsafe newWithoutCopying: buffer[from: offset]]
 	}
+
+
+	;== Finding
+
+	on [maybeFind: value (T)] (Maybe[This]) {
+		if this[isTail] {
+			return Maybe[none]
+		} else {
+			for my i from: 0 upto: this.length {
+				if this[at: i] ?= value {
+					return Maybe[the: this[skip: i]]
+				}
+			}
+
+			return Maybe[none]
+		}
+	}
+	
+	on [maybeFindEach: values (Sequential[T])] (Maybe[This]) {
+		if this[isTail] || values.length > this.length {
+			return Maybe[none]
+		} else {
+			for my i from: 0 to: this.length - values.length {
+				for my j from: 0 to: values.length {
+					if this[at: i + j] != values[at: j] {
+						next 2
+					}
+				}
+
+				return Maybe[the: this[skip: i]]
+			}
+
+			return Maybe[none]
+		}
+	}
+
+
+	;== Observing
+
+	on [startsWith: value (T)] (Bool) {
+		if this[isTail] {
+			return false
+		} else {
+			return this[first] ?= value
+		}
+	}
+
+	on [startsWithEach: values (Sequential[T])] (Bool) {
+		if this[isTail] || values.length > this.length {
+			return false
+		} else {
+			for my i from: 0 upto: values.length {
+				if this[at: i] != values[at: i] {
+					return false
+				}
+			}
+
+			return true
+		}
+	}
+
+
+	;== Adding
+
+	on [add: value (T)] (T) is inline {
+		return buffer[add: value]
+	}
 }
