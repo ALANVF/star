@@ -67,8 +67,8 @@ class Lexer {
 		"macro" => Token[macro]->[span: $.0]
 	)
 
-	my input (Reader)
-	my reader (SourceFile)
+	my input (SourceFile)
+	my reader (Reader)
 	my begin = Pos[new]
 	my cursor = Cursor[new]
 	my tokens (Tokens) = #[]
