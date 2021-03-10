@@ -21,20 +21,25 @@ kind Param {
 	}
 
 	on [type] (Type) is getter {
-		match this {
-			at Param[label: _ name: _ type: my type value: _] => return type
-			at Param[label: _         type: my type value: _] => return type
-			at Param[         name: _ type: my type value: _] => return type
-			at Param[                 type: my type         ] => return type
+		match this at (
+			|| Param[label: _ name: _ type: my type value: _]
+			|| Param[label: _         type: my type value: _]
+			|| Param[         name: _ type: my type value: _]
+			|| Param[                 type: my type         ]
+		) {
+			return type
 		}
 	}
 
 	on [value] (Maybe[Expr]) is getter {
-		match this {
-			at Param[label: _ name: _ type: _ value: my value] => return value
-			at Param[label: _         type: _ value: my value] => return value
-			at Param[         name: _ type: _ value: my value] => return value
-			at Param[                 type: _                ] => return Maybe[none]
+		match this at (
+			|| Param[label: _ name: _ type: _ value: my value]
+			|| Param[label: _         type: _ value: my value]
+			|| Param[         name: _ type: _ value: my value]
+		) {
+			return value
+		} else {
+			return Maybe[none]
 		}
 	}
 }

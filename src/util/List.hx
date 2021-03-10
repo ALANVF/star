@@ -140,9 +140,25 @@ class ListHelper {
 		case Cons(head, _): head;
 	}
 
+	static inline function setHead<T>(list: List<T>, value: T) {
+		if(list == Nil) {
+			throw "Empty list!";
+		} else {
+			util.EnumValues.setParameter(list, 0, value);
+		}
+	}
+
 	static inline function tail<T>(list: List<T>) return switch list {
 		case Nil: throw "Empty list!";
 		case Cons(_, tail): tail;
+	}
+
+	static inline function setTail<T>(list: List<T>, value: List<T>) {
+		if(list == Nil) {
+			throw "Empty list!";
+		} else {
+			util.EnumValues.setParameter(list, 1, value);
+		}
 	}
 
 	static function last<T>(list: List<T>) return switch list {

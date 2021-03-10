@@ -2291,17 +2291,104 @@ class Parser {
 		return Success(parts, Nil);
 	}
 
-	// TODO: add support for newlines in exprs
+
+	static function skipParen(tokens: List<Token>): List<Token> {
+		while(true) match(tokens,
+			at([T_LParen(_) | T_HashLParen(_), ...rest]) => tokens = skipParen(rest).tail(),
+			at([T_LBracket(_) | T_HashLBracket(_), ...rest]) => tokens = skipBracket(rest).tail(),
+			at([T_LBrace(_) | T_HashLBrace(_), ...rest]) => tokens = skipBrace(rest).tail(),
+			at([T_RParen(_), ..._]) => return tokens,
+			at([_, ...rest]) => tokens = rest,
+			at([]) => throw "Error!"
+		);
+	}
+
+	static function skipBracket(tokens: List<Token>): List<Token> {
+		while(true) match(tokens,
+			at([T_LParen(_) | T_HashLParen(_), ...rest]) => tokens = skipParen(rest).tail(),
+			at([T_LBracket(_) | T_HashLBracket(_), ...rest]) => tokens = skipBracket(rest).tail(),
+			at([T_LBrace(_) | T_HashLBrace(_), ...rest]) => tokens = skipBrace(rest).tail(),
+			at([T_RBracket(_), ..._]) => return tokens,
+			at([_, ...rest]) => tokens = rest,
+			at([]) => throw "Error!"
+		);
+	}
+
+	static function skipBrace(tokens: List<Token>): List<Token> {
+		while(true) match(tokens,
+			at([T_LParen(_) | T_HashLParen(_), ...rest]) => tokens = skipParen(rest).tail(),
+			at([T_LBracket(_) | T_HashLBracket(_), ...rest]) => tokens = skipBracket(rest).tail(),
+			at([T_LBrace(_) | T_HashLBrace(_), ...rest]) => tokens = skipBrace(rest).tail(),
+			at([T_RBrace(_), ..._]) => return tokens,
+			at([_, ...rest]) => tokens = rest,
+			at([]) => throw "Error!"
+		);
+	}
+
+
+	static function removeNewlines(tokens: List<Token>) {
+		while(true) match(tokens,
+			at([T_LParen(_) | T_HashLParen(_), ...rest]) => tokens = skipParen(rest),
+			at([T_LBracket(_) | T_HashLBracket(_), ...rest]) => tokens = skipBracket(rest),
+			at([T_LBrace(_) | T_HashLBrace(_), ...rest]) => tokens = skipBrace(rest),
+			at([T_RParen(_), ..._]) => break,
+			at([_, T_LSep(_), T_Cascade(_), ...rest]) => tokens = rest,
+			at([_, T_LSep(_), ...rest]) => {
+				tokens.setTail(rest);
+				tokens = rest;
+			},
+			at([_, ...rest]) => tokens = rest,
+			at([]) => return false
+		);
+
+		return true;
+	}
+
 	static function parseParenContents(tokens: List<Token>) {
 		final exprs = [];
 		var rest = tokens;
+
+		if(!removeNewlines(rest)) {
+			return Eof(tokens);
+		}
+
+		final leadingOp = match(rest,
+			at([T_AndAnd(_), ...rest2]) => {
+				rest = rest2;
+				Some(Infix.And);
+			},
+			at([T_BarBar(_), ...rest2]) => {
+				rest = rest2;
+				Some(Infix.Or);
+			},
+			at([T_CaretCaret(_), ...rest2]) => {
+				rest = rest2;
+				Some(Infix.Xor);
+			},
+			at([T_BangBang(_), ...rest2]) => {
+				rest = rest2;
+				Some(Infix.Nor);
+			},
+			_ => None
+		);
 		
 		while(true) switch parseFullExpr(rest) {
 			case Success(e, rest2):
 				exprs.push(e);
 				
 				match(rest2,
-					at([T_RParen(end), ...rest3]) => return Success({exprs: exprs, end: end}, rest3),
+					at([T_RParen(end), ...rest3]) => {
+						switch leadingOp {
+							case None:
+							case Some(op):
+								switch exprs[0] {
+									case EInfix(_, _, _ == op => true, _):
+									default: return Fatal(tokens, None);
+								}
+						}
+
+						return Success({exprs: exprs, end: end}, rest3);
+					},
 					at([] | [isAnyComma(_) => true]) => return Eof(tokens),
 					at([isAnyComma(_) => true, ...rest3]) => rest = rest3,
 					_ => return Fatal(tokens, Some(rest2))
