@@ -2,6 +2,188 @@ use Core
 
 category Power for Int {
 	on [
+		fromStr: str (Str)
+		usesUnifiedPrefix: (Bool) = false
+	] (Int) is static {
+		match This[getSignFromStr: str] at #{my index, my sign} {
+			my base = {
+				try {
+					match this[getBaseFromStr: str :usesUnifiedPrefix :index] at #{my base', index = _} {
+						return base'
+					}
+				} catch {
+					at _ => return 10
+				}
+			}
+
+			return This[fromStr: str withBase: base :sign :index]
+		}
+	}
+
+	on [
+		fromStr: str (Str)
+		withBase: base (Int)
+		includesPrefix: (Bool) = true
+		usesUnifiedPrefix: (Bool) = false
+	] (Int) is static {
+		if base < 2 || base > 36 {
+			throw "Invalid base: must be 2..36"
+		}
+
+		match This[getSignFromStr: str] at #{my index, my sign} {
+			if includesPrefix {
+				match this[getBaseFromStr: str :usesUnifiedPrefix :index] {
+					at #{base, index = _} {}
+					at #{my base', _} => throw "Base \(base') found, expected base \(base)"
+				}
+			}
+
+			return This[fromStr: str withBase: base :sign :index]
+		}
+	}
+
+	on [getSignFromStr: str (Str)] (Tuple[Int, Int]) is static is hidden {
+		match str[at: 0] {
+			at #"+" => return #{1, 1}
+			at #"-" => return #{1, -1}
+			else => return #{0, 1}
+		}
+	}
+
+	on [
+		getBaseFromStr: str (Str)
+		usesUnifiedPrefix: (Bool)
+		index: (Int)
+	] (Tuple[Int, Int]) is static is hidden {
+		my base = {
+			if usesUnifiedPrefix {
+				match str[at: index++] at #"0" <= my d1 <= #"9" {
+					match str[at: index++] {
+						at #"0" <= my d2 <= #"9" {
+							if str[at: index++] != #"r" {
+								throw "Parse error"
+							}
+
+							if (d1 ?= #"0" && d2 < #"2") || (d1 ?= #"3" && d2 > #"6") {
+								throw "Invaid base: must be 2..36"
+							}
+						}
+						
+						at #"r" {
+							if d1 < #"2" {
+								throw "Invaid base: must be 2..36"
+							} else {
+								return d1[Int] - 48
+							}
+						}
+
+						else => throw "Parse error"
+					}
+				} else {
+					throw "Parse error"
+				}
+			} else {
+				if str[at: index++] != #"0" {
+					throw "Expected prefix"
+				}
+
+				match str[at: index++] {
+					at #"b" => return 2
+					at #"o" => return 8
+					at #"d" => return 10
+					at #"x" => return 16
+					else => throw "Invalid base prefix"
+				}
+			}
+		}
+
+		return #{base, index}
+	}
+
+	on [
+		fromStr: str (Str)
+		withBase: base (Int)
+		sign: (Int)
+		index: (Int)
+	] (Int) is static is hidden {
+		if base < 10 {
+			my max = [base + 46 Char]
+			
+			if str[at: index] ?= #"0" {
+				do {
+					index++
+				} while index < str.length && str[at: index] ?= #"0"
+
+				if index ?= str.length || !(#"1" <= str[at: index] <= max) {
+					return 0
+				}
+			}
+
+			my int = {
+				match str[at: index++] at #"1" <= my char <= max {
+					return char[Int] - 48
+				} else {
+					throw "Parse error"
+				}
+			}
+
+			while index < str.length {
+				match str[at: index++] at #"0" <= my char <= max {
+					int *= base
+					int += char[Int] - 48
+				} else {
+					throw "Parse error"
+				}
+			}
+
+			return int
+		} else {
+			my maxUpper = [base + 55 Char]
+			my maxLower = [base + 87 Char]
+
+			if str[at: index] ?= #"0" {
+				do {
+					index++
+				} while index < str.length && str[at: index] ?= #"0"
+
+				if index ?= str.length {
+					return 0
+				}
+
+				my char = str[at: index]
+				
+				if  #"1" <= char <= #"9" || #"A" < char <= maxUpper || #"a" <= char <= maxLower {
+					return 0
+				}
+			}
+
+			my int = {
+				match str[at: index++] {
+					at #"1" <= my char <= #"9" => return char[Int] - 48
+					at #"A" <= my char <= maxUpper => return char[Int] - 55
+					at #"a" <= my char <= maxLower => return char[Int] - 87
+					else => throw "Parse error"
+				}
+			}
+
+			while index < str.length {
+				int *= base
+				int += {
+					match str[at: index++] {
+						at #"0" <= my char <= #"9" => return char[Int] - 48
+						at #"A" <= my char <= maxUpper => return char[Int] - 55
+						at #"a" <= my char <= maxLower => return char[Int] - 87
+						else => throw "Parse error"
+					}
+				}
+			}
+
+			return int
+		}
+	}
+
+
+	on [
 		toBase: base (Int)
 		includePrefix: (Bool) = false
 		useUnifiedPrefix: (Bool) = false
