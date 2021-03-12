@@ -283,4 +283,17 @@ class Util {
 	static inline function parseInt(str: String) {
 		return nonNull(Std.parseInt(str));
 	}
+
+	static function parseOctal(str: String) {
+		var int = 0;
+
+		for(i in 0...str.length) {
+			final char = nonNull(str.charCodeAt(i));
+
+			int *= 8;
+			int += char - 48;
+		}
+
+		return int;
+	}
 }

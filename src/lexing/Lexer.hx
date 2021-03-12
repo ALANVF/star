@@ -24,6 +24,7 @@ class Lexer {
 	static final ALPHA = UPPER | LOWER;
 	static final ALNUM = DIGIT | LOWER | UPPER | '_'.code;
 	static final XDIGIT = DIGIT | Charset.of(range('a'.code, 'f'.code).concat(range('A'.code, 'F'.code)));
+	static final ODIGIT = Charset.of(range('0'.code, '7'.code));
 	
 	static final HSPACE_SEMI = Charset.from(" \t;");
 	static final LOWER_U = LOWER | '_'.code;
@@ -977,15 +978,94 @@ class Lexer {
 	}
 	
 	function readHexEsc(): Char {
-		throw new NotImplementedException();
+		final hex = new Buffer();
+
+		hex.addString("0x");
+
+		for(_ in 0...2) {
+			if(XDIGIT[rdr.current]) {
+				hex.addChar(rdr.advance());
+			} else {
+				final end = here();
+				throw new Diagnostic({
+					severity: Severity.ERROR,
+					message: "Invalid hexdecimal escape code",
+					info: [
+						Spanned({
+							span: Span.at(end, source),
+							message: "Was expecting a hexdecimal digit here",
+							isPrimary: true
+						}),
+						Spanned({
+							span: new Span(end.advance(-hex.length), end, source),
+							isSecondary: true
+						})
+					]
+				});
+			}
+		}
+		
+		return Util.parseInt(hex.toString());
 	}
 	
 	function readUniEsc(): Char {
-		throw new NotImplementedException();
+		final uni = new Buffer();
+
+		uni.addString("0x");
+
+		for(_ in 0...4) {
+			if(XDIGIT[rdr.current]) {
+				uni.addChar(rdr.advance());
+			} else {
+				final end = here();
+				throw new Diagnostic({
+					severity: Severity.ERROR,
+					message: "Invalid unicode escape code",
+					info: [
+						Spanned({
+							span: Span.at(end, source),
+							message: "Was expecting a hexdecimal digit here",
+							isPrimary: true
+						}),
+						Spanned({
+							span: new Span(end.advance(-uni.length), end, source),
+							isSecondary: true
+						})
+					]
+				});
+			}
+		}
+
+		return Util.parseInt(uni.toString());
 	}
 	
 	function readOctEsc(): Char {
-		throw new NotImplementedException();
+		final oct = new Buffer();
+
+		for(_ in 0...3) {
+			if(ODIGIT[rdr.current]) {
+				oct.addChar(rdr.advance());
+			} else {
+				final end = here();
+				throw new Diagnostic({
+					severity: Severity.ERROR,
+					message: "Invalid octal escape code",
+					info: [
+						Spanned({
+							span: Span.at(end, source),
+							message: "Was expecting an octal digit here",
+							isPrimary: true
+						}),
+						Spanned({
+							span: new Span(end.advance(-(oct.length + 2)), end, source),
+							isSecondary: true
+						})
+					]
+				});
+			}
+		}
+
+		return Util.parseOctal(oct.toString());
 	}
 
 	inline function readStr() {
