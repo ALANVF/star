@@ -1,33 +1,96 @@
 class Reader of Series[Char] {
+	my cursor is getter = Cursor[new]
+
 	on [hasNext] (Bool) is inline {
 		return !this[isTail]
 	}
 
-	on [eat: char (Char)] (Maybe[Reader]) {
+	on [peek: char (Char)] (Bool) {
+		return this[startsWith: char]
+	}
+
+	on [peek: str (Str)] (Bool) {
+		return this[startsWithEach: str]
+	}
+
+	on [peek: charset (Charset)] (Bool) {
+		return this[hasNext] && charset[has: this[first]]
+	}
+
+	on [at: index (Int) peek: charset (Charset)] (Bool) {
+		return offset + index < length && charset[has: this[at: index]]
+	}
+	
+	on [eat] (Char) {
+		my char = this[first]
+
+		offset++
+		cursor[append: char]
+
+		return char
+	}
+
+	on [eat: char (Char)] (Bool) {
 		if this[startsWith: char] {
-			return Maybe[the: this[next]]
+			offset++
+			cursor[append: char]
+			return true
 		} else {
-			return Maybe[none]
+			return false
 		}
 	}
 
-	on [eat: str (Str)] (Maybe[Reader]) {
+	on [eat: str (Str)] (Bool) {
 		if this[startsWithEach: str] {
-			return Maybe[the: this[skip: str.length]]
+			offset += str.length
+			cursor[append: str]
+			return true
 		} else {
-			return Maybe[none]
+			return false
 		}
 	}
 
-	on [eat: charset (Charset)] (Maybe[Tuple[Char, Reader]]) {
+	on [eat: charset (Charset)] (Maybe[Char]) {
 		if this[hasNext] {
 			my char = this[first]
 
 			if charset[has: char] {
-				return Maybe[the: #{char, this[next]}]
+				offset++
+				cursor[append: char]
+				return Maybe[the: char]
 			}
 		}
 
 		return Maybe[None]
+	}
+
+	on [skip: by (Int)] (This) {
+		if 0 <= offset + by < buffer.length {
+			my offset' = offset + by
+
+			if by ?= 1 {
+				cursor[append: this[first]]
+			} else {
+				for my i from: offset upto: offset' {
+					cursor[append: buffer[Unsafe at: i]]
+				}
+			}
+
+			offset = offset'
+		}
+
+		return this
+	}
+
+	on [skip: other (This)] (This) {
+		if !this[sameSeries: other] {
+			throw "Error!"
+		}
+
+		for my i from: offset upto: other.offset {
+			cursor[append: buffer[Unsafe at: i]]
+		}
+
+		offset = other.offset
 	}
 }

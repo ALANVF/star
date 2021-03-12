@@ -1,4 +1,12 @@
 type T
+type U[T] {
+	on [length] (Int) is getter
+	on [at: index (Int)] (T)
+}
+type T'
+alias Sequential[T'] is hidden = U[T']
+
+type T
 class Series[T] of Ordered, Iterable[T] {
 	my buffer (Values[T]) is hidden
 	my offset (Int) is getter

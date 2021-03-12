@@ -1,27 +1,30 @@
 class Cursor {
-	my pos = Pos[new]
+	my line is getter = 0
+	my column is getter = 0
 	my lastWasCR is hidden = false
 
-	init [new: pos (Pos)] {
-		this.pos = pos
+	on [pos] (Pos) is inline {
+		return Pos[:line :column]
 	}
 
 	on [append: str (Str)] {
-		for my char in: str {
-			this[append: char]
+		for my i from: 0 upto: str.length {
+			this[append: str[Unsafe at: i]]
 		}
 	}
 
 	on [append: char (Char)] {
 		match char {
 			at #"\r" {
-				pos = pos[newline]
-				lineWasCR = true
+				line++
+				column = 0
+				lineWasCR ||= true
 			}
 
 			at #"\n" {
 				if !lastWasCR {
-					pos = pos[newline]
+					line++
+					column = 0
 				} else {
 					lastWasCR = false
 				}
@@ -29,10 +32,10 @@ class Cursor {
 
 			else {
 				if 31 < char < 127 || char ?= #"\t" {
-					pos = pos[advance]
+					column++
 				}
 
-				lastWasCR = false
+				lastWasCR &&= false
 			}
 		}
 	}

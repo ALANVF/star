@@ -1,54 +1,54 @@
 class Span {
 	my source (Maybe[SourceFile])
-	my start (Pos)
+	my begin (Pos)
 	my end (Pos)
 
 	init [new] {
 		source = Maybe[none]
-		start = Pos[new]
+		begin = Pos[new]
 		end = Pos[new]
 	}
 	
 	init [new: source (SourceFile)] {
 		this.source = Maybe[the: source]
-		start = Pos[new]
+		begin = Pos[new]
 		end = Pos[new]
 	}
 
-	init [start: (Pos) end: (Pos)] {
+	init [begin: (Pos) end: (Pos)] {
 		source = Maybe[none]
-		this.start = start
+		this.begin = begin
 		this.end = end
 	}
 	
-	init [start: (Pos) end: (Pos) source: (SourceFile)] {
+	init [begin: (Pos) end: (Pos) source: (SourceFile)] {
 		this.source = Maybe[the: source]
-		this.start = start
+		this.begin = begin
 		this.end = end
 	}
 
 	init [at: pos (Pos)] {
 		source = Maybe[none]
-		start = pos
+		begin = pos
 		end = pos[advance]
 	}
 	
 	init [at: pos (Pos) source: (SourceFile)] {
 		this.source = Maybe[the: source]
-		start = pos
+		begin = pos
 		end = pos[advance]
 	}
 
-	init [start: (Pos) length: (Int)] {
+	init [begin: (Pos) length: (Int)] {
 		source = Maybe[none]
-		this.start = start
-		end = start[advance: length]
+		this.begin = begin
+		end = begin[advance: length]
 	}
 	
-	init [start: (Pos) length: (Int) source: (SourceFile)] {
+	init [begin: (Pos) length: (Int) source: (SourceFile)] {
 		this.source = Maybe[the: source]
-		this.start = start
-		end = start[advance: length]
+		this.begin = begin
+		end = begin[advance: length]
 	}
 
 	init [from: (Span) to: (Span)] {
@@ -57,15 +57,15 @@ class Span {
 		}
 
 		source = from.source
-		start = from.start
+		begin = from.begin
 		end = to.end
 	}
 
 	on [contains: pos (Pos)] (Bool) {
-		return start <= pos < end
+		return begin <= pos < end
 	}
 
 	on [intersects: other (Span)] (Bool) {
-		return start >= other.end !! other.start >= end
+		return begin >= other.end !! other.begin >= end
 	}
 }

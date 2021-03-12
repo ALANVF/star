@@ -125,10 +125,8 @@ kind Token {
 	has [tag: (Str)]
 	has [litsym: (Str)]
 
-	has [int: (Str)]
-	has [int: (Str) exp: (Str)]
-	has [int: (Str) dec: (Str)]
-	has [int: (Str) dec: (Str) exp: (Str)]
+	has [int: (Str) exp: (Maybe[Str])]
+	has [int: (Str) dec: (Str) exp: (Maybe[Str])]
 	has [hex: (Str)]
 	has [str: (Array[StrSegment])]
 	has [char: (Char)]
@@ -160,8 +158,8 @@ kind Token {
 			at Token[punned: _] => return "punned label"
 			at Token[tag: _] => return "tag"
 			at Token[litsym: _] => return "litsym"
-			at Token[int: _] || Token[int: _ exp: _] => return "integer literal"
-			at Token[int: _ dec: _] || Token[int: _ dec: _ exp: _] => return "decimal literal"
+			at Token[int: _ exp: _] => return "integer literal"
+			at Token[int: _ dec: _ exp: _] => return "decimal literal"
 			at Token[hex: _] => return "hexdecimal literal"
 			at Token[str: _] => return "string literal"
 			at Token[char: _] => return "character literal"

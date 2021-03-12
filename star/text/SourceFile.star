@@ -15,10 +15,10 @@ class SourceFile {
 			for my i, my char in: text {
 				cursor[append: char]
 
-				if cursor.pos.column ?= 0 {
-					if cursor.pos.line != lastLine {
+				if cursor.column ?= 0 {
+					if cursor.line != lastLine {
 						this[add: i + 1]
-						lastLine = cursor.pos.line
+						lastLine = cursor.line
 					} else {
 						this[at: -1] = i + 1
 					}

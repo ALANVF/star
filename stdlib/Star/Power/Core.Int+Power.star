@@ -108,24 +108,7 @@ category Power for Int {
 	] (Int) is static is hidden {
 		if base < 10 {
 			my max = [base - 1 + 48 Char]
-			
-			if str[at: index] ?= #"0" {
-				do {
-					index++
-				} while index < str.length && str[at: index] ?= #"0"
-
-				if index ?= str.length || !(#"1" <= str[at: index] <= max) {
-					return 0
-				}
-			}
-
-			my int = {
-				match str[at: index++] at #"1" <= my char <= max {
-					return char[Int] - 48
-				} else {
-					throw "Parse error"
-				}
-			}
+			my int = 0
 
 			while index < str.length {
 				match str[at: index++] at #"0" <= my char <= max {
@@ -140,31 +123,7 @@ category Power for Int {
 		} else {
 			my maxUpper = [base - 1 + 55 Char]
 			my maxLower = [base - 1 + 87 Char]
-
-			if str[at: index] ?= #"0" {
-				do {
-					index++
-				} while index < str.length && str[at: index] ?= #"0"
-
-				if index ?= str.length {
-					return 0
-				}
-
-				my char = str[at: index]
-				
-				if  #"1" <= char <= #"9" || #"A" < char <= maxUpper || #"a" <= char <= maxLower {
-					return 0
-				}
-			}
-
-			my int = {
-				match str[at: index++] {
-					at #"1" <= my char <= #"9" => return char[Int] - 48
-					at #"A" <= my char <= maxUpper => return char[Int] - 55
-					at #"a" <= my char <= maxLower => return char[Int] - 87
-					else => throw "Parse error"
-				}
-			}
+			my int = 0
 
 			while index < str.length {
 				int *= base
