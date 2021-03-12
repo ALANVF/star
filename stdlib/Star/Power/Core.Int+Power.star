@@ -107,7 +107,7 @@ category Power for Int {
 		index: (Int)
 	] (Int) is static is hidden {
 		if base < 10 {
-			my max = [base + 46 Char]
+			my max = [base - 1 + 48 Char]
 			
 			if str[at: index] ?= #"0" {
 				do {
@@ -138,8 +138,8 @@ category Power for Int {
 
 			return int
 		} else {
-			my maxUpper = [base + 55 Char]
-			my maxLower = [base + 87 Char]
+			my maxUpper = [base - 1 + 55 Char]
+			my maxLower = [base - 1 + 87 Char]
 
 			if str[at: index] ?= #"0" {
 				do {
