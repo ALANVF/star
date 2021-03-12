@@ -54,10 +54,10 @@ private class _SourceFile {
 		for(i in 0...text.length) {
 			cursor.append(text.charAt8(i));
 
-			if(cursor.pos.column == 0) {
-				if(cursor.pos.line != lastLine) {
+			if(cursor.column == 0) {
+				if(cursor.line != lastLine) {
 					lineStarts.push(i + 1);
-					lastLine = cursor.pos.line;
+					lastLine = cursor.line;
 				} else {
 					lineStarts[lineStarts.length - 1] = i + 1;
 				}

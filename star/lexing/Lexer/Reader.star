@@ -20,7 +20,25 @@ class Reader of Series[Char] {
 	on [at: index (Int) peek: charset (Charset)] (Bool) {
 		return offset + index < length && charset[has: this[at: index]]
 	}
+
+
+	on [peekNot: char (Char)] (Bool) is inline {
+		return !this[peek: char]
+	}
+
+	on [peekNot: str (Str)] (Bool) is inline {
+		return !this[peek: char]
+	}
+
+	on [peekNot: charset (Charset)] (Bool) {
+		return this[hasNext] && !charset[has: this[first]]
+	}
+
+	on [at: index (Int) peekNot: charset (Charset)] (Bool) {
+		return offset + index < length && !charset[has: this[at: index]]
+	}
 	
+
 	on [eat] (Char) {
 		my char = this[first]
 

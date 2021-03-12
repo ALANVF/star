@@ -98,7 +98,7 @@ class Lexer {
 		while true {
 			if reader[eat: hspace]? {
 				next
-			} orif reader[eat: #";"] && !reader[peek: vspace] {
+			} orif reader[eat: #";"] && reader[peekNot: vspace] {
 				this[readComment]
 			} else {
 				break
@@ -115,7 +115,7 @@ class Lexer {
 		if reader[eat: #"["] {
 			this[readNestedComment]
 		} else {
-			while !reader[peek: vspace] {
+			while reader[peekNot: vspace] {
 				reader[next]
 			}
 		}
@@ -574,7 +574,7 @@ class Lexer {
 		my afterInt = this[here]
 
 		my dec = {
-			if reader[peek: #"."] && !reader[at: 1 peek: lower_u] {
+			if reader[peek: #"."] && reader[at: 1 peekNot: lower_u] {
 				if reader[next][peek: digit] {
 					my dec' = ""
 

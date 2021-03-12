@@ -1,7 +1,6 @@
 package lexing;
 
 import text.SourceFile;
-import hx.strings.Strings.CharPos;
 import text.Pos;
 import hx.strings.Char;
 import text.Span;
@@ -35,16 +34,12 @@ class Lexer {
 	final rdr: Reader;
 	final source: SourceFile;
 	var begin: Pos;
-	private var columnOffsetHack = 2;
 	public var tokens: List<Token> = Nil;
 
 	public function new(source: SourceFile) {
 		this.source = source;
 		begin = new Pos(0, 0);
-		
-		// weird hack because first index is kinda broken
-		rdr = new Reader(" " + source.text + " ", 0);
-		rdr.skip();
+		rdr = new Reader(source.text);
 	}
 
 
@@ -155,14 +150,8 @@ class Lexer {
 	}
 
 
-	inline function toPos(pos: CharPos) {
-		return new Pos(pos.line - 1, pos.col - columnOffsetHack);
-	}
-
-	/*inline*/ function here() {
-		if(columnOffsetHack == 2 && rdr.pos.line != 1) columnOffsetHack = 1;
-
-		return toPos(rdr.pos);
+	inline function here() {
+		return rdr.cursor.pos();
 	}
 
 	inline function span() {
@@ -170,8 +159,8 @@ class Lexer {
 	}
 
 	inline function trim() {
-		while(rdr.hasNext() && HSPACE_SEMI[rdr.current]) {
-			if(rdr.advance() == ';'.code && !VSPACE[rdr.current]) readComment();
+		while(rdr.peek(HSPACE_SEMI)) {
+			if(rdr.eat() == ';'.code && rdr.peekNot(VSPACE)) readComment();
 		}
 	}
 
@@ -179,10 +168,10 @@ class Lexer {
 		if(rdr.eat('['.code)) {
 			readNestedComment();
 		} else {
-			while(rdr.hasNext() && !VSPACE[rdr.peek()]) rdr.skip();
+			while(rdr.peekNot(VSPACE)) rdr.next();
 		}
 
-		if(rdr.hasNext()) rdr.skip();
+		if(rdr.hasNext()) rdr.next();
 	}
 
 	function readNestedComment() {
@@ -190,7 +179,7 @@ class Lexer {
 			if(!rdr.hasNext()) throw "unterminated comment!";
 			if(rdr.eat('['.code)) readNestedComment();
 			else if(rdr.eat(']'.code)) break;
-			else rdr.skip();
+			else rdr.next();
 		}
 	}
 
@@ -199,7 +188,7 @@ class Lexer {
 
 		trim();
 
-		final cur = rdr.current;
+		final cur = (rdr.peek() : Char);
 
 		if(VSPACE[cur]) {
 			return readLSep();
@@ -212,19 +201,19 @@ class Lexer {
 		}
 
 		return (
-			if(cur.isDigit()) {
+			if(DIGIT[cur]) {
 				readNumberStart();
 			}
 
-			else if(cur.isLowerCase()) {
+			else if(LOWER[cur]) {
 				readName();
 			}
 
 			else if(cur == '_'.code) {
-				if(ALNUM_Q[rdr.peek()]) {
+				if(rdr.peekAt(1, ALNUM_Q)) {
 					readName();
 				} else {
-					rdr.skip();
+					rdr.next();
 					T_Wildcard(span());
 				}
 			}
@@ -233,7 +222,7 @@ class Lexer {
 				readPunned();
 			}
 
-			else if(cur.isUpperCase()) {
+			else if(UPPER[cur]) {
 				readTypeName();
 			}
 
@@ -260,7 +249,7 @@ class Lexer {
 			}
 
 			else if(SINGLE_CHAR[cur]) {
-				switch rdr.advance(){
+				switch rdr.eat() {
 					case '('.code: T_LParen(span());
 					case ')'.code: T_RParen(span());
 					case '['.code: T_LBracket(span());
@@ -280,7 +269,7 @@ class Lexer {
 			)
 
 			else if(rdr.eat('#'.code)) (
-				if(rdr.current.isLowerCase()) readTag()
+				if(LOWER[rdr.peek()]) readTag()
 				else if(rdr.eat('('.code)) T_HashLParen(span())
 				else if(rdr.eat('['.code)) T_HashLBracket(span())
 				else if(rdr.eat('{'.code)) T_HashLBrace(span())
@@ -291,7 +280,7 @@ class Lexer {
 					info: [
 						Spanned({
 							span: Span.at(here(), source),
-							message: 'Unexpected `${rdr.current}` after `#`',
+							message: 'Unexpected `${rdr.peek()}` after `#`',
 							isPrimary: true
 						}),
 						Spanned({
@@ -358,7 +347,7 @@ class Lexer {
 				if(rdr.eat('='.code))
 					T_MinusEq(span())
 				else if(rdr.eat('-'.code)) {
-					switch rdr.current {
+					switch rdr.peek() {
 						case '-'.code: {
 							var depth = 2;
 
@@ -386,7 +375,7 @@ class Lexer {
 							}
 						}
 						case '>'.code:
-							rdr.skip();
+							rdr.next();
 							T_Cascade(span(), 2);
 						default: T_MinusMinus(span());
 					}
@@ -530,9 +519,9 @@ class Lexer {
 
 	inline function readLSep() {
 		do {
-			rdr.skip();
+			rdr.next();
 			trim();
-		} while(rdr.hasNext() && VSPACE[rdr.current]);
+		} while(rdr.peek(VSPACE));
 
 		return if(rdr.eat(','.code)) {
 			readCSep();
@@ -545,8 +534,8 @@ class Lexer {
 	function readCSep() {
 		trim();
 		
-		while(rdr.hasNext() && VSPACE[rdr.current]) {
-			rdr.skip();
+		while(rdr.peek(VSPACE)) {
+			rdr.next();
 			trim();
 		};
 
@@ -557,8 +546,8 @@ class Lexer {
 	function readComma() {
 		trim();
 
-		if(rdr.hasNext() && VSPACE[rdr.current]) {
-			rdr.skip();
+		if(rdr.peek(VSPACE)) {
+			rdr.next();
 			return readCSep();
 		}
 
@@ -566,11 +555,8 @@ class Lexer {
 	}
 
 	inline function readNumberStart() {
-		if(rdr.current == '0'.code && rdr.peek() == 'x'.code) {
-			rdr.skip();
-			rdr.skip();
-
-			if(XDIGIT[rdr.current]) {
+		if(rdr.eat("0x")) {
+			if(rdr.peek(XDIGIT)) {
 				return readHex();
 			} else {
 				throw new Diagnostic({
@@ -593,14 +579,14 @@ class Lexer {
 	inline function readHex() {
 		final hex = new Buffer();
 
-		while(XDIGIT[rdr.current]) {
-			hex.addChar(rdr.advance());
-		}
+		do {
+			hex.addChar(rdr.eat());
+		} while(rdr.peek(XDIGIT));
 
-		if(ALPHA_U[rdr.current]) {
+		if(rdr.peek(ALPHA_U)) {
 			final end = here();
 
-			while(ALNUM_Q[rdr.current]) rdr.skip();
+			while(rdr.peek(ALNUM_Q)) rdr.next();
 
 			final endName = here();
 
@@ -627,21 +613,21 @@ class Lexer {
 	inline function readNumber() {
 		final int = new Buffer();
 		
-		while(rdr.current.isDigit()) {
-			int.addChar(rdr.advance());
-		}
+		do {
+			int.addChar(rdr.eat());
+		} while(rdr.peek(DIGIT));
 
 		final afterDigits = here();
 
-		final dec = if(rdr.current == '.'.code && !LOWER_U[rdr.peek()]) {
-			final cur = rdr.next();
+		final dec = if(rdr.peek('.'.code) && rdr.peekNotAt(1, LOWER_U)) {
+			rdr.next();
 
-			if(cur.isDigit()) {
+			if(rdr.peek(DIGIT)) {
 				final dec = new Buffer();
 
-				while(rdr.current.isDigit()) {
-					dec.addChar(rdr.advance());
-				}
+				do {
+					dec.addChar(rdr.eat());
+				} while(rdr.peek(DIGIT));
 
 				Some(dec.toString());
 			} else {
@@ -667,17 +653,16 @@ class Lexer {
 			None;
 		};
 
-		final exp = if(rdr.current == 'e'.code) {
-			rdr.skip();
+		final exp = if(rdr.eat('e'.code)) {
 			Some(readExponent());
 		} else {
 			None;
 		};
 
-		if(ALPHA_U[rdr.current]) {
+		if(rdr.peek(ALPHA_U)) {
 			final end = here();
 
-			while(ALNUM_Q[rdr.current]) rdr.skip();
+			while(rdr.peek(ALNUM_Q)) rdr.next();
 
 			final endName = here();
 
@@ -707,17 +692,17 @@ class Lexer {
 
 	inline function readExponent() {
 		final exp = new Buffer();
-		final cur = rdr.current;
+		final cur = rdr.peek();
 		final ruleBegin = here();
 
 		if(cur == '+'.code || cur == '-'.code) {
-			exp.addChar(rdr.advance());
+			exp.addChar(rdr.eat());
 		}
 
-		if(rdr.current.isDigit()) {
-			while(rdr.current.isDigit()) {
-				exp.addChar(rdr.advance());
-			}
+		if(rdr.peek(DIGIT)) {
+			do {
+				exp.addChar(rdr.eat());
+			} while(rdr.peek(DIGIT));
 
 			return exp.toString();
 		} else {
@@ -745,14 +730,13 @@ class Lexer {
 	inline function readName() {
 		final name = new Buffer();
 
-		while(ALNUM_Q[rdr.current]) {
-			name.addChar(rdr.advance());
-		}
+		do {
+			name.addChar(rdr.eat());
+		} while(rdr.peek(ALNUM_Q));
 
 		final n = name.toString();
 
-		return if(rdr.current == ':'.code) { // Why not `rdr.eat(':'.code)`?
-			rdr.skip();
+		return if(rdr.eat(':'.code)) {
 			T_Label(span(), n);
 		} else {
 			T_Name(span(), n);
@@ -762,13 +746,13 @@ class Lexer {
 	inline function readPunned() {
 		final punned = new Buffer();
 
-		if(LOWER_U[rdr.current]) {
-			punned.addChar(rdr.advance());
+		if(rdr.peek(LOWER_U)) {
+			punned.addChar(rdr.eat());
 		} else {
 			final end = here();
 
-			if(rdr.current.isUpperCase()) {
-				while(ALNUM_Q[rdr.current]) rdr.skip();
+			if(rdr.peek(UPPER)) {
+				while(rdr.peek(ALNUM_Q)) rdr.next();
 
 				final endName = here();
 
@@ -810,8 +794,8 @@ class Lexer {
 			}
 		}
 
-		while(ALNUM_Q[rdr.current]) {
-			punned.addChar(rdr.advance());
+		while(rdr.peek(ALNUM_Q)) {
+			punned.addChar(rdr.eat());
 		}
 
 		return T_Punned(span(), punned.toString());
@@ -821,12 +805,12 @@ class Lexer {
 		final name = new Buffer();
 
 		do {
-			name.addChar(rdr.current);
-		} while(rdr.hasNext() && ALNUM_Q[rdr.next()]);
+			name.addChar(rdr.eat());
+		} while(rdr.peek(ALNUM_Q));
 
 		final n = name.toString();
 
-		return if(rdr.current == ':'.code) {
+		return if(rdr.eat(':')) {
 			final end = here();
 
 			throw new Diagnostic({
@@ -839,7 +823,7 @@ class Lexer {
 						isPrimary: true
 					}),
 					Spanned({
-						span: new Span(begin.advance(1), end.advance(1), source),
+						span: new Span(begin.advance(1), end, source),
 						isSecondary: true
 					})
 				]
@@ -852,11 +836,11 @@ class Lexer {
 	inline function readLitsym() {
 		final sym = new Buffer();
 
-		while(rdr.current != '`'.code) {
-			sym.addChar(rdr.advance());
+		while(rdr.peekNot('`'.code)) {
+			sym.addChar(rdr.eat());
 		}
 
-		rdr.skip();
+		rdr.eat();
 
 		return T_Litsym(span(), sym.toString());
 	}
@@ -864,18 +848,18 @@ class Lexer {
 	inline function readTag() {
 		final tag = new Buffer();
 
-		while(ALNUM[rdr.current]) {
-			tag.addChar(rdr.advance());
+		while(rdr.peek(ALNUM)) {
+			tag.addChar(rdr.eat());
 		}
 
 		return T_Tag(span(), tag.toString());
 	}
 
 	inline function readChar(): Token {
-		final char = switch rdr.current {
+		final char = switch rdr.peek() {
 			case '"'.code:
 				final end = here();
-				if(rdr.peek() == '"'.code) {
+				if(rdr.peekAt(1, '"'.code)) {
 					throw new Diagnostic({
 						severity: Severity.ERROR,
 						message: "Invalid char literal",
@@ -910,8 +894,8 @@ class Lexer {
 				}
 
 			case '\\'.code:
-				rdr.advance();
-				switch rdr.advance() {
+				rdr.next();
+				switch rdr.eat() {
 					case c = "\\".code | "\"".code: c;
 					case "t".code: "\t".code;
 					case "n".code: "\n".code;
@@ -952,10 +936,10 @@ class Lexer {
 				}
 			
 			default:
-				rdr.advance();
+				rdr.eat();
 		};
 		
-		if(rdr.eat('"')) {
+		if(rdr.eat('"'.code)) {
 			return T_Char(span(), char);
 		} else {
 			final end = here();
@@ -983,8 +967,8 @@ class Lexer {
 		hex.addString("0x");
 
 		for(_ in 0...2) {
-			if(XDIGIT[rdr.current]) {
-				hex.addChar(rdr.advance());
+			if(rdr.peek(XDIGIT)) {
+				hex.addChar(rdr.eat());
 			} else {
 				final end = here();
 				throw new Diagnostic({
@@ -1014,8 +998,8 @@ class Lexer {
 		uni.addString("0x");
 
 		for(_ in 0...4) {
-			if(XDIGIT[rdr.current]) {
-				uni.addChar(rdr.advance());
+			if(rdr.peek(XDIGIT)) {
+				uni.addChar(rdr.eat());
 			} else {
 				final end = here();
 				throw new Diagnostic({
@@ -1043,8 +1027,8 @@ class Lexer {
 		final oct = new Buffer();
 
 		for(_ in 0...3) {
-			if(ODIGIT[rdr.current]) {
-				oct.addChar(rdr.advance());
+			if(rdr.peek(ODIGIT)) {
+				oct.addChar(rdr.eat());
 			} else {
 				final end = here();
 				throw new Diagnostic({
@@ -1072,7 +1056,7 @@ class Lexer {
 		var builder = new Buffer();
 		final segments = [];
 
-		while(rdr.hasNext()) switch rdr.advance() {
+		while(rdr.hasNext()) switch rdr.eat() {
 			case '"'.code:
 				if(builder.length != 0) segments.push(SStr(builder.toString()));
 				break;
@@ -1083,7 +1067,7 @@ class Lexer {
 					builder = new Buffer();
 				}
 
-				final esc = rdr.advance();
+				final esc = rdr.eat();
 
 				if(esc == '('.code) {
 					trim();
@@ -1147,7 +1131,7 @@ class Lexer {
 				builder.addChar(c);
 		}
 
-		if(!rdr.hasNext() && rdr.current != '"'.code) {
+		if(!rdr.hasNext()) {
 			throw new Diagnostic({
 				severity: Severity.ERROR,
 				message: "Unterminated string",
@@ -1169,17 +1153,17 @@ class Lexer {
 
 		while(rdr.eat('.'.code)) depth++;
 
-		if(rdr.current.isDigit()) {
+		if(rdr.peek(DIGIT)) {
 			final nth = new Buffer();
 
-			while(rdr.current.isDigit()) {
-				nth.addChar(rdr.advance());
-			}
+			do {
+				nth.addChar(rdr.eat());
+			} while(rdr.peek(DIGIT));
 
-			if(ALPHA_U[rdr.current]) {
+			if(rdr.peek(ALPHA_U)) {
 				final end = here();
 	
-				while(ALNUM_Q[rdr.current]) rdr.skip();
+				while(rdr.peek(ALNUM_Q)) rdr.next();
 	
 				final endName = here();
 	
