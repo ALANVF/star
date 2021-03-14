@@ -167,11 +167,10 @@ class Lexer {
 	inline function readComment() {
 		if(rdr.eat('['.code)) {
 			readNestedComment();
+			if(rdr.peek(VSPACE)) rdr.next();
 		} else {
 			while(rdr.peekNot(VSPACE)) rdr.next();
 		}
-
-		if(rdr.hasNext()) rdr.next();
 	}
 
 	function readNestedComment() {

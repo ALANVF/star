@@ -437,10 +437,32 @@ class Parser {
 
 		rest = inner.revAppend(rest);
 
-		return switch parseGenericRule(rest) {
-			case Success(rule, Cons(T_RParen(_2), rest2)): Success(GenericRule.Paren(_1, rule, _2), rest2);
-			case Success(_, rest2): Fatal(tokens, Some(rest2));
-			case err: fatalIfBad(tokens, err);
+		final oldRest = rest;
+		final leadingOp = match(rest,
+			at([T_AndAnd(_), ...rest2]) => {
+				rest = rest2;
+				Some(3);
+			},
+			at([T_BarBar(_), ...rest2]) => {
+				rest = rest2;
+				Some(4);
+			},
+			at([T_CaretCaret(_), ...rest2]) => {
+				rest = rest2;
+				Some(5);
+			},
+			at([T_BangBang(_), ...rest2]) => {
+				rest = rest2;
+				Some(6);
+			},
+			_ => None
+		);
+
+		return switch [leadingOp, parseGenericRule(rest)] {
+			case [Some(index), Success(rule, _)] if((rule : GenericRule).getIndex() != index): Fatal(tokens, Some(oldRest));
+			case [_, Success(rule, Cons(T_RParen(_2), rest2))]: Success(GenericRule.Paren(_1, rule, _2), rest2);
+			case [_, Success(_, rest2)]: Fatal(tokens, Some(rest2));
+			case [_, err]: fatalIfBad(tokens, err);
 		}
 	}
 

@@ -114,13 +114,15 @@ class Lexer {
 	on [readComment] is inline {
 		if reader[eat: #"["] {
 			this[readNestedComment]
+			
+			if reader[peek: vspace] {
+				reader[next]
+			}
 		} else {
 			while reader[peekNot: vspace] {
 				reader[next]
 			}
 		}
-
-		;this[next]
 	}
 
 	on [readNestedComment] {
