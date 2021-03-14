@@ -1,6 +1,8 @@
 use Native
 
 class Char of Ordered is native[repr: `int` bits: 8 signed: true] is strong {
+	;== Stepping
+	
 	;-- what to do about underflow/overflow...?
 	on [next] (This) {
 		return this + 1
@@ -9,6 +11,9 @@ class Char of Ordered is native[repr: `int` bits: 8 signed: true] is strong {
 	on [previous] (This) {
 		return this - 1
 	}
+
+
+	;== Casing
 
 	on [lowercase] (This) {
 		if #"A" <= this <= #"Z" {
@@ -27,6 +32,35 @@ class Char of Ordered is native[repr: `int` bits: 8 signed: true] is strong {
 	}
 
 
+	;== Ranges
+
+	on [to: (This)] (Range[This]) is inline {
+		return Range[from: this :to]
+	}
+
+	on [to: (This) by: (This)] (Range[This]) is inline {
+		return Range[from: this :to :by]
+	}
+
+	on [upto: (This)] (Range[This]) is inline {
+		return Range[from: this :upto]
+	}
+
+	on [upto: (This) by: (This)] (Range[This]) is inline {
+		return Range[from: this :upto :by]
+	}
+
+	on [downto: (This)] (Range[This]) is inline {
+		return Range[from: this :downto]
+	}
+
+	on [downto: (This) by: (This)] (Range[This]) is inline {
+		return Range[from: this :downto :by]
+	}
+
+
+	;== Math
+
 	operator `+` [value (Int)] (This) {
 		return [this[UInt8] + value[UInt8] This]
 	}
@@ -34,6 +68,9 @@ class Char of Ordered is native[repr: `int` bits: 8 signed: true] is strong {
 	operator `-` [value (Int)] (This) {
 		return [this[UInt8] - value[UInt8] This]
 	}
+
+	
+	;== Comparing
 
 	operator `?=` [char (This)] (Bool) is native `u8_eq`
 	operator `!=` [char (This)] (Bool) is native `u8_ne`
@@ -43,6 +80,8 @@ class Char of Ordered is native[repr: `int` bits: 8 signed: true] is strong {
 	operator `<=` [char (This)] (Bool) is native `u8_le`
 
 	
+	;== Converting
+
 	on [Int8] is native `cast_u8_i8`
 	on [Int16] is native `cast_u8_i16`
 	on [UInt16] is native `cast_u8_u16`

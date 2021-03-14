@@ -25,6 +25,30 @@ protocol Num of Ordered {
 	; gcd
 	; lcm
 
+	on [to: (This)] (Range[This]) is inline {
+		return Range[from: this :to]
+	}
+
+	on [to: (This) by: (This)] (Range[This]) is inline {
+		return Range[from: this :to :by]
+	}
+
+	on [upto: (This)] (Range[This]) is inline {
+		return Range[from: this :upto]
+	}
+
+	on [upto: (This) by: (This)] (Range[This]) is inline {
+		return Range[from: this :upto :by]
+	}
+
+	on [downto: (This)] (Range[This]) is inline {
+		return Range[from: this :downto]
+	}
+
+	on [downto: (This) by: (This)] (Range[This]) is inline {
+		return Range[from: this :downto :by]
+	}
+
 
 	operator `?` (Bool)
 	operator `-` (This)
