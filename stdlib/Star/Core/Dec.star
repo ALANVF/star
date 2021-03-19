@@ -1,8 +1,12 @@
 use Native
 
 class Dec of Num is native[repr: `dec` bits: 64] is strong {
+	;== Constants
+	
 	on [pi] (Dec) is static is getter is native `d64_pi`
 
+
+	;== Math
 
 	on [sign] (Dec) {
 		case {
@@ -55,9 +59,41 @@ class Dec of Num is native[repr: `dec` bits: 64] is strong {
 		return this[log] / base[log]
 	}
 	
+	
+	;== Stepping
+	
 	on [next] (This) is native `d64_succ`
 	on [previous] (This) is native `d64_pred`
+	
+	
+	;== Ranges
+	
+	on [to: (This)] (Range[This]) is inline {
+		return Range[from: this :to]
+	}
 
+	on [to: (This) by: (This)] (Range[This]) is inline {
+		return Range[from: this :to :by]
+	}
+
+	on [upto: (This)] (Range[This]) is inline {
+		return Range[from: this :upto]
+	}
+
+	on [upto: (This) by: (This)] (Range[This]) is inline {
+		return Range[from: this :upto :by]
+	}
+
+	on [downto: (This)] (Range[This]) is inline {
+		return Range[from: this :downto]
+	}
+
+	on [downto: (This) by: (This)] (Range[This]) is inline {
+		return Range[from: this :downto :by]
+	}
+
+
+	;== Operators
 
 	operator `?` (Bool) is native `d64_truthy`
 	operator `-` (This) is native `d64_neg`
@@ -78,6 +114,8 @@ class Dec of Num is native[repr: `dec` bits: 64] is strong {
 	operator `<=` [other (This)] (Bool) is native `d64_le`
 
 
+	;== Converting
+	
 	on [Int8] is native `cast_d64_i8`
 	on [UInt8] is native `cast_d64_u8`
 	on [Int16] is native `cast_d64_i16`
