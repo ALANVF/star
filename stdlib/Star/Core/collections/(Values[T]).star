@@ -345,6 +345,13 @@ protocol Values[T] of Iterable[T] {
 	}
 
 	; ... and all other variants of from/after/to/upto
+	
+	
+	;== Clearing
+	
+	on [clear] {
+		length = 0
+	}
 
 
 	;== Appending
