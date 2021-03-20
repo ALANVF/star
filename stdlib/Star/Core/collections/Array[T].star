@@ -1,18 +1,14 @@
 use Native
 
-type U[_]
-type V
-alias Reapply[U[_], V] is hidden = U[V]
-
 type T
 class Array[T] of Values[T] {
 	type U
-	alias This'[U] is hidden = Reapply[This, U]
+	alias This'[U] is hidden = Power.Reapply[This, U]
 
 
 	my buffer is hidden
 	my length is getter
-	my capacity is hidden
+	my capacity is getter
 
 
 	;== Collecting
@@ -155,7 +151,7 @@ class Array[T] of Values[T] {
 type T
 class Array[Array[T]] {
 	type U
-	alias This'[U] is hidden = Reapply[This, U]
+	alias This'[U] is hidden = Power.Reapply[This, U]
 
 	on [flatten] (This'[T]) {
 		my newLength = 0
