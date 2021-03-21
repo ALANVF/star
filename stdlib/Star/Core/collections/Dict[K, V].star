@@ -14,7 +14,7 @@ class DictIterator[K] of Iterator[K] is hidden {
 
 type K
 type V
-class DictIterator[K, V] of Iterator[Tuple[K, V]] is hidden {
+class DictIterator[K, V] of Iterator[K, V] is hidden {
 	my pairs (Array[Dict[K, V].Pair])
 	my index (Int) = 0
 	
@@ -29,7 +29,7 @@ class DictIterator[K, V] of Iterator[Tuple[K, V]] is hidden {
 
 type K
 type V
-class Dict[K, V] of Iterable[K], Iterable[Tuple[K, V]] is friend #[DictIterator[K], DictIterator[K, V]] {
+class Dict[K, V] of Iterable[K], Iterable[K, V] is friend #[DictIterator[K], DictIterator[K, V]] {
 	type K'
 	type V'
 	alias This'[K', V'] is hidden = Power.Reapply[This, K', V']
@@ -55,6 +55,10 @@ class Dict[K, V] of Iterable[K], Iterable[Tuple[K, V]] is friend #[DictIterator[
 	
 	init [new: capacity (Int)] {
 		pairs = Array[new: capacity]
+	}
+	
+	init [new: pairs (Array[Tuple[K, V]])] {
+		this.pairs = pairs[collect: Pair[key: $.0.first value: $.0.second]]
 	}
 	
 	
@@ -99,7 +103,7 @@ class Dict[K, V] of Iterable[K], Iterable[Tuple[K, V]] is friend #[DictIterator[
 	
 	;== Internal
 	
-	on [indexForKey: key (K)] (Option[Int]) is hidden is inline {
+	on [indexForKey: key (K)] (Maybe[Int]) is hidden is inline {
 		for my i from: 0 upto: pairs.length {
 			if pairs[Unsafe at: i].key ?= key {
 				return Maybe[the: i]
@@ -109,7 +113,7 @@ class Dict[K, V] of Iterable[K], Iterable[Tuple[K, V]] is friend #[DictIterator[
 		return Maybe[none]
 	}
 	
-	on [pairForKey: key (K)] (Option[Pair]) is hidden is inline {
+	on [pairForKey: key (K)] (Maybe[Pair]) is hidden is inline {
 		for my i from: 0 upto: pairs.length {
 			my pair = pairs[Unsafe at: i]
 			
@@ -121,7 +125,7 @@ class Dict[K, V] of Iterable[K], Iterable[Tuple[K, V]] is friend #[DictIterator[
 		return Maybe[none]
 	}
 	
-	on [indexForValue: value (V)] (Option[Int]) is hidden is inline {
+	on [indexForValue: value (V)] (Maybe[Int]) is hidden is inline {
 		for my i from: 0 upto: pairs.length {
 			if pairs[Unsafe at: i].value ?= value {
 				return Maybe[the: i]
@@ -442,7 +446,7 @@ class Dict[K, V] of Iterable[K], Iterable[Tuple[K, V]] is friend #[DictIterator[
 		return DictIterator[K][:pairs]
 	}
 	
-	on [Iterator[Tuple[K, V]]] is inline {
+	on [Iterator[K, V]] is inline {
 		return DictIterator[K, V][:pairs]
 	}
 	
@@ -455,9 +459,8 @@ class Dict[K, V] of Iterable[K], Iterable[Tuple[K, V]] is friend #[DictIterator[
 	
 	type K' if K' of K || K of K'
 	type V' if V' of V || V of V'
-	type This'' of Dict[K', V'] if This'' != This
-	on [This''] {
-		my result = This''[new: pairs.capacity]
+	on [Dict[K', V']] {
+		my result = Dict[K', V'][new: pairs.capacity]
 		
 		for my i from: 0 upto: pairs.length {
 			my pair = pairs[Unsafe at: i]

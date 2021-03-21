@@ -145,8 +145,35 @@ class Array[T] of Values[T] {
 
 		return result
 	}
+	
+	
+	;== Converting
+	
+	type T' if T' of T || T of T'
+	on [Array[T']] {
+		my result = Array[new: length]
+		
+		for my i from: 0 upto: length {
+			result[add: buffer[at: i][T']]
+		}
+		
+		return result
+	}
+	
+	on [Series[T]] is inline {
+		return Series[new: this]
+	}
+	
+	on [Dict[Int, T]] {
+		my result = Dict[new: length]
+		
+		for my i from: 0 upto: length {
+			result[Unsafe atNew: i] = buffer[at: i]
+		}
+		
+		return result
+	}
 }
-
 
 type T
 class Array[Array[T]] {

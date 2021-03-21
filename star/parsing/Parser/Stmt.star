@@ -5,7 +5,7 @@ kind Stmt {
 		my: (Span)
 		name: (Ident)
 		type: (Maybe[Type])
-		value: (Option[Expr])
+		value: (Maybe[Expr])
 	]
 	
 	has [
