@@ -675,6 +675,40 @@ protocol Values[T] of Iterable[T] {
 			}
 		}
 	}
+	
+	
+	;== Checking
+	
+	operator `?` (Bool) is inline {
+		return length != 0
+	}
+	
+	
+	;== Comparing
+	
+	operator `?=` [other (This)] (Bool) {
+		return length ?= other.length && {
+			for my i from: 0 upto: length {
+				if buffer[at: i] != other[Unsafe at: i] {
+					return false
+				}
+			}
+			
+			return true
+		}
+	}
+	
+	operator `!=` [other (This)] (Bool) {
+		return length != other.length || {
+			for my i from: 0 upto: length {
+				if buffer[at: i] != other[Unsafe at: i] {
+					return true
+				}
+			}
+			
+			return false
+		}
+	}
 }
 
 ;[

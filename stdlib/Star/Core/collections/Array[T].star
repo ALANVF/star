@@ -173,6 +173,32 @@ class Array[T] of Values[T] {
 		
 		return result
 	}
+	
+	
+	;== Concating
+	
+	operator `+` [other (This)] (This) {
+		return This[new: length + other.length]
+		-> [addAll: this]
+		-> [addAll: other]
+	}
+	
+	
+	;== Repeating
+	
+	operator `*` [count (Int)] (This) {
+		if count < 0 {
+			throw "invalid count"
+		}
+		
+		my result = This[new: length * count]
+		
+		for _ from: 0 to: count {
+			result[addAll: this]
+		}
+		
+		return result
+	}
 }
 
 type T
