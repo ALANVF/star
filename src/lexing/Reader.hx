@@ -10,7 +10,7 @@ class Reader {
 	final cursor = new Cursor();
 	private final input: String;
 	private final length: Int;
-	private var offset = 0;
+	var offset = 0;
 
 	function new(input: String) {
 		this.input = input;
@@ -51,7 +51,7 @@ class Reader {
 	private function peekString(str: String) {
 		return hasNextAt(str.length) && {
 			for(i in 0...str.length) {
-				if(@:privateAccess input._charCodeAt8Unsafe(i) != @:privateAccess str._charCodeAt8Unsafe(i)) {
+				if(@:privateAccess input._charCodeAt8Unsafe(offset + i) != @:privateAccess str._charCodeAt8Unsafe(i)) {
 					return false;
 				}
 			}
@@ -130,5 +130,12 @@ class Reader {
 			cursor.appendChar(unsafePeek());
 			offset++;
 		}
+	}
+	
+	extern inline overload function substring(startIndex) {
+		return input.substring(startIndex, offset);
+	}
+	extern inline overload function substring(startIndex, endIndex) {
+		return input.substring(startIndex, endIndex);
 	}
 }

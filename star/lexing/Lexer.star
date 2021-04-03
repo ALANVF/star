@@ -69,7 +69,7 @@ class Lexer {
 	my input (SourceFile)
 	my reader (Reader)
 	my begin = Pos[new]
-	my tokens (Tokens) = #[]
+	my tokens = Tokens[new]
 	
 	init [new: source (SourceFile)] {
 		this.source = source

@@ -226,4 +226,22 @@ class Series[T] of Ordered, Iterable[T] {
 	on [add: value (T)] (T) is inline {
 		return buffer[add: value]
 	}
+	
+	
+	;== Inserting
+	
+	on [insert: value (T)] (T) is inline {
+		return buffer[at: offset insert: value]
+	}
+	
+	
+	;== Removing
+	
+	on [remove] (T) is inline {
+		return buffer[removeAt: offset]
+	}
+	
+	on [removeAt: index (Int)] (T) is inline {
+		return buffer[removeAt: index + offset]
+	}
 }

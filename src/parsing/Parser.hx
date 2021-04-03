@@ -475,7 +475,7 @@ class Parser {
 		case Success(spec, rest): match(rest,
 			at([T_Label(_2, "from"), ...rest2]) => switch parseType(rest2) {
 				case Success(type, rest3): Success(DUse({generics: generics, span: _1, kind: ImportFrom(spec, _2, type)}), rest3);
-				case err: updateIfBad(tokens, cast err, rest2);
+				case err: cast err;
 			},
 			_ => Success(DUse({generics: generics, span: _1, kind: Import(spec)}), rest)
 		);
@@ -3242,16 +3242,16 @@ class Parser {
 
 	/* ERRORS */
 
-	static function updateIfBad<T>(tokens, result: ParseResult<T>, ?rest) return switch result {
-		case Failure(begin, None): Failure(tokens, Some(rest != null ? rest : begin));
-		case Failure(_, rest2): Failure(tokens, rest2);
-		case Fatal(begin, None): Fatal(tokens, Some(rest != null ? rest : begin));
+	static function updateIfBad<T>(tokens, result: ParseResult<T>) return switch result {
+		case Failure(begin, None): Failure(tokens, Some(begin));
+		case Failure(_, rest): Failure(tokens, rest);
+		case Fatal(begin, None): Fatal(tokens, Some(begin));
 		default: result;
 	}
 
-	static function fatalIfBad<T>(tokens, result: ParseResult<T>, ?rest) return switch result {
-		case Failure(begin, None) | Fatal(begin, None): Fatal(tokens, Some(rest != null ? rest : begin));
-		case Failure(_, rest2): Fatal(tokens, rest2);
+	static function fatalIfBad<T>(tokens, result: ParseResult<T>) return switch result {
+		case Failure(begin, None) | Fatal(begin, None): Fatal(tokens, Some(begin));
+		case Failure(_, rest): Fatal(tokens, rest);
 		default: result;
 	}
 

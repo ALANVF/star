@@ -1,4 +1,4 @@
-class Reader of Series[Char] {
+class Reader of Series[Char] is hidden Lexer {
 	my cursor is getter = Cursor[new]
 
 	on [hasNext] (Bool) is inline {

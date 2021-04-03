@@ -1,6 +1,6 @@
 use UInt8 from: Native
 
-class Charset {
+class Charset is hidden Lexer {
 	my bytes (Array[UInt8]) is hidden
 	my size (Int) is hidden
 

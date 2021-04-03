@@ -283,15 +283,33 @@ class Util {
 	static inline function parseInt(str: String) {
 		return nonNull(Std.parseInt(str));
 	}
-
+	
 	static function parseOctal(str: String) {
 		var int = 0;
 
 		for(i in 0...str.length) {
-			final char = nonNull(str.charCodeAt(i));
+			final char = (str.charCodeAt(i) : Char);
 
 			int *= 8;
 			int += char - 48;
+		}
+
+		return int;
+	}
+	
+	static function parseHex(str: String) {
+		var int = 0;
+
+		for(i in 0...str.length) {
+			final char = (str.charCodeAt(i) : Char);
+
+			int *= 16;
+			int += char - switch char {
+				case '0'.code,49,50,51,52,53,54,55,56,'9'.code: 48;
+				case 'A'.code,66,67,68,69,'F'.code: 55;
+				case 'a'.code,98,99,100,101,'f'.code: 87;
+				default: throw "error!";
+			};
 		}
 
 		return int;

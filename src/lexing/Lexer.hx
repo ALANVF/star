@@ -6,7 +6,6 @@ import hx.strings.Char;
 import text.Span;
 import lexing.Token;
 import reporting.*;
-import util.Buffer;
 
 using util.Strings;
 
@@ -41,19 +40,26 @@ class Lexer {
 		begin = new Pos(0, 0);
 		rdr = new Reader(source.text);
 	}
-
-
+	
 	public function tokenize() {
+		tokens = Cons(readToken(), null);
+		
+		var end = tokens;
+		
 		try {
 			while(rdr.hasNext()) {
-				tokens = tokens.prepend(readToken());
+				final newEnd = Cons(readToken(), null);
+				
+				end.setTail(newEnd);
+				end = newEnd;
 			}
-		} catch(e: Eof) {
-			trace(e.posInfos);
-			trace(e.stack);
-		}
-
-		return tokens = retoken(tokens.rev());
+		} catch(e: Eof) {}
+		
+		end.setTail(Nil);
+		
+		tokens = retoken(tokens);
+		
+		return tokens;
 	}
 
 
@@ -576,10 +582,10 @@ class Lexer {
 	}
 
 	inline function readHex() {
-		final hex = new Buffer();
+		final start = rdr.offset;
 
 		do {
-			hex.addChar(rdr.eat());
+			rdr.next();
 		} while(rdr.peek(XDIGIT));
 
 		if(rdr.peek(ALPHA_U)) {
@@ -605,30 +611,31 @@ class Lexer {
 				]
 			});
 		} else {
-			return T_Hex(span(), hex.toString());
+			return T_Hex(span(), rdr.substring(start));
 		}
 	}
 
 	inline function readNumber() {
-		final int = new Buffer();
+		var start = rdr.offset;
 		
 		do {
-			int.addChar(rdr.eat());
+			rdr.next();
 		} while(rdr.peek(DIGIT));
 
+		final int = rdr.substring(start);
 		final afterDigits = here();
 
 		final dec = if(rdr.peek('.'.code) && rdr.peekNotAt(1, LOWER_U)) {
 			rdr.next();
 
 			if(rdr.peek(DIGIT)) {
-				final dec = new Buffer();
+				start = rdr.offset;
 
 				do {
-					dec.addChar(rdr.eat());
+					rdr.next();
 				} while(rdr.peek(DIGIT));
 
-				Some(dec.toString());
+				Some(rdr.substring(start));
 			} else {
 				final end = here();
 				
@@ -681,29 +688,28 @@ class Lexer {
 				]
 			});
 		} else {
-			final i = int.toString();
 			return switch dec {
-				case None: T_Int(span(), i, exp);
-				case Some(d): T_Dec(span(), i, d, exp);
+				case None: T_Int(span(), int, exp);
+				case Some(d): T_Dec(span(), int, d, exp);
 			}
 		}
 	}
 
 	inline function readExponent() {
-		final exp = new Buffer();
+		final start = rdr.offset;
 		final cur = rdr.peek();
 		final ruleBegin = here();
 
 		if(cur == '+'.code || cur == '-'.code) {
-			exp.addChar(rdr.eat());
+			rdr.next();
 		}
 
 		if(rdr.peek(DIGIT)) {
 			do {
-				exp.addChar(rdr.eat());
+				rdr.next();
 			} while(rdr.peek(DIGIT));
 
-			return exp.toString();
+			return rdr.substring(start);
 		} else {
 			final end = here();
 
@@ -727,13 +733,13 @@ class Lexer {
 	}
 
 	inline function readName() {
-		final name = new Buffer();
+		final start = rdr.offset;
 
 		do {
-			name.addChar(rdr.eat());
+			rdr.next();
 		} while(rdr.peek(ALNUM_Q));
 
-		final n = name.toString();
+		final n = rdr.substring(start);
 
 		return if(rdr.eat(':'.code)) {
 			T_Label(span(), n);
@@ -743,10 +749,10 @@ class Lexer {
 	}
 
 	inline function readPunned() {
-		final punned = new Buffer();
+		final start = rdr.offset;
 
 		if(rdr.peek(LOWER_U)) {
-			punned.addChar(rdr.eat());
+			rdr.next();
 		} else {
 			final end = here();
 
@@ -794,20 +800,20 @@ class Lexer {
 		}
 
 		while(rdr.peek(ALNUM_Q)) {
-			punned.addChar(rdr.eat());
+			rdr.next();
 		}
 
-		return T_Punned(span(), punned.toString());
+		return T_Punned(span(), rdr.substring(start));
 	}
 
 	inline function readTypeName() {
-		final name = new Buffer();
+		final start = rdr.offset;
 
 		do {
-			name.addChar(rdr.eat());
+			rdr.next();
 		} while(rdr.peek(ALNUM_Q));
-
-		final n = name.toString();
+		
+		final n = rdr.substring(start);
 
 		return if(rdr.eat(':')) {
 			final end = here();
@@ -833,25 +839,27 @@ class Lexer {
 	}
 
 	inline function readLitsym() {
-		final sym = new Buffer();
+		final start = rdr.offset;
 
 		while(rdr.peekNot('`'.code)) {
-			sym.addChar(rdr.eat());
+			rdr.next();
 		}
+		
+		final sym = rdr.substring(start);
 
-		rdr.eat();
+		rdr.next();
 
-		return T_Litsym(span(), sym.toString());
+		return T_Litsym(span(), sym);
 	}
 
 	inline function readTag() {
-		final tag = new Buffer();
+		final start = rdr.offset;
 
 		while(rdr.peek(ALNUM)) {
-			tag.addChar(rdr.eat());
+			rdr.next();
 		}
 
-		return T_Tag(span(), tag.toString());
+		return T_Tag(span(), rdr.substring(start));
 	}
 
 	inline function readChar(): Token {
@@ -961,13 +969,11 @@ class Lexer {
 	}
 	
 	function readHexEsc(): Char {
-		final hex = new Buffer();
-
-		hex.addString("0x");
-
+		final start = rdr.offset;
+		
 		for(_ in 0...2) {
 			if(rdr.peek(XDIGIT)) {
-				hex.addChar(rdr.eat());
+				rdr.next();
 			} else {
 				final end = here();
 				throw new Diagnostic({
@@ -980,7 +986,7 @@ class Lexer {
 							isPrimary: true
 						}),
 						Spanned({
-							span: new Span(end.advance(-hex.length), end, source),
+							span: new Span(end.advance(rdr.offset - start - 2), end, source),
 							isSecondary: true
 						})
 					]
@@ -988,17 +994,15 @@ class Lexer {
 			}
 		}
 		
-		return Util.parseInt(hex.toString());
+		return Util.parseHex(rdr.substring(start));
 	}
 	
 	function readUniEsc(): Char {
-		final uni = new Buffer();
-
-		uni.addString("0x");
+		final start = rdr.offset;
 
 		for(_ in 0...4) {
 			if(rdr.peek(XDIGIT)) {
-				uni.addChar(rdr.eat());
+				rdr.next();
 			} else {
 				final end = here();
 				throw new Diagnostic({
@@ -1011,7 +1015,7 @@ class Lexer {
 							isPrimary: true
 						}),
 						Spanned({
-							span: new Span(end.advance(-uni.length), end, source),
+							span: new Span(end.advance(rdr.offset - start - 2), end, source),
 							isSecondary: true
 						})
 					]
@@ -1019,15 +1023,15 @@ class Lexer {
 			}
 		}
 
-		return Util.parseInt(uni.toString());
+		return Util.parseHex(rdr.substring(start));
 	}
 	
 	function readOctEsc(): Char {
-		final oct = new Buffer();
+		final start = rdr.offset;
 
 		for(_ in 0...3) {
 			if(rdr.peek(ODIGIT)) {
-				oct.addChar(rdr.eat());
+				rdr.next();
 			} else {
 				final end = here();
 				throw new Diagnostic({
@@ -1040,7 +1044,7 @@ class Lexer {
 							isPrimary: true
 						}),
 						Spanned({
-							span: new Span(end.advance(-(oct.length + 2)), end, source),
+							span: new Span(end.advance(rdr.offset - start - 2), end, source),
 							isSecondary: true
 						})
 					]
@@ -1048,27 +1052,22 @@ class Lexer {
 			}
 		}
 
-		return Util.parseOctal(oct.toString());
+		return Util.parseOctal(rdr.substring(start));
 	}
 
 	inline function readStr() {
-		var builder = new Buffer();
+		var start = rdr.offset;
 		final segments = [];
 
 		while(rdr.hasNext()) switch rdr.eat() {
 			case '"'.code:
-				if(builder.length != 0) segments.push(SStr(builder.toString()));
+				if(start != rdr.offset - 1) segments.push(SStr(rdr.substring(start, rdr.offset - 1)));
 				break;
 			
 			case '\\'.code:
-				if(builder.length != 0) {
-					segments.push(SStr(builder.toString()));
-					builder = new Buffer();
-				}
-
+				final end = rdr.offset;
 				final esc = rdr.eat();
-
-				if(esc == '('.code) {
+				final seg = if(esc == '('.code) {
 					trim();
 
 					var level = 1;
@@ -1088,7 +1087,7 @@ class Lexer {
 						trim();
 					}
 
-					segments.push(SCode(tokens.rev()));
+					SCode(tokens.rev());
 				} else {
 					final char = switch esc {
 						case c = "\\".code | "\"".code: c;
@@ -1122,12 +1121,18 @@ class Lexer {
 								]
 							});
 					};
-
-					segments.push(SChar(char));
+					
+					SChar(char);
+				};
+				
+				if(start != end - 1) {
+					segments.push(SStr(rdr.substring(start, end - 1)));
+					start = rdr.offset;
 				}
+				
+				segments.push(seg);
 
-			case c:
-				builder.addChar(c);
+			case _:
 		}
 
 		if(!rdr.hasNext()) {
@@ -1143,7 +1148,7 @@ class Lexer {
 				]
 			});
 		}
-
+		
 		return T_Str(span(), segments);
 	}
 
@@ -1153,10 +1158,10 @@ class Lexer {
 		while(rdr.eat('.'.code)) depth++;
 
 		if(rdr.peek(DIGIT)) {
-			final nth = new Buffer();
+			final start = rdr.offset;
 
 			do {
-				nth.addChar(rdr.eat());
+				rdr.next();
 			} while(rdr.peek(DIGIT));
 
 			if(rdr.peek(ALPHA_U)) {
@@ -1182,7 +1187,7 @@ class Lexer {
 					]
 				});
 			} else {
-				return T_AnonArg(span(), depth, Util.nonNull(Std.parseInt(nth.toString())));
+				return T_AnonArg(span(), depth, Util.parseInt(rdr.substring(start)));
 			}
 		} else {
 			final end = here();
