@@ -180,7 +180,7 @@ class Lexer {
 							return Token[dotDotDot]
 						} else {
 							throw Diagnostic[
-								severity: Severity[error]
+								severity: Severity.error
 								message: "Syntax error",
 								info: #[
 									Diagnostic.Info[
@@ -212,7 +212,7 @@ class Lexer {
 					at #"[" {reader[next], return Token[hashLBracket]}
 					at #"{" {reader[next], return Token[hashLBrace]}
 					at my char => throw Diagnostic[
-						severity: Severity[error]
+						severity: Severity.error
 						message: "Syntax error"
 						info: #[
 							Diagnostic.Info[
@@ -234,7 +234,7 @@ class Lexer {
 						return Token[eqGt]
 					} orif reader[eat: #"="] {
 						throw Diagnostic[
-							severity: Severity[error]
+							severity: Severity.error
 							message: "Syntax error"
 							info: #[
 								Diagnostic.Info[
@@ -302,7 +302,7 @@ class Lexer {
 									return Token[cascade: depth]
 								} else {
 									throw Diagnostic[
-										severity: Severity[error]
+										severity: Severity.error
 										message: "Unterminated cascade"
 										info: #[
 											Diagnostic.Info[
@@ -458,7 +458,7 @@ class Lexer {
 				}
 
 				else => throw Diagnostic[
-					severity: Severity[error]
+					severity: Severity.error
 					message: "Syntax error"
 					info: #[
 						Diagnostic.Info[
@@ -508,7 +508,7 @@ class Lexer {
 				return this[readHex]
 			} else {
 				throw Diagnostic[
-					severity: Severity[error]
+					severity: Severity.error
 					message: "Unexpected start of hexdecimal literal"
 					info: #[
 						Diagnostic.Info[
@@ -543,7 +543,7 @@ class Lexer {
 			my endName = this[here]
 
 			throw Diagnostic[
-				severity: Severity[error]
+				severity: Severity.error
 				message: "Invalid hexdecimal literal"
 				info: #[
 					Diagnostic.Info[
@@ -591,7 +591,7 @@ class Lexer {
 					return Maybe[the: dec']
 				} else {
 					throw Diagnostic[
-						severity: Severity[error]
+						severity: Severity.error
 						message: "Invalid decimal literal"
 						info: #[
 							Diagnostic.Info[
@@ -627,7 +627,7 @@ class Lexer {
 			my endName = this[here]
 
 			throw Diagnostic[
-				severity: Severity[error]
+				severity: Severity.error
 				message: "Invalid number literal"
 				info: #[
 					Diagnostic.Info[
@@ -673,7 +673,7 @@ class Lexer {
 			my end = this[here]
 
 			throw Diagnostic[
-				severity: Severity[error]
+				severity: Severity.error
 				message: "Invalid number literal"
 				info: #[
 					Diagnostic.Info[
@@ -718,7 +718,7 @@ class Lexer {
 			my end = this[here]
 
 			throw Diagnostic[
-				severity: Severity[error]
+				severity: Severity.error
 				message: "Invalid punned label"
 				info: {
 					if reader[peek: upper] {
@@ -784,7 +784,7 @@ class Lexer {
 			my end = this[here]
 
 			throw Diagnostic[
-				severity: Severity[error]
+				severity: Severity.error
 				message: "Invalid label"
 				info: #[
 					Diagnostic.Info[
@@ -841,33 +841,33 @@ class Lexer {
 
 					if reader[peek: #"\""] {
 						throw Diagnostic[
-							severity: Severity[error]
+							severity: Severity.error
 							message: "Invalid char literal"
 							info: #[
 								Diagnostic.Info[
 									span: Span[at: end :source]
 									message: "`\"` characters need to be escaped in char literals"
-									isPrimary: true
+									priority: Diagnostic.Info.Priority.primary
 								]
 								Diagnostic.Info[
 									span: this[span]
-									isSecondary: true
+									priority: Diagnostic.Info.Priority.secondary
 								]
 								Diagnostic.Info[
 									span: Span[at: end[advance] :source]
-									isSecondary: true
+									priority: Diagnostic.Info.Priority.secondary
 								]
 							]
 						]
 					} else {
 						throw Diagnostic[
-							severity: Severity[error]
+							severity: Severity.error
 							message: "Invalid char literal"
 							info: #[
 								Diagnostic.Info[
 									span: Span[:begin end: end[advance] :source]
 									message: "Char literals may not be empty"
-									isPrimary: true
+									priority: Diagnostic.Info.Priority.primary
 								]
 							]
 						]
@@ -891,7 +891,7 @@ class Lexer {
 					at my c {
 						my end = this[here][advance: -1]
 						throw Diagnostic[
-							severity: Severity[error]
+							severity: Severity.error
 							message: "Invalid escape character"
 							info: #[
 								Diagnostic.Info[
@@ -926,7 +926,7 @@ class Lexer {
 			return Token[:char]
 		} else {
 			throw Diagnostic[
-				severity: Severity[error]
+				severity: Severity.error
 				message: "Unterminated character literal"
 				info: #[
 					Diagnostic.Info[
@@ -952,7 +952,7 @@ class Lexer {
 			} else {
 				my end = this[here]
 				throw Diagnostic[
-					severity: Severity[error]
+					severity: Severity.error
 					message: "Invalid hexdecimal escape code"
 					info: #[
 						Diagnostic.Info[
@@ -981,7 +981,7 @@ class Lexer {
 			} else {
 				my end = this[here]
 				throw Diagnostic[
-					severity: Severity[error]
+					severity: Severity.error
 					message: "Invalid unicode escape code"
 					info: #[
 						Diagnostic.Info[
@@ -1011,7 +1011,7 @@ class Lexer {
 			} else {
 				my end = this[here]
 				throw Diagnostic[
-					severity: Severity[error]
+					severity: Severity.error
 					message: "Invalid octal escape code"
 					info: #[
 						Diagnostic.Info[
@@ -1098,7 +1098,7 @@ class Lexer {
 									at my c {
 										my end = this[here][advance: -1]
 										throw Diagnostic[
-											severity: Severity[error]
+											severity: Severity.error
 											message: "Invalid escape character"
 											info: #[
 												Diagnostic.Info[
@@ -1127,7 +1127,7 @@ class Lexer {
 			return Token[str: segments]
 		} else {
 			throw Diagnostic[
-				severity: Severity[error]
+				severity: Severity.error
 				message: "Unterminated string"
 				info: #[
 					Diagnostic.Info[
@@ -1162,7 +1162,7 @@ class Lexer {
 				my endName = this[here]
 
 				throw Diagnostic[
-					severity: Severity[error]
+					severity: Severity.error
 					message: "Invalid anonymous argument"
 					info: #[
 						Diagnostic.Info[
@@ -1181,7 +1181,7 @@ class Lexer {
 			}
 		} else {
 			throw Diagnostic[
-				severity: Severity[error]
+				severity: Severity.error
 				message: "Unterminated anonymous argument"
 				info: #[
 					Diagnostic.Info[
