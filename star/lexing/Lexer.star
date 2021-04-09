@@ -1,3 +1,6 @@
+use Info from: Diagnostic
+use Priority from: Info
+
 class Lexer {
 	my hspace is static is readonly = Charset[new: " \t"]
 	my vspace is static is readonly = Charset[new: #"\n"[to: #"\r"]]
@@ -183,10 +186,10 @@ class Lexer {
 								severity: Severity.error
 								message: "Syntax error",
 								info: #[
-									Diagnostic.Info[
+									Info[
 										span: this[span]
 										message: "Invalid operator `..`"
-										priority: Diagnostic.Info.Priority.primary
+										priority: Priority.primary
 									]
 								]
 							]
@@ -215,14 +218,14 @@ class Lexer {
 						severity: Severity.error
 						message: "Syntax error"
 						info: #[
-							Diagnostic.Info[
+							Info[
 								span: Span[at: this[here] :source]
 								message: "Unexpected `\(char)` after `#`"
-								priority: Diagnostic.Info.Priority.primary
+								priority: Priority.primary
 							]
-							Diagnostic.Info[
+							Info[
 								span: Span[at: begin :source]
-								priority: Diagnostic.Info.Priority.secondary
+								priority: Priority.secondary
 							]
 						]
 					]
@@ -237,10 +240,10 @@ class Lexer {
 							severity: Severity.error
 							message: "Syntax error"
 							info: #[
-								Diagnostic.Info[
+								Info[
 									span: this[span]
 									message: "Please use `?=` instead of `==` in Star"
-									priority: Diagnostic.Info.Priority.primary
+									priority: Priority.primary
 								]
 							]
 						]
@@ -305,14 +308,14 @@ class Lexer {
 										severity: Severity.error
 										message: "Unterminated cascade"
 										info: #[
-											Diagnostic.Info[
+											Info[
 												span: Span[at: this[here] :source]
 												message: "Expected a `>` to finish the cascade operator"
-												priority: Diagnostic.Info.Priority.primary
+												priority: Priority.primary
 											]
-											Diagnostic.Info[
+											Info[
 												span: this[span]
-												priority: Diagnostic.Info.Priority.secondary
+												priority: Priority.secondary
 											]
 										]
 									]
@@ -461,10 +464,10 @@ class Lexer {
 					severity: Severity.error
 					message: "Syntax error"
 					info: #[
-						Diagnostic.Info[
+						Info[
 							span: Span[at: begin :source]
 							message: "This is not the syntax that you are looking for"
-							priority: Diagnostic.Info.Priority.primary
+							priority: Priority.primary
 						]
 					]
 				]
@@ -511,10 +514,10 @@ class Lexer {
 					severity: Severity.error
 					message: "Unexpected start of hexdecimal literal"
 					info: #[
-						Diagnostic.Info[
+						Info[
 							span: this[span]
 							message: "Were you wanting a hexdecimal literal here or what?"
-							priority: Diagnostic.Info.Priority.primary
+							priority: Priority.primary
 						]
 					]
 				]
@@ -546,14 +549,14 @@ class Lexer {
 				severity: Severity.error
 				message: "Invalid hexdecimal literal"
 				info: #[
-					Diagnostic.Info[
+					Info[
 						span: Span[begin: end end: endName :source]
 						message: "Make sure to separate names from numbers"
-						priority: Diagnostic.Info.Priority.primary
+						priority: Priority.primary
 					]
-					Diagnostic.Info[
+					Info[
 						span: Span[:begin :end :source]
-						priority: Diagnostic.Info.Priority.secondary
+						priority: Priority.secondary
 					]
 				]
 			]
@@ -594,14 +597,14 @@ class Lexer {
 						severity: Severity.error
 						message: "Invalid decimal literal"
 						info: #[
-							Diagnostic.Info[
+							Info[
 								span: Span[at: afterInt :source]
 								message: "At least 1 digit is required on both sides of the decimal point"
-								priority: Diagnostic.Info.Priority.primary
+								priority: Priority.primary
 							]
-							Diagnostic.Info[
+							Info[
 								span: Span[:begin end: this[here][advance: -2] :source]
-								priority: Diagnostic.Info.Priority.secondary
+								priority: Priority.secondary
 							]
 						]
 					]
@@ -630,14 +633,14 @@ class Lexer {
 				severity: Severity.error
 				message: "Invalid number literal"
 				info: #[
-					Diagnostic.Info[
+					Info[
 						span: Span[begin: end end: endName :source]
 						message: "Make sure to separate names from numbers"
-						priority: Diagnostic.Info.Priority.primary
+						priority: Priority.primary
 					]
-					Diagnostic.Info[
+					Info[
 						span: Span[:begin :end :source]
-						priority: Diagnostic.Info.Priority.secondary
+						priority: Priority.secondary
 					]
 				]
 			]
@@ -676,15 +679,15 @@ class Lexer {
 				severity: Severity.error
 				message: "Invalid number literal"
 				info: #[
-					Diagnostic.Info[
+					Info[
 						span: Span[begin: end end: end[advance] :source]
 						message: "Make sure to separate names from numbers"
-						priority: Diagnostic.Info.Priority.primary
+						priority: Priority.primary
 					]
-					Diagnostic.Info[
+					Info[
 						span: Span[begin: begin'[advance: -1] :end :source]
 						message: "This indicates that the number has an exponent"
-						priority: Diagnostic.Info.Priority.secondary
+						priority: Priority.secondary
 					]
 				]
 			]
@@ -727,30 +730,30 @@ class Lexer {
 						my endName = this[here]
 
 						return #[
-							Diagnostic.Info[
+							Info[
 								span: Span[at: end :source]
 								message: "Punned labels may not start with an uppercase letter"
-								priority: Diagnostic.Info.Priority.primary
+								priority: Priority.primary
 							]
-							Diagnostic.Info[
+							Info[
 								span: Span[at: begin :source]
-								priority: Diagnostic.Info.Priority.secondary
+								priority: Priority.secondary
 							]
-							Diagnostic.Info[
+							Info[
 								span: Span[begin: end end: endName :source]
-								priority: Diagnostic.Info.Priority.secondary
+								priority: Priority.secondary
 							]
 						]
 					} else {
 						return #[
-							Diagnostic.Info[
+							Info[
 								span: Span[at: end :source]
 								message: "Was expecting a name for the punned label"
-								priority: Diagnostic.Info.Priority.primary
+								priority: Priority.primary
 							]
-							Diagnostic.Info[
+							Info[
 								span: Span[at: begin :source]
-								priority: Diagnostic.Info.Priority.secondary
+								priority: Priority.secondary
 							]
 						]
 					}
@@ -787,14 +790,14 @@ class Lexer {
 				severity: Severity.error
 				message: "Invalid label"
 				info: #[
-					Diagnostic.Info[
+					Info[
 						span: Span[at: begin :source]
 						message: "Labels may not start with an uppercase letter"
-						priority: Diagnostic.Info.Priority.primary
+						priority: Priority.primary
 					]
-					Diagnostic.Info[
+					Info[
 						span: Span[begin: begin[advance] end: end[advance] :source]
-						priority: Diagnostic.Info.Priority.secondary
+						priority: Priority.secondary
 					]
 				]
 			]
@@ -844,18 +847,18 @@ class Lexer {
 							severity: Severity.error
 							message: "Invalid char literal"
 							info: #[
-								Diagnostic.Info[
+								Info[
 									span: Span[at: end :source]
 									message: "`\"` characters need to be escaped in char literals"
-									priority: Diagnostic.Info.Priority.primary
+									priority: Priority.primary
 								]
-								Diagnostic.Info[
+								Info[
 									span: this[span]
-									priority: Diagnostic.Info.Priority.secondary
+									priority: Priority.secondary
 								]
-								Diagnostic.Info[
+								Info[
 									span: Span[at: end[advance] :source]
-									priority: Diagnostic.Info.Priority.secondary
+									priority: Priority.secondary
 								]
 							]
 						]
@@ -864,10 +867,10 @@ class Lexer {
 							severity: Severity.error
 							message: "Invalid char literal"
 							info: #[
-								Diagnostic.Info[
+								Info[
 									span: Span[:begin end: end[advance] :source]
 									message: "Char literals may not be empty"
-									priority: Diagnostic.Info.Priority.primary
+									priority: Priority.primary
 								]
 							]
 						]
@@ -894,7 +897,7 @@ class Lexer {
 							severity: Severity.error
 							message: "Invalid escape character"
 							info: #[
-								Diagnostic.Info[
+								Info[
 									span: Span[at: end :source]
 									message: "Escape character `\(c)` \({
 										if c ?= #"(" {
@@ -903,15 +906,15 @@ class Lexer {
 											return "does not exist"
 										}
 									})"
-									priority: Diagnostic.Info.Priority.primary
+									priority: Priority.primary
 								]
-								Diagnostic.Info[
+								Info[
 									span: this[span]
-									priority: Diagnostic.Info.Priority.secondary
+									priority: Priority.secondary
 								]
-								Diagnostic.Info[
+								Info[
 									span: Span[at: end[advance] :source]
-									priority: Diagnostic.Info.Priority.secondary
+									priority: Priority.secondary
 								]
 							]
 						]
@@ -929,14 +932,14 @@ class Lexer {
 				severity: Severity.error
 				message: "Unterminated character literal"
 				info: #[
-					Diagnostic.Info[
+					Info[
 						span: Span[at: this[here] :source]
 						message: "Expected another `\"` to finish the char literal"
-						priority: Diagnostic.Info.Priority.primary
+						priority: Priority.primary
 					]
-					Diagnostic.Info[
+					Info[
 						span: this[span]
-						priority: Diagnostic.Info.Priority.secondary
+						priority: Priority.secondary
 					]
 				]
 			]
@@ -955,14 +958,14 @@ class Lexer {
 					severity: Severity.error
 					message: "Invalid hexdecimal escape code"
 					info: #[
-						Diagnostic.Info[
+						Info[
 							span: Span[at: end :source]
 							message: "Was expecting a hexdecimal digit here"
-							priority: Diagnostic.Info.Priority.primary
+							priority: Priority.primary
 						]
-						Diagnostic.Info[
+						Info[
 							span: Span[begin: end[advance: -(hex.length + 2)] :end :source]
-							priority: Diagnostic.Info.Priority.secondary
+							priority: Priority.secondary
 						]
 					]
 				]
@@ -984,14 +987,14 @@ class Lexer {
 					severity: Severity.error
 					message: "Invalid unicode escape code"
 					info: #[
-						Diagnostic.Info[
+						Info[
 							span: Span[at: end :source]
 							message: "Was expecting a hexdecimal digit here"
-							priority: Diagnostic.Info.Priority.primary
+							priority: Priority.primary
 						]
-						Diagnostic.Info[
+						Info[
 							span: Span[begin: end[advance: -(uni.length + 2)] :end :source]
-							priority: Diagnostic.Info.Priority.secondary
+							priority: Priority.secondary
 						]
 					]
 				]
@@ -1014,14 +1017,14 @@ class Lexer {
 					severity: Severity.error
 					message: "Invalid octal escape code"
 					info: #[
-						Diagnostic.Info[
+						Info[
 							span: Span[at: end :source]
 							message: "Was expecting an octal digit here"
-							priority: Diagnostic.Info.Priority.primary
+							priority: Priority.primary
 						]
-						Diagnostic.Info[
+						Info[
 							span: Span[begin: end[advance: -(oct.length + 2)] :end :source]
-							priority: Diagnostic.Info.Priority.secondary
+							priority: Priority.secondary
 						]
 					]
 				]
@@ -1101,14 +1104,14 @@ class Lexer {
 											severity: Severity.error
 											message: "Invalid escape character"
 											info: #[
-												Diagnostic.Info[
+												Info[
 													span: Span[at: end :source]
 													message: "Escape character `\\\(c)` does not exist"
-													priority: Diagnostic.Info.Priority.primary
+													priority: Priority.primary
 												]
-												Diagnostic.Info[
+												Info[
 													span: Span[at: end[advance: -1] :source]
-													priority: Diagnostic.Info.Priority.secondary
+													priority: Priority.secondary
 												]
 											]
 										]
@@ -1130,10 +1133,10 @@ class Lexer {
 				severity: Severity.error
 				message: "Unterminated string"
 				info: #[
-					Diagnostic.Info[
+					Info[
 						span: Span[at: begin :source]
 						message: "This string is never terminated"
-						priority: Diagnostic.Info.Priority.primary
+						priority: Priority.primary
 					]
 				]
 			]
@@ -1165,14 +1168,14 @@ class Lexer {
 					severity: Severity.error
 					message: "Invalid anonymous argument"
 					info: #[
-						Diagnostic.Info[
+						Info[
 							span: Span[begin: end end: endName :source]
 							message: "Make sure to separate names from numbers"
-							priority: Diagnostic.Info.Priority.primary
+							priority: Priority.primary
 						]
-						Diagnostic.Info[
+						Info[
 							span: Span[:begin :end :source]
-							priority: Diagnostic.Info.Priority.secondary
+							priority: Priority.secondary
 						]
 					]
 				]
@@ -1184,14 +1187,14 @@ class Lexer {
 				severity: Severity.error
 				message: "Unterminated anonymous argument"
 				info: #[
-					Diagnostic.Info[
+					Info[
 						span: Span[at: this[here] :source]
 						message: "Was expecting a number here"
-						priority: Diagnostic.Info.Priority.primary
+						priority: Priority.primary
 					]
-					Diagnostic.Info[
+					Info[
 						span: this[span]
-						priority: Diagnostic.Info.Priority.secondary
+						priority: Priority.secondary
 					]
 				]
 			]
@@ -1236,7 +1239,7 @@ category Lexer for Tokens is hidden {
 				rest[Lexer retoken]
 			}
 			at #[Token[name: my name span: my span], ...my rest] if Lexer.keywords[hasKey: name] {
-				this[at: 0] = Lexer.keywords[at: name][call: span']
+				this[at: 0] = Lexer.keywords[at: name][call: span]
 				rest[Lexer retoken]
 			}
 

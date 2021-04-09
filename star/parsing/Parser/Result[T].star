@@ -2,7 +2,7 @@ use Tokens from: Lexer
 
 type T
 kind Result[T] {
-	has [made: (T) rest: (Tokens)]
+	has [success: made (T), rest (Tokens)]
 	has [failure: begin (Tokens), end (Maybe[Tokens])]
 	has [fatal: begin (Tokens), end (Maybe[Tokens])]
 	has [eof: begin (Tokens)]
@@ -33,8 +33,8 @@ kind Result[T] {
 	
 	type U
 	on [Result[U]] {
-		match this at This[made: my made rest: my rest] {
-			return Result[U][made: made[U] :rest]
+		match this at This[success: my made, my rest] {
+			return Result[U][success: made[U], rest]
 		} else {
 			return this[Unsafe Result[U]]
 		}

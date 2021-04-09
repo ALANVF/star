@@ -7,11 +7,9 @@ kind Alias of TypeDecl {
 
 	my attrs (Attrs)
 
-	has [opaque]
-	has [opaque: (Body)]
+	has [opaque: (Maybe[Body])]
 	has [direct: (Type)]
-	has [strong: (Type)]
-	has [strong: (Type) body: (Body)]
+	has [strong: (Type) body: (Maybe[Body])]
 
 	on [displayName] (Str) is getter {
 		return "alias"

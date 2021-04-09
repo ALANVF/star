@@ -68,4 +68,8 @@ class Span {
 	on [intersects: other (Span)] (Bool) {
 		return begin >= other.end !! other.begin >= end
 	}
+	
+	operator `|` [other (Span)] (Span) is inline {
+		return Span[from: this to: other]
+	}
 }

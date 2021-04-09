@@ -3,7 +3,7 @@ class Operator of Decl, Generic {
 		has [empty]
 		has [is: (Span) hidden: (Maybe[Type])]
 		has [isNoinherit: (Span)]
-		has [isNative: (Maybe[Ident])]
+		has [is: (Span) native: (Maybe[Ident])]
 		has [isInline: (Span)]
 		has [isAsm: (Span)]
 		has [isMacro: (Span)]

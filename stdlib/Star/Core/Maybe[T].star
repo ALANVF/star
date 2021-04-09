@@ -52,6 +52,14 @@ kind Maybe[T] of Iterable[T] {
 			return default
 		}
 	}
+	
+	on [contains: value (T)] (Bool) {
+		match this at Maybe[the: value] {
+			return true
+		} else {
+			return false
+		}
+	}
 
 	; ...
 	

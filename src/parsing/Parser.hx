@@ -367,19 +367,19 @@ class Parser {
 	static function parseGenericRuleCond(left, tokens: List<Token>) return match(tokens,
 		at([T_AndAnd(_1), ...rest]) => switch parseGenericRuleTerm(rest) {
 			case Success(right, rest2): parseGenericRuleCond(GenericRule.And(left, _1, right), rest2);
-			case err: cast err;
+			case err: err;
 		},
 		at([T_BarBar(_1), ...rest]) => switch parseGenericRuleTerm(rest) {
 			case Success(right, rest2): parseGenericRuleCond(GenericRule.Or(left, _1, right), rest2);
-			case err: cast err;
+			case err: err;
 		},
 		at([T_CaretCaret(_1), ...rest]) => switch parseGenericRuleTerm(rest) {
 			case Success(right, rest2): parseGenericRuleCond(GenericRule.Xor(left, _1, right), rest2);
-			case err: cast err;
+			case err: err;
 		},
 		at([T_BangBang(_1), ...rest]) => switch parseGenericRuleTerm(rest) {
 			case Success(right, rest2): parseGenericRuleCond(GenericRule.Nor(left, _1, right), rest2);
-			case err: cast err;
+			case err: err;
 		},
 		_ => Success(left, tokens)
 	);
@@ -387,7 +387,7 @@ class Parser {
 	static function parseGenericRuleTerm(tokens: List<Token>) return match(tokens,
 		at([T_Bang(_1), T_LParen(_2), ...rest]) => switch parseGenericRuleParen(_2, rest) {
 			case Success(rule, rest2): Success(GenericRule.Not(_1, rule), rest2);
-			case err: cast err;
+			case err: err;
 		},
 		at([T_LParen(_1), ...rest]) => parseGenericRuleParen(_1, rest),
 		at([T_TypeName(_, _) | T_Wildcard(_), ..._]) => switch parseType(tokens, true) {
@@ -489,7 +489,7 @@ class Parser {
 
 			switch parseTypeAnno(rest) {
 				case Success(type, rest2):
-					match(rest2,
+					while(true) match(rest2,
 						at([T_Is(_2), T_Hidden(_3), ...rest3]) => switch parseType(rest3) {
 							case Success(outer, rest4):
 								attrs[AliasAttr.IsHidden(Some(outer))] = Span.range(_2, _3);
@@ -505,7 +505,7 @@ class Parser {
 								rest2 = rest4;
 							case err: return cast err;
 						},
-						_ => {}
+						_ => break
 					);
 
 					final body = switch nextDeclBody(rest2) {
@@ -526,7 +526,7 @@ class Parser {
 					}), rest2);
 
 				case Failure(_, _):
-					match(rest,
+					while(true) match(rest,
 						at([T_Is(_2), T_Hidden(_3), ...rest2]) => switch parseType(rest2) {
 							case Success(outer, rest3):
 								attrs[AliasAttr.IsHidden(Some(outer))] = Span.range(_2, _3);
@@ -542,7 +542,7 @@ class Parser {
 								rest = rest3;
 							case err: return cast err;
 						},
-						_ => {}
+						_ => break
 					);
 
 					match(rest,
@@ -2566,7 +2566,8 @@ class Parser {
 		at([T_Tilde(_1), ...rest]) => parseExpr2Prefix(_1, PCompl, rest),
 		_ => parseExpr1(tokens)
 	);
-
+	
+	// TODO: support expr1 after postfix op
 	static function parseExpr2(tokens) return switch parseExpr2Head(tokens) {
 		case Success(expr, rest):
 			while(true) match(rest,
@@ -3262,25 +3263,7 @@ class Parser {
 
 
 	/* MISC */
-
-	/*static function trimTokens(tokens: List<Token>) return switch tokens {
-		case Cons(t =
-			( T_LParen(_)
-			| T_LBracket(_)
-			| T_LBrace(_)
-			| T_HashLParen(_)
-			| T_HashLBracket(_)
-			| T_HashLBrace(_)
-		), Cons(T_LSep(_), rest)): Cons(t, trimTokens(rest));
-		case Cons(T_LSep(_), Cons(t = T_RParen(_) | T_RBracket(_) | T_RBrace(_), rest)): Cons(t, trimTokens(rest));
-		case Cons(T_Str(_1, segs), rest): Cons(T_Str(_1, segs.map(seg -> switch seg {
-			case SCode(Cons(T_LSep(_), tokens) | tokens): SCode(trimTokens(tokens));
-			default: seg;
-		})), trimTokens(rest));
-		case Cons(T_LSep(_), Nil): Nil;
-		case Cons(t, rest): Cons(t, trimTokens(rest));
-		case Nil: Nil;
-	}*/
+	
 	static function trimTokens(tokens: List<Token>) return match(tokens,
 		at([t = T_LParen(_)
 			| T_LBracket(_)

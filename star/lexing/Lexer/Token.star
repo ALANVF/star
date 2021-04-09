@@ -228,4 +228,20 @@ kind Token {
 			else => return this
 		}
 	}
+	
+	on [isAnySep] (Bool) is inline {
+		match this at Token[lSep] || Token[cSep] || Token[comma] {
+			return true
+		} else {
+			return false
+		}
+	}
+	
+	on [isAnyComma] (Bool) is inline {
+		match this at Token[cSep] || Token[comma] {
+			return true
+		} else {
+			return false
+		}
+	}
 }
