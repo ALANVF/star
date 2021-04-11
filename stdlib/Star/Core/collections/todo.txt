@@ -1,0 +1,21 @@
+- [ ] sets
+- [ ] binary/hash sets/maps
+- [ ] span (like c++, maybe like rust slices?)
+- [ ] more kinds of iterators (like c++)
+- [ ] complex numbers
+- [ ] bigint
+- [ ] rational/fraction
+- [x] stacks / fifo queues
+- [ ] queues
+- [ ] deques
+- [/] (linked) lists
+- [ ] rings
+- [ ] something like rust's VecDeque
+- [ ] heaps
+- [ ] result/either
+- [ ] multi sets/maps
+- [ ] bags
+- [ ] mixes (like raku)
+- [ ] bitsets
+- [ ] nested maps
+- [ ] sequences (like kotlin)

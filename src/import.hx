@@ -10,3 +10,7 @@ using util.Arrays;
 using util.StringBuilders;
 using util.Option.OptionHelper;
 using util.List.ListHelper;
+
+#if !macro
+using compiler.Type.TypeTools;
+#end
