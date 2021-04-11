@@ -12,5 +12,5 @@ class TypeParam {
 @:build(util.Auto.build())
 class Template {
 	var types: Array<TypeParam>;
-	var requires: Option<Type> = None;
+	var requires: Option<TypeCond> = None;
 }
