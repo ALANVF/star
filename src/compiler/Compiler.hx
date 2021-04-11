@@ -5,9 +5,13 @@ import reporting.Diagnostic;
 @:publicFields
 class Compiler {
 	final errors = new Array<Diagnostic>();
-	final stmts = new Array<DeclStmt>();
+	final stmts: Array<DeclStmt>;
 	
-	function new() {}
+	function new() {
+		stmts = [
+			DIncludeLib("cstdint")
+		];
+	}
 	
 	inline function addError(error: Diagnostic) errors.push(error);
 	

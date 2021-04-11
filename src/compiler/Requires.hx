@@ -2,7 +2,7 @@ package compiler;
 
 enum RequiresStmt {
 	RStmt(s: Stmt);
-	RReq(e: Expr);
+	RReq(e: Expr, t: Option<Type>);
 	RType(t: Type);
 	RNested(r: TypeCond);
 }
