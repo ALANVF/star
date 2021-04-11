@@ -1,13 +1,13 @@
 package compiler;
 
 @:build(util.Auto.build())
-class Parent {
+class ClassParent {
 	var attrs: Array<String> = [];
 	var type: Type;
 }
 
 @:build(util.Auto.build())
-class Body {
+class ClassBody {
 	var normal: DeclBody = [];
 	var priv: DeclBody = [];
 	var prot: DeclBody = [];
@@ -15,6 +15,6 @@ class Body {
 }
 
 abstract class ClassLike extends TypeDecl {
-	var parents: Array<Parent> = [];
-	var body: Body = new Body();
+	var parents: Array<ClassParent> = [];
+	var body: ClassBody = new ClassBody();
 }
