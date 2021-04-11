@@ -4,35 +4,6 @@ import text.Span;
 
 using hx.strings.Strings;
 
-function getFullPath(lookup: ILookupType): Option<String> {
-	return if(lookup is File) {
-		var file = cast(lookup, File);
-		if(file.dir is Unit) {
-			var dir = file.dir;
-			var names = Nil;
-
-			while(dir is Unit) {
-				final unit = cast(dir, Unit);
-
-				names = names.prepend(unit.name);
-				dir = unit.outer;
-			}
-
-			Some(names.join("."));
-		} else {
-			None;
-		}
-	} else if(lookup is TypeDecl) {
-		final type = cast(lookup, TypeDecl);
-		switch getFullPath(type.lookup).map(p -> '$p.${type.name.name}') {
-			case p = Some(_): p;
-			case None: Some(type.name.name);
-		}
-	} else {
-		Some("???");
-	}
-}
-
 enum TypeKind {
 	TPath(path: TypePath, source: ILookupType);
 	TConcrete(decl: TypeDecl);
@@ -50,6 +21,35 @@ class Type {
 
 	function new(t: TypeKind) {
 		this.t = t;
+	}
+	
+	static function getFullPath(lookup: ILookupType): Option<String> {
+		return if(lookup is File) {
+			var file = cast(lookup, File);
+			if(file.dir is Unit) {
+				var dir = file.dir;
+				var names = Nil;
+	
+				while(dir is Unit) {
+					final unit = cast(dir, Unit);
+	
+					names = names.prepend(unit.name);
+					dir = unit.outer;
+				}
+	
+				Some(names.join("."));
+			} else {
+				None;
+			}
+		} else if(lookup is TypeDecl) {
+			final type = cast(lookup, TypeDecl);
+			switch getFullPath(type.lookup).map(p -> '$p.${type.name.name}') {
+				case p = Some(_): p;
+				case None: Some(type.name.name);
+			}
+		} else {
+			Some("???");
+		}
 	}
 
 	function simpleName(): String return switch t {
