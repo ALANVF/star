@@ -131,6 +131,37 @@ class ExprTools {
 		return exprs.map(e -> e.form()).join(", ");
 	}
 	
+	@:noUsing
+	static function escapeChar(c: Char) return switch c {
+		case "'".code | '\\'.code: '\\$c';
+		case '\n'.code: '\\n';
+		case '\r'.code: '\\r';
+		case '\t'.code: '\\t';
+		case 0|1|2|3|4|5|6|7|8|11|12|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31:
+			"\\0x" + c.toInt().toHex(2);
+		case c: c.toString();
+	};
+	
+	@:noUsing
+	static function escapeString(s: String) {
+		final buf = new Buffer();
+		
+		for(i in 0...s.length) switch StringTools.unsafeCodeAt(s, i) {
+			case c = '"'.code | '\\'.code:
+				buf.addChar('\\'.code);
+				buf.addChar(c);
+			case '\n'.code: buf.addString('\\n');
+			case '\r'.code: buf.addString('\\r');
+			case '\t'.code: buf.addString('\\t');
+			case c = (0|1|2|3|4|5|6|7|8|11|12|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31):
+				buf.addString("\\x");
+				buf.addString(hx.strings.Strings.toHex(c, 2));
+			case c: buf.addChar(c);
+		}
+		
+		return buf.toString();
+	}
+	
 	static function form(expr: Expr, indent = 0) {
 		return switch expr {
 			case ENullptr: "nullptr";
@@ -146,37 +177,9 @@ class ExprTools {
 			case EFloat(i, f, None): '$i.$f';
 			case EFloat(i, f, Some(exp)): '$i.${f}e$exp';
 			
-			case EChar(c): switch c {
-				case "'".code | '\\'.code: '\\$c';
-				case '\n'.code: '\\n';
-				case '\r'.code: '\\r';
-				case '\t'.code: '\\t';
-				case 0|1|2|3|4|5|6|7|8|11|12|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31:
-					"\\0x" + hx.strings.Strings.toHex(c, 2);
-				case c: c.toString();
-			}
+			case EChar(c): "'" + inline escapeChar(c) + "'";
 			
-			case EString(s):
-				var buf = new Buffer();
-				
-				buf.addChar('"'.code);
-				
-				for(i in 0...s.length) switch StringTools.unsafeCodeAt(s, i) {
-					case c = '"'.code | '\\'.code:
-						buf.addChar('\\'.code);
-						buf.addChar(c);
-					case '\n'.code: buf.addString('\\n');
-					case '\r'.code: buf.addString('\\r');
-					case '\t'.code: buf.addString('\\t');
-					case c = (0|1|2|3|4|5|6|7|8|11|12|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31):
-						buf.addString("\\x");
-						buf.addString(hx.strings.Strings.toHex(c, 2));
-					case c: buf.addChar(c);
-				}
-				
-				buf.addChar('"'.code);
-				
-				buf.toString();
+			case EString(s): '"' + escapeString(s) + '"';
 			
 			case EName(n): fixName(n);
 			
@@ -224,7 +227,7 @@ class ExprTools {
 			
 			case ENew(None, None, t, false, ctor): "new " + t.form() + ctor.map(c -> c.form()).orElse("");
 			case ENew(None, None, t, true, ctor): "new (" + t.form() + ")" + ctor.map(c -> c.form()).orElse("");
-			case ENew(_, _, _, _, _): throw "todo!";
+			case ENew(_, _, _, _, _): throw "todo!"; // I'll probably never need this
 			
 			case EDelete(true, expr): "delete[] " + expr.form();
 			case EDelete(false, expr): "delete " + expr.form();

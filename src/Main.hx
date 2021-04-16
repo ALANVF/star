@@ -124,5 +124,8 @@ class Main {
 				trace(method.findType(List.of("Slot"), true).map(t -> t.simpleName()));
 			});
 		});
+		
+		nl();
+		for(s in new compiler.Compiler().stmts) Sys.println(s.form());
 	}
 }

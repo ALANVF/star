@@ -1,5 +1,6 @@
 package compiler;
 
+import haxe.rtti.CType.TypeParams;
 import reporting.Diagnostic;
 
 @:publicFields
@@ -10,6 +11,7 @@ class Compiler {
 	function new() {
 		stmts = [
 			DIncludeLib("cstdint"),
+			DIncludeLib("type_traits"),
 			DTypeDecl(
 				new Alias({
 					template: Some(new Template({
@@ -67,6 +69,41 @@ class Compiler {
 						TPath([{name: "Elem", args: None}]),
 						EName("Size")
 					)
+				})
+			),
+			DTypeDecl(
+				new Struct({
+					template: Some(new Template({
+						types: [
+							new TypeParam({
+								type: Some(TPath([{name: "$Array", args: Some([TConst(TChar)])}])),
+								name: Some("Name")
+							})
+						]
+					})),
+					path: [{name: "$L", args: None}]
+				})
+			),
+			DTypeDecl(
+				new Struct({
+					template: Some(new Template({
+						types: [
+							new TypeParam({
+								name: Some("T")
+							})
+						]
+					})),
+					path: [{name: "$T", args: None}],
+					body: {
+						normal: [
+							DTypeDecl(
+								new Alias({
+									path: [{name: "Type", args: None}],
+									type: TPath([{name: "T", args: None}])
+								})
+							)
+						]
+					}
 				})
 			)
 		];

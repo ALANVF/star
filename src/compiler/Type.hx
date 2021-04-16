@@ -51,13 +51,13 @@ enum Type {
 	
 	TFunc(ret: Type, params: Array<Type>);
 	
-	TStruct(members: Array<Member>);
+	TStruct(body: DeclBody);
 	TExplicitStruct(path: TypePath);
-	TNamedStruct(name: String, members: Array<Member>);
+	TNamedStruct(path: TypePath, body: DeclBody);
 	
-	TUnion(members: Array<Member>);
+	TUnion(body: DeclBody);
 	TExplicitUnion(path: TypePath);
-	TNamedUnion(path: TypePath, members: Array<Member>);
+	TNamedUnion(path: TypePath, body: DeclBody);
 	
 	TEnum(cases: EnumCases);
 	TExplicitEnum(path: TypePath);
@@ -133,33 +133,32 @@ class TypeTools {
 			case TPtr(t): t.form() + "*";
 			case TLVal(t): t.form() + "&";
 			case TRVal(t): t.form() + "&&";
-			case TArray(t): "$Array<" + t.form() + ">";
-			case TArrayN(t, s): throw "todo!";
+			case TArray(t): t.form() + "[]";
+			case TArrayN(t, s): t.form() + "[" + s.form() + "]";
 			
-			case TFunc(ret, []): "$Func<" + ret.form() + ">";
-			case TFunc(ret, params): "$Func<" + ret.form() + ", " + params.map(p -> p.form()).join(", ") + ">";
+			case TFunc(ret, params): ret.form() + "(" + params.map(p -> p.form()).join(", ") + ")";
 			
-			case TStruct(_): throw "todo!";
+			case TStruct(body): "struct " + body.form();
 			case TExplicitStruct(path): "struct " + path.form();
-			case TNamedStruct(_, _): throw "todo!";
+			case TNamedStruct(path, body): "struct " + path.form() + " " + body.form();
 			
-			case TUnion(_): throw "todo!";
+			case TUnion(body): "union " + body.form();
 			case TExplicitUnion(path): "union " + path.form();
-			case TNamedUnion(_, _): throw "todo!";
+			case TNamedUnion(path, body): "union " + path.form() + " " + body.form();
 			
-			case TEnum(_): throw "todo!";
+			case TEnum(cases): "enum " + cases.form();
 			case TExplicitEnum(path): "enum " + path.form();
-			case TNamedEnum(_, _): throw "todo!";
+			case TNamedEnum(path, cases): "enum " + path.form() + " " + cases.form();
 			
 			case TTypename(t): "typename " + t.form();
 			case TPath(path): path.form();
 			
 			case TAuto: "auto";
-			case TDecltype(expr): throw "todo!";
+			case TDecltype(expr): "decltype(" + expr.form() + ")";
 			
 			case TPack(t): t.form() + "...";
 			
-			case TExpr(expr): throw "todo!";
+			case TExpr(expr): expr.form();
 		}
 	}
 }

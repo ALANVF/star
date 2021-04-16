@@ -8,12 +8,10 @@ class Enum extends TypeDecl {
 	
 	function form(indent = 0) {
 		final buf = new Buffer();
-		final ws = "\n" + "\t".repeat(indent);
-		final nws = "\n" + "\t".repeat(indent + 1);
 		
 		template.forEach(t -> {
 			buf.addString(t.form(indent));
-			buf.addString(ws);
+			buf.addString("\n" + "\t".repeat(indent));
 		});
 		
 		buf.addString("enum ");
@@ -24,24 +22,9 @@ class Enum extends TypeDecl {
 			buf.addString(b.form());
 		});
 		
-		buf.addString(" {");
-		
-		for(i => c in cases) {
-			buf.addString(nws);
-			buf.addString(c.name);
-			
-			c.value.forEach(v -> {
-				buf.addString(" = ");
-				buf.addString(v.form(indent));
-			});
-			
-			if(i != cases.length - 1) {
-				buf.addChar(",".code);
-			}
-		}
-		
-		buf.addString(ws);
-		buf.addString("};");
+		buf.addChar(" ".code);
+		buf.addString(cases.form(indent));
+		buf.addChar(";".code);
 		
 		return buf.toString();
 	}
