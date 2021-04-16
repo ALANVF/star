@@ -4,8 +4,6 @@ import hx.strings.Strings.CharIndex;
 import hx.strings.Char;
 import hx.strings.StringBuilder;
 
-using hx.strings.Strings;
-
 class StringBuilders {
 	public static function setChar(builder: StringBuilder, index: CharIndex, char: Char) {
 		final old = builder.toString();

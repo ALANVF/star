@@ -1,7 +1,6 @@
 package text;
 
 import hx.strings.Char;
-using hx.strings.Strings;
 using util.Strings;
 
 @:publicFields

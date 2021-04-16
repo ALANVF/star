@@ -2,8 +2,6 @@ package compiler;
 
 import util.Buffer;
 
-using hx.strings.Strings;
-
 enum RequiresStmt {
 	RStmt(s: Stmt);
 	RReq(e: Expr, t: Option<Type>);

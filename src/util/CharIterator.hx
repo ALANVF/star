@@ -15,8 +15,6 @@ import hx.strings.internal.TriState;
 import hx.strings.AnyAsString;
 import hx.strings.Char;
 
-using hx.strings.Strings;
-
 abstract class CharIterator {
 	inline public static function fromString(chars: Null<AnyAsString>, prevBufferSize = 0): CharIterator {
 		if(chars == null)

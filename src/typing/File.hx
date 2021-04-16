@@ -8,8 +8,6 @@ import parsing.ast.Program;
 import text.SourceFile;
 import Util.match;
 
-using hx.strings.Strings;
-
 @:build(util.Auto.build())
 class File {
 	final errors: Array<Diagnostic>;

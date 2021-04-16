@@ -3,8 +3,6 @@ package lexing;
 import hx.strings.Char;
 import text.Cursor;
 
-using hx.strings.Strings;
-
 @:publicFields
 class Reader {
 	final cursor = new Cursor();

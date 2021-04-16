@@ -1,11 +1,9 @@
 package compiler;
 
 import util.Buffer;
-using hx.strings.Strings;
 
 @:using(compiler.Block.BlockTools)
 typedef Block = Array<Stmt>;
-
 
 @:publicFields
 class BlockTools {

@@ -2,8 +2,6 @@ package typing;
 
 import sys.FileSystem;
 
-using hx.strings.Strings;
-
 class Project extends Dir {
 	var main: Option<File> = None;
 

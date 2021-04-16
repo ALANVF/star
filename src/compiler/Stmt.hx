@@ -1,7 +1,6 @@
 package compiler;
 
 import util.Buffer;
-using hx.strings.Strings;
 
 @:using(compiler.Stmt.CondTools)
 enum Cond {
@@ -13,6 +12,7 @@ enum Cond {
 enum Stmt {
 	SExpr(expr: Expr);
 	SVarDecl(v: VarDecl);
+	STypeDecl(t: TypeDecl);
 	SBlock(b: Block);
 	SNone;
 	SLabel(name: String, stmt: Stmt);
@@ -46,7 +46,9 @@ class StmtTools {
 	static function form(stmt: Stmt, indent = 1) return switch stmt {
 		case SExpr(expr): expr.form(indent) + ";";
 		
-		case SVarDecl(v): v.form() + ";";
+		case SVarDecl(v): v.form(indent) + ";";
+		
+		case STypeDecl(t): t.form(indent);
 		
 		case SBlock(b): b.form(indent);
 		

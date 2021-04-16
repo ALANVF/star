@@ -14,3 +14,5 @@ using util.List.ListHelper;
 #if !macro
 using compiler.Type.TypeTools;
 #end
+
+using hx.strings.Strings;

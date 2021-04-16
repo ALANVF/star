@@ -2,8 +2,6 @@ package typing;
 
 import text.Span;
 
-using hx.strings.Strings;
-
 enum TypeKind {
 	TPath(path: TypePath, source: ILookupType);
 	TConcrete(decl: TypeDecl);

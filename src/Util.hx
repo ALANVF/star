@@ -3,8 +3,6 @@ import util.List;
 import haxe.macro.Context;
 import haxe.macro.Expr;
 
-using hx.strings.Strings;
-
 @:publicFields
 class Util {
 	static macro function assert(expr) {

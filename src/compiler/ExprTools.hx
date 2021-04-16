@@ -2,8 +2,6 @@ package compiler;
 
 import util.Buffer;
 
-using hx.strings.Strings;
-
 final ESCAPE_NAMES = [
 	"alignas",
 	"alignof",

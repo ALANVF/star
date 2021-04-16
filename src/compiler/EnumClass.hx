@@ -1,5 +1,9 @@
 package compiler;
 
+import util.Buffer;
+
 class EnumClass extends Enum {
-	var base: Option<Type>;
+	override function form(indent = 0) {
+		return super.form(indent).replaceFirst("enum", "enum class");
+	}
 }

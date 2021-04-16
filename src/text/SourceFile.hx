@@ -1,7 +1,6 @@
 package text;
 
 using util.Strings;
-using hx.strings.Strings;
 
 @:publicFields
 private class _SourceFile {

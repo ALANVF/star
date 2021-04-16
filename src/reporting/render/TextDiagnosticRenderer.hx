@@ -10,11 +10,8 @@ import text.SourceFile;
 import hx.strings.ansi.Ansi;
 import hx.strings.ansi.AnsiWriter;
 import reporting.DiagnosticInfo;
-import Util.*;
 
 using util.Strings;
-using hx.strings.Strings;
-
 private enum Line {
 	Source(source: SourceFile, line: Int);
 	Dot;

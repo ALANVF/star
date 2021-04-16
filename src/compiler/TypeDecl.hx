@@ -5,4 +5,6 @@ package compiler;
 abstract class TypeDecl {
 	var template: Option<Template> = None;
 	var path: TypePath;
+	
+	abstract function form(indent: Int = 0): String;
 }

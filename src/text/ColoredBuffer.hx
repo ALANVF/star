@@ -4,8 +4,6 @@ import hx.strings.Char;
 import hx.strings.ansi.*;
 import hx.strings.StringBuilder;
 
-using hx.strings.Strings;
-
 @:struct
 @:structInit
 @:publicFields

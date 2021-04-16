@@ -2,8 +2,6 @@ package typing;
 
 import sys.FileSystem;
 
-using hx.strings.Strings;
-
 function toName(name: String) {
 	if(name.contains("+")) {
 		var category = name.substringAfter("+");
