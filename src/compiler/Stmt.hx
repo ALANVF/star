@@ -44,7 +44,7 @@ class CondTools {
 @:publicFields
 class StmtTools {
 	static function form(stmt: Stmt, indent = 1) return switch stmt {
-		case SExpr(expr): expr.form() + ";";
+		case SExpr(expr): expr.form(indent) + ";";
 		
 		case SVarDecl(v): v.form() + ";";
 		

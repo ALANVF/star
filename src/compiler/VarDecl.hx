@@ -21,7 +21,7 @@ class VarDecl {
 	var kind: VarDeclKind;
 	var expr: VarDeclExprKind;
 	
-	function form() {
+	function form(indent = 0) {
 		final buf = new Buffer();
 		
 		for(attr in attrs) {
@@ -41,9 +41,9 @@ class VarDecl {
 		
 		buf.addString(switch expr {
 			case VNone: "";
-			case VAssign(e): " = " + e.form();
+			case VAssign(e): " = " + e.form(indent);
 			case VCall(args): "(" + ExprTools.formExprs(args) + ")";
-			case VInitList(l): l.form();
+			case VInitList(l): l.form(indent);
 		});
 		
 		return buf.toString();

@@ -10,11 +10,11 @@ enum InitList {
 
 @:publicFields
 class InitListTools {
-	static function form(l: InitList) {
+	static function form(l: InitList, indent = 0) {
 		return "{" + (switch l {
-			case LExprs(exprs): exprs.map(e -> e.form()).join(", ");
-			case LNamed(names): names.map(n -> "." + ExprTools.fixName(n.name) + " = " + n.expr.form()).join(", ");
-			case LNamedInit(names): names.map(n -> "." + ExprTools.fixName(n.name) + n.init.form()).join(", ");
+			case LExprs(exprs): exprs.map(e -> e.form(indent)).join(", ");
+			case LNamed(names): names.map(n -> "." + ExprTools.fixName(n.name) + " = " + n.expr.form(indent)).join(", ");
+			case LNamedInit(names): names.map(n -> "." + ExprTools.fixName(n.name) + n.init.form(indent)).join(", ");
 		}) + "}";
 	}
 }

@@ -2,6 +2,8 @@ package compiler;
 
 import util.Buffer;
 
+using hx.strings.Strings;
+
 final ESCAPE_NAMES = [
 	"alignas",
 	"alignof",
@@ -104,6 +106,17 @@ final ESCAPE_NAMES = [
 	"std"
 ];
 
+
+@:publicFields
+class LambdaCaptureTools {
+	static function form(capt: Expr.LambdaCapture) return switch capt {
+		case LExpr(expr): expr.form();
+		case LByRef: "&";
+		case LByVal: "=";
+	}
+}
+
+
 @:publicFields
 class ExprTools {
 	@:noUsing
@@ -120,7 +133,7 @@ class ExprTools {
 		return exprs.map(e -> e.form()).join(", ");
 	}
 	
-	static function form(expr: Expr) {
+	static function form(expr: Expr, indent = 0) {
 		return switch expr {
 			case ENullptr: "nullptr";
 			
@@ -169,13 +182,47 @@ class ExprTools {
 			
 			case EName(n): fixName(n);
 			
-			case EParen(e): "(" + e.form() + ")";
+			case EParen(e): "(" + e.form(indent) + ")";
 			
-			case EInitList(i): i.form();
+			case EInitList(i): i.form(indent);
 			
 			case ETypeCtor(type, ctor): type.form() + ctor.form();
 			
-			case ELambda(captures, template, params, attrs, ret, body): throw "todo!";
+			case ELambda(captures, template, params, attrs, ret, body):
+				final buf = new Buffer();
+				
+				buf.addChar("[".code);
+				buf.addString(captures.map(c -> c.form()).join(", "));
+				buf.addChar("]".code);
+				
+				template.forEach(t -> {
+					buf.addChar("<".code);
+					buf.addString(t.types.map(t -> t.form(indent)).join(", "));
+					buf.addChar(">".code);
+				});
+				
+				buf.addChar("(".code);
+				buf.addString(params.map(p -> p.form()).join(", "));
+				buf.addChar(")".code);
+				
+				for(attr in attrs) {
+					buf.addString(' $attr');
+				}
+				
+				ret.forEach(r -> {
+					buf.addString(" -> ");
+					buf.addString(r.form());
+				});
+				
+				template.forEach(t -> t.requires.forEach(r -> {
+					buf.addChar(" ".code);
+					buf.addString(r.form(indent));
+				}));
+				
+				buf.addChar(" ".code);
+				buf.addString(body.form(indent));
+				
+				buf.toString();
 			
 			case ENew(None, None, t, false, ctor): "new " + t.form() + ctor.map(c -> c.form()).orElse("");
 			case ENew(None, None, t, true, ctor): "new (" + t.form() + ")" + ctor.map(c -> c.form()).orElse("");
@@ -229,7 +276,7 @@ class ExprTools {
 			
 			case ETypeid(expr): "typeid(" + expr.form() + ")";
 			
-			case ERequires(req): req.form();
+			case ERequires(req): req.form(indent);
 			
 			case EType(t): t.form();
 			

@@ -38,7 +38,7 @@ class Requires {
 				case RReq(e, None): "{ " + e.form() + " };";
 				case RReq(e, Some(t)): "{ " + e.form() + "} -> " + t.form() + ";";
 				case RType(t): "typename " + t.form() + ";";
-				case RNested(r): "requires " + r.form() + ";";
+				case RNested(r): "requires " + r.form(indent) + ";";
 			});
 		}
 		

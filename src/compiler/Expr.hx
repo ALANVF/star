@@ -1,5 +1,6 @@
 package compiler;
 
+@:using(compiler.ExprTools.LambdaCaptureTools)
 enum LambdaCapture {
 	LExpr(expr: Expr);
 	LByRef;
