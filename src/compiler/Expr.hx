@@ -1,5 +1,12 @@
 package compiler;
 
+enum LambdaCapture {
+	LExpr(expr: Expr);
+	LByRef;
+	LByVal;
+}
+
+@:using(compiler.ExprTools)
 enum Expr {
 	ENullptr;
 	EThis;
@@ -12,7 +19,14 @@ enum Expr {
 	EParen(expr: Expr);
 	EInitList(l: InitList);
 	ETypeCtor(type: Type, ctor: InitCtor);
-	ELambda(captures: Array<Expr>, params: Array<Param>, ret: Option<Type>, body: Block);
+	ELambda(
+		captures: Array<LambdaCapture>,
+		template: Option<Template>,
+		params: Array<Param>,
+		attrs: Attrs,
+		ret: Option<Type>,
+		body: Block
+	);
 	ENew(
 		placement: Option<Array<Expr>>,
 		constraint: Option<Type>,
@@ -27,15 +41,26 @@ enum Expr {
 	EStaticCast(type: Type, expr: Expr);
 	EDynamicCast(type: Type, expr: Expr);
 	EReinterpretCast(type: Type, expr: Expr);
-	EPrefix(op: PrefixOp, expr: Expr);
-	ESuffix(expr: Expr, op: SuffixOp);
+	EPrefix(op: PrefixOp, r: Expr);
+	ESuffix(l: Expr, op: SuffixOp);
+	EInfix(l: Expr, op: InfixOp, r: Expr);
 	EIndex(expr: Expr, index: Expr);
 	ECall(expr: Expr, typeArgs: Option<Array<Type>>, args: Array<Expr>);
-	EDot(expr: Expr, isTemplate: Bool, isRef: Bool, name: String);
-	EArrow(expr: Expr, isTemplate: Bool, isRef: Bool, name: String);
+	EDot(expr: Expr, name: String);
+	EDotStatic(expr: Expr, path: TypePath, name: String);
+	EDotTemplate(expr: Expr, name: String);
+	EDotRef(l: Expr, r: Expr);
+	EArrow(expr: Expr, name: String);
+	EArrowStatic(expr: Expr, path: TypePath, name: String);
+	EArrowTemplate(expr: Expr, name: String);
+	EArrowRef(l: Expr, r: Expr);
 	EScope(type: Type, name: String);
 	ETernary(cond: Expr, yes: Expr, no: Expr);
-	ESizeofType(type: Type);
 	ESizeof(expr: Expr);
+	ESizeofPack(expr: Expr);
+	EAlignof(type: Type);
+	ETypeid(expr: Expr);
+	ERequires(r: Requires);
+	EType(t: Type);
 	ERaw(code: String);
 }

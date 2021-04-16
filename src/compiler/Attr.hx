@@ -9,4 +9,6 @@ enum abstract Attr(String) to String {
 	final AStatic = "static";
 	final AImplicit = "implicit";
 	final AExplicit = "explicit";
+	final AMutable = "mutable";
+	final AExtern = "extern";
 }

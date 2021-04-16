@@ -10,5 +10,6 @@ enum DeclStmt {
 	DIncludeLib(path: String);
 	DIncludeFile(path: String);
 	DMember(m: Member);
+	DMemberList(m: MemberList);
 	DMethod(m: AnyMethod);
 }

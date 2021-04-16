@@ -4,7 +4,7 @@ enum RequiresStmt {
 	RStmt(s: Stmt);
 	RReq(e: Expr, t: Option<Type>);
 	RType(t: Type);
-	RNested(r: TypeCond);
+	RNested(r: Expr);
 }
 
 typedef RequiresBody = Array<RequiresStmt>;

@@ -3,8 +3,6 @@ package compiler;
 import reporting.Severity;
 import reporting.Diagnostic;
 
-using compiler.TypePathTools;
-
 inline function invalidType(span) {
 	return new Diagnostic({
 		severity: Severity.ERROR,
@@ -78,7 +76,11 @@ enum Type {
 
 @:publicFields
 class TypeTools {
-	static inline function fromType(_: std.Enum<Type>, cmp: Compiler, type: typing.Type) {
+	static inline function formTypes(types: Array<Type>) {
+		return types.map(t -> t.form()).join(", ");
+	}
+	
+	static function fromType(_: std.Enum<Type>, cmp: Compiler, type: typing.Type) {
 		return switch type.t {
 			case TPath(path, _): Type.fromTypePath(cmp, path);
 			case TConcrete(decl): TPath(TypePathTools.getFullPath(cmp, decl));
@@ -92,7 +94,7 @@ class TypeTools {
 		}
 	}
 	
-	static inline function fromTypePath(_: std.Enum<Type>, cmp: Compiler, path: typing.TypePath) {
+	static function fromTypePath(_: std.Enum<Type>, cmp: Compiler, path: typing.TypePath) {
 		return TPath(path.mapArray(s -> switch s {
 			case Named(_, name, args): {name: name, args: args.map(a -> a.of.map(arg -> Type.fromTypePath(cmp, arg)))};
 			case Blank(span, args):
