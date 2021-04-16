@@ -6,7 +6,7 @@ typedef BufferData = hl.Abstract<"hl_buffer">;
 abstract Buffer(BufferData) {
 	public var length(get, never): Int;
 
-	extern public inline function new() {
+	public extern inline function new() {
 		this = alloc();
 	}
 
@@ -27,22 +27,22 @@ abstract Buffer(BufferData) {
 	}
 
 	@:hlNative("std", "buffer_alloc")
-	static function alloc(): BufferData {
+	private static function alloc(): BufferData {
 		return null;
 	}
 
 	@:hlNative("std", "buffer_length")
-	function get_length(): Int {
+	private function get_length(): Int {
 		return 0;
 	}
 
 	@:hlNative("std", "buffer_content")
-	function content(len: hl.Ref<Int>): hl.Bytes {
+	private function content(len: hl.Ref<Int>): hl.Bytes {
 		return null;
 	}
 
 	@:hlNative("std", "buffer_str")
-	function addBytes(bytes: hl.Bytes) {}
+	private function addBytes(bytes: hl.Bytes) {}
 }
 #else
 typedef Buffer = StringBuf;

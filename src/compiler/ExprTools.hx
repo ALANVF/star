@@ -229,7 +229,7 @@ class ExprTools {
 			
 			case ETypeid(expr): "typeid(" + expr.form() + ")";
 			
-			case ERequires(req): throw "todo!";
+			case ERequires(req): req.form();
 			
 			case EType(t): t.form();
 			
