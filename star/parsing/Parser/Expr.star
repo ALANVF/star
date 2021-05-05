@@ -24,6 +24,7 @@ kind Expr {
 		end: (Span)
 	]
 	has [span: (Span) anonArg: (Int) depth: (Int)]
+	has [type: (Type) literal: (Expr)] ;-- maybe make a Literal supertype instead?
 
 	has [begin: (Span) paren: (Array[This]) end: (Span)]
 	has [block: (Block)]

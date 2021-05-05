@@ -1,6 +1,6 @@
 module Main {
 	on [mandelbrot: a (Complex)] (Complex) {
-		return [#[a] * 50 with: 0[Complex] reduce: $0 ** 2 + $1]
+		return [#[a] * 50 with: Complex 0 reduce: $0 ** 2 + $1]
 	}
 
 	on [main] {

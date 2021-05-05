@@ -21,7 +21,7 @@ module Parser {
 		my lastWasError = false
 		my errors = #[]
 		my decls = #[]
-		my badTokens = IdentitySet[new]
+		my badTokens = IdentitySet #[]
 		
 		while tokens? {
 			my oldTokens = tokens

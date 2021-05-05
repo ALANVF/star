@@ -25,6 +25,7 @@ enum Expr {
 	EWildcard(_: Span);
 	EFunc(_begin: Span, params: Array<{name: Ident, type: Option<Type>}>, ret: Option<Type>, body: Array<Stmt>, _end: Span);
 	EAnonArg(_: Span, depth: Int, nth: Int);
+	ELiteralCtor(type: Type, literal: Expr/*EInt|EDec|EChar|EStr|EArray|EHash|ETuple|EFunc(|EBlock|ELitSym ?)*/);
 
 	EParen(_begin: Span, exprs: Array<Expr>, _end: Span);
 	EBlock(block: Block);

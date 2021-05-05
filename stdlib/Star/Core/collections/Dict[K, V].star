@@ -97,7 +97,7 @@ class Dict[K, V] of Iterable[K], Iterable[K, V] is friend #[DictIterator[K], Dic
 	;== Pairs
 	
 	on [pairs] (Array[Tuple[K, V]]) is getter {
-		return pair[collect: $0[Tuple[K, V]]]
+		return pairs[collect: $0[Tuple[K, V]]]
 	}
 	
 	

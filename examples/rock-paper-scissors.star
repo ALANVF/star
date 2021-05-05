@@ -22,11 +22,11 @@ kind Choice {
 
 module Main {
 	on [main] {
-		my choices = Bag[new: #(
+		my choices = Bag #(
 			Choice.rock => 0
 			Choice.paper => 0
 			Choice.scissors => 0
-		)]
+		)
 
 		while true {
 			my userChoice = {

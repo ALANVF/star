@@ -2523,13 +2523,32 @@ class Parser {
 
 	static function parseExpr1(tokens) {
 		final result = switch parseBasicExpr(tokens) {
-			case Success(EType(type), Cons(T_Dot(_), Cons(T_Name(_1, name), rest))):
-				{expr: ETypeMember(type, {span: _1, name: name}), rest: rest};
-			case Success(EType(type), Cons(T_LBracket(begin), rest)): switch finishTypeMsg(rest) {
-				case Success({msg: msg, end: end}, rest2):
-					{expr: ETypeMessage(type, begin, msg, end), rest: rest2};
-				case err: return fatalIfBad(tokens, cast err);
-			}
+			case Success(e = EType(type), rest): match(rest,
+				at([T_Dot(_), T_Name(_1, name), ...rest2]) => {
+					{expr: ETypeMember(type, {span: _1, name: name}), rest: rest2};
+				},
+				at([T_LBracket(begin), ...rest2]) => switch finishTypeMsg(rest2) {
+					case Success({msg: msg, end: end}, rest3):
+						{expr: ETypeMessage(type, begin, msg, end), rest: rest3};
+					case err: return fatalIfBad(tokens, cast err);
+				},
+				at([
+					  T_Int(_, _, _)
+					| T_Hex(_, _)
+					| T_Dec(_, _, _, _)
+					| T_Str(_, _)
+					| T_Char(_, _)
+					| T_Bool(_, _)
+					| T_HashLBracket(_)
+					| T_HashLParen(_)
+					| T_HashLBrace(_),
+					..._
+				] | [T_LBrace(_), T_Bar(_) | T_BarBar(_), ..._]) => switch parseBasicExpr(rest) {
+					case Success(expr, rest2): {expr: ELiteralCtor(type, expr), rest: rest2};
+					case err: return fatalIfBad(tokens, cast err);
+				},
+				_ => {expr: e, rest: rest}
+			);
 			case Success(e, rest): {expr: e, rest: rest};
 			case err: return err;
 		};
