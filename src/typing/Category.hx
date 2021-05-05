@@ -14,6 +14,7 @@ class Category {
 	final name: Ident;
 	var params: Option<Array<Type>>;
 	var type: Option<Type>;
+	final staticMembers: Array<Member> = [];
 	final staticMethods: Array<StaticMethod> = [];
 	final methods: Array<Method> = [];
 	final inits: Array<Init> = [];
@@ -47,6 +48,8 @@ class Category {
 				}
 		
 				for(decl in ast.body.of) switch decl {
+					case DMember(m) if(m.attrs.exists(IsStatic)): category.staticMembers.push(Member.fromAST(category, m));
+					
 					case DMethod(m) if(m.attrs.exists(IsStatic)): StaticMethod.fromAST(category, m).forEach(category.staticMethods.push);
 					case DMethod(m): category.methods.push(Method.fromAST(category, m));
 		
@@ -65,14 +68,20 @@ class Category {
 	}
 
 	function hasErrors() {
-		return errors.length != 0 || generics.allValues().some(g -> g.hasErrors()) || staticMethods.some(m -> m.hasErrors())
-			|| methods.some(m -> m.hasErrors()) || inits.some(i -> i.hasErrors()) || operators.some(o -> o.hasErrors());
+		return errors.length != 0
+			|| generics.allValues().some(g -> g.hasErrors())
+			|| staticMembers.some(m -> m.hasErrors())
+			|| staticMethods.some(m -> m.hasErrors())
+			|| methods.some(m -> m.hasErrors())
+			|| inits.some(i -> i.hasErrors())
+			|| operators.some(o -> o.hasErrors());
 	}
 
 	function allErrors() {
 		var result = errors;
 		
 		for(generic in generics) result = result.concat(generic.allErrors());
+		for(member in staticMembers) result = result.concat(member.allErrors());
 		for(method in staticMethods) result = result.concat(method.allErrors());
 		for(method in methods) result = result.concat(method.allErrors());
 		for(init in inits) result = result.concat(init.allErrors());

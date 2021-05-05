@@ -8,8 +8,10 @@ abstract class Namespace extends TypeDecl {
 	var staticDeinit: Option<StaticDeinit> = None;
 
 	override function hasErrors() {
-		return super.hasErrors() || decls.some(d -> d.hasErrors())
-			|| staticMembers.some(m -> m.hasErrors()) || staticMethods.some(m -> m.hasErrors());
+		return super.hasErrors()
+			|| decls.some(d -> d.hasErrors())
+			|| staticMembers.some(m -> m.hasErrors())
+			|| staticMethods.some(m -> m.hasErrors());
 	}
 
 	override function allErrors() {
