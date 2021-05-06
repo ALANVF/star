@@ -251,7 +251,7 @@ category Power for Int {
 
 	on [nth] (Str) {
 		return this[Str] + {
-			if 11 <= this <= 13 {
+			if 11 <= this % 100 <= 13 {
 				return "th"
 			} else {
 				match this % 10 {

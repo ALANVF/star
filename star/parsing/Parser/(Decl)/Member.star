@@ -10,8 +10,8 @@ class Member of Decl, Named {
 	}
 
 	my type (Maybe[Type])
-	my value (Maybe[Expr])
 	my attrs (Attrs)
+	my value (Maybe[Expr])
 
 	on [displayName] (Str) is getter {
 		match attrs at Attrs[isStatic: _] & _ {

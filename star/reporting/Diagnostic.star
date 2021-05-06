@@ -4,7 +4,6 @@ class Diagnostic {
 	my message (Maybe[Str])
 	my info (Array[Info])
 	
-	
 	init [severity: (Severity) code: (Str) message: (Str) info: (Array[Info])] {
 		this.severity = severity
 		this.code = Maybe[the: code]
