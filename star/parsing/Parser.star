@@ -950,13 +950,15 @@ module Parser {
 			else => return Result[fatal: tokens, Maybe[none]]
 		}
 		
+		case'.span = span
+		
 		match This[parseBlock: rest] {
 			at Result[success: my block, rest = _] => case'.init = Maybe[the: block]
 			at Result[failure: _, _] => case'.init = Maybe[none]
 			at my fail => return fail[Result[Decl]]
 		}
 		
-		return case'
+		return Result[success: case', rest]
 	}
 	
 	
