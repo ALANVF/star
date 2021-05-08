@@ -26,6 +26,7 @@ enum Expr {
 		params: Array<Param>,
 		attrs: Attrs,
 		ret: Option<Type>,
+		requires: Option<Requires>,
 		body: Block
 	);
 	ENew(

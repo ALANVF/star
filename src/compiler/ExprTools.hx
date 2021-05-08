@@ -189,7 +189,7 @@ class ExprTools {
 			
 			case ETypeCtor(type, ctor): type.form() + ctor.form();
 			
-			case ELambda(captures, template, params, attrs, ret, body):
+			case ELambda(captures, template, params, attrs, ret, requires, body):
 				final buf = new Buffer();
 				
 				buf.addChar("[".code);
@@ -197,9 +197,7 @@ class ExprTools {
 				buf.addChar("]".code);
 				
 				template.forEach(t -> {
-					buf.addChar("<".code);
-					buf.addString(t.types.map(t -> t.form(indent)).join(", "));
-					buf.addChar(">".code);
+					buf.addString(t.form(indent).removeLeading("template"));
 				});
 				
 				buf.addChar("(".code);
@@ -215,10 +213,10 @@ class ExprTools {
 					buf.addString(r.form());
 				});
 				
-				template.forEach(t -> t.requires.forEach(r -> {
-					buf.addChar(" ".code);
+				requires.forEach(r -> {
+					buf.add(" requires ");
 					buf.addString(r.form(indent));
-				}));
+				});
 				
 				buf.addChar(" ".code);
 				buf.addString(body.form(indent));

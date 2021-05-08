@@ -65,9 +65,11 @@ enum Type {
 	
 	TTypename(t: Type);
 	TPath(path: TypePath);
+	TLookup(t: Type, path: TypePath);
 	
-	TAuto;
+	TAuto(constraint: Option<Type>);
 	TDecltype(expr: Expr);
+	TDecltypeAuto(constraint: Option<Type>);
 	
 	TPack(type: Type);
 	
@@ -152,9 +154,13 @@ class TypeTools {
 			
 			case TTypename(t): "typename " + t.form();
 			case TPath(path): path.form();
+			case TLookup(t, path): t.form() + "::" + path.form();
 			
-			case TAuto: "auto";
+			case TAuto(None): "auto";
+			case TAuto(Some(c)): c.form() + " auto";
 			case TDecltype(expr): "decltype(" + expr.form() + ")";
+			case TDecltypeAuto(None): "decltype(auto)";
+			case TDecltypeAuto(Some(c)): c.form() + " decltype(auto)";
 			
 			case TPack(t): t.form() + "...";
 			
