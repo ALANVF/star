@@ -10,27 +10,27 @@ protocol Range[T, S] of Iterable[T] {
 	
 	;== Creating
 
-	on [from: (T) to: (T) by: (S) = 1[S]] (Range[T, S]) is static is inline is noinherit {
+	on [from: (T) to: (T) by: (S) = S 1] (Range[T, S]) is static is inline is noinherit {
 		return Forwards[:from :to :by]
 	}
 	
-	on [after: (T) to: (T) by: (S) = 1[S]] (Range[T, S]) is static is inline is noinherit {
+	on [after: (T) to: (T) by: (S) = S 1] (Range[T, S]) is static is inline is noinherit {
 		return Forwards[:after :to :by]
 	}
 
-	on [from: (T) upto: (T) by: (S) = 1[S]] (Range[T, S]) is static is inline is noinherit {
+	on [from: (T) upto: (T) by: (S) = S 1] (Range[T, S]) is static is inline is noinherit {
 		return Forwards[:from :upto :by]
 	}
 
-	on [after: (T) upto: (T) by: (S) = 1[S]] (Range[T, S]) is static is inline is noinherit {
+	on [after: (T) upto: (T) by: (S) = S 1] (Range[T, S]) is static is inline is noinherit {
 		return Forwards[:after :upto :by]
 	}
 
-	on [from: (T) downto: (T) by: (S) = [-1 S]] (Range[T, S]) is static is inline is noinherit {
+	on [from: (T) downto: (T) by: (S) = S -1] (Range[T, S]) is static is inline is noinherit {
 		return Backwards[:from :downto :by]
 	}
 
-	on [after: (T) downto: (T) by: (S) = [-1 S]] (Range[T, S]) is static is inline is noinherit {
+	on [after: (T) downto: (T) by: (S) = S -1] (Range[T, S]) is static is inline is noinherit {
 		return Backwards[:after :downto :by]
 	}
 
@@ -50,7 +50,7 @@ protocol Range[T, S] of Iterable[T] {
 	on [min] (T)
 
 	on [sum] (T) {
-		my sum = 0[T]
+		my sum = T 0
 		
 		for my value from: from to: to by: step {
 			sum += value

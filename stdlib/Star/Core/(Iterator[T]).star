@@ -1,4 +1,4 @@
 type T
-protocol Iterator[T] of Iterable[T] {
+protocol Iterator[T] {
 	on [next] (Maybe[T])
 }

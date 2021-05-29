@@ -13,17 +13,17 @@ typedef RequiresBody = Array<RequiresStmt>;
 
 @:build(util.Auto.build())
 class Requires {
-	var args: Array<Param>;
+	var params: Array<Param>;
 	var body: RequiresBody;
 	
 	function form(indent = 0) {
 		final buf = new Buffer();
 		
-		if(args.length == 0) {
+		if(params.length == 0) {
 			buf.addString("requires {");
 		} else {
 			buf.addString("requires(");
-			buf.addString(args.map(a -> a.form()).join(", "));
+			buf.addString(params.map(a -> a.form()).join(", "));
 			buf.addString(") {");
 		}
 		

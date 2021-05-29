@@ -66,10 +66,7 @@ kind List[T] of Iterable[T] {
 			match #{index', this} {
 				at #{_, This[nil]} => IndexError[at: index]
 				at #{0, This[head: my head tail: _]} => return head
-				at #{_, This[head: _ tail: my tail]} {
-					list = tail
-					index'--
-				}
+				at #{_, This[head: _ tail: list = _]} => index'--
 			}
 		}
 	}
@@ -86,10 +83,7 @@ kind List[T] of Iterable[T] {
 			match #{index', this} {
 				at #{_, This[nil]} => return Maybe[none]
 				at #{0, This[head: my head tail: _]} => return Maybe[the: head]
-				at #{_, This[head: _ tail: my tail]} {
-					list = tail
-					index'--
-				}
+				at #{_, This[head: _ tail: list = _]} => index'--
 			}
 		}
 	}
@@ -109,10 +103,7 @@ kind List[T] of Iterable[T] {
 			match #{index, this} {
 				at #{_, This[nil]} => throw RangeError[:from to: -1]
 				at #{0, This[head: _ tail: _]} => return list
-				at #{_, This[head: _ tail: my tail]} {
-					list = tail
-					index--
-				}
+				at #{_, This[head: _ tail: list = _]} => index--
 			}
 		}
 	}

@@ -119,7 +119,7 @@
 							"name": "punctuation.definition.comment.star"
 						}
 					],
-					"end": "^",
+					"end": "$",
 					"name": "comment.line.result.documentation.star"
 				},
 				{
@@ -129,7 +129,7 @@
 							"name": "punctuation.definition.comment.star"
 						}
 					],
-					"end": "^",
+					"end": "$",
 					"name": "comment.line.documentation.star"
 				},
 				{
@@ -139,7 +139,7 @@
 							"name": "punctuation.definition.comment.star"
 						}
 					],
-					"end": "^",
+					"end": "$",
 					"name": "comment.line.star"
 				}
 			],

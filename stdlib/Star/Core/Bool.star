@@ -1,6 +1,6 @@
 use Native
 
-class Bool of Comparable is native[repr: `bool`] is strong {
+class Bool is native[repr: `bool`] is strong {
 	; These macros exist purely for documentation purposes until Star is
 	; bootstrapped and macros are implemented
 
@@ -12,8 +12,8 @@ class Bool of Comparable is native[repr: `bool`] is strong {
 			return #expand no
 		}
 	}
-
-
+	
+	
 	operator `!` (Bool) is native `bool_not`
 	
 	operator `?` (Bool) is inline {
@@ -25,10 +25,6 @@ class Bool of Comparable is native[repr: `bool`] is strong {
 	operator `^` [bool (Bool)] (Bool) is native `bool_xor`
 	operator `?=` [bool (Bool)] (Bool) is native `bool_eq`
 	operator `!=` [bool (Bool)] (Bool) is native `bool_ne`
-	operator `>` [bool (Bool)] (Bool) is native `bool_gt`
-	operator `>=` [bool (Bool)] (Bool) is native `bool_ge`
-	operator `<` [bool (Bool)] (Bool) is native `bool_lt`
-	operator `<=` [bool (Bool)] (Bool) is native `bool_le`
 
 	operator `&&` [cond (Bool)] (Bool) is macro {
 		if #expand this {
@@ -48,13 +44,13 @@ class Bool of Comparable is native[repr: `bool`] is strong {
 
 	operator `^^` [cond (Bool)] (Bool) is macro {
 		match cond at #quote (my left ^^ my right) {
-			;-- We don't want to expand `left` twice, so save it for later
+			my thisCond = #expand this
 			my leftCond = #expand left
-
-			if #expand this != leftCond {
-				return leftCond ^^ right
-			} else {
+			
+			if thisCond && leftCond {
 				return false
+			} else {
+				return thisCond != leftCond ^^ right
 			}
 		} else {
 			return #expand this != #expand cond 
@@ -90,6 +86,12 @@ class Bool of Comparable is native[repr: `bool`] is strong {
 	on [UInt32] is native `cast_bool_u32`
 	on [Int64] is native `cast_bool_i64`
 	on [UInt64] is native `cast_bool_u64`
-	on [Str] is native `cast_bool_str`
+	on [Str] is inline {
+		if this {
+			return "true"
+		} else {
+			return "false"
+		}
+	}
 	on [Int] is native `cast_bool_i32`
 }

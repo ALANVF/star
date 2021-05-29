@@ -193,7 +193,7 @@ class Array[T] of Values[T] {
 		
 		my result = This[new: length * count]
 		
-		for _ from: 0 to: count {
+		for _ from: 1 to: count {
 			result[addAll: this]
 		}
 		

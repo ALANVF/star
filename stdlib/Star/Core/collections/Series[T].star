@@ -1,10 +1,9 @@
 type T
-type U[T] {
+type U {
 	on [length] (Int) is getter
 	on [at: index (Int)] (T)
 }
-type T'
-alias Sequential[T'] is hidden = U[T']
+alias Sequential[T] is hidden = U
 
 type T
 class Series[T] of Ordered, Iterable[T] {

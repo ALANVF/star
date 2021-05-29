@@ -19,3 +19,5 @@
 - [ ] bitsets
 - [ ] nested maps
 - [ ] sequences (like kotlin)
+- [ ] unrolled buffers (like scala)
+- [ ] sorted variants of various types

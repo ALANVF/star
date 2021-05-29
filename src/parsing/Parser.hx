@@ -1136,7 +1136,7 @@ class Parser {
 		final params = [match(rest,
 			// Checking for `a: (B)` syntax before `a: a' (B)` syntax is
 			// probably less expensive than doing it after.
-			at([T_Label(_2, label), ...rest2 = [T_LParen(_), ..._]]) => switch parseTypeAnno(rest2) {
+			at([T_Label(_2, label), ...rest2 = [T_LParen(_), ..._]]) => switch parseTypeAnno(rest2, true) {
 				case Success(type, Cons(T_Eq(_), rest3)): switch parseExpr(rest3) {
 					case Success(expr, rest4):
 						rest = rest4;
@@ -1148,7 +1148,7 @@ class Parser {
 					{label: Some(new Ident(_2, label)), name: None, type: type, value: None};
 				case err: return fatalIfBad(tokens, cast err);
 			},
-			at([T_Label(_2, label), _.asSoftName() => T_Name(_3, name), ...rest2]) => switch parseTypeAnno(rest2) {
+			at([T_Label(_2, label), _.asSoftName() => T_Name(_3, name), ...rest2]) => switch parseTypeAnno(rest2, true) {
 				case Success(type, Cons(T_Eq(_), rest3)): switch parseExpr(rest3) {
 					case Success(expr, rest4):
 						rest = rest4;
@@ -1175,7 +1175,7 @@ class Parser {
 			);
 
 			params.push(match(rest,
-				at([T_Label(_2, label), ...rest2 = [T_LParen(_), ..._]]) => switch parseTypeAnno(rest2) {
+				at([T_Label(_2, label), ...rest2 = [T_LParen(_), ..._]]) => switch parseTypeAnno(rest2, true) {
 					case Success(type, Cons(T_Eq(_), rest3)): switch parseExpr(rest3) {
 						case Success(expr, rest4):
 							rest = rest4;
@@ -1187,7 +1187,7 @@ class Parser {
 						{label: Some(new Ident(_2, label)), name: None, type: type, value: None};
 					case err: return fatalIfBad(tokens, cast err);
 				},
-				at([T_Label(_2, label), _.asSoftName() => T_Name(_3, name), ...rest2]) => switch parseTypeAnno(rest2) {
+				at([T_Label(_2, label), _.asSoftName() => T_Name(_3, name), ...rest2]) => switch parseTypeAnno(rest2, true) {
 					case Success(type, Cons(T_Eq(_), rest3)): switch parseExpr(rest3) {
 						case Success(expr, rest4):
 							rest = rest4;
@@ -1200,13 +1200,13 @@ class Parser {
 					case err: return fatalIfBad(tokens, cast err);
 				},
 				at([T_Label(_, _), ...rest2]) => return Fatal(tokens, Some(rest2)),
-				at([T_LParen(_), ..._]) => switch parseTypeAnno(rest) {
+				at([T_LParen(_), ..._]) => switch parseTypeAnno(rest, true) {
 					case Success(type, rest2):
 						rest = rest2;
 						{label: None, name: None, type: type, value: None};
 					case err: return fatalIfFailed(cast err);
 				},
-				at([_.asSoftName() => T_Name(_2, name), ...rest2]) => switch parseTypeAnno(rest2) {
+				at([_.asSoftName() => T_Name(_2, name), ...rest2]) => switch parseTypeAnno(rest2, true) {
 					case Success(type, Cons(T_Eq(_), rest3)): switch parseExpr(rest3) {
 						case Success(expr, rest4):
 							rest = rest4;
@@ -1661,9 +1661,9 @@ class Parser {
 		_ => Failure(tokens, None)
 	);
 
-	static function parseTypeAnno(tokens: List<Token>) return match(tokens,
+	static function parseTypeAnno(tokens: List<Token>, allowSingleWildcard = false) return match(tokens,
 		at([T_LParen(_)]) => Eof(tokens),
-		at([T_LParen(_), ...rest]) => switch parseType(rest) {
+		at([T_LParen(_), ...rest]) => switch parseType(rest, allowSingleWildcard) {
 			case Success(type, Cons(T_RParen(_), rest2)): Success(type, rest2);
 			case Success(_, Nil): Eof(tokens);
 			case err: cast err;
@@ -1671,9 +1671,9 @@ class Parser {
 		_ => Failure(tokens, None)
 	);
 
-	static function parseTypeAnnoWithDelims(tokens: List<Token>) return match(tokens,
+	static function parseTypeAnnoWithDelims(tokens: List<Token>, allowSingleWildcard = false) return match(tokens,
 		at([T_LParen(_)]) => Eof(tokens),
-		at([T_LParen(begin), ...rest]) => switch parseType(rest) {
+		at([T_LParen(begin), ...rest]) => switch parseType(rest, allowSingleWildcard) {
 			case Success(type, Cons(T_RParen(end), rest2)): Success({begin: begin, of: type, end: end}, rest2);
 			case Success(_, Nil): Eof(tokens);
 			case err: cast err;

@@ -87,7 +87,7 @@
 					begin ";=>"
 					beginCaptures [#(name "punctuation.definition.comment.star")]
 					
-					end "^^"
+					end "$"
 					
 					name "comment.line.result.documentation.star"
 				)
@@ -95,7 +95,7 @@
 					begin ";(?:--|==|@@)"
 					beginCaptures [#(name "punctuation.definition.comment.star")]
 					
-					end "^^"
+					end "$"
 					
 					name "comment.line.documentation.star"
 				)
@@ -103,7 +103,7 @@
 					begin ";(?!\[)"
 					beginCaptures [#(name "punctuation.definition.comment.star")]
 					
-					end "^^"
+					end "$"
 					
 					name "comment.line.star"
 				)

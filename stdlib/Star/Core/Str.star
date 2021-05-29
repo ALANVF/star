@@ -18,9 +18,8 @@ class Str of Values[Char], Ordered is strong {
 
 		length = capacity = 1
 	}
-
-	type Chars of Values[Char]
-	init [new: chars (Chars)] {
+	
+	init [new: chars (Values[Char])] {
 		my numChars = chars.length
 
 		buffer = Ptr[new: numChars]
@@ -159,19 +158,19 @@ class Str of Values[Char], Ordered is strong {
 		return str
 	}
 
-	type Stringy {
+	type T {
 		on [Str]
 	}
-	on [add: value (Stringy)] (Stringy) is inline {
+	on [add: value (T)] (T) is inline {
 		this[add: value[Str]]
 
 		return value
 	}
 
-	type Stringy {
+	type T {
 		on [Str]
 	}
-	type Iter of Iterable[Stringy]
+	type Iter of Iterable[T]
 	on [addAll: values (Iter)] (Iter) {
 		for my value in: values {
 			this[add: value]
@@ -193,19 +192,19 @@ class Str of Values[Char], Ordered is strong {
 		return str
 	}
 
-	type Stringy {
+	type T {
 		on [Str]
 	}
-	on [prepend: value (Stringy)] (Stringy) is inline {
+	on [prepend: value (T)] (T) is inline {
 		this[prepend: value[Str]]
 
 		return value
 	}
 
-	type Stringy {
+	type T {
 		on [Str]
 	}
-	type Iter of Iterable[Stringy]
+	type Iter of Iterable[T]
 	on [prependAll: values (Iter)] (Iter) {
 		this[prepend: "" -> {
 			for my value in: values {
