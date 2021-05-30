@@ -7,12 +7,6 @@ enum Then {
 	ThenStmt(_: Span, stmt: Stmt);
 }
 
-enum LoopVar {
-	LDecl(_: Span, name: Ident, type: Option<Type>);
-	LVar(name: Ident);
-	LIgnore(_: Span);
-}
-
 enum LoopStart {
 	LoopFrom;
 	LoopAfter;
@@ -76,8 +70,8 @@ enum Stmt {
 	);
 	SForIn(
 		_: Span,
-		lvar: LoopVar,
-		lvar2: Option<LoopVar>,
+		lvar: Expr,
+		lvar2: Option<Expr>,
 		inSpan: Span,
 		inExpr: Expr,
 		cond: Option<{span: Span, expr: Expr}>,
@@ -85,7 +79,7 @@ enum Stmt {
 	);
 	SForRange(
 		_: Span,
-		lvar: LoopVar,
+		lvar: Expr,
 		startSpan: Span,
 		startKind: LoopStart,
 		startExpr: Expr,

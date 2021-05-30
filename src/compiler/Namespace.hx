@@ -1,7 +1,5 @@
 package compiler;
 
-import util.Buffer;
-
 @:build(util.Auto.build())
 class Namespace {
 	var path: Option<TypePath>;

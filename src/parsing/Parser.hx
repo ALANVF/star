@@ -1868,11 +1868,11 @@ class Parser {
 			case err: fatalIfFailed(cast err);
 		},
 
-		at([T_For(_1), ...rest]) => switch parseLoopVar(rest) {
+		at([T_For(_1), ...rest]) => switch parseExpr(rest) {
 			case Success(lvar, rest2): match(rest2,
 				at([T_Label(startSpan, "from"), ...rest3]) => parseLoopRange(_1, lvar, startSpan, LoopFrom, rest3),
 				at([T_Label(startSpan, "after"), ...rest3]) => parseLoopRange(_1, lvar, startSpan, LoopAfter, rest3),
-				at([T_Comma(_), ...rest3]) => switch parseLoopVar(rest3) {
+				at([T_Comma(_), ...rest3]) => switch parseExpr(rest3) {
 					case Success(lvar2, rest4): parseLoopIn(_1, lvar, Some(lvar2), rest4);
 					case err: fatalIfFailed(cast err);
 				},
@@ -1976,7 +1976,7 @@ class Parser {
 	}
 
 
-	static function parseLoopVar(tokens: List<Token>): ParseResult<LoopVar> return match(tokens,
+	/*static function parseLoopVar(tokens: List<Token>): ParseResult<LoopVar> return match(tokens,
 		at([T_My(_1), T_Name(_2, name), ...rest = [T_LParen(_), ..._]]) => switch parseTypeAnno(rest) {
 			case Success(type, rest2): Success(LDecl(_1, {span: _2, name: name}, Some(type)), rest2);
 			case err: fatalIfFailed(cast err);
@@ -1985,7 +1985,7 @@ class Parser {
 		at([T_Wildcard(_1), ...rest]) => Success(LIgnore(_1), rest),
 		at([_.asSoftName() => T_Name(_1, name), ...rest]) => Success(LVar({span: _1, name: name}), rest),
 		_ => Failure(tokens, None)
-	);
+	);*/
 
 	static function parseLoopIn(_1, lvar, lvar2, tokens: List<Token>) return match(tokens,
 		at([T_Label(inSpan, "in"), ...rest]) => switch parseExpr(rest) {

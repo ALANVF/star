@@ -49,8 +49,8 @@ kind Stmt {
 
 	has [
 		for: (Span)
-		var: (Loop.Var)
-		var': (Maybe[Loop.Var])
+		var: (Expr.Pattern)
+		var': (Maybe[Expr.Pattern])
 		in: (Tuple[Span, Expr])
 		while: (Maybe[Tuple[Span, Expr]])
 		do: (Block)
@@ -58,7 +58,7 @@ kind Stmt {
 
 	has [
 		for: (Span)
-		var: (Loop.Var)
+		var: (Expr.Pattern)
 		start: (Loop.Start)
 		stop: (Loop.Stop)
 		step: (Maybe[Tuple[Span, Expr]])

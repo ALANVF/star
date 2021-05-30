@@ -1,6 +1,5 @@
 package compiler;
 
-import haxe.rtti.CType.TypeParams;
 import reporting.Diagnostic;
 
 @:publicFields
