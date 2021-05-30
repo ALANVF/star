@@ -1,5 +1,6 @@
 package parsing;
 
+import parsing.ast.decls.GenericParam;
 import parsing.ast.Infix.Assignable;
 import parsing.ast.Cascade;
 import util.Buffer;
@@ -328,6 +329,52 @@ class Parser {
 				case Failure(_, _): None;
 				case err: return fatalIfBad(rest, cast err);
 			};
+			
+			final attrs = new Map<GenericParamAttr, Span>();
+
+			while(true) match(rest,
+				at([T_Is(_2), T_Flags(_3), ...rest2]) => {
+					attrs[GenericParamAttr.IsFlags] = Span.range(_2, _3);
+					rest = rest2;
+				},
+				at([T_Is(_2), T_Strong(_3), ...rest2]) => {
+					attrs[GenericParamAttr.IsStrong] = Span.range(_2, _3);
+					rest = rest2;
+				},
+				at([T_Is(_2), T_Uncounted(_3), ...rest2]) => {
+					attrs[GenericParamAttr.IsUncounted] = Span.range(_2, _3);
+					rest = rest2;
+				},
+				at([T_Is(_2), T_Native(_3), T_LBracket(begin), ...rest2]) => {
+					final spec = [match(rest2,
+						at([T_Label(_4, label), ...rest3]) => switch parseBasicExpr(rest3) {
+							case Success(expr, rest4):
+								rest2 = rest4;
+								{label: new Ident(_4, label), expr: expr};
+							case err: return cast err;
+						},
+						_ => return Fatal(tokens, Some(rest2))
+					)];
+
+					while(true) match(rest2,
+						at([T_RBracket(end), ...rest3]) => {
+							attrs[GenericParamAttr.IsNative(begin, spec, end)] = Span.range(_2, _3);
+							rest = rest3;
+							break;
+						},
+						at([isAnySep(_) => true, ...rest3] | rest3) => match(rest3,
+							at([T_Label(_4, label), ...rest4]) => switch parseBasicExpr(rest4) {
+								case Success(expr, rest5):
+									rest2 = rest5;
+									spec.push({label: new Ident(_4, label), expr: expr});
+								case err: return cast err;
+							},
+							_ => return Fatal(tokens, Some(rest3))
+						)
+					);
+				},
+				_ => break
+			);
 
 			final rule = match(rest,
 				at([T_If(_2), ...rest2]) => switch parseGenericRule(rest2) {
@@ -352,6 +399,7 @@ class Parser {
 				name: name,
 				params: params,
 				parents: parents,
+				attrs: attrs,
 				rule: rule,
 				body: body
 			}, rest);

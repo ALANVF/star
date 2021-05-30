@@ -93,7 +93,7 @@ class Ptr[Void] of Comparable is native[repr: `voidptr`] {
 	}
 	
 
-	type T
+	type T if T != Void
 	on [Ptr[T]] is native `cast_vptr_ptr`
 	on [UInt64] is native `ptr_addr`
 }

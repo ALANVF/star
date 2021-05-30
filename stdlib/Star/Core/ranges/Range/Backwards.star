@@ -24,7 +24,7 @@ class Backwards[T, S] of Range[T, S] is hidden Range {
 	;== Creating
 
 	init [from: (T) downto: (T) by: (S)] {
-		if from >= downto && by < 0[S] {
+		if from >= downto && by < S 0 {
 			this.from = from
 			to = downto
 			step = by
@@ -36,7 +36,7 @@ class Backwards[T, S] of Range[T, S] is hidden Range {
 	init [after: (T) downto: (T) by: (S)] {
 		from = after + by
 		
-		if from >= downto && by < 0[S] {
+		if from >= downto && by < S 0 {
 			to = downto
 			step = by
 		} else {

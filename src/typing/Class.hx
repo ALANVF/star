@@ -3,23 +3,6 @@ package typing;
 import parsing.ast.Ident;
 import reporting.Diagnostic;
 
-enum NativeClass {
-	NVoid;
-	NBool;
-	NInt8;
-	NUInt8;
-	NInt16;
-	NUInt16;
-	NInt32;
-	NUInt32;
-	NInt64;
-	NUInt64;
-	NDec32;
-	NDec64;
-	NVoidPtr;
-	NPtr(t: Type);
-}
-
 class Class extends Namespace {
 	final parents: Array<Type> = [];
 	final members: Array<Member> = [];
@@ -28,7 +11,7 @@ class Class extends Namespace {
 	final operators: Array<Operator> = [];
 	var defaultInit: Option<DefaultInit> = None;
 	var deinit: Option<Deinit> = None;
-	var native: Option<NativeClass> = None;
+	var native: Option<NativeKind> = None;
 	var isStrong: Bool = false;
 	var isUncounted: Bool = false;
 	var sealed: Option<Option<Type>> = None;

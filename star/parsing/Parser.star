@@ -315,6 +315,34 @@ module Parser {
 							at my fail => throw fail[fatalIfBad: rest]
 						}
 					}
+					
+					my attrs = Generic.Param.Attrs[empty]
+					
+					while true {
+						match rest {
+							at #[my i = Token[is], Token[native], my l = Token[lBracket], ...my rest'] {
+								match This[parseIsNativeAttr: rest', attrs, i.span | l.span] {
+									at Result[success: attrs = _, rest = _] {}
+									at my fail => return fail[Result[Generic.Param]]
+								}
+							}
+							
+							at #[my i = Token[is], my a = Token[flags], ...rest = _] {
+								attrs |= Generic.Param.Attrs[isFlags: i.span | a.span]
+							}
+							
+							at #[my i = Token[is], my a = Token[strong], ...rest = _] {
+								attrs |= Generic.Param.Attrs[isStrong: i.span | a.span]
+							}
+							
+							at #[my i = Token[is], my a = Token[uncounted], ...rest = _] {
+								attrs |= Generic.Param.Attrs[isUncounted: i.span | a.span]
+							}
+							
+							else => break
+						}
+					}
+					
 					my rule = {
 						match rest at #[my t = Token[if], ...my rest'] {
 							match This[parseGenericRule: rest'] {
@@ -333,7 +361,7 @@ module Parser {
 						}
 					}
 					
-					return Result[success: Generic.Param[:span :name :params :parents :rule :body], rest]
+					return Result[success: Generic.Param[:span :name :params :parents :attrs :rule :body], rest]
 				} catch {
 					at my fail (Result[_]) => return fail[Result[Generic.Param]]
 				}
@@ -636,31 +664,10 @@ module Parser {
 							}
 						}
 						
-						at #[my i = Token[is], Token[native], my l = Token[lBracket], ...rest = _] {
-							;attrs |= Class.Attrs[is: i.span | a.span native: Ident[name: sym span: span']]
-							my spec
-							match rest {
-								at #[Token[label: my label span: my span'], ...my rest'] => match This[parseBasicExpr: rest'] {
-									at Result[success: my expr, rest = _] => spec = #[#{Ident[name: label span: span'], expr}]
-									at my fail => return fail[Result[Decl]]
-								}
-								else => return Result[fatal: tokens, Maybe[the: rest]]
-							}
-							
-							while true {
-								match rest {
-									at #[my r = Token[rBracket], ...rest = _] {
-										attrs |= Class.Attrs[begin: i.span | l.span isNative: spec end: r.span]
-										break
-									}
-									at #[_[isAnySep], ...rest = _] || _  => match rest {
-										at #[Token[label: my label span: my span'], ...rest = _] => match This[parseBasicExpr: rest] {
-											at Result[success: my expr, rest = _] => spec[add: #{Ident[name: label span: span'], expr}]
-											at my fail => return fail[Result[Decl]]
-										}
-										else => return Result[fatal: tokens, Maybe[the: rest]]
-									}
-								}
+						at #[my i = Token[is], Token[native], my l = Token[lBracket], ...my rest'] {
+							match This[parseIsNativeAttr: rest', attrs, i.span | l.span] {
+								at Result[success: attrs = _, rest = _] {}
+								at my fail => return fail[Result[Decl]]
 							}
 						}
 						
@@ -964,7 +971,7 @@ module Parser {
 	
 	;== Attributes
 	
-	type T ;[is flags] {
+	type T is flags {
 		has [is: (Span) hidden: (Maybe[Type])]
 	}
 	on [parseIsHiddenAttr: tokens (Tokens), attrs (T), span (Span)] (Result[T]) {
@@ -979,7 +986,7 @@ module Parser {
 		}
 	}
 	
-	type T ;[is flags] {
+	type T is flags {
 		has [is: (Span) friend: (TypeSpec)]
 	}
 	on [parseIsFriendAttr: tokens (Tokens), attrs (T), span (Span)] (Result[T]) {
@@ -991,7 +998,7 @@ module Parser {
 		}
 	}
 	
-	type T ;[is flags] {
+	type T is flags {
 		has [is: (Span) sealed: (Maybe[Type])]
 	}
 	on [parseIsSealedAttr: tokens (Tokens), attrs (T), span (Span)] (Result[T]) {
@@ -1003,6 +1010,37 @@ module Parser {
 				return Result[success: attrs | T[is: span sealed: Maybe[none]], tokens]
 			}
 			at my fail => return fail[Result[T]]
+		}
+	}
+	
+	type T is flags {
+		has [begin: (Span) isNative: (Array[Tuple[Ident, Expr]]) end: (Span)]
+	}
+	on [parseIsNativeAttr: tokens (Tokens), attrs (T), span (Span)] (Result[T]) {
+		my rest = tokens
+		my spec
+		
+		match rest {
+			at #[Token[label: my label span: my span'], ...my rest'] => match This[parseBasicExpr: rest'] {
+				at Result[success: my expr, rest = _] => spec = #[#{Ident[name: label span: span'], expr}]
+				at my fail => return fail[Result[T]]
+			}
+			else => return Result[fatal: tokens, Maybe[the: rest]]
+		}
+		
+		while true {
+			match rest {
+				at #[my r = Token[rBracket], ...rest = _] {
+					return Result[success: attrs | T[begin: span isNative: spec end: r.span], rest]
+				}
+				at #[_[isAnySep], ...rest = _] || _ => match rest {
+					at #[Token[label: my label span: my span'], ...rest = _] => match This[parseBasicExpr: rest] {
+						at Result[success: my expr, rest = _] => spec[add: #{Ident[name: label span: span'], expr}]
+						at my fail => return fail[Result[T]]
+					}
+					else => return Result[fatal: tokens, Maybe[the: rest]]
+				}
+			}
 		}
 	}
 	

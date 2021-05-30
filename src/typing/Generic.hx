@@ -29,6 +29,10 @@ class Generic {
 	final staticMethods: Array<StaticMethod> = [];
 	final taggedCases: Array<TaggedCase> = [];
 	final valueCases: Array<ValueCase> = [];
+	var native: Option<NativeKind> = None;
+	var isFlags: Bool = false;
+	var isStrong: Bool = false;
+	var isUncounted: Bool = false;
 	@:ignore var thisType: Type;
 
 	function new() {
@@ -44,6 +48,46 @@ class Generic {
 			parents: ast.parents.map(p -> p.parents.map(lookup.makeTypePath)),
 			rule: ast.rule.map(r -> GenericRule.fromAST(lookup, r.rule))
 		});
+		
+		for(attr => span in ast.attrs) switch attr {
+			case IsNative(_, _, _) if(generic.native.isSome()): generic.errors.push(Errors.duplicateAttribute(generic, ast.name.name, "native", span));
+			case IsNative(_, [{label: {name: "repr"}, expr: ELitsym(_, repr)}], _): switch repr {
+				case "void": generic.native = Some(NVoid);
+				case "bool": generic.native = Some(NBool);
+				case "voidptr": generic.native = Some(NVoidPtr);
+				default: generic.errors.push(Errors.invalidAttribute(generic, generic.name.name, "native", span));
+			}
+			case IsNative(_, [
+				{label: {name: "repr"}, expr: ELitsym(_, "ptr")},
+				{label: {name: "elem"}, expr: EType(t)}
+			], _): generic.native = Some(NPtr(generic.makeTypePath(t)));
+			case IsNative(_, [
+				{label: {name: "repr"}, expr: ELitsym(_, "dec")},
+				{label: {name: "bits"}, expr: EInt(_, bits, _)}
+			], _): switch bits {
+				case 32: generic.native = Some(NDec32);
+				case 64: generic.native = Some(NDec64);
+				default: generic.errors.push(Errors.invalidAttribute(generic, generic.name.name, "native", span));
+			}
+			case IsNative(_, [
+				{label: {name: "repr"}, expr: ELitsym(_, "int")},
+				{label: {name: "bits"}, expr: EInt(_, bits, _)},
+				{label: {name: "signed"}, expr: EBool(_, signed)}
+			], _): switch bits {
+				case 8: generic.native = Some(signed ? NInt8 : NUInt8);
+				case 16: generic.native = Some(signed ? NInt16 : NUInt16);
+				case 32: generic.native = Some(signed ? NInt32 : NUInt32);
+				case 64: generic.native = Some(signed ? NInt64 : NUInt64);
+				default: generic.errors.push(Errors.invalidAttribute(generic, generic.name.name, "native", span));
+			}
+			case IsNative(_, _, _): generic.errors.push(Errors.invalidAttribute(generic, generic.name.name, "native", span));
+			
+			case IsFlags: generic.isFlags = true;
+			
+			case IsStrong: generic.isStrong = true;
+
+			case IsUncounted: generic.isUncounted = true;
+		}
 
 		if(ast.body.isSome()) {
 			for(decl in ast.body.value().of) switch decl {
@@ -97,10 +141,14 @@ class Generic {
 
 	function hasErrors() {
 		return errors.length != 0
-			|| staticMembers.some(m -> m.hasErrors()) || staticMethods.some(m -> m.hasErrors())
-			|| members.some(m -> m.hasErrors()) || methods.some(m -> m.hasErrors())
-			|| inits.some(i -> i.hasErrors()) || operators.some(o -> o.hasErrors())
-			|| valueCases.some(c -> c.hasErrors()) || taggedCases.some(c -> c.hasErrors());
+			|| staticMembers.some(m -> m.hasErrors())
+			|| staticMethods.some(m -> m.hasErrors())
+			|| members.some(m -> m.hasErrors())
+			|| methods.some(m -> m.hasErrors())
+			|| inits.some(i -> i.hasErrors())
+			|| operators.some(o -> o.hasErrors())
+			|| valueCases.some(c -> c.hasErrors())
+			|| taggedCases.some(c -> c.hasErrors());
 	}
 
 	function allErrors() {

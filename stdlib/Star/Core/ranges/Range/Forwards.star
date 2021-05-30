@@ -24,7 +24,7 @@ class Forwards[T, S] of Range[T, S] is hidden Range {
 	;== Creating
 
 	init [from: (T) to: (T) by: (S)] {
-		if from <= to && by > 0[S] {
+		if from <= to && by > S 0 {
 			this.from = from
 			this.to = to
 			step = by
@@ -36,7 +36,7 @@ class Forwards[T, S] of Range[T, S] is hidden Range {
 	init [after: (T) to: (T) by: (S)] {
 		from = after + by
 
-		if from <= to && by > 0[S] {
+		if from <= to && by > S 0 {
 			this.to = to
 			step = by
 		} else {
@@ -45,7 +45,7 @@ class Forwards[T, S] of Range[T, S] is hidden Range {
 	}
 
 	init [from: (T) upto: (T) by: (S)] {
-		if from <= upto && by > 0[S] {
+		if from <= upto && by > S 0 {
 			this.from = from
 			to = upto + by
 			step = by
@@ -58,7 +58,7 @@ class Forwards[T, S] of Range[T, S] is hidden Range {
 		from = after + by
 		to = upto - by
 
-		if from <= to && by > 0[S] {
+		if from <= to && by > S 0 {
 			step = by
 		} else {
 			throw RangeError[:from :to]

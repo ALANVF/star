@@ -2,6 +2,13 @@ package parsing.ast.decls;
 
 import text.Span;
 
+enum GenericParamAttr {
+	IsNative(_begin: Span, spec: Array<{label: Ident, expr: Expr}>, _end: Span);
+	IsFlags;
+	IsStrong;
+	IsUncounted;
+}
+
 @:structInit
 @:publicFields
 class GenericParam {
@@ -9,6 +16,7 @@ class GenericParam {
 	final name: Ident;
 	final params: TypeParams;
 	final parents: Parents;
+	final attrs: Map<GenericParamAttr, Span>;
 	final rule: Option<{span: Span, rule: GenericRule}>;
 	final body: Option<DeclBody>;
 }
