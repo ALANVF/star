@@ -19,10 +19,9 @@ class MultiMethod extends Method {
 					case [Some(l), None]: {label: l, name: l, type: type, value: p.value};
 					case [None, Some(n)]: {label: new Ident(n.span, "_"), name: n, type: type, value: p.value};
 					case [None, None]:
-						final span = switch p.type {
-							case Nil: throw "Error!";
-							case Cons(Named(span2, _, _) | Blank(span2, _), _):
-								Span.at(span2.start.advance(-1), span2.source.toNull());
+						final span = {
+							final s = p.type.span();
+							Span.at(s.start, s.source.toNull());
 						};
 						final ident = new Ident(span, "_");
 						{label: ident, name: ident, type: type, value: p.value};

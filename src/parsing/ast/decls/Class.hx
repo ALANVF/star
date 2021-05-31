@@ -17,7 +17,7 @@ class Class {
 	final generics: List<GenericParam>;
 	final span: Span;
 	final name: Ident;
-	final params: TypeParams;
+	final params: Option<TypeParams>;
 	final parents: Parents;
 	final attrs: Map<ClassAttr, Span>;
 	final body: DeclBody;

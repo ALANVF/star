@@ -97,12 +97,15 @@ class TypeTools {
 	}
 	
 	static function fromTypePath(_: std.Enum<Type>, cmp: Compiler, path: typing.TypePath) {
-		return TPath(path.mapArray(s -> switch s {
-			case Named(_, name, args): {name: name, args: args.map(a -> a.of.map(arg -> Type.fromTypePath(cmp, arg)))};
-			case Blank(span, args):
-				cmp.addError(invalidType(span));			
-				{name: "$INVALID$", args: args.map(a -> a.of.map(arg -> Type.fromTypePath(cmp, arg)))};
-		}));
+		return TPath(switch path {
+			case TSegs(Nil, segs): segs.mapArray(s -> switch s {
+				case Name(_, name): {name: name, args: None};
+				case NameParams(_, name, params): {name: name, args: Some(params.of.map(p -> Type.fromTypePath(cmp, p)))};
+			});
+			case TSegs(_, _): throw "todo!";
+			case TBlank(_): [{name: "$INVALID$", args: None}];
+			case TBlankParams(_, params): [{name: "$INVALID$", args: Some(params.of.map(p -> Type.fromTypePath(cmp, p)))}];
+		});
 	}
 	
 	static function form(type: Type) {

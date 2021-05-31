@@ -1,3 +1,3 @@
 package parsing.ast;
 
-typedef TypeParams = Option<Delims<Array<Type>>>;
+typedef TypeParams = Delims<Array<Type>>;

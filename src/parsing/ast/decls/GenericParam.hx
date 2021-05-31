@@ -14,7 +14,7 @@ enum GenericParamAttr {
 class GenericParam {
 	final span: Span;
 	final name: Ident;
-	final params: TypeParams;
+	final params: Option<TypeParams>;
 	final parents: Parents;
 	final attrs: Map<GenericParamAttr, Span>;
 	final rule: Option<{span: Span, rule: GenericRule}>;

@@ -1606,7 +1606,7 @@ class Parser {
 		_ => Failure(tokens, None)
 	);
 
-	static function parseTypeDeclName(tokens: List<Token>): ParseResult<{name: Ident, params: TypeParams}> return match(tokens,
+	static function parseTypeDeclName(tokens: List<Token>): ParseResult<{name: Ident, params: Option<TypeParams>}> return match(tokens,
 		at([T_TypeName(_1, name), ...rest]) => switch parseTypeArgs(rest) {
 			case Success(params, rest2): Success({name: {span: _1, name: name}, params: Some(params)}, rest2);
 			case Failure(_, _): Success({name: {span: _1, name: name}, params: None}, rest);
@@ -1641,32 +1641,61 @@ class Parser {
 		}
 	);
 
-	static function parseType(tokens: List<Token>, allowSingleWildcard = false): ParseResult<Type> return switch parseTypeSeg(tokens) {
-		case Success(first, rest): switch rest {
-			case Cons(T_Dot(_), rest2 = Cons(T_TypeName(_, _), _)): switch parseTypeSeg(rest2) {
-				case Success(second, rest3): switch parseTypeSegs(rest3) {
-					case Success(segs, rest4): Success(List.of(first, second, ...segs), rest4);
-					case Failure(_, _): Success(List.of(first, second), rest3);
-					case err: cast err;
+	static function parseType(tokens: List<Token>, allowSingleWildcard = false): ParseResult<Type> {
+		var rest = tokens;
+		var leading = match(rest,
+			at([T_Wildcard(_1), ...rest2]) => switch parseTypeArgs(rest2) {
+				case Success(args, rest3): if(allowSingleWildcard) {
+					return Success(TBlankParams(_1, args), rest3);
+				} else {
+					return Failure(tokens, Some(rest2));
 				}
-				case Failure(_, _) if(!(!allowSingleWildcard && first.match(Blank(_, _)))): Success(List.of(first), rest);
-				case err: cast err;
+				case Failure(_, _): match(rest2,
+					at([T_Dot(_), ...rest3 = [T_TypeName(_, _), ..._]]) => {
+						rest = rest3;
+						List.of(_1);
+					},
+					at([T_Dot(_), T_Wildcard(_), ..._]) => List.of(_1),
+					_ => if(allowSingleWildcard) {
+						return Success(TBlank(_1), rest2);
+					} else {
+						return Failure(tokens, None);
+					}
+				);
+				case err: return cast err;
+			},
+			_ => Nil
+		);
+		
+		if(leading != Nil) while(true) match(rest,
+			at([T_Wildcard(_1), T_Dot(_), ...rest2]) => {
+				leading = leading.prepend(_1);
+				rest = rest2;
+			},
+			at([T_Wildcard(_), ..._]) => return Failure(tokens, Some(rest)),
+			_ => {
+				leading = leading.rev();
+				break;
 			}
-			case _ if(!allowSingleWildcard && first.match(Blank(_, _))): Failure(tokens, Some(rest));
-			default: Success(List.of(first), rest);
+		);
+		
+		return switch parseTypeSeg(rest) {
+			case Success(first, rest2): match(rest2,
+				at([T_Dot(_), T_TypeName(_, _), ..._]) => switch parseTypeSegs(rest2) {
+					case Success(segs, rest3): Success(TSegs(leading, segs.prepend(first)), rest3);
+					case Failure(_, _): Success(TSegs(leading, List.of(first)), rest2);
+					case err: cast err;
+				},
+				_ => Success(TSegs(leading, List.of(first)), rest2)
+			);
+			case err: cast err;
 		}
-		case err: cast err;
 	}
 
 	static function parseTypeSeg(tokens: List<Token>) return match(tokens,
 		at([T_TypeName(_1, name), ...rest]) => switch parseTypeArgs(rest) {
-			case Success(args, rest2): Success(TypeSeg.Named(_1, name, Some(args)), rest2);
-			case Failure(_, _): Success(TypeSeg.Named(_1, name, None), rest);
-			case err: cast err;
-		},
-		at([T_Wildcard(_1), ...rest]) => switch parseTypeArgs(rest) {
-			case Success(args, rest2): Success(Blank(_1, Some(args)), rest2);
-			case Failure(_, _): Success(Blank(_1, None), rest);
+			case Success(args, rest2): Success(TypeSeg.NameParams(_1, name, args), rest2);
+			case Failure(_, _): Success(TypeSeg.Name(_1, name), rest);
 			case err: cast err;
 		},
 		_ => Failure(tokens, None)
@@ -2022,19 +2051,8 @@ class Parser {
 		}
 		case err: fatalIfFailed(cast err);
 	}
-
-
-	/*static function parseLoopVar(tokens: List<Token>): ParseResult<LoopVar> return match(tokens,
-		at([T_My(_1), T_Name(_2, name), ...rest = [T_LParen(_), ..._]]) => switch parseTypeAnno(rest) {
-			case Success(type, rest2): Success(LDecl(_1, {span: _2, name: name}, Some(type)), rest2);
-			case err: fatalIfFailed(cast err);
-		},
-		at([T_My(_1), T_Name(_2, name), ...rest]) => Success(LDecl(_1, {span: _2, name: name}, None), rest),
-		at([T_Wildcard(_1), ...rest]) => Success(LIgnore(_1), rest),
-		at([_.asSoftName() => T_Name(_1, name), ...rest]) => Success(LVar({span: _1, name: name}), rest),
-		_ => Failure(tokens, None)
-	);*/
-
+	
+	
 	static function parseLoopIn(_1, lvar, lvar2, tokens: List<Token>) return match(tokens,
 		at([T_Label(inSpan, "in"), ...rest]) => switch parseExpr(rest) {
 			case Success(inExpr, rest2):

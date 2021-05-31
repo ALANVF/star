@@ -19,7 +19,7 @@ class Alias {
 	final generics: List<GenericParam>;
 	final span: Span;
 	final name: Ident;
-	final params: TypeParams;
+	final params: Option<TypeParams>;
 	final kind: AliasKind;
 	final attrs: Map<AliasAttr, Span>;
 }

@@ -23,8 +23,14 @@ class Category {
 	final friends: Array<Type> = [];
 
 	static function fromAST(lookup, ast: parsing.ast.decls.Category) {
-		Util.match(ast.path,
-			at([Named(s, n, params)]) => {
+		switch ast.path {
+			case TSegs(_, Cons(seg, Nil)): {
+				var s, n, params;
+				switch seg {
+					case Name(span, name): s = span; n = name; params = None;
+					case NameParams(span, name, p): s = span; n = name; params = Some(p);
+				}
+				
 				final category = new Category({
 					lookup: lookup,
 					span: ast.span,
@@ -61,10 +67,10 @@ class Category {
 				}
 
 				return category;
-			},
-			at([] | [Blank(_, _)]) => throw "Error!",
-			_ => throw "NYI!"
-		);
+			}
+			case TSegs(_, Nil) | TBlank(_) | TBlankParams(_, _): throw "Error!";
+			default: throw "NYI!";
+		}
 	}
 
 	function hasErrors() {

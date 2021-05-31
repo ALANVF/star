@@ -16,7 +16,7 @@ kind Type {
 		match this {
 			at Type[leading: my leading segs: my segs] => return ("_." * leading.length) + segs[collect: $0[simpleName]][joinWith: "."]
 			at Type[blank: _] => return "_"
-			at Type[blank: _ params: my params] => return "_[\("..., " * (params.length - 1))...]"
+			at Type[blank: _ params: my params] => return "_[\("..., " * (params.of.length - 1))...]"
 		}
 	}
 }

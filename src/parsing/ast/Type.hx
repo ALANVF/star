@@ -3,33 +3,50 @@ package parsing.ast;
 import parsing.ast.TypeParams;
 import text.Span;
 
+@:using(parsing.ast.Type.TypeSegTools)
 enum TypeSeg {
-	Named(_: Span, name: String, args: TypeParams);
-	Blank(_: Span, args: TypeParams);
+	Name(_: Span, name: String);
+	NameParams(_: Span, name: String, params: TypeParams);
 }
 
-@:using(parsing.ast.Type.Tools)
-typedef Type = List<TypeSeg>;
-
-@:noCompletion
 @:publicFields
-class Tools {
-	static function span(typePath: Type) return Util.match(typePath,
-		at([]) => throw "Error!",
-		at([Named(s, _, None) | Blank(s, None)]) => s,
-		at([Named(s, _, Some({end: end})) | Blank(s, Some({end: end}))]) => Span.range(s, end),
-		at([Named(s, _, _) | Blank(s, _), ...rest]) => switch rest.last() {
-			case Named(s2, _, None) | Blank(s2, None): Span.range(s, s2);
-			case Named(s, _, Some({end: end})) | Blank(s, Some({end: end})): Span.range(s, end);
-		}
-	);
+class TypeSegTools {
+	static inline function name(seg: TypeSeg) return switch seg {
+		case Name(_, name): name;
+		case NameParams(_, name, _): name;
+	}
+	
+	static inline function span(seg: TypeSeg) return switch seg {
+		case Name(span, _): span;
+		case NameParams(begin, _, {end: end}): Span.range(begin, end);
+	}
+	
+	static inline function simpleName(seg: TypeSeg) return switch seg {
+		case Name(_, name): name;
+		case NameParams(_, name, params): '$name[' + "..., ".repeat(params.of.length - 1) + "...]";
+	}
+}
 
-	static function simpleName(typePath: Type) {
-		return typePath.map(s -> switch s {
-			case Named(_, name, None): name;
-			case Named(_, name, Some({of: args})): '$name[${args.map(_ -> "...").join(", ")}]';
-			case Blank(_, None): "_";
-			case Blank(_, Some({of: args})): '_[${args.map(_ -> "...").join(", ")}]';
-		}).join(".");
+
+@:using(parsing.ast.Type.TypeTools)
+enum Type {
+	TSegs(leading: List<Span>, segs: List<TypeSeg>);
+	TBlank(_: Span);
+	TBlankParams(_: Span, params: TypeParams);
+}
+
+@:publicFields
+class TypeTools {
+	static function span(type: Type) return switch type {
+		case TSegs(Nil, segs): Span.range(segs.head().span(), segs.last().span());
+		case TSegs(leading, segs): Span.range(leading.head(), segs.last().span());
+		case TBlank(span): span;
+		case TBlankParams(begin, {end: end}): Span.range(begin, end);
+	}
+
+	static function simpleName(type: Type) return switch type {
+		case TSegs(leading, segs): "_.".repeat(leading.length()) + segs.map(s -> s.simpleName()).join(".");
+		case TBlank(_): "_";
+		case TBlankParams(_, params): "_[" + "..., ".repeat(params.of.length - 1) + "...]";
 	}
 }
