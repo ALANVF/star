@@ -969,6 +969,609 @@ module Parser {
 	}
 	
 	
+	;== Sigs
+	
+	on [parseMultiSig: tokens (Tokens)] (Result[Tuple[Multi.Params, Span]]) {
+		my rest = tokens
+		my params = #[]
+		
+		while true {
+			if params? {
+				match rest {
+					at #[my r = Token[rBracket], ...my rest'] => return Result[success: #{params, r.span}, rest']
+					at #[_[isAnySep], ...my rest'] => rest = rest'
+					at #[Token[label: _], ..._] {}
+					at #[] => return Result[eof: tokens]
+					else => return Result[fatal: tokens, Maybe[the: rest]]
+				}
+			}
+			
+			match rest {
+				;-- Checking for `a: (B)` syntax before `a: a' (B)` syntax is
+				;-- probably less expensive than doing it after.
+				at #[Token[label: my label span: my span], ...my rest' = #[Token[lParen], ..._]] {
+					my label' = Ident[name: label :span]
+					
+					match This[parseTypeAnno: rest', true] {
+						at Result[success: my type, #[Token[eq], ...my rest'']] {
+							match This[parseExpr: rest''] {
+								at Result[success: my expr, rest = _] => params[add: Multi.Param[label: label' :type value: Maybe[the: expr]]]
+								at my fail => return fail[fatalIfFailed][Result[Tuple[Multi.Params, Span]]]
+							}
+						}
+						at Result[success: my type, rest = _] => params[add: Multi.Param[label: label' :type value: Maybe[none]]]
+						at my fail => return fail[fatalIfBad: tokens][Result[Tuple[Multi.Params, Span]]]
+					}
+				}
+				at #[Token[label: my label span: my span], Token[name: my name span: my span'] = _[asSoftName], ...my rest'] {
+					my label' = Ident[name: label :span]
+					my name' = Ident[:name span: span']
+					
+					match This[parseTypeAnno: rest', true] {
+						at Result[success: my type, #[Token[eq], ...my rest'']] {
+							match This[parseExpr: rest''] {
+								at Result[success: my expr, rest = _] => params[add: Multi.Param[label: label' name: name' :type value: Maybe[the: expr]]]
+								at my fail => return fail[fatalIfFailed][Result[Tuple[Multi.Params, Span]]]
+							}
+						}
+						at Result[success: my type, rest = _] => params[add: Multi.Param[label: label' name: name' :type value: Maybe[none]]]
+						at my fail => return fail[fatalIfBad: tokens][Result[Tuple[Multi.Params, Span]]]
+					}
+				}
+				at #[Token[label: _], ...my rest'] => return Result[fatal: tokens, Maybe[the: rest']]
+				at #[Token[lParen], ..._] if params? {
+					match This[parseTypeAnno: rest, true] {
+						at Result[success: my type, rest = _] => params[add: Multi.Param[:type]]
+						at my fail => return fail[fatalIfFailed][Result[Tuple[Multi.Params, Span]]]
+					}
+				}
+				at #[Token[name: my name span: my span] = _[asSoftName], ...my rest'] if params? {
+					my name' = Ident[:name :span]
+					
+					match This[parseTypeAnno: rest', true] {
+						at Result[success: my type, #[Token[eq], ...my rest'']] {
+							match This[parseExpr: rest''] {
+								at Result[success: my expr, rest = _] => params[add: Multi.Param[name: name' :type value: Maybe[the: expr]]]
+								at my fail => return fail[fatalIfFailed][Result[Tuple[Multi.Params, Span]]]
+							}
+						}
+						at Result[success: my type, rest = _] => params[add: Multi.Param[name: name' :type value: Maybe[none]]]
+						at my fail => return fail[fatalIfBad: tokens][Result[Tuple[Multi.Params, Span]]]
+					}
+				}
+				at #[] => return Result[eof: tokens]
+				else => return Result[fatal: tokens, Maybe[the: rest]]
+			}
+		}
+	}
+	
+	
+	;== Methods
+	
+	on [parseMethodDecl: generics (Array[Generic.Param]), span (Span), tokens (Tokens)] (Result[Decl]) {
+		match tokens at #[my l = Token[lBracket], ...my rest] {
+			my begin = l.span
+			my kind, my end, match rest {
+				at #[Token[label: _], ..._] => match This[parseMultiSig: rest] {
+					at Result[success: #{my params, end = _}, rest = _] => kind = Method.Spec[multi: params]
+					at my fail => return fail[fatalIfBad: rest][Result[Decl]]
+				}
+				at #[Token[name: my name span: my span'] = _[asAnyName], my r = Token[rBracket], ...rest = _] {
+					kind = Method.Spec[single: Ident[:name span: span']]
+					end = r.span
+				}
+				else => match This[parseType: rest] {
+					at Result[success: my type, #[my r = Token[rBracket], ...rest = _]] {
+						kind = Method.Spec[cast: type]
+						end = r.span
+					}
+					at Result[success: _, my rest'] => return Result[fatal: rest, Maybe[the: rest']]
+					at my fail => return fail[fatalIfBad: rest][Result[Decl]]
+				}
+			}
+			
+			my ret, match This[parseTypeAnno: rest] {
+				at Result[success: my ret', rest = _] => ret = Maybe[the: ret']
+				at Result[failure: _, _] => ret = Maybe[none]
+				at my fail => return fail[fatalIfBad: rest][Result[Decl]]
+			}
+			
+			my attrs = Method.Attrs[empty]
+			
+			while true {
+				match rest {
+					at #[my i = Token[is], my a = Token[static], ...rest = _] {
+						attrs |= Method.Attrs[isStatic: i.span | a.span]
+					}
+					
+					at #[my i = Token[is], my a = Token[hidden], ...my rest'] {
+						match This[parseIsHiddenAttr: rest', attrs, i.span | a.span] {
+							at Result[success: attrs = _, rest = _] {}
+							at my fail => return fail[Result[Decl]]
+						}
+					}
+					
+					at #[my i = Token[is], my a = Token[main], ...rest = _] {
+						attrs |= Method.Attrs[isMain: i.span | a.span]
+					}
+					
+					at #[my i = Token[is], my a = Token[getter], ...rest = _] {
+						attrs |= Method.Attrs[isGetter: i.span | a.span]
+					}
+					
+					at #[my i = Token[is], my a = Token[setter], ...rest = _] {
+						attrs |= Method.Attrs[isSetter: i.span | a.span]
+					}
+					
+					at #[my i = Token[is], my a = Token[noinherit], ...rest = _] {
+						attrs |= Method.Attrs[isNoinherit: i.span | a.span]
+					}
+					
+					at #[my i = Token[is], my a = Token[unordered], ...rest = _] {
+						attrs |= Method.Attrs[isUnordered: i.span | a.span]
+					}
+					
+					at #[my i = Token[is], my a = Token[native], Token[litsym: my sym span: my span'], ...rest = _] {
+						attrs |= Method.Attrs[is: i.span | a.span native: Maybe[the: Ident[name: sym span: span']]]
+					}
+					at #[my i = Token[is], my a = Token[native], ...rest = _] {
+						attrs |= Method.Attrs[is: i.span | a.span native: Maybe[none]]
+					}
+					
+					at #[my i = Token[is], my a = Token[inline], ...rest = _] {
+						attrs |= Method.Attrs[isInline: i.span | a.span]
+					}
+					
+					at #[my i = Token[is], my a = Token[asm], ...rest = _] {
+						attrs |= Method.Attrs[isAsm: i.span | a.span]
+					}
+					
+					at #[my i = Token[is], my a = Token[macro], ...rest = _] {
+						attrs |= Method.Attrs[isMacro: i.span | a.span]
+					}
+					
+					else => break
+				}
+			}
+			
+			my body, match This[parseBlock: rest] {
+				at Result[success: my block, rest = _] => body = Maybe[the: block]
+				at Result[failure: _, _] => body = Maybe[none]
+				at my fail => return fail[fatalIfBad: rest][Result[Decl]]
+			}
+			
+			return Result[success: Method[
+				:generics
+				:span
+				spec: Delims[:begin of: kind :end]
+				:ret
+				:attrs
+				:body
+			], rest]
+		} else {
+			return Result[failure: tokens, Maybe[none]]
+		}
+	}
+	
+	
+	;== Inits
+	
+	on [parseInitDecl: generics (Array[Generic.Param]), span (Span), tokens (Tokens)] (Result[Decl]) {
+		match tokens {
+			at #[my l = Token[lBracket], ...my rest] {
+				my begin = l.span
+				my kind, my end, match rest {
+					at #[Token[label: _], ..._] => match This[parseMultiSig: rest] {
+						at Result[success: #{my params, end = _}, rest = _] => kind = Init.Spec[multi: params]
+						at my fail => return fail[fatalIfBad: rest][Result[Decl]]
+					}
+					at #[Token[name: my name span: my span'] = _[asAnyName], my r = Token[rBracket], ...rest = _] {
+						kind = Init.Spec[single: Ident[:name span: span']]
+						end = r.span
+					}
+					else => return Result[fatal: tokens, Maybe[the: rest]]
+				}
+				
+				my attrs = Init.Attrs[empty]
+				
+				while true {
+					match rest {
+						at #[my i = Token[is], my a = Token[hidden], ...my rest'] {
+							match This[parseIsHiddenAttr: rest', attrs, i.span | a.span] {
+								at Result[success: attrs = _, rest = _] {}
+								at my fail => return fail[Result[Decl]]
+							}
+						}
+						
+						at #[my i = Token[is], my a = Token[noinherit], ...rest = _] {
+							attrs |= Init.Attrs[isNoinherit: i.span | a.span]
+						}
+						
+						at #[my i = Token[is], my a = Token[unordered], ...rest = _] {
+							attrs |= Init.Attrs[isUnordered: i.span | a.span]
+						}
+						
+						at #[my i = Token[is], my a = Token[native], Token[litsym: my sym span: my span'], ...rest = _] {
+							attrs |= Init.Attrs[is: i.span | a.span native: Maybe[the: Ident[name: sym span: span']]]
+						}
+						at #[my i = Token[is], my a = Token[native], ...rest = _] {
+							attrs |= Init.Attrs[is: i.span | a.span native: Maybe[none]]
+						}
+						
+						at #[my i = Token[is], my a = Token[asm], ...rest = _] {
+							attrs |= Init.Attrs[isAsm: i.span | a.span]
+						}
+						
+						else => break
+					}
+				}
+				
+				my body, match This[parseBlock: rest] {
+					at Result[success: my block, rest = _] => body = Maybe[the: block]
+					at Result[failure: _, _] => body = Maybe[none]
+					at my fail => return fail[fatalIfBad: rest][Result[Decl]]
+				}
+				
+				return Result[success: Init[
+					:generics
+					:span
+					spec: Delims[:begin of: kind :end]
+					:attrs
+					:body
+				], rest]
+			}
+			at #[my i = Token[is], my a = Token[static], ...my rest] => match This[parseBlock: rest] {
+				at Result[success: my body, my rest'] {
+					return Result[success: DefaultInit[
+						:span
+						attrs: DefaultInit.Attrs[isStatic: i.span | a.span]
+						:body
+					], rest']
+				}
+				at my fail => return fail[fatalIfBad: rest][Result[Decl]]
+			}
+			else => match This[parseBlock: tokens] {
+				at Result[success: my body, my rest] {
+					return Result[success: DefaultInit[
+						:span
+						attrs: DefaultInit.Attrs[empty]
+						:body
+					], rest]
+				}
+				at my fail => return fail[fatalIfBad: tokens][Result[Decl]]
+			}
+		}
+	}
+	
+	
+	;== Operators
+	
+	on [parseInitDecl: generics (Array[Generic.Param]), span (Span), tokens (Tokens)] (Result[Decl]) {
+		match tokens at #[Token[litsym: my sym span: my span'], ...my rest] {
+			my spec, match rest {
+				at #[Token[lBracket], Token[rBracket], ..._] => return Result[fatal: tokens, Maybe[the: rest]] ;@@ TODO: custom error message
+				at #[my l = Token[lBracket], Token[name: my name span: my span''] = _[asSoftName], ...my rest'] {
+					match This[parseTypeAnno: rest'] {
+						at Result[success: my type, #[my r = Token[rBracket], ...rest = _]] {
+							spec = Maybe[
+								the: Delims[
+									begin: l.span
+									of: Operator.Spec[name: Ident[:name span: span''] :type]
+									end: r.span
+								]
+							]
+						}
+						at Result[success: _, my rest''] => return Result[fatal: tokens, Maybe[the: rest'']]
+						at my fail => return fail[fatalIfBad: rest'][Result[Decl]]
+					}
+				}
+				else => spec = Maybe[none]
+			}
+			
+			my ret, match This[parseTypeAnno: rest] {
+				at Result[success: my ret', rest = _] => ret = Maybe[the: ret']
+				at Result[failure: _, _] => ret = Maybe[none]
+				at my fail => return fail[fatalIfBad: rest][Result[Decl]]
+			}
+			
+			my attrs = Operator.Attrs[empty]
+			
+			while true {
+				match rest {
+					at #[my i = Token[is], my a = Token[hidden], ...my rest'] {
+						match This[parseIsHiddenAttr: rest', attrs, i.span | a.span] {
+							at Result[success: attrs = _, rest = _] {}
+							at my fail => return fail[Result[Decl]]
+						}
+					}
+					
+					at #[my i = Token[is], my a = Token[noinherit], ...rest = _] {
+						attrs |= Operator.Attrs[isNoinherit: i.span | a.span]
+					}
+					
+					at #[my i = Token[is], my a = Token[native], Token[litsym: my sym span: my span''], ...rest = _] {
+						attrs |= Operator.Attrs[is: i.span | a.span native: Maybe[the: Ident[name: sym span: span'']]]
+					}
+					at #[my i = Token[is], my a = Token[native], ...rest = _] {
+						attrs |= Operator.Attrs[is: i.span | a.span native: Maybe[none]]
+					}
+					
+					at #[my i = Token[is], my a = Token[inline], ...rest = _] {
+						attrs |= Operator.Attrs[isInline: i.span | a.span]
+					}
+					
+					at #[my i = Token[is], my a = Token[asm], ...rest = _] {
+						attrs |= Operator.Attrs[isAsm: i.span | a.span]
+					}
+					
+					at #[my i = Token[is], my a = Token[macro], ...rest = _] {
+						attrs |= Operator.Attrs[isMacro: i.span | a.span]
+					}
+					
+					else => break
+				}
+			}
+			
+			my body, match This[parseBlock: rest] {
+				at Result[success: my block, rest = _] => body = Maybe[the: block]
+				at Result[failure: _, _] => body = Maybe[none]
+				at my fail => return fail[fatalIfBad: rest][Result[Decl]]
+			}
+			
+			return Result[success: Operator[
+				:generics
+				:span
+				symbol: Ident[name: sym span: span']
+				:spec
+				:ret
+				:attrs
+				:body
+			], rest]
+		} else {
+			return Result[failure: tokens, Maybe[none]]
+		}
+	}
+	
+	
+	;== Deinits
+	
+	on [parseDeinitDecl: span (Span), tokens (Tokens)] (Result[Decl]) {
+		match tokens at #[my i = Token[is], my a = Token[static], ...my rest] {
+			match This[parseBlock: rest] {
+				at Result[success: my body, my rest'] {
+					return Result[success: Deinit[
+						:span
+						attrs: Deinit.Attrs[isStatic: i.span | a.span]
+						:body
+					], rest']
+				}
+				at my fail => return fail[fatalIfBad: rest][Result[Decl]]
+			}
+		} else {
+			match This[parseBlock: tokens] {
+				at Result[success: my body, my rest] {
+					return Result[success: Deinit[:span attrs: Deinit.Attrs[empty] :body], rest]
+				}
+				at my fail => return fail[fatalIfBad: tokens][Result[Decl]]
+			}
+		}
+	}
+	
+	
+	;== Types
+	
+	on [parseTypeParents: tokens (Tokens), allowEOL (Bool) = true] (Result[Tuple[Span, Array[Type]]]) {
+		match tokens at #[my o = Token[of], ...my rest] {
+			match This[parseType: rest] {
+				at Result[success: my type, rest = _] {
+					my parents = #[type]
+					
+					while true {
+						match rest at #[Token[comma], ...my rest'] {
+							match This[parseType: rest'] {
+								at Result[success: my type', rest = _] => parents[add: type']
+								at _ if allowEOL => break
+								at my fail => return fail[fatalIfBad: rest][Result[Tuple[Span, Array[Type]]]]
+							}
+						} else {
+							break
+						}
+					}
+					
+					return Result[success: #{o.span, parents}, rest]
+				}
+				at my fail => return fail[fatalIfBad: rest][Result[Tuple[Span, Array[Type]]]]
+			}
+		} else {
+			return Result[failure: tokens, Maybe[none]]
+		}
+	}
+	
+	on [parseTypeDeclName: tokens (Tokens)] (Result[Tuple[Ident, Maybe[Type.Args]]]) {
+		match tokens at #[Token[typeName: my name span: my span], ...my rest] {
+			my name' = Ident[:name :span]
+			match This[parseTypeArgs: rest] {
+				at Result[success: my params, my rest'] => return Result[success: #{name', Maybe[the: params]}, rest']
+				at Result[failure: _, _] => return Result[success: #{name', Maybe[none]}, rest]
+				at my fail => return fail[Result[Tuple[Ident, Maybe[Type.Args]]]]
+			}
+		} else {
+			return Result[failure: tokens, Maybe[none]]
+		}
+	}
+	
+	on [parseTypeSpec: tokens (Tokens)] (Result[TypeSpec]) {
+		match tokens at #[my l = Token[lHashBracket], ...my rest] {
+			my types = #[]
+			
+			while true {
+				match This[parseType: rest] {
+					at Result[success: my type, my rest'] {
+						types[add: type]
+						
+						match rest' {
+							at #[my r = Token[rBracket], ...my rest''] {
+								return Result[success: TypeSpec[begin: l.span :types end: r.span], rest'']
+							}
+							at #[] || #[_[isAnySep]] => return Result[eof: tokens]
+							at #[_[isAnySep], ...rest = _] {}
+							else => return Result[fatal: tokens, Maybe[the: rest']]
+						}
+					}
+					at my fail => return fail[Result[TypeSpec]]
+				}
+			}
+		} else {
+			match This[parseType: tokens] {
+				at Result[success: my type, my rest] => return Result[success: TypeSpec[:type], rest]
+				at my fail => return fail[Result[TypeSpec]]
+			}
+		}
+	}
+	
+	on [parseType: tokens (Tokens), allowWildcard (Bool) = false] (Result[Type]) {
+		my rest = tokens
+		my leading
+		
+		match rest at #[my t = Token[wildcard], ...my rest'] {
+			match This[parseTypeArgs: rest'] {
+				at Result[success: my args, my rest''] {
+					if allowWildcard {
+						return Result[success: Type[blank: t.span :args], rest'']
+					} else {
+						return Result[failure: tokens, Maybe[the: rest']]
+					}
+				}
+				at Result[failure: _, _] {
+					match rest' {
+						at #[Token[dot], ...rest = #[Token[typeName: _], ..._]] {
+							leading = #[t.span]
+						}
+						at #[Token[dot], ...rest = #[Token[wildcard], ..._]] {
+							leading = #[t.span]
+							
+							while true {
+								match rest {
+									at #[my t' = Token[wildcard], Token[dot], ...rest = _] => leading[add: t'.span]
+									at #[Token[wildcard], ..._] => return Result[failure: tokens, Maybe[the: rest]]
+									else => break
+								}
+							}
+						}
+						else {
+							if allowWildcard {
+								return Result[success: Type[blank: t.span], rest]
+							} else {
+								return Result[failure: tokens, Maybe[none]]
+							}
+						}
+					}
+				}
+				at my fail => return fail[Result[Type]]
+			}
+		} else {
+			leading = #[]
+		}
+		
+		match This[parseTypeSeg: rest] {
+			at Result[success: my seg, my rest'] {
+				match rest' at #[Token[dot], Token[typeName], ..._] {
+					match This[parseTypeSegs: rest'] {
+						at Result[success: my segs, my rest''] {
+							segs[prepend: seg]
+							return Result[success: Type[:leading :segs], rest'']
+						}
+						at Result[failure: _, _] => return Result[success: Type[:leading segs: #[seg]], rest']
+						at my fail => return fail[Result[Type]]
+					}
+				} else {
+					return Result[success: Type[:leading segs: #[seg]], rest']
+				}
+			}
+			at my fail => return fail[Result[Type]]
+		}
+	}
+	
+	on [parseTypeSeg: tokens (Tokens)] (Result[Type.Seg]) {
+		match tokens at #[Token[typeName: my name span: my span], ...my rest] {
+			my name' = Ident[:name :span]
+			match This[parseTypeArgs: rest] {
+				at Result[success: my args, my rest'] => return Result[success: Type.Seg[name: name' :args], rest']
+				at Result[failure: _, _] => return Result[success: Type.Seg[name: name'], rest']
+				at my fail => return fail[Result[Type.Seg]]
+			}
+		} else {
+			return Result[failure: tokens, Maybe[none]]
+		}
+	}
+	
+	on [parseTypeSegs: tokens (Tokens)] (Result[Array[Type.Seg]]) {
+		match tokens at #[Token[dot], ...my rest] {
+			match This[parseTypeSeg] {
+				at Result[success: my seg, ...my rest'] => match This[parseTypeSegs: rest'] {
+					at Result[success: my segs, my rest''] {
+						segs[prepend: seg]
+						return Result[success: segs, rest'']
+					}
+					at Result[failure: _, _] => return Result[success: #[seg], rest']
+					at my fail => return fail
+				}
+				at my fail => return fail[Result[Array[Type.Seg]]]
+			}
+		} else {
+			return Result[failure: tokens, Maybe[none]]
+		}
+	}
+	
+	on [parseTypeArgs: tokens (Tokens)] (Delims[Array[Type]]) {
+		match tokens at #[my l = Token[lBracket], ...my rest] {
+			my types = #[]
+			
+			while true {
+				match This[parseType: rest, true] {
+					at Result[success: my type, my rest'] {
+						types[add: type]
+						
+						match rest' {
+							at #[my r = Token[rBracket], ...my rest''] {
+								return Result[success: Delims[begin: l.span of: types end: r.span], rest'']
+							}
+							at #[] || #[_[isAnySep]] => return Result[eof: tokens]
+							at #[
+								Token[lSep]
+								(Token[name: _] || Token[label: _] || Token[punned: _]) = _[asAnyName]
+								..._
+							] if types.length ?= 1 => return Result[failure: tokens, Maybe[the: rest']]
+							at #[_[isAnySep], ...rest = _] {}
+							at #[
+								(Token[name: _] || Token[label: _] || Token[punned: _]) = _[asAnyName]
+								..._
+							] if types.length ?= 1 => return Result[failure: tokens, Maybe[the: rest']]
+							else => return Result[fatal: tokens, Maybe[the: rest']]
+						}
+					}
+					at my fail => return fail[Result[Delims[Array[Type]]]]
+				}
+			}
+		} else {
+			return Result[failure: tokens, Maybe[none]]
+		}
+	}
+	
+	on [parseTypeAnno: tokens (Tokens), allowWildcard (Bool) = false] (Result[Type]) {
+		match tokens {
+			at #[Token[lParen]] => return Result[eof: tokens]
+			at #[Token[lParen], ...my rest] => match This[parseType: rest, allowWildcard] {
+				at Result[success: my type, #[Token[rParen], ...my rest']] => return Result[success: type, rest']
+				at Result[success: _, #[]] => return Result[eof: tokens]
+				at Result[success: _, my rest'] => return Result[fatal: tokens, Maybe[the: rest']]
+				at my fail => return fail
+			}
+			else => return Result[failure: tokens, Maybe[none]]
+		}
+	}
+	
+	
 	;== Attributes
 	
 	type T is flags {

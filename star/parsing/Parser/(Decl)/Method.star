@@ -1,6 +1,7 @@
 class Method of Decl, Generic {
 	kind Attrs is flags {
 		has [empty]
+		has [isStatic: (Span)]
 		has [is: (Span) hidden: (Maybe[Type])]
 		has [isMain: (Span)]
 		has [isGetter: (Span)]

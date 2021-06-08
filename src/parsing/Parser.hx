@@ -1294,6 +1294,7 @@ class Parser {
 					case Success(type, Cons(T_RBracket(end), rest2)):
 						rest = rest2;
 						{kind: MethodKind.Cast(type), end: end};
+					case Success(_, rest2): return Fatal(rest, Some(rest2));
 					case err: return fatalIfBad(rest, cast err);
 				}
 			);
@@ -1701,12 +1702,12 @@ class Parser {
 		_ => Failure(tokens, None)
 	);
 
-	static function parseTypeSegs(tokens: List<Token>) return match(tokens,
+	static function parseTypeSegs(tokens: List<Token>): ParseResult<List<TypeSeg>> return match(tokens,
 		at([T_Dot(_), ...rest]) => switch parseTypeSeg(rest) {
 			case Success(seg, rest2): switch parseTypeSegs(rest2) {
 				case Success(segs, rest3): Success(Cons(seg, segs), rest3);
 				case Failure(_, _): Success(List.of(seg), rest2);
-				case err: cast err;
+				case err: err;
 			}
 			case err: cast err;
 		},
@@ -1743,17 +1744,8 @@ class Parser {
 		at([T_LParen(_), ...rest]) => switch parseType(rest, allowSingleWildcard) {
 			case Success(type, Cons(T_RParen(_), rest2)): Success(type, rest2);
 			case Success(_, Nil): Eof(tokens);
-			case err: cast err;
-		},
-		_ => Failure(tokens, None)
-	);
-
-	static function parseTypeAnnoWithDelims(tokens: List<Token>, allowSingleWildcard = false) return match(tokens,
-		at([T_LParen(_)]) => Eof(tokens),
-		at([T_LParen(begin), ...rest]) => switch parseType(rest, allowSingleWildcard) {
-			case Success(type, Cons(T_RParen(end), rest2)): Success({begin: begin, of: type, end: end}, rest2);
-			case Success(_, Nil): Eof(tokens);
-			case err: cast err;
+			case Success(_, rest2): Fatal(tokens, Some(rest2));
+			case err: err;
 		},
 		_ => Failure(tokens, None)
 	);
