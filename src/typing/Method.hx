@@ -8,7 +8,7 @@ abstract class Method extends AnyMethod {
 	var isInline: Bool = false;
 	var isMacro: Bool = false;
 
-	static inline function fromAST(decl, ast: parsing.ast.decls.Method): Method return switch ast.spec.of {
+	static function fromAST(decl, ast: parsing.ast.decls.Method): Method return switch ast.spec.of {
 		case Single(_): SingleMethod.fromAST(decl, ast);
 		case Multi(_): MultiMethod.fromAST(decl, ast);
 		case Cast(_): CastMethod.fromAST(decl, ast);

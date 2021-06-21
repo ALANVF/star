@@ -4,6 +4,7 @@ import text.Span;
 import parsing.ast.Ident;
 import reporting.Diagnostic;
 import Util.match;
+import typing.Traits;
 
 @:build(util.Auto.build())
 class Category {
@@ -35,8 +36,8 @@ class Category {
 					lookup: lookup,
 					span: ast.span,
 					name: new Ident(s, n),
-					params: params.map(p -> p.of.map(lookup.makeTypePath)),
-					type: ast.type.map(lookup.makeTypePath),
+					params: params.map(p -> p.of.map(x -> lookup.makeTypePath(x))),
+					type: ast.type.map(x -> lookup.makeTypePath(x)),
 				});
 
 				for(generic in ast.generics.mapArray(Generic.fromAST.bind(lookup, _))) {
@@ -56,12 +57,12 @@ class Category {
 				for(decl in ast.body.of) switch decl {
 					case DMember(m) if(m.attrs.exists(IsStatic)): category.staticMembers.push(Member.fromAST(category, m));
 					
-					case DMethod(m) if(m.attrs.exists(IsStatic)): StaticMethod.fromAST(category, m).forEach(category.staticMethods.push);
+					case DMethod(m) if(m.attrs.exists(IsStatic)): StaticMethod.fromAST(category, m).forEach(x -> category.staticMethods.push(x));
 					case DMethod(m): category.methods.push(Method.fromAST(category, m));
 		
 					case DInit(i): category.inits.push(Init.fromAST(category, i));
 		
-					case DOperator(o): Operator.fromAST(category, o).forEach(category.operators.push);
+					case DOperator(o): Operator.fromAST(category, o).forEach(x -> category.operators.push(x));
 		
 					default: category.errors.push(Errors.unexpectedDecl(category, category.name.name, decl));
 				}

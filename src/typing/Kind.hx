@@ -1,5 +1,7 @@
 package typing;
 
+import typing.Traits;
+
 abstract class Kind extends Namespace {
 	final parents: Array<Type> = [];
 	final methods: Array<Method> = [];

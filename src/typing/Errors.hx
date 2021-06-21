@@ -3,6 +3,7 @@ package typing;
 import text.Span;
 import reporting.Severity;
 import reporting.Diagnostic;
+import typing.Traits;
 
 @:publicFields
 class Errors {

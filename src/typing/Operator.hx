@@ -3,6 +3,7 @@ package typing;
 import reporting.Severity;
 import reporting.Diagnostic;
 import text.Span;
+import typing.Traits;
 
 private inline function notOverloadable(decl: ITypeDecl, ast: parsing.ast.decls.Operator) {
 	return new Diagnostic({

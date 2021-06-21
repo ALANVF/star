@@ -5,6 +5,7 @@ import reporting.Diagnostic;
 import parsing.ast.Expr;
 import text.Span;
 import parsing.ast.Ident;
+import typing.Traits;
 
 @:build(util.Auto.build())
 class ValueCase {

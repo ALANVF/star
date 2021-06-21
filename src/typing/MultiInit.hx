@@ -3,6 +3,7 @@ package typing;
 import parsing.ast.Expr;
 import text.Span;
 import parsing.ast.Ident;
+import typing.Traits;
 
 class MultiInit extends Init {
 	@:ignore final generics = new MultiMap<String, Generic>();
@@ -10,7 +11,7 @@ class MultiInit extends Init {
 	final fuzzyName: String;
 	var isUnordered: Bool = true;
 
-	static function fromAST(decl: ITypeDecl, ast: parsing.ast.decls.Init) {
+	static function fromAST(decl: ITypeDecl, ast: parsing.ast.decls.Init): MultiInit {
 		final params = switch ast.spec.of {
 			case Multi(params2): params2.map(p -> {
 				final type = decl.makeTypePath(p.type);

@@ -65,7 +65,7 @@ class Module extends Namespace {
 			
 			case DAlias(a): module.decls.push(Alias.fromAST(module, a));
 
-			case DMethod(m): StaticMethod.fromAST(module, m).forEach(module.staticMethods.push);
+			case DMethod(m): StaticMethod.fromAST(module, m).forEach(x -> module.staticMethods.push(x));
 
 			case DDefaultInit(_) if(module.staticInit.isSome()): module.errors.push(Errors.duplicateDecl(module, ast.name.name, decl));
 			case DDefaultInit(i): module.staticInit = Some(StaticInit.fromAST(module, i));

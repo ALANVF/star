@@ -4,6 +4,7 @@ import reporting.Diagnostic;
 import text.Span;
 import parsing.ast.Ident;
 import Util.match;
+import typing.Traits;
 
 @:build(util.Auto.build({keepInit: true}))
 @:autoBuild(util.Auto.build())

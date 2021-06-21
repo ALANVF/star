@@ -5,6 +5,7 @@ import reporting.Diagnostic;
 import parsing.ast.Expr;
 import parsing.ast.Ident;
 import text.Span;
+import typing.Traits;
 
 @:build(util.Auto.build())
 class Member {

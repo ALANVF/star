@@ -3,7 +3,7 @@ package compiler;
 @:publicFields
 class TypePathTools {
 	@:noUsing
-	static function getFullPath(cmp: Compiler, lookup: typing.ILookupType): TypePath {
+	static function getFullPath(cmp: Compiler, lookup: typing.Traits.ILookupType): TypePath {
 		return if(lookup is typing.File) {
 			var file = cast(lookup, typing.File);
 			if(file.dir is typing.Unit) {

@@ -33,11 +33,13 @@ class Arrays {
 		return result;
 	}
 
-	public static function every<T>(array: Array<T>, callback: (currentValue: T) -> Bool) {
-		for(value in array)
-			if(!callback(value))
-				return false;
-		return true;
+	public static inline function every<T>(array: Array<T>, callback: (currentValue: T) -> Bool) {
+		var result = true;
+		for(value in array) if(!callback(value)) {
+			result = false;
+			break;
+		}
+		return result;
 	}
 	
 	public static function everyi<T>(array: Array<T>, callback: (currentValue: T, index: Int) -> Bool) {
@@ -62,11 +64,13 @@ class Arrays {
 	}
 
 
-	public static function some<T>(array: Array<T>, callback: (currentValue: T) -> Bool) {
-		for(value in array)
-			if(callback(value))
-				return true;
-		return false;
+	public static inline function some<T>(array: Array<T>, callback: (currentValue: T) -> Bool) {
+		var result = false;
+		for(value in array) if(callback(value)) {
+			result = true;
+			break;
+		}
+		return result;
 	}
 	
 	public static function somei<T>(array: Array<T>, callback: (currentValue: T, index: Int) -> Bool) {
@@ -166,19 +170,44 @@ class Arrays {
 	}
 
 
-	public static function forEach<T>(array: Array<T>, callback: (element: T) -> Void) {
+	public static macro function _for<T>(array: ExprOf<Array<T>>, kv, body) {
+		switch kv { case macro $k => $v:
+			var dv = switch v {
+				case {expr: EDisplay(v2, _)}: v2;
+				default: v;
+			};
+			var vn = haxe.macro.ExprTools.toString(
+				dv
+			);
+			return macro {
+				for($k in 0...$array.length)
+					$b{
+						[macro final $vn = $array[$k]].concat(
+							switch body {
+								case macro $b{stmts}: stmts;
+								default: [body];
+							}
+						)
+					};
+				
+			};
+			
+		default: throw "error!"; }
+	}
+	
+	public static inline function forEach<T>(array: Array<T>, callback: (element: T) -> Void) {
 		for(value in array)
 			callback(value);
 	}
 	
-	public static function forEachi<T>(array: Array<T>, callback: (element: T, index: Int) -> Void) {
-		for(i => value in array)
-			callback(value, i);
+	public static inline function forEachi<T>(array: Array<T>, callback: (element: T, index: Int) -> Void) {
+		for(i in 0...array.length)
+			callback(array[i], i);
 	}
 
-	public static function forEachia<T>(array: Array<T>, callback: (element: T, index: Int, array: Array<T>) -> Void) {
-		for(i => value in array)
-			callback(value, i, array);
+	public static inline function forEachia<T>(array: Array<T>, callback: (element: T, index: Int, array: Array<T>) -> Void) {
+		for(i in 0...array.length)
+			callback(array[i], i, array);
 	}
 
 	public static function filteri<T>(array: Array<T>, callback: (element: T, index: Int) -> Bool): Array<T> {
@@ -211,7 +240,7 @@ class Arrays {
 		return everyi(a1, (v, i) -> v == a2[i]);
 	}
 
-	public static function zip<T, U, V>(a1: Array<T>, a2: Array<U>, callback: (e1: T, e2: U) -> V) {
+	public static inline function zip<T, U, V>(a1: Array<T>, a2: Array<U>, callback: (e1: T, e2: U) -> V) {
 		if(a1.length != a2.length) {
 			throw "error!";
 		}
@@ -231,7 +260,7 @@ class Arrays {
 		return null;
 	}
 
-	public static function filterMap<T, U>(array: Array<T>, callback: (element: T) -> Null<U>) {
+	public static inline function filterMap<T, U>(array: Array<T>, callback: (element: T) -> Null<U>) {
 		return [for(value in array) {
 			final result = callback(value);
 
@@ -240,7 +269,7 @@ class Arrays {
 		}];
 	}
 
-	public static function flatMap<T, U>(array: Array<T>, callback: (element: T) -> Array<U>) {
+	public static inline function flatMap<T, U>(array: Array<T>, callback: (element: T) -> Array<U>) {
 		var result = [];
 
 		for(value in array) {

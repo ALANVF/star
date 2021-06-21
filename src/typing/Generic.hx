@@ -3,6 +3,7 @@ package typing;
 import reporting.Diagnostic;
 import text.Span;
 import parsing.ast.Ident;
+import typing.Traits;
 
 using typing.GenericRule.Tools;
 
@@ -44,8 +45,8 @@ class Generic {
 			lookup: lookup,
 			span: ast.span,
 			name: ast.name,
-			params: ast.params.map(p -> p.of.map(lookup.makeTypePath)),
-			parents: ast.parents.map(p -> p.parents.map(lookup.makeTypePath)),
+			params: ast.params.map(p -> p.of.map(x -> lookup.makeTypePath(x))),
+			parents: ast.parents.map(p -> p.parents.map(x -> lookup.makeTypePath(x))),
 			rule: ast.rule.map(r -> GenericRule.fromAST(lookup, r.rule))
 		});
 		
@@ -97,12 +98,12 @@ class Generic {
 				case DCase(c = {kind: Tagged(_)}): generic.taggedCases.push(TaggedCase.fromAST(generic, c));
 				case DCase(c = {kind: Scalar(_, _)}): generic.valueCases.push(ValueCase.fromAST(generic, c));
 	
-				case DMethod(m) if(m.attrs.exists(IsStatic)): StaticMethod.fromAST(generic, m).forEach(generic.staticMethods.push);
+				case DMethod(m) if(m.attrs.exists(IsStatic)): StaticMethod.fromAST(generic, m).forEach(x -> generic.staticMethods.push(x));
 				case DMethod(m): generic.methods.push(Method.fromAST(generic, m));
 	
 				case DInit(i): generic.inits.push(Init.fromAST(generic, i));
 	
-				case DOperator(o): Operator.fromAST(generic, o).forEach(generic.operators.push);
+				case DOperator(o): Operator.fromAST(generic, o).forEach(x -> generic.operators.push(x));
 	
 				case DDefaultInit(i) if(generic.staticInit.isSome()): generic.staticInit = Some(StaticInit.fromAST(generic, i));
 				case DDefaultInit(i): generic.defaultInit = Some(DefaultInit.fromAST(generic, i));

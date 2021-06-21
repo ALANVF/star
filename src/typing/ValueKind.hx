@@ -65,10 +65,10 @@ class ValueKind extends Kind {
 			
 			case DAlias(a): kind.decls.push(Alias.fromAST(kind, a));
 
-			case DMethod(m) if(m.attrs.exists(IsStatic)): StaticMethod.fromAST(kind, m).forEach(kind.staticMethods.push);
+			case DMethod(m) if(m.attrs.exists(IsStatic)): StaticMethod.fromAST(kind, m).forEach(x -> kind.staticMethods.push(x));
 			case DMethod(m): kind.methods.push(Method.fromAST(kind, m));
 
-			case DOperator(o): Operator.fromAST(kind, o).forEach(kind.operators.push);
+			case DOperator(o): Operator.fromAST(kind, o).forEach(x -> kind.operators.push(x));
 
 			case DDefaultInit(_) if(kind.staticInit.isSome()): kind.errors.push(Errors.duplicateDecl(kind, ast.name.name, decl));
 			case DDefaultInit(i): kind.staticInit = Some(StaticInit.fromAST(kind, i));

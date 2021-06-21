@@ -3,6 +3,7 @@ package typing;
 import text.Span;
 import parsing.ast.Expr;
 import parsing.ast.Ident;
+import typing.Traits;
 
 class MultiStaticMethod extends StaticMethod {
 	@:ignore final generics = new MultiMap<String, Generic>();

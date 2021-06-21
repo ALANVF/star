@@ -60,12 +60,12 @@ class Protocol extends Namespace {
 
 			case DAlias(a): protocol.decls.push(Alias.fromAST(protocol, a));
 
-			case DMethod(m) if(m.attrs.exists(IsStatic)): StaticMethod.fromAST(protocol, m).forEach(protocol.staticMethods.push);
+			case DMethod(m) if(m.attrs.exists(IsStatic)): StaticMethod.fromAST(protocol, m).forEach(x -> protocol.staticMethods.push(x));
 			case DMethod(m): protocol.methods.push(Method.fromAST(protocol, m));
 
 			case DInit(i): protocol.inits.push(Init.fromAST(protocol, i));
 
-			case DOperator(o): Operator.fromAST(protocol, o).forEach(protocol.operators.push);
+			case DOperator(o): Operator.fromAST(protocol, o).forEach(x -> protocol.operators.push(x));
 
 			case DDefaultInit(i) if(protocol.staticInit.isSome()): protocol.staticInit = Some(StaticInit.fromAST(protocol, i));
 			case DDefaultInit(i): protocol.defaultInit = Some(DefaultInit.fromAST(protocol, i));
@@ -80,8 +80,11 @@ class Protocol extends Namespace {
 	}
 
 	override function hasErrors() {
-		return super.hasErrors() || members.some(m -> m.hasErrors()) || methods.some(m -> m.hasErrors())
-			|| inits.some(i -> i.hasErrors()) || operators.some(o -> o.hasErrors());
+		return super.hasErrors()
+			|| members.some(m -> m.hasErrors())
+			|| methods.some(m -> m.hasErrors())
+			|| inits.some(i -> i.hasErrors())
+			|| operators.some(o -> o.hasErrors());
 	}
 
 	override function allErrors() {

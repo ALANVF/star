@@ -50,9 +50,9 @@ class OptionHelper {
 			case _: false;
 		}
 	}
-
-	static inline function forEach<T>(opt: Option<T>, fn: T -> Void) {
-		return switch opt {
+	
+	static inline function forEach<T>(opt: Option<T>, fn: T -> Void): Void {
+		switch opt {
 			case Some(v): fn(v);
 			case None:
 		}

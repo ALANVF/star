@@ -42,10 +42,10 @@ class StrongAlias extends Alias {
 
 		if(body.isSome()) {
 			for(decl in body.value().of) switch decl {
-				case DMethod(m) if(m.attrs.exists(IsStatic)): StaticMethod.fromAST(alias, m).forEach(alias.staticMethods.push);
+				case DMethod(m) if(m.attrs.exists(IsStatic)): StaticMethod.fromAST(alias, m).forEach(x -> alias.staticMethods.push(x));
 				case DMethod(m): alias.methods.push(Method.fromAST(alias, m));
 	
-				case DOperator(o): Operator.fromAST(alias, o).forEach(alias.operators.push);
+				case DOperator(o): Operator.fromAST(alias, o).forEach(x -> alias.operators.push(x));
 	
 				default: alias.errors.push(Errors.unexpectedDecl(alias, ast.name.name, decl));
 			}
@@ -59,7 +59,9 @@ class StrongAlias extends Alias {
 	}
 
 	override function hasErrors() {
-		return super.hasErrors() || staticMethods.some(m -> m.hasErrors()) || methods.some(m -> m.hasErrors())
+		return super.hasErrors()
+			|| staticMethods.some(m -> m.hasErrors())
+			|| methods.some(m -> m.hasErrors())
 			|| operators.some(o -> o.hasErrors());
 	}
 

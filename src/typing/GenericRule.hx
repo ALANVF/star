@@ -1,5 +1,7 @@
 package typing;
 
+import typing.Traits;
+
 enum GenericRule {
 	Eq(l: Type, r: Type);
 	Of(l: Type, r: Type);

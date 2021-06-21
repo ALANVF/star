@@ -85,10 +85,10 @@ class TaggedKind extends Kind {
 
 			case DAlias(a): kind.decls.push(Alias.fromAST(kind, a));
 
-			case DMethod(m) if(m.attrs.exists(IsStatic)): StaticMethod.fromAST(kind, m).forEach(kind.staticMethods.push);
+			case DMethod(m) if(m.attrs.exists(IsStatic)): StaticMethod.fromAST(kind, m).forEach(x -> kind.staticMethods.push(x));
 			case DMethod(m): kind.methods.push(Method.fromAST(kind, m));
 
-			case DOperator(o): Operator.fromAST(kind, o).forEach(kind.operators.push);
+			case DOperator(o): Operator.fromAST(kind, o).forEach(x -> kind.operators.push(x));
 
 			case DDefaultInit(i) if(kind.staticInit.isSome()): kind.staticInit = Some(StaticInit.fromAST(kind, i));
 			case DDefaultInit(i): kind.defaultInit = Some(DefaultInit.fromAST(kind, i));

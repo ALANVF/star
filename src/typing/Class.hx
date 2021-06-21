@@ -102,12 +102,12 @@ class Class extends Namespace {
 			
 			case DAlias(a): cls.decls.push(Alias.fromAST(cls, a));
 
-			case DMethod(m) if(m.attrs.exists(IsStatic)): StaticMethod.fromAST(cls, m).forEach(cls.staticMethods.push);
+			case DMethod(m) if(m.attrs.exists(IsStatic)): StaticMethod.fromAST(cls, m).forEach(x -> cls.staticMethods.push(x));
 			case DMethod(m): cls.methods.push(Method.fromAST(cls, m));
 
 			case DInit(i): cls.inits.push(Init.fromAST(cls, i));
 
-			case DOperator(o): Operator.fromAST(cls, o).forEach(cls.operators.push);
+			case DOperator(o): Operator.fromAST(cls, o).forEach(x -> cls.operators.push(x));
 
 			case DDefaultInit(i) if(cls.staticInit.isSome()): cls.staticInit = Some(StaticInit.fromAST(cls, i));
 			case DDefaultInit(i): cls.defaultInit = Some(DefaultInit.fromAST(cls, i));
@@ -122,8 +122,11 @@ class Class extends Namespace {
 	}
 
 	override function hasErrors() {
-		return super.hasErrors() || members.some(m -> m.hasErrors()) || methods.some(m -> m.hasErrors())
-			|| inits.some(i -> i.hasErrors()) || operators.some(o -> o.hasErrors());
+		return super.hasErrors()
+			|| members.some(m -> m.hasErrors())
+			|| methods.some(m -> m.hasErrors())
+			|| inits.some(i -> i.hasErrors())
+			|| operators.some(o -> o.hasErrors());
 	}
 
 	override function allErrors() {

@@ -5,6 +5,7 @@ import reporting.Severity;
 import reporting.Diagnostic;
 import text.Span;
 import parsing.ast.Ident;
+import typing.Traits;
 
 @:build(util.Auto.build())
 @:autoBuild(util.Auto.build())

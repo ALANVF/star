@@ -43,9 +43,9 @@ class File {
 			
 			switch result {
 				case Modular([], _) | Script([], _): status = true;
-				case Modular(errors, _) | Script(errors, _): for(i => error in errors) {
+				case Modular(errors, _) | Script(errors, _): errors._for(i => error, {
 					this.errors.push(error);
-
+					
 					if(i == 25) {
 						this.errors.push(new Diagnostic({
 							severity: Severity.ERROR,
@@ -54,7 +54,7 @@ class File {
 						}));
 						break;
 					}
-				}
+				});
 			}
 
 			program = Some(result);
@@ -190,7 +190,10 @@ class File {
 	}
 
 	function hasErrors() {
-		return !status || errors.length != 0 || decls.allValues().some(d -> d.hasErrors()) || categories.some(c -> c.hasErrors());
+		return !status
+			|| errors.length != 0
+			|| decls.allValues().some(d -> d.hasErrors())
+			|| categories.some(c -> c.hasErrors());
 	}
 
 	function allErrors() {

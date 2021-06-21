@@ -1,6 +1,7 @@
 package typing;
 
 import text.Span;
+import typing.Traits;
 
 enum TypeKind {
 	TPath(path: TypePath, source: ILookupType);
