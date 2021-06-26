@@ -29,17 +29,11 @@ private class _SourceFile {
 	}
 
 
-	private function __compare(other: Dynamic):Int {
-		final otherSrc = Std.downcast(other, _SourceFile);
-		if(otherSrc != null) {
-			return if(fullPath == otherSrc.fullPath) {
-				0;
-			} else {
-				-1;
-			}
-		}
-
-		return hl.Api.comparePointer(this, other);
+	private function __compare(other: Any) {
+		return other._match(
+			at(otherSrc is _SourceFile) => if(fullPath == otherSrc.fullPath) 0 else -1,
+			_ => hl.Api.comparePointer(this, other)
+		);
 	}
 
 	private function lineIndexToTextIndex(index) return index >= lineStarts.length ? text.length8() : lineStarts[index];

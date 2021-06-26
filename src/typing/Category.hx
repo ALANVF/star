@@ -3,7 +3,6 @@ package typing;
 import text.Span;
 import parsing.ast.Ident;
 import reporting.Diagnostic;
-import Util.match;
 import typing.Traits;
 
 @:build(util.Auto.build())
@@ -109,7 +108,7 @@ class Category {
 		}
 
 		return if(absolute) {
-			match(path,
+			path._match(
 				at([typeName]) => switch generics.find(typeName) {
 					case None: lookup.findType(path, true, cache);
 					case Some([type]): Some(type.thisType);

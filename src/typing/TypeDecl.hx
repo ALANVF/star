@@ -3,7 +3,6 @@ package typing;
 import reporting.Diagnostic;
 import text.Span;
 import parsing.ast.Ident;
-import Util.match;
 import typing.Traits;
 
 @:build(util.Auto.build({keepInit: true}))
@@ -35,7 +34,7 @@ abstract class TypeDecl {
 		}
 
 		return if(absolute) {
-			match(path,
+			path._match(
 				at(["This"]) => Some(new Type(TThis(None, this))),
 				at([typeName]) => switch generics.find(typeName) {
 					case None: lookup.findType(path, true, cache);

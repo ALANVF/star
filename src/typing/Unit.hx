@@ -1,7 +1,5 @@
 package typing;
 
-import Util.match;
-
 class Unit extends Dir {
 	final outer: Dir;
 	var primary: Option<File> = None;
@@ -21,7 +19,7 @@ class Unit extends Dir {
 			}
 		}
 
-		return match(path,
+		return path._match(
 			at([typeName], when(typeName == name)) => switch primary.flatMap(p -> p.findType(path, false, cache)) {
 				case Some(type): Some(new Type(TModular(type, this)));
 				case None: None;

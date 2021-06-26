@@ -2,17 +2,20 @@ import util.Buffer;
 import util.List;
 import haxe.macro.Context;
 import haxe.macro.Expr;
+import haxe.macro.ExprTools;
 
 @:publicFields
 class Util {
+	@:noUsing
 	static macro function assert(expr) {
 		return macro {
 			if(!($expr)) {
-				throw new AssertionError('${haxe.macro.ExprTools.toString(expr)}');
+				throw new AssertionError('${ExprTools.toString(expr)}');
 			}
 		};
 	}
 
+	@:noUsing
 	static macro function ifMatch(value, pattern, expr) {
 		return macro {
 			switch($value) {
@@ -22,6 +25,7 @@ class Util {
 		}
 	}
 
+	@:noUsing
 	static macro function extract(value, pattern, expr) {
 		return macro {
 			switch($value) {
@@ -30,34 +34,29 @@ class Util {
 			}
 		}
 	}
-
+	
 	static inline function nonNull<T>(value: Null<T>): T {
 		if(value != null)
 			return value;
 		else
 			throw new NullException();
 	}
-
-	@:noUsing
-	static macro function match<T>(value: ExprOf<T>, cases: Array<Expr>): Expr {
-		/*final elseExpr = if(cases.length % 2 != 0) {
-			Some(switch (cases.pop() : Expr) {
-				case macro @else $expr: expr;
-				case _: throw "error!";
-			});
-		} else {
-			None;
-		};*/
-
+	
+	@:noCompletion @:noUsing
+	static inline function _unsafeNonNull<T>(value: Null<T>) return (value : T);
+	
+	#if macro
+	static function removeDisp(expr: Expr): Expr return switch expr {
+		case {expr: EDisplay(expr2, k)}: removeDisp(expr2);
+		default: ExprTools.map(expr, removeDisp);
+	}
+	#end
+	
+	static macro function _match<T>(value: ExprOf<T>, cases: Array<Expr>): Expr {
 		var defaultExpr = None;
 		var caseExprs: Array<Case> = [];
 		
 		for(_case in cases) {
-			while(_case.expr.match(EDisplay(_, _))) switch _case {
-				case {expr: EDisplay(e, _)}: _case = e;
-				default: break;
-			}
-
 			switch _case {
 				case macro at($pattern, when($cond)) => $expr: caseExprs.push({
 					values: [pattern],
@@ -72,7 +71,7 @@ class Util {
 
 				case macro _ => $expr: defaultExpr = Some(expr);
 
-				default: throw "error!";
+				default: Context.error("error!", _case.pos);
 			};
 		}
 
@@ -93,6 +92,120 @@ class Util {
 					};
 				});
 			default:
+		}
+		
+		for(_case in caseExprs) {
+			if(_case.values.length > 1) Context.error("wtf", _case.values[0].pos);
+			
+			var didChange = false;
+			var anons = 0;
+			var conds: Array<Expr> = [];
+			var newVars: Array<{n: String, a: String, t: Null<haxe.macro.ComplexType>}> = [];
+			
+			final pattern = _case.values[0];
+			
+			function collect(e: Expr): Expr return switch removeDisp(e) {
+				case {expr: EIs(lhs, type), pos: pos}:
+					switch lhs {
+						case macro _:
+							if(!didChange) didChange = true;
+							macro $e => true;
+						
+						case macro $i{name}:
+							if(!didChange) didChange = true;
+							final anon = '__anon${anons++}__$name';
+							newVars.push({n: name, a: anon, t: type});
+							macro $i{anon} = ${{expr: EIs(macro _, type), pos: pos}} => true;
+						
+						
+						default: Context.error("NYI", pos);
+					}
+				
+				case macro ${{expr: EIs(_, _)}} => ${_}: e;
+				
+				case {expr: EUnop(OpNot, true, lhs), pos: pos}:
+					switch lhs {
+						case macro _:
+							if(!didChange) didChange = true;
+							macro _ != null => true;
+						
+						case macro $i{name}:
+							if(!didChange) didChange = true;
+							final anon = '__anon${anons++}__$name';
+							newVars.push({
+								n: name,
+								a: anon,
+								t: null
+							});
+							macro $i{anon} = _ != null => true;
+						
+						default: Context.error("NYI", pos);
+					}
+				
+				case {expr: EBinop(OpInterval, begin, end)}:
+					if(!didChange) didChange = true;
+				
+					final beginExcl = switch begin {
+						case {expr: EUnop(OpNot, true, b)}:
+							begin = b;
+							true;
+						default: false;
+					};
+					final endExcl = switch end {
+						case {expr: EUnop(OpNot, false, e2)}:
+							end = e2;
+							true;
+						default: false;
+					};
+					
+					var beginVal = switch begin {
+						case {expr: EField({expr: EConst(CString(str, k))}, "code")}: nonNull(str.charCodeAt(0));
+						default: ExprTools.getValue(begin);
+					}
+					var endVal = switch end {
+						case {expr: EField({expr: EConst(CString(str, k))}, "code")}: nonNull(str.charCodeAt(0));
+						default: ExprTools.getValue(end);
+					};
+					
+					if(beginExcl) beginVal++;
+					if(endExcl) endVal--;
+					
+					var res = macro $v{beginVal};
+					
+					while(beginVal <= endVal) {
+						res = macro $res | $v{++beginVal};
+					}
+					
+					res;
+				
+				case {expr: EDisplay(e2, k)}: collect(e2);
+				
+				default: ExprTools.map(e, collect);
+			}
+			
+			final newPattern = collect(pattern);
+			
+			if(didChange) {
+				_case.values = [newPattern];
+			}
+			
+			if(newVars.length != 0) {
+				_case.expr = macro {
+					${{
+						expr: EVars(newVars.map(v -> cast {
+							name: v.n,
+							type: v.t,
+							expr: if(v.t == null) {
+								macro Util._unsafeNonNull($i{v.a});
+							} else {
+								macro cast $i{v.a};
+							}
+						})),
+						pos: Context.currentPos()
+					}}
+					${_case.expr}
+				};
+			}
 		}
 
 		return {
@@ -274,6 +387,7 @@ class Util {
 		}
 	}
 
+	@:noUsing
 	static inline function pretty(value: Any, tab = "  "): String {
 		return _pretty(value, 0, tab, Cons(value, Nil));
 	}
@@ -302,12 +416,12 @@ class Util {
 			final char = (str.charCodeAt(i) : Char);
 
 			int *= 16;
-			int += char - switch char {
-				case '0'.code,49,50,51,52,53,54,55,56,'9'.code: 48;
-				case 'A'.code,66,67,68,69,'F'.code: 55;
-				case 'a'.code,98,99,100,101,'f'.code: 87;
-				default: throw "error!";
-			};
+			int += char - _match(char,
+				at('0'.code ... '9'.code) => 48,
+				at('A'.code ... 'F'.code) => 55,
+				at('a'.code ... 'f'.code) => 87,
+				_ => throw "error!"
+			);
 		}
 
 		return int;

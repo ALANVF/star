@@ -6,7 +6,6 @@ import parsing.Parser;
 import lexing.Lexer;
 import parsing.ast.Program;
 import text.SourceFile;
-import Util.match;
 
 @:build(util.Auto.build())
 class File {
@@ -170,7 +169,7 @@ class File {
 			}
 		}
 
-		return match(path,
+		return path._match(
 			at([typeName]) => switch decls.find(typeName) {
 				case None: if(absolute) dir.findType(path, true, cache) else None;
 				case Some([decl]): Some(decl.thisType);

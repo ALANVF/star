@@ -119,7 +119,7 @@ class Lexer {
 		"macro" => T_Macro
 	];
 
-	function retoken(tokens: List<Token>) return Util.match(tokens,
+	function retoken(tokens: List<Token>) return tokens._match(
 		at([d = T_Dot(_), n = T_Name(_, _), ...rest]) => List.of(d, n, ...retoken(rest)),
 		//at([b = T_LBracket(_), ...rest]) => Cons(b, retokenGroup(rest)),
 		
@@ -130,8 +130,8 @@ class Lexer {
 		at([T_Name(span, "my"), n = T_Name(_, _), ...rest]) => List.of(T_My(span), n, ...retoken(rest)),
 		at([T_Name(span, "has"), n = T_Name(_, _), ...rest]) => List.of(T_Has(span), n, ...retoken(rest)),
 		
-		at([T_Name(span1, "is"), T_Name(span2, ATTRS[_] => attr), ...rest], when(attr != null)) => List.of(T_Is(span1), attr(span2), ...retoken(rest)),
-		at([T_Name(span, KEYWORDS[_] => kw), ...rest], when(kw != null)) => Cons(kw(span), retoken(rest)),
+		at([T_Name(span1, "is"), T_Name(span2, ATTRS[_] => attr!), ...rest]) => List.of(T_Is(span1), attr(span2), ...retoken(rest)),
+		at([T_Name(span, KEYWORDS[_] => kw!), ...rest]) => Cons(kw(span), retoken(rest)),
 		
 		at([s = T_Str(_, segs), ...rest]) => {
 			retokenStr(segs);
@@ -142,7 +142,7 @@ class Lexer {
 		at([]) => Nil
 	);
 
-	/*function retokenGroup(tokens: List<Token>) return Util.match(tokens,
+	/*function retokenGroup(tokens: List<Token>) return tokens._match(
 		at([t = T_Dot(_) | T_TypeName(_, _) | T_LSep(_), ...rest]) => Cons(t, retokenGroup(rest)),
 		at([n = T_Name(_, _), ...(rest = (Cons(T_LSep(_), Cons(T_RBracket(_), _)) | Cons(T_RBracket(_), _)))]) => Cons(n, retoken(rest)),
 		at(rest) => retoken(rest)
@@ -994,7 +994,7 @@ class Lexer {
 			}
 		}
 		
-		return Util.parseHex(rdr.substring(start));
+		return rdr.substring(start).parseHex();
 	}
 	
 	function readUniEsc(): Char {
@@ -1023,7 +1023,7 @@ class Lexer {
 			}
 		}
 
-		return Util.parseHex(rdr.substring(start));
+		return rdr.substring(start).parseHex();
 	}
 	
 	function readOctEsc(): Char {
@@ -1052,7 +1052,7 @@ class Lexer {
 			}
 		}
 
-		return Util.parseOctal(rdr.substring(start));
+		return rdr.substring(start).parseOctal();
 	}
 
 	inline function readStr() {
@@ -1187,7 +1187,7 @@ class Lexer {
 					]
 				});
 			} else {
-				return T_AnonArg(span(), depth, Util.parseInt(rdr.substring(start)));
+				return T_AnonArg(span(), depth, rdr.substring(start).parseInt());
 			}
 		} else {
 			final end = here();

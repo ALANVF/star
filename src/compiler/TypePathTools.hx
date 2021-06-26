@@ -4,29 +4,29 @@ package compiler;
 class TypePathTools {
 	@:noUsing
 	static function getFullPath(cmp: Compiler, lookup: typing.Traits.ILookupType): TypePath {
-		return if(lookup is typing.File) {
-			var file = cast(lookup, typing.File);
-			if(file.dir is typing.Unit) {
-				var dir = file.dir;
-				var names = Nil;
-	
-				while(dir is typing.Unit) {
-					final unit = cast(dir, typing.Unit);
-	
-					names = names.prepend({name: unit.name, args: None});
-					dir = unit.outer;
+		return lookup._match(
+			at(file is typing.File) => {
+				if(file.dir is typing.Unit) {
+					var dir = file.dir;
+					var names = Nil;
+		
+					while(dir is typing.Unit) {
+						final unit = cast(dir, typing.Unit);
+		
+						names = names.prepend({name: unit.name, args: None});
+						dir = unit.outer;
+					}
+		
+					names.toArray();
+				} else {
+					[];
 				}
-	
-				names.toArray();
-			} else {
-				[];
-			}
-		} else if(lookup is typing.TypeDecl) {
-			final type = cast(lookup, typing.TypeDecl);
-			getFullPath(cmp, type.lookup).concat([{name: type.name.name, args: type.params.map(params -> params.map(p -> Type.fromType(cmp, p)))}]);
-		} else {
-			throw "error!";
-		}
+			},
+			at(type is typing.TypeDecl) => {
+				getFullPath(cmp, type.lookup).concat([{name: type.name.name, args: type.params.map(params -> params.map(p -> Type.fromType(cmp, p)))}]);
+			},
+			_ => throw "error!"
+		);
 	}
 	
 	static function form(path: TypePath) {

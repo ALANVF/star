@@ -23,32 +23,32 @@ class Type {
 	}
 	
 	static function getFullPath(lookup: ILookupType): Option<String> {
-		return if(lookup is File) {
-			var file = cast(lookup, File);
-			if(file.dir is Unit) {
-				var dir = file.dir;
-				var names = Nil;
-	
-				while(dir is Unit) {
-					final unit = cast(dir, Unit);
-	
-					names = names.prepend(unit.name);
-					dir = unit.outer;
+		return lookup._match(
+			at(file is File) => {
+				if(file.dir is Unit) {
+					var dir = file.dir;
+					var names = Nil;
+		
+					while(dir is Unit) {
+						final unit = cast(dir, Unit);
+		
+						names = names.prepend(unit.name);
+						dir = unit.outer;
+					}
+		
+					Some(names.join("."));
+				} else {
+					None;
 				}
-	
-				Some(names.join("."));
-			} else {
-				None;
-			}
-		} else if(lookup is TypeDecl) {
-			final type = cast(lookup, TypeDecl);
-			switch getFullPath(type.lookup).map(p -> '$p.${type.name.name}') {
-				case p = Some(_): p;
-				case None: Some(type.name.name);
-			}
-		} else {
-			Some("???");
-		}
+			},
+			at(type is TypeDecl) => {
+				switch getFullPath(type.lookup).map(p -> '$p.${type.name.name}') {
+					case p = Some(_): p;
+					case None: Some(type.name.name);
+				}
+			},
+			_ => Some("???")
+		);
 	}
 
 	function simpleName(): String return switch t {
@@ -96,10 +96,10 @@ class Type {
 		return new Type(TPath(path, this));
 	}
 
-	@:keep private function __compare(other: Dynamic) {
-		return switch Std.downcast(other, Type) {
-			case null: -1;
-			case type: t.equals(type.t) ? 0 : -1;
-		}
+	@:keep private function __compare(other: Any) {
+		return other._match(
+			at(type is Type) => (t.equals(type.t) ? 0 : -1),
+			_ => -1
+		);
 	}
 }
