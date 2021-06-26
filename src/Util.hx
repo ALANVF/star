@@ -105,6 +105,8 @@ class Util {
 			final pattern = _case.values[0];
 			
 			function collect(e: Expr): Expr return switch removeDisp(e) {
+				case macro [$a{values}]: macro $a{values.map(collect)};
+				
 				case {expr: EIs(lhs, type), pos: pos}:
 					switch lhs {
 						case macro _:
@@ -120,8 +122,9 @@ class Util {
 							newVars.push({n: name, a: anon, t: type});
 							macro ($i{anon} = ${{expr: EIs(macro _, type), pos: pos}} => true);
 						
-						
-						default: Context.error("NYI", pos);
+						default:
+							if(!didChange) didChange = true;
+							macro (_ is $type ? cast(_, $type) : null) => $lhs;
 					}
 				
 				case macro ${{expr: EIs(_, _)}} => ${_}: e;
