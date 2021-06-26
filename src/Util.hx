@@ -196,7 +196,6 @@ class Util {
 				final vars = new Array<Var>();
 				
 				for(v in newVars) {
-					trace(v);
 					switch vars.find(v2 -> v2.name == v.n) {
 						case null: vars.push({
 							name: v.n,
@@ -240,6 +239,7 @@ class Util {
 		};
 	}
 
+#if macro
 	private static function mapListPattern(pattern: Expr, isOuter = false) return switch pattern {
 		case {expr: EDisplay(e, _)}: macro ${mapListPattern(e, isOuter)};
 		case macro $l | $r: macro ${mapListPattern(l)} | ${mapListPattern(r)};
@@ -276,6 +276,7 @@ class Util {
 			}
 		}
 	}
+#end
 
 	private static function _pretty(value: Any, indent: Int, tab: String, nested: List<Any>): String {
 		final thisLevel = tab.repeat(indent);
