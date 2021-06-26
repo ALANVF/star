@@ -113,9 +113,12 @@ class Util {
 						
 						case macro $i{name}:
 							if(!didChange) didChange = true;
-							final anon = '__anon${anons++}__$name';
+							final anon = switch newVars.find(v -> v.n == name) {
+								case null: '__anon${anons++}__$name';
+								case v: v.a;
+							};
 							newVars.push({n: name, a: anon, t: type});
-							macro $i{anon} = ${{expr: EIs(macro _, type), pos: pos}} => true;
+							macro ($i{anon} = ${{expr: EIs(macro _, type), pos: pos}} => true);
 						
 						
 						default: Context.error("NYI", pos);
@@ -190,17 +193,40 @@ class Util {
 			}
 			
 			if(newVars.length != 0) {
-				_case.expr = macro {
-					${{
-						expr: EVars(newVars.map(v -> cast {
+				final vars = new Array<Var>();
+				
+				for(v in newVars) {
+					trace(v);
+					switch vars.find(v2 -> v2.name == v.n) {
+						case null: vars.push({
 							name: v.n,
-							type: v.t,
 							expr: if(v.t == null) {
 								macro Util._unsafeNonNull($i{v.a});
 							} else {
-								macro cast $i{v.a};
+								final vt = v.t.nonNull();
+								macro cast($i{v.a}, $vt);
 							}
-						})),
+						});
+						
+						case (_ : Var) => v2:
+							if(v.t == null) {
+								Context.error("NYI", Context.currentPos());
+							} else switch v2.expr {
+								case macro cast($ve, $ct2):
+									final ct1 = _unsafeNonNull(v.t);
+									final t = Context.typeof(macro [(null : $ct1), (null : $ct2)][0]);
+									final ct = Context.toComplexType(t).nonNull();
+									
+									v2.expr = macro cast($ve, $ct);
+									
+								default: Context.error("error!", Context.currentPos());
+							}
+					}
+				}
+				
+				_case.expr = macro {
+					${{
+						expr: EVars(vars),
 						pos: Context.currentPos()
 					}}
 					${_case.expr}
