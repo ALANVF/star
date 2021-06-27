@@ -124,7 +124,7 @@ class Util {
 						
 						case macro ($l => $r):
 							if(!didChange) didChange = true;
-							macro (_ is $type ? cast(_, $type) : null) => (_ != null && $l => $r);
+							macro (_ is $type ? _ : null) => {a: _ != null, b: _} => {a: true, b: Util._unsafeNonNull(_) => cast(_, $type) => $l => ${collect(r)}};
 						
 						default:
 							if(!didChange) didChange = true;
