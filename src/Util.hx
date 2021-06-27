@@ -122,6 +122,10 @@ class Util {
 							newVars.push({n: name, a: anon, t: type});
 							macro ($i{anon} = ${{expr: EIs(macro _, type), pos: pos}} => true);
 						
+						case macro ($l => $r):
+							if(!didChange) didChange = true;
+							macro (_ is $type ? cast(_, $type) : null) => (_ != null && $l => $r);
+						
 						default:
 							if(!didChange) didChange = true;
 							macro (_ is $type ? cast(_, $type) : null) => $lhs;
