@@ -99,8 +99,7 @@ class Util {
 			
 			var didChange = false;
 			var anons = 0;
-			var conds: Array<Expr> = [];
-			var newVars: Array<{n: String, a: String, t: Null<haxe.macro.ComplexType>}> = [];
+			var newVars: Array<{n: String, a: String, t: Null<{t: ComplexType, d: ComplexType}>}> = [];
 			
 			final pattern = _case.values[0];
 			
@@ -108,6 +107,17 @@ class Util {
 				case macro [$a{values}]: macro $a{values.map(collect)};
 				
 				case {expr: EIs(lhs, type), pos: pos}:
+					final itype = switch type {
+						case TPath({pack: p, name: n, params: _.length => l, sub: s}) if(l != 0):
+							TPath({pack: p, name: n, sub: s});
+						default: type;
+					};
+					final dtype = switch type {
+						case TPath({pack: p, name: n, params: _.length => l, sub: s}) if(l != 0):
+							TPath({pack: p, name: n, params: [for(_ in 0...l) TypeParam.TPType(macro:Dynamic)], sub: s});
+						default: type;
+					};
+					
 					switch lhs {
 						case macro _:
 							if(!didChange) didChange = true;
@@ -119,16 +129,17 @@ class Util {
 								case null: '__anon${anons++}__$name';
 								case v: v.a;
 							};
-							newVars.push({n: name, a: anon, t: type});
-							macro ($i{anon} = ${{expr: EIs(macro _, type), pos: pos}} => true);
+							newVars.push({n: name, a: anon, t: {t: type, d: dtype}});
+							macro ($i{anon} = ${{expr: EIs(macro _, itype), pos: pos}} => true);
+						
 						
 						case macro ($l => $r):
 							if(!didChange) didChange = true;
-							macro (_ is $type ? _ : null) => {a: _ != null, b: _} => {a: true, b: Util._unsafeNonNull(_) => cast(_, $type) => $l => ${collect(r)}};
+							macro (_ is $itype ? _ : null) => {a: _ != null, b: _} => {a: true, b: Util._unsafeNonNull(_) => (cast(_, $dtype) : $type) => $l => ${collect(r)}};
 						
 						default:
 							if(!didChange) didChange = true;
-							macro (_ is $type ? cast(_, $type) : null) => $lhs;
+							macro (_ is $itype ? (cast(_, $dtype) : $type) : null) => $lhs;
 					}
 				
 				case macro ${{expr: EIs(_, _)}} => ${_}: e;
@@ -209,8 +220,9 @@ class Util {
 							expr: if(v.t == null) {
 								macro Util._unsafeNonNull($i{v.a});
 							} else {
-								final vt = v.t.nonNull();
-								macro cast($i{v.a}, $vt);
+								final vt = _unsafeNonNull(v.t).t;
+								final vd = _unsafeNonNull(v.t).d;
+								macro (untyped cast($i{v.a}, $vd) : $vt);
 							}
 						});
 						
@@ -218,12 +230,15 @@ class Util {
 							if(v.t == null) {
 								Context.error("NYI", Context.currentPos());
 							} else switch v2.expr {
-								case macro cast($ve, $ct2):
-									final ct1 = _unsafeNonNull(v.t);
+								case macro (untyped cast($ve, $cd2) : $ct2):
+									final ct1 = _unsafeNonNull(v.t).t;
 									final t = Context.typeof(macro [(null : $ct1), (null : $ct2)][0]);
 									final ct = Context.toComplexType(t).nonNull();
+									final cd1 = _unsafeNonNull(v.t).d;
+									final d = Context.typeof(macro [(null : $cd1), (null : $cd2)][0]);
+									final cd = Context.toComplexType(t).nonNull();
 									
-									v2.expr = macro cast($ve, $ct);
+									v2.expr = macro (untyped cast($ve, $ct) : $cd);
 									
 								default: Context.error("error!", Context.currentPos());
 							}
