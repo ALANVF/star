@@ -222,7 +222,7 @@ class Util {
 							} else {
 								final vt = _unsafeNonNull(v.t).t;
 								final vd = _unsafeNonNull(v.t).d;
-								macro (untyped cast($i{v.a}, $vd) : $vt);
+								macro (cast cast($i{v.a}, $vd) : $vt);
 							}
 						});
 						
@@ -230,7 +230,7 @@ class Util {
 							if(v.t == null) {
 								Context.error("NYI", Context.currentPos());
 							} else switch v2.expr {
-								case macro (untyped cast($ve, $cd2) : $ct2):
+								case macro (cast cast($ve, $cd2) : $ct2):
 									final ct1 = _unsafeNonNull(v.t).t;
 									final t = Context.typeof(macro [(null : $ct1), (null : $ct2)][0]);
 									final ct = Context.toComplexType(t).nonNull();
@@ -238,7 +238,7 @@ class Util {
 									final d = Context.typeof(macro [(null : $cd1), (null : $cd2)][0]);
 									final cd = Context.toComplexType(t).nonNull();
 									
-									v2.expr = macro (untyped cast($ve, $ct) : $cd);
+									v2.expr = macro (cast cast($ve, $ct) : $cd);
 									
 								default: Context.error("error!", Context.currentPos());
 							}
