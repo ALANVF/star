@@ -166,6 +166,10 @@ class Str of Values[Char], Ordered is strong {
 
 		return value
 	}
+	
+	on [addAll: str (Str)] (Str) {
+		return this[add: str]
+	}
 
 	type T {
 		on [Str]
@@ -199,6 +203,10 @@ class Str of Values[Char], Ordered is strong {
 		this[prepend: value[Str]]
 
 		return value
+	}
+	
+	on [prependAll: str (Str)] (Str) {
+		return this[prepend: str]
 	}
 
 	type T {
@@ -312,6 +320,15 @@ class Str of Values[Char], Ordered is strong {
 				}
 			}
 		}
+	}
+	
+	
+	;== Concating
+	
+	operator `+` [char (Char)] (This) {
+		return This[new: length + 1]
+		-> [add: this]
+		-> [add: char]
 	}
 }
 
