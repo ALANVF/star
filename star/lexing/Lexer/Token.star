@@ -108,15 +108,15 @@ kind Token {
 	has [dotDotDot]
 	has [cascade: depth (Int)]
 
-	has [lParen]
-	has [lBracket]
-	has [lBrace]
-	has [hashLParen]
-	has [hashLBracket]
-	has [hashLBrace]
-	has [rParen]
-	has [rBracket]
-	has [rBrace]
+	has [lParen: span (Span)]       => [lParen]       { this.span = span }
+	has [lBracket: span (Span)]     => [lBracket]     { this.span = span }
+	has [lBrace: span (Span)]       => [lBrace]       { this.span = span }
+	has [hashLParen: span (Span)]   => [hashLParen]   { this.span = span }
+	has [hashLBracket: span (Span)] => [hashLBracket] { this.span = span }
+	has [hashLBrace: span (Span)]   => [hashLBrace]   { this.span = span }
+	has [rParen: span (Span)]       => [rParen]       { this.span = span }
+	has [rBracket: span (Span)]     => [rBracket]     { this.span = span }
+	has [rBrace: span (Span)]       => [rBrace]       { this.span = span }
 
 	has [name: (Str)]
 	has [typeName: (Str)]

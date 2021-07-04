@@ -1,5 +1,6 @@
 package typing;
 
+import parsing.ast.Message;
 import parsing.ast.Stmt;
 import reporting.Severity;
 import reporting.Diagnostic;
@@ -13,19 +14,21 @@ class TaggedCase {
 	final errors: Array<Diagnostic> = [];
 	final decl: ITaggedCases;
 	final span: Span;
+	final assoc: Option<Message<parsing.ast.Type>>;
 	final init: Option<Array<Stmt>> = None;
 
 	static function fromAST(decl, ast: parsing.ast.decls.Case): TaggedCase {
 		switch ast.kind {
-			case Tagged({of: Single(name)}):
+			case Tagged({of: Single(name)}, assoc):
 				return new SingleTaggedCase({
 					decl: decl,
 					span: ast.span,
 					name: name,
+					assoc: assoc,
 					init: ast.init.map(i -> i.stmts)
 				});
 			
-			case Tagged({of: Multi(params)}):
+			case Tagged({of: Multi(params)}, assoc):
 				return new MultiTaggedCase({
 					decl: decl,
 					span: ast.span,
@@ -44,6 +47,7 @@ class TaggedCase {
 								{label: ident, name: ident, type: type};
 						}
 					}),
+					assoc: assoc,
 					init: ast.init.map(i -> i.stmts)
 				});
 			

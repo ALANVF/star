@@ -930,6 +930,17 @@ module Parser {
 	}
 	
 	
+	on [parseCaseDeclAssoc: tokens (Tokens)] (Result[Message[Type]]) {
+		match tokens {
+			at #[Token[eqGt], Token[lBracket], ...my rest] => match This[finishTypeMsg: rest] {
+				at Result[success: #{my msg, _}, my rest'] => return Result[success: msg, rest']
+				at my fail => return fail[fatalIfBad: tokens][Result[Message[Type]]]
+			}
+			at #[Token[eqGt], ...my rest] => return Result[fatal: tokens, Maybe[the: rest]]
+			else => return Result[failure: tokens, Maybe[none]]
+		}
+	}
+	
 	on [parseCaseDecl: span (Span), tokens (Tokens)] (Result[Decl]) {
 		my case'
 		my rest
@@ -944,14 +955,28 @@ module Parser {
 			at #[Token[name: my name, span: my span'] = _[asAnyName], ...rest = _] {
 				case' = Case[name: Ident[:name span: span'] value: Maybe[none]]
 			}
-			at #[my l = Token[lBracket], ...rest = #[Token[label: _], ..._]] => match This[parseMultiSig: rest] {
+			at #[Token[lBracket: my begin], ...rest = #[Token[label: _], ..._]] => match This[parseMultiSig: rest] {
 				at Result[success: #{my params, my end}, rest = _] {
-					case' = Case[tag: Delims[begin: l.span of: Tag[multi: params] :end]]
+					my assoc
+					match This[parseCaseDeclAssoc: rest] {
+						at Result[success: my assoc', rest = _] => assoc = Maybe[the: assoc']
+						at Result[failure: _, _] => assoc = Maybe[none]
+						at my fail => return fail[Result[Decl]]
+					}
+					
+					case' = Case[tag: Delims[:begin of: Tag[multi: params] :end] :assoc]
 				}
 				at my fail => return fail[Result[Decl]]
 			}
-			at #[my l = Token[lBracket], Token[name: my name span: my span'] = _[asAnyName], my r = Token[rBracket], ...rest = _] {
-				case' = Case[tag: Delims[begin: l.span of: Case.Tag[single: Ident[:name span: span']] end: r.span]]
+			at #[Token[lBracket: my begin], Token[name: my name span: my span'] = _[asAnyName], Token[rBracket: my end], ...rest = _] {
+				my assoc
+				match This[parseCaseDeclAssoc: rest] {
+					at Result[success: my assoc', rest = _] => assoc = Maybe[the: assoc']
+					at Result[failure: _, _] => assoc = Maybe[none]
+					at my fail => return fail[Result[Decl]]
+				}
+				
+				case' = Case[tag: Delims[:begin of: Case.Tag[single: Ident[:name span: span']] :end] :assoc]
 			}
 			at #[] => return Result[eof: tokens]
 			else => return Result[fatal: tokens, Maybe[none]]

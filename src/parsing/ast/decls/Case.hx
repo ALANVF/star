@@ -9,7 +9,7 @@ enum Tag {
 
 enum CaseKind {
 	Scalar(name: Ident, value: Option<Expr>);
-	Tagged(tag: Delims<Tag>);
+	Tagged(tag: Delims<Tag>, assoc: Option<Message<Type>>);
 }
 
 @:structInit

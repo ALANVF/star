@@ -7,7 +7,7 @@ kind Case of Decl {
 	my init (Maybe[Block])
 
 	has [name: (Ident) value: (Maybe[Expr])]
-	has [tag: (Delims[Tag])]
+	has [tag: (Delims[Tag]) assoc: (Maybe[Message[Type]])]
 
 	on [displayName] (Str) is getter {
 		return "case"

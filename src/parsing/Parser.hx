@@ -1102,6 +1102,16 @@ class Parser {
 			while(true) {
 				rest._match(
 					at([T_RBracket(end), ...rest2]) => {
+						final assoc = rest2._match(
+							at([T_EqGt(_), T_LBracket(_), ...rest3]) => switch finishTypeMsg(rest3) {
+								case Success(msg, rest4):
+									rest2 = rest4;
+									Some(msg.msg);
+								case err: return fatalIfBad(rest2, cast err);
+							},
+							at([T_EqGt(_), ...rest3]) => return Fatal(rest2, Some(rest3)),
+							_ => None
+						);
 						final init = switch parseBlock(rest2) {
 							case Success(block, rest3):
 								rest2 = rest3;
@@ -1112,7 +1122,7 @@ class Parser {
 						
 						return Success(DCase({
 							span: _1,
-							kind: Tagged({begin: begin, of: Multi(params), end: end}),
+							kind: Tagged({begin: begin, of: Multi(params), end: end}, assoc),
 							init: init
 						}), rest2);
 					},
@@ -1155,7 +1165,17 @@ class Parser {
 			return Fatal(tokens, Some(rest));
 		},
 		at([T_LBracket(begin), _.asAnyName() => T_Name(_2, name), T_RBracket(end), ...rest]) => {
-			final kind = CaseKind.Tagged({begin: begin, of: Single({span: _2, name: name}), end: end});
+			final assoc = rest._match(
+				at([T_EqGt(_), T_LBracket(_), ...rest2]) => switch finishTypeMsg(rest2) {
+					case Success(msg, rest3):
+						rest = rest3;
+						Some(msg.msg);
+					case err: return fatalIfBad(rest, cast err);
+				},
+				at([T_EqGt(_), ...rest2]) => return Fatal(rest, Some(rest2)),
+				_ => None
+			);
+			final kind = CaseKind.Tagged({begin: begin, of: Single({span: _2, name: name}), end: end}, assoc);
 			final init = switch parseBlock(rest) {
 				case Success(block, rest2):
 					rest = rest2;
