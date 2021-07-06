@@ -1,11 +1,13 @@
-# Star
+<img src="logo.png" alt="Logo" width="250" align="right"/>
 
-![](logo.png)
+# Star
 
 Star is an experimental programming language that's made to be powerful, productive, and predictable:
 - Powerful: Get stuff done with less boilerplate
 - Productive: Get stuff done quickly without working against the language
 - Predictable: Get stuff done without having to think about it twice
+
+<br>
 
 One of the most important goals of Star is that it's designed to be completely consistent. In other words, Star has been designed to not have edge cases, footguns, or any sort of "magic" that's exclusive to language built-ins.
 
