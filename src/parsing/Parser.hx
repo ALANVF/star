@@ -1859,14 +1859,14 @@ class Parser {
 
 			while(true) rest._match(
 				at([T_At(_2), ...rest2]) => switch parseCaseAtStmt(_2, rest2) {
-					case Success(case_, rest2):
+					case Success(case_, rest3):
 						cases.push(case_);
 						
-						rest2._match(
-							at([T_RBrace(end), ...rest3]) => return Success(SCase(Span.range(_1, begin), cases, None, end), rest3),
+						rest3._match(
+							at([T_RBrace(end), ...rest4]) => return Success(SCase(Span.range(_1, begin), cases, None, end), rest4),
 							at([] | [isAnySep(_) => true]) => return Eof(tokens),
-							at([isAnySep(_) => true, ...rest3]) => rest = rest3,
-							_ => return Fatal(tokens, Some(rest2))
+							at([isAnySep(_) => true, ...rest4]) => rest = rest4,
+							_ => return Fatal(tokens, Some(rest3))
 						);
 					
 					case err: return fatalIfFailed(cast err);
