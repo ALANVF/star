@@ -184,7 +184,7 @@ class Lexer {
 						} else {
 							throw Diagnostic[
 								severity: Severity.error
-								message: "Syntax error",
+								message: "Syntax error"
 								info: #[
 									Info[
 										span: this[span]

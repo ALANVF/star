@@ -13,6 +13,7 @@ kind Result[T] {
 			at This[failure: my begin, Maybe[none]] => return This[failure: tokens, Maybe[the: begin]]
 			at This[failure: _, my rest] => return This[failure: tokens, rest]
 			at This[fatal: my begin, Maybe[none]] => return This[fatal: tokens, Maybe[the: begin]]
+			else => return this
 		}
 	}
 	
@@ -20,6 +21,7 @@ kind Result[T] {
 		match this {
 			at This[failure: my begin, Maybe[none]] || This[fatal: my begin, Maybe[none]] => return This[fatal: tokens, Maybe[the: begin]]
 			at This[failure: _, my rest] => return This[fatal: tokens, rest]
+			else => return this
 		}
 	}
 	
@@ -38,5 +40,21 @@ kind Result[T] {
 		} else {
 			return this[Unsafe Result[U]]
 		}
+	}
+}
+
+type T
+type U if U != T
+category Result[U] for Result[T] {
+	on [updateIfBad: (Tokens)] (Result[U]) is inline {
+		return this[Result[U]][:updateIfBad]
+	}
+	
+	on [fatalIfBad: (Tokens)] (Result[U]) is inline {
+		return this[Result[U]][:fatalIfBad]
+	}
+	
+	on [fatalIfFailed] (Result[U]) is inline {
+		return this[Result[U]][fatalIfFailed]
 	}
 }

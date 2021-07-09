@@ -5,107 +5,107 @@ kind Token {
 	has [comma]
 	has [lSep]
 
-	has [module]
-	has [my]
-	has [on]
-	has [return]
-	has [init]
-	has [deinit]
-	has [operator]
-	has [class]
-	has [alias]
-	has [type]
-	has [kind]
-	has [category]
-	has [protocol]
-	has [is]
-	has [of]
-	has [use]
-	has [has]
-	has [if]
-	has [orif]
-	has [else]
-	has [while]
-	has [for]
-	has [do]
-	has [case]
-	has [match]
-	has [at]
-	has [break]
-	has [next]
-	has [throw]
-	has [try]
-	has [catch]
+	has [module: span (Span)]   => [module]   { this.span = span }
+	has [my: span (Span)]       => [my]       { this.span = span }
+	has [on: span (Span)]       => [on]       { this.span = span }
+	has [return: span (Span)]   => [return]   { this.span = span }
+	has [init: span (Span)]     => [init]     { this.span = span }
+	has [deinit: span (Span)]   => [deinit]   { this.span = span }
+	has [operator: span (Span)] => [operator] { this.span = span }
+	has [class: span (Span)]    => [class]    { this.span = span }
+	has [alias: span (Span)]    => [alias]    { this.span = span }
+	has [type: span (Span)]     => [type]     { this.span = span }
+	has [kind: span (Span)]     => [kind]     { this.span = span }
+	has [category: span (Span)] => [category] { this.span = span }
+	has [protocol: span (Span)] => [protocol] { this.span = span }
+	has [is: span (Span)]       => [is]       { this.span = span }
+	has [of: span (Span)]       => [of]       { this.span = span }
+	has [use: span (Span)]      => [use]      { this.span = span }
+	has [has: span (Span)]      => [has]      { this.span = span }
+	has [if: span (Span)]       => [if]       { this.span = span }
+	has [orif: span (Span)]     => [orif]     { this.span = span }
+	has [else: span (Span)]     => [else]     { this.span = span }
+	has [while: span (Span)]    => [while]    { this.span = span }
+	has [for: span (Span)]      => [for]      { this.span = span }
+	has [do: span (Span)]       => [do]       { this.span = span }
+	has [case: span (Span)]     => [case]     { this.span = span }
+	has [match: span (Span)]    => [match]    { this.span = span }
+	has [at: span (Span)]       => [at]       { this.span = span }
+	has [break: span (Span)]    => [break]    { this.span = span }
+	has [next: span (Span)]     => [next]     { this.span = span }
+	has [throw: span (Span)]    => [throw]    { this.span = span }
+	has [try: span (Span)]      => [try]      { this.span = span }
+	has [catch: span (Span)]    => [catch]    { this.span = span }
 
-	has [static]
-	has [hidden]
-	has [readonly]
-	has [friend]
-	has [sealed]
-	has [unordered]
-	has [getter]
-	has [setter]
-	has [main]
-	has [inline]
-	has [noinherit]
-	has [pattern]
-	has [asm]
-	has [native]
-	has [flags]
-	has [uncounted]
-	has [strong]
-	has [sealed]
-	has [macro]
+	has [static: span (Span)]    => [static]    { this.span = span }
+	has [hidden: span (Span)]    => [hidden]    { this.span = span }
+	has [readonly: span (Span)]  => [readonly]  { this.span = span }
+	has [friend: span (Span)]    => [friend]    { this.span = span }
+	has [sealed: span (Span)]    => [sealed]    { this.span = span }
+	has [unordered: span (Span)] => [unordered] { this.span = span }
+	has [getter: span (Span)]    => [getter]    { this.span = span }
+	has [setter: span (Span)]    => [setter]    { this.span = span }
+	has [main: span (Span)]      => [main]      { this.span = span }
+	has [inline: span (Span)]    => [inline]    { this.span = span }
+	has [noinherit: span (Span)] => [noinherit] { this.span = span }
+	has [pattern: span (Span)]   => [pattern]   { this.span = span }
+	has [asm: span (Span)]       => [asm]       { this.span = span }
+	has [native: span (Span)]    => [native]    { this.span = span }
+	has [flags: span (Span)]     => [flags]     { this.span = span }
+	has [uncounted: span (Span)] => [uncounted] { this.span = span }
+	has [strong: span (Span)]    => [strong]    { this.span = span }
+	has [sealed: span (Span)]    => [sealed]    { this.span = span }
+	has [macro: span (Span)]     => [macro]     { this.span = span }
 
-	has [tilde]
-	has [dot]
-	has [eq]
-	has [eqGt]
-	has [plus]
-	has [plusEq]
-	has [plusPlus]
-	has [minus]
-	has [minusEq]
-	has [minusMinus]
-	has [star]
-	has [starEq]
-	has [starStar]
-	has [starStarEq]
-	has [div]
-	has [divEq]
-	has [divDiv]
-	has [divDivEq]
-	has [mod]
-	has [modEq]
-	has [modMod]
-	has [modModEq]
-	has [and]
-	has [andEq]
-	has [andAnd]
-	has [andAndEq]
-	has [bar]
-	has [barEq]
-	has [barBar]
-	has [barBarEq]
-	has [caret]
-	has [caretEq]
-	has [caretCaret]
-	has [caretCaretEq]
-	has [bang]
-	has [bangEq]
-	has [bangBang]
-	has [bangBangEq]
-	has [question]
-	has [questionEq]
-	has [gt]
-	has [gtEq]
-	has [gtGt]
-	has [gtGtEq]
-	has [lt]
-	has [ltEq]
-	has [ltLt]
-	has [ltLtEq]
-	has [dotDotDot]
+	has [tilde: span (Span)]        => [tilde]        { this.span = span }
+	has [dot: span (Span)]          => [dot]          { this.span = span }
+	has [eq: span (Span)]           => [eq]           { this.span = span }
+	has [eqGt: span (Span)]         => [eqGt]         { this.span = span }
+	has [plus: span (Span)]         => [plus]         { this.span = span }
+	has [plusEq: span (Span)]       => [plusEq]       { this.span = span }
+	has [plusPlus: span (Span)]     => [plusPlus]     { this.span = span }
+	has [minus: span (Span)]        => [minus]        { this.span = span }
+	has [minusEq: span (Span)]      => [minusEq]      { this.span = span }
+	has [minusMinus: span (Span)]   => [minusMinus]   { this.span = span }
+	has [star: span (Span)]         => [star]         { this.span = span }
+	has [starEq: span (Span)]       => [starEq]       { this.span = span }
+	has [starStar: span (Span)]     => [starStar]     { this.span = span }
+	has [starStarEq: span (Span)]   => [starStarEq]   { this.span = span }
+	has [div: span (Span)]          => [div]          { this.span = span }
+	has [divEq: span (Span)]        => [divEq]        { this.span = span }
+	has [divDiv: span (Span)]       => [divDiv]       { this.span = span }
+	has [divDivEq: span (Span)]     => [divDivEq]     { this.span = span }
+	has [mod: span (Span)]          => [mod]          { this.span = span }
+	has [modEq: span (Span)]        => [modEq]        { this.span = span }
+	has [modMod: span (Span)]       => [modMod]       { this.span = span }
+	has [modModEq: span (Span)]     => [modModEq]     { this.span = span }
+	has [and: span (Span)]          => [and]          { this.span = span }
+	has [andEq: span (Span)]        => [andEq]        { this.span = span }
+	has [andAnd: span (Span)]       => [andAnd]       { this.span = span }
+	has [andAndEq: span (Span)]     => [andAndEq]     { this.span = span }
+	has [bar: span (Span)]          => [bar]          { this.span = span }
+	has [barEq: span (Span)]        => [barEq]        { this.span = span }
+	has [barBar: span (Span)]       => [barBar]       { this.span = span }
+	has [barBarEq: span (Span)]     => [barBarEq]     { this.span = span }
+	has [caret: span (Span)]        => [caret]        { this.span = span }
+	has [caretEq: span (Span)]      => [caretEq]      { this.span = span }
+	has [caretCaret: span (Span)]   => [caretCaret]   { this.span = span }
+	has [caretCaretEq: span (Span)] => [caretCaretEq] { this.span = span }
+	has [bang: span (Span)]         => [bang]         { this.span = span }
+	has [bangEq: span (Span)]       => [bangEq]       { this.span = span }
+	has [bangBang: span (Span)]     => [bangBang]     { this.span = span }
+	has [bangBangEq: span (Span)]   => [bangBangEq]   { this.span = span }
+	has [question: span (Span)]     => [question]     { this.span = span }
+	has [questionEq: span (Span)]   => [questionEq]   { this.span = span }
+	has [gt: span (Span)]           => [gt]           { this.span = span }
+	has [gtEq: span (Span)]         => [gtEq]         { this.span = span }
+	has [gtGt: span (Span)]         => [gtGt]         { this.span = span }
+	has [gtGtEq: span (Span)]       => [gtGtEq]       { this.span = span }
+	has [lt: span (Span)]           => [lt]           { this.span = span }
+	has [ltEq: span (Span)]         => [ltEq]         { this.span = span }
+	has [ltLt: span (Span)]         => [ltLt]         { this.span = span }
+	has [ltLtEq: span (Span)]       => [ltLtEq]       { this.span = span }
+	has [dotDotDot: span (Span)]    => [dotDotDot]    { this.span = span }
 	has [cascade: depth (Int)]
 
 	has [lParen: span (Span)]       => [lParen]       { this.span = span }
@@ -131,8 +131,8 @@ kind Token {
 	has [str: (Array[StrSegment])]
 	has [char: (Char)]
 	has [bool: (Bool)]
-	has [this]
-	has [wildcard]
+	has [this: span (Span)]     => [this]     { this.span = span }
+	has [wildcard: span (Span)] => [wildcard] { this.span = span }
 	has [anonArg: nth (Int) depth: (Int)]
 
 	on [basicName] (Str) is getter {
