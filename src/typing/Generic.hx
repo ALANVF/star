@@ -122,7 +122,7 @@ class Generic {
 		return "generic type";
 	}
 
-	function findType(path: List<String>, absolute = false, cache: List<{}> = Nil) {
+	function findType(path: LookupPath, absolute = false, cache: List<{}> = Nil) {
 		if(cache.contains(this)) {
 			return None;
 		} else {

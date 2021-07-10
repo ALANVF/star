@@ -10,7 +10,7 @@ class Unit extends Dir {
 		super.gatherFiles(gather);
 	}
 
-	override function findType(path: List<String>, absolute = false, cache: List<{}> = Nil) {
+	override function findType(path: LookupPath, absolute = false, cache: List<{}> = Nil) {
 		if(absolute) {
 			if(cache.contains(this)) {
 				return None;
@@ -20,11 +20,11 @@ class Unit extends Dir {
 		}
 
 		return path._match(
-			at([typeName], when(typeName == name)) => switch primary.flatMap(p -> p.findType(path, false, cache)) {
+			at([[typeName, _]], when(typeName == name)) => switch primary.flatMap(p -> p.findType(path, false, cache)) {
 				case Some(type): Some(new Type(TModular(type, this)));
 				case None: None;
 			},
-			at([typeName, ...rest], when(typeName == name)) => switch primary.flatMap(p -> p.findType(path, false, cache)) {
+			at([[typeName, _], ...rest], when(typeName == name)) => switch primary.flatMap(p -> p.findType(path, false, cache)) {
 				case Some(type): Some(new Type(TModular(type, this)));
 				case None: switch primary.flatMap(p -> p.findType(rest, false, cache)) {
 					case Some(type): Some(type);

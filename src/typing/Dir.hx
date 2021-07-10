@@ -128,7 +128,7 @@ abstract class Dir {
 		}
 	}
 
-	function findType(path: List<String>, absolute = false, cache: List<{}> = Nil) {
+	function findType(path: LookupPath, absolute = false, cache: List<{}> = Nil) {
 		if(absolute) {
 			if(cache.contains(this)) {
 				return None;

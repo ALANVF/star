@@ -91,6 +91,14 @@ class Util {
 						expr: expr
 					};
 				});
+			case TEnum(_.get() => {pack: ["util"], name: "List2"}, [_, _]):
+				caseExprs = caseExprs.map(_case -> switch _case {
+					case {values: values, guard: guard, expr: expr}: {
+						values: values.map(value -> mapList2Pattern(value, true)),
+						guard: guard,
+						expr: expr
+					};
+				});
 			default:
 		}
 		
@@ -269,6 +277,14 @@ class Util {
 		case macro [$a{values}]: macro ${listOf(values)};
 		default: pattern;
 	}
+	
+	private static function mapList2Pattern(pattern: Expr, isOuter = false) return switch pattern {
+		case {expr: EDisplay(e, _)}: macro ${mapList2Pattern(e, isOuter)};
+		case macro $l | $r: macro ${mapList2Pattern(l)} | ${mapList2Pattern(r)};
+		case macro []: macro Nil2;
+		case macro [$a{values}]: macro ${list2Of(values)};
+		default: pattern;
+	}
 
 	private static function mapPattern(pattern: Expr, isOuter = false) return switch pattern {
 		case {expr: EDisplay(e, _)}: macro ${mapPattern(e, isOuter)};
@@ -295,6 +311,37 @@ class Util {
 				
 				default:
 					macro ${values.foldRight(macro Nil, (acc, v) -> macro Cons($v, $acc))};
+			}
+		}
+	}
+	
+	private static function getPair(expr: Expr): Array<Expr> {
+		return switch expr {
+			case {expr: EDisplay(e, k)}: getPair(e);
+			case macro [$x, $y]: [x, y];
+			case macro _: [macro _, macro _];
+			default: Context.error("Invalid pair pattern", expr.pos);
+		}
+	}
+	
+	private static function list2Of<T, U>(values: Array<Expr>): ExprOf<List2<T, U>> {
+		if(values.length == 0) {
+			return macro Nil2;
+		} else {
+			return switch switch values.last() {
+				case {expr: EDisplay(e, _)}: e;
+				case e: e;
+			} {
+				case macro ...$rest = $expr:
+					values.pop();
+					macro ${values.foldRight(macro $rest = ${mapList2Pattern(expr)}, (acc, v) -> macro Cons2($a{getPair(v).concat([acc])}))};
+
+				case macro ...$rest:
+					values.pop();
+					macro ${values.foldRight(rest/*mapList2Pattern(rest)*/, (acc, v) -> macro Cons2($a{getPair(v).concat([acc])}))};
+				
+				default:
+					macro ${values.foldRight(macro Nil2, (acc, v) -> macro Cons2($a{getPair(v).concat([acc])}))};
 			}
 		}
 	}

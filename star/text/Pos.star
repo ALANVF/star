@@ -1,4 +1,5 @@
 class Pos of Comparable {
+	; these should probably be immutable huh
 	my line = 0
 	my column = 0
 
@@ -16,6 +17,14 @@ class Pos of Comparable {
 
 	operator `<` [other (Pos)] (Bool) {
 		return this[compare: other] > 0
+	}
+	
+	operator `++` (Pos) {
+		return this[advance]
+	}
+	
+	operator `--` (Pos) {
+		return this[advance: -1]
 	}
 
 	on [advance: amount (Int) = 1] (Pos) {

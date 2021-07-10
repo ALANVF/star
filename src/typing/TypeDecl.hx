@@ -24,7 +24,7 @@ abstract class TypeDecl {
 	
 	abstract function declName(): String;
 
-	function findType(path: List<String>, absolute = false, cache: List<{}> = Nil) {
+	function findType(path: LookupPath, absolute = false, cache: List<{}> = Nil) {
 		if(absolute) {
 			if(cache.contains(this)) {
 				return None;
@@ -35,10 +35,31 @@ abstract class TypeDecl {
 
 		return if(absolute) {
 			path._match(
-				at(["This"]) => Some(new Type(TThis(None, this))),
-				at([typeName]) => switch generics.find(typeName) {
+				at([["This", []]]) => Some(new Type(TThis(None, this))),
+				at([["This", _]]) => {
+					// prob shouldn't be attatched to *this* type decl, but eh
+					errors.push(Errors.notYetImplemented(this.span));
+					None;
+				},
+				at([[typeName, args]]) => switch generics.find(typeName) {
 					case None: lookup.findType(path, true, cache);
-					case Some([type]): Some(type.thisType);
+					case Some([type]): switch [args, type.params] {
+						case [[], _]: Some(type.thisType); // should probably curry parametrics but eh
+						case [_, None]:
+							// should this check for type aliases?
+							errors.push(Errors.invalidTypeApply(this.span, "Attempt to apply arguments to a non-parametric type"));
+							None;
+						case [_, Some(params)]:
+							if(args.length > params.length) {
+								errors.push(Errors.invalidTypeApply(this.span, "Too many arguments"));
+								None;
+							} else if(args.length < params.length) {
+								errors.push(Errors.invalidTypeApply(this.span, "Not enough arguments"));
+								None;
+							} else {
+								Some(new Type(TApplied(type.thisType, args)));
+							}
+					}
 					case Some(found): Some(new Type(TMulti(found.map(g -> g.thisType))));
 				},
 				_ => if(absolute) lookup.findType(path, true, cache) else None

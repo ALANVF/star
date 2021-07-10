@@ -100,7 +100,7 @@ class Category {
 		return "category";
 	}
 
-	function findType(path: List<String>, absolute = false, cache: List<{}> = Nil) {
+	function findType(path: LookupPath, absolute = false, cache: List<{}> = Nil) {
 		if(cache.contains(this)) {
 			return None;
 		} else {
@@ -109,7 +109,7 @@ class Category {
 
 		return if(absolute) {
 			path._match(
-				at([typeName]) => switch generics.find(typeName) {
+				at([[typeName, _]]) => switch generics.find(typeName) {
 					case None: lookup.findType(path, true, cache);
 					case Some([type]): Some(type.thisType);
 					case Some(found): Some(new Type(TMulti(found.map(g -> g.thisType))));

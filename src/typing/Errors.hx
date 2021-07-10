@@ -186,4 +186,38 @@ class Errors {
 			]
 		});
 	}
+	
+	static inline function invalidTypeApply(
+		span: Span,
+		why = "Invalid type application"
+	) {
+		return new Diagnostic({
+			severity: Severity.ERROR,
+			message: "Invalid type application",
+			info: [
+				Spanned({
+					span: span,
+					message: why,
+					isPrimary: true
+				})
+			]
+		});
+	}
+	
+	static inline function notYetImplemented(
+		span: Span,
+		why = "This feature has not been implemented yet"
+	) {
+		return new Diagnostic({
+			severity: Severity.ERROR,
+			message: "Not yet implemented",
+			info: [
+				Spanned({
+					span: span,
+					message: why,
+					isPrimary: true
+				})
+			]
+		});
+	}
 }

@@ -160,7 +160,7 @@ class File {
 		decls.add(decl.name.name, decl);
 	}
 
-	function findType(path: List<String>, absolute = false, cache: List<{}> = Nil) {
+	function findType(path: LookupPath, absolute = false, cache: List<{}> = Nil) {
 		if(absolute) {
 			if(cache.contains(this)) {
 				return None;
@@ -170,12 +170,12 @@ class File {
 		}
 
 		return path._match(
-			at([typeName]) => switch decls.find(typeName) {
+			at([[typeName, _]]) => switch decls.find(typeName) {
 				case None: if(absolute) dir.findType(path, true, cache) else None;
 				case Some([decl]): Some(decl.thisType);
 				case Some(found): Some(new Type(TMulti(found.map(d -> d.thisType))));
 			},
-			at([typeName, ...rest]) => switch decls.find(typeName) {
+			at([[typeName, _], ...rest]) => switch decls.find(typeName) {
 				case None: if(absolute) dir.findType(path, true, cache) else None;
 				case Some([decl]): decl.findType(rest, false, cache);
 				case Some(found): throw "NYI!";

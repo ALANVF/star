@@ -16,37 +16,37 @@ class Lexer {
 	my alnum_q is static is readonly = alnum | #"'"
 	
 	my keywords is static is readonly = #(
-		"module" => Token[module]->[span: $.0]
-		"my" => Token[my]->[span: $.0]
-		"on" => Token[on]->[span: $.0]
-		"return" => Token[return]->[span: $.0]
-		"init" => Token[init]->[span: $.0]
-		"deinit" => Token[deinit]->[span: $.0]
-		"operator" => Token[operator]->[span: $.0]
-		"class" => Token[class]->[span: $.0]
-		"alias" => Token[alias]->[span: $.0]
-		"type" => Token[type]->[span: $.0]
-		"kind" => Token[kind]->[span: $.0]
-		"category" => Token[category]->[span: $.0]
-		"protocol" => Token[protocol]->[span: $.0]
-		"is" => Token[is]->[span: $.0]
-		"of" => Token[of]->[span: $.0]
-		"use" => Token[use]->[span: $.0]
-		"has" => Token[has]->[span: $.0]
-		"if" => Token[if]->[span: $.0]
-		"orif" => Token[orif]->[span: $.0]
-		"else" => Token[else]->[span: $.0]
-		"while" => Token[while]->[span: $.0]
-		"for" => Token[for]->[span: $.0]
-		"do" => Token[do]->[span: $.0]
-		"case" => Token[case]->[span: $.0]
-		"match" => Token[match]->[span: $.0]
-		"at" => Token[at]->[span: $.0]
-		"break" => Token[break]->[span: $.0]
-		"next" => Token[next]->[span: $.0]
-		"throw" => Token[throw]->[span: $.0]
-		"try" => Token[try]->[span: $.0]
-		"catch" => Token[catch]->[span: $.0]
+		"module" => Token[module: $.0]
+		"my" => Token[my: $.0]
+		"on" => Token[on: $.0]
+		"return" => Token[return: $.0]
+		"init" => Token[init: $.0]
+		"deinit" => Token[deinit: $.0]
+		"operator" => Token[operator: $.0]
+		"class" => Token[class: $.0]
+		"alias" => Token[alias: $.0]
+		"type" => Token[type: $.0]
+		"kind" => Token[kind: $.0]
+		"category" => Token[category: $.0]
+		"protocol" => Token[protocol: $.0]
+		"is" => Token[is: $.0]
+		"of" => Token[of: $.0]
+		"use" => Token[use: $.0]
+		"has" => Token[has: $.0]
+		"if" => Token[if: $.0]
+		"orif" => Token[orif: $.0]
+		"else" => Token[else: $.0]
+		"while" => Token[while: $.0]
+		"for" => Token[for: $.0]
+		"do" => Token[do: $.0]
+		"case" => Token[case: $.0]
+		"match" => Token[match: $.0]
+		"at" => Token[at: $.0]
+		"break" => Token[break: $.0]
+		"next" => Token[next: $.0]
+		"throw" => Token[throw: $.0]
+		"try" => Token[try: $.0]
+		"catch" => Token[catch: $.0]
 	)
 	my attrs is static is readonly = #(
 		"static" => Token[static]->[span: $.0]
@@ -897,9 +897,10 @@ class Lexer {
 							severity: Severity.error
 							message: "Invalid escape character"
 							info: #[
+								;@@ off by 1 errors?
 								Info[
-									span: Span[at: end :source]
-									message: "Escape character `\(c)` \({
+									span: Span[begin: end[advance: -2] end: this[here] :source]
+									message: "Escape character `\\\(c)` \({
 										if c ?= #"(" {
 											return "is not allowed in char literals"
 										} else {
@@ -909,7 +910,7 @@ class Lexer {
 									priority: Priority.primary
 								]
 								Info[
-									span: this[span]
+									span: Span[:begin end: end[advance: -1] :source]
 									priority: Priority.secondary
 								]
 								Info[
@@ -1105,13 +1106,9 @@ class Lexer {
 											message: "Invalid escape character"
 											info: #[
 												Info[
-													span: Span[at: end :source]
+													span: Span[begin: end[advance: -1] end: end[advance] :source] ;@@ off by 1 error?
 													message: "Escape character `\\\(c)` does not exist"
 													priority: Priority.primary
-												]
-												Info[
-													span: Span[at: end[advance: -1] :source]
-													priority: Priority.secondary
 												]
 											]
 										]

@@ -80,7 +80,7 @@ class Main {
 		}*/
 
 		testProject("stdlib", true, project -> {
-			project.findType(List.of("Star", "Core", "Array"), true).forEach(array -> {
+			project.findType(List2.of(["Star", []], ["Core", []], ["Array", []]), true).forEach(array -> {
 				trace(array.simpleName());
 			});
 		});
@@ -92,7 +92,7 @@ class Main {
 		testProject("tests/kinds", true);
 		nl();
 		testProject("tests/aliases", true, project -> {
-			project.findType(List.of("Direct"), true).forEach(direct -> {
+			project.findType(List2.of(["Direct", []]), true).forEach(direct -> {
 				trace(direct.simpleName());
 			});
 		});
@@ -100,28 +100,28 @@ class Main {
 		testProject("star", true);
 		nl();
 		testProject("tests/self", true, project -> {
-			project.findType(List.of("Slot"), true).forEach(slot -> {
+			project.findType(List2.of(["Slot", []]), true).forEach(slot -> {
 				trace(slot.simpleName());
 			});
 
-			project.findType(List.of("AST"), true).forEach(ast -> {
+			project.findType(List2.of(["AST", []]), true).forEach(ast -> {
 				trace(ast.simpleName());
-				trace(ast.findType(List.of("Slot")).map(t -> t.simpleName()));
+				trace(ast.findType(List2.of(["Slot", []])).map(t -> t.simpleName()));
 			});
 
-			project.findType(List.of("AST", "Slot"), true).forEach(slot -> {
+			project.findType(List2.of(["AST", []], ["Slot", []]), true).forEach(slot -> {
 				trace(slot.simpleName());
 			});
 
-			project.findType(List.of("AST", "Expr"), true).forEach(expr -> {
+			project.findType(List2.of(["AST", []], ["Expr", []]), true).forEach(expr -> {
 				trace(expr.simpleName());
 			});
 
-			project.findType(List.of("AST", "Slot", "Method"), true).forEach(method -> {
+			project.findType(List2.of(["AST", []], ["Slot", []], ["Method", []]), true).forEach(method -> {
 				trace(method.simpleName());
-				trace(method.findType(List.of("AST"), true).map(t -> t.simpleName()));
-				trace(method.findType(List.of("AST", "Slot"), true).map(t -> t.simpleName()));
-				trace(method.findType(List.of("Slot"), true).map(t -> t.simpleName()));
+				trace(method.findType(List2.of(["AST", []]), true).map(t -> t.simpleName()));
+				trace(method.findType(List2.of(["AST", []], ["Slot", []]), true).map(t -> t.simpleName()));
+				trace(method.findType(List2.of(["Slot", []]), true).map(t -> t.simpleName()));
 			});
 		});
 		

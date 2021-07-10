@@ -3,6 +3,7 @@ package typing;
 import text.Span;
 import typing.Traits;
 
+// probably need to add something for hkts?
 enum TypeKind {
 	TPath(path: TypePath, source: ILookupType);
 	TConcrete(decl: TypeDecl);
@@ -73,7 +74,7 @@ class Type {
 		case TModular(type, _): return type.simpleName();
 	}
 
-	function findType(path: List<String>, absolute = false, cache: List<{}> = Nil) {
+	function findType(path: LookupPath, absolute = false, cache: List<{}> = Nil) {
 		if(cache.contains(this)) {
 			return None;
 		} else {

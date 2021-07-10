@@ -42,7 +42,7 @@ typedef IInits = {
 typedef ILookupType = {
 	function makeTypePath(path: TypePath): Type;
 	
-	function findType(path: List<String>, ?absolute: Bool, ?cache: List<{}>): Option<Type>;
+	function findType(vpath: LookupPath, ?absolute: Bool, ?cache: List<{}>): Option<Type>;
 }
 
 typedef IMembers = {

@@ -922,8 +922,9 @@ class Lexer {
 							severity: Severity.ERROR,
 							message: "Invalid escape character",
 							info: [
+								// off by 1 errors?
 								Spanned({
-									span: Span.at(end, source),
+									span: new Span(here().advance(-2), here(), source),
 									message: 'Escape character `$c` ' + (
 										if(c == '('.code) "is not allowed in char literals"
 										else "does not exist"
@@ -931,11 +932,11 @@ class Lexer {
 									isPrimary: true
 								}),
 								Spanned({
-									span: new Span(begin, end, source),
+									span: new Span(begin, end.advance(-1), source),
 									isSecondary: true
 								}),
 								Spanned({
-									span: Span.at(end.advance(1), source),
+									span: Span.at(end.advance(), source),
 									isSecondary: true
 								})
 							]
@@ -1110,13 +1111,9 @@ class Lexer {
 								message: "Invalid escape character",
 								info: [
 									Spanned({
-										span: Span.at(end, source),
+										span: new Span(end.advance(-1), end.advance(), source), // off by 1 error?
 										message: 'Escape character `\\$c` does not exist',
 										isPrimary: true
-									}),
-									Spanned({
-										span: Span.at(end.advance(-1), source),
-										isSecondary: true
 									})
 								]
 							});

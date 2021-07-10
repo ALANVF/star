@@ -72,4 +72,28 @@ class Span {
 	operator `|` [other (Span)] (Span) is inline {
 		return Span[from: this to: other]
 	}
+	
+	on [isMultiline] (Bool) {
+		return begin.line != end.line
+	}
+	
+	on [first] (Span) {
+		return Span[at: begin :source]
+	}
+	
+	on [last] (Span) {
+		return Span[at: end :source]
+	}
+	
+	on [next] (Span) {
+		return this[new]
+		-> begin++
+		-> end++
+	}
+	
+	on [previous] (Span) {
+		return this[new]
+		-> begin--
+		-> end--
+	}
 }
