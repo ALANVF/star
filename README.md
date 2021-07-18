@@ -24,7 +24,7 @@ One of the most important goals of Star is that it's designed to be completely c
 		- Generic constraints can require specific types, supertypes, subtypes, and shapes (members / methods), all of which can reference other generics
 		- Multiple constraints are allowed on a generic
 		- Generics can require a specific number of type parameters, which allows for powerful constructs like higher-kinded types
-		- Generics can be assigned to a type alias for use elsewhere, effectly creating Haskell-like "typeclasses"
+		- Generics can be assigned to a type alias for use elsewhere, effectively creating Haskell-like "typeclasses"
 	- Type specialization and type refinement can allow for multi-dispatch, and enable certain functionality depending on the types given
 	- Categories are named type extensions that can add new functionality to existing types at compile-time
 - Rich standard library comes with the essentials, many data structures, and other common functionality
