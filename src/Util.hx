@@ -3,6 +3,7 @@ import util.List;
 import haxe.macro.Context;
 import haxe.macro.Expr;
 import haxe.macro.ExprTools;
+import haxe.macro.TypeTools;
 
 @:publicFields
 class Util {
@@ -35,9 +36,48 @@ class Util {
 		}
 	}
 	
+	@:nullSafety(Strict)
+	static macro function _and<T, U>(value: ExprOf<Null<T>>, and): ExprOf<Null<U>> {
+		switch and { case macro $i{n} => $v:
+			var dv = switch v {
+				case {expr: EDisplay(v2, _)}: v2;
+				default: v;
+			};
+			return macro switch($value) {
+				case null: null;
+				case Util._unsafeNonNull(_) => $i{n}: $dv;
+			};
+			
+		default: throw "error!"; }
+	}
+	
+	@:nullSafety(Strict)
+	static macro function _or<T, U, V: T & U>(value: ExprOf<Null<T>>, or: ExprOf<U>): ExprOf<V> {
+		return macro switch($value) {
+			case null: $or;
+			case Util._unsafeNonNull(_) => __anon__nonnull: __anon__nonnull;
+		};
+	}
+	
+	@:nullSafety(Strict)
+	static macro function _andOr<T, U>(value: ExprOf<Null<T>>, and, or: ExprOf<U>): ExprOf<U> {
+		switch and { case macro $i{n} => $v:
+			var dv = switch v {
+				case {expr: EDisplay(v2, _)}: v2;
+				default: v;
+			};
+			return macro switch($value) {
+				case null: $or;
+				case Util._unsafeNonNull(_) => $i{n}: $dv;
+			};
+			
+		default: throw "error!"; }
+	}
+	
+	@:nullSafety(Strict)
 	static inline function nonNull<T>(value: Null<T>): T {
 		if(value != null)
-			return value;
+			return (value : T);
 		else
 			throw new NullException();
 	}
@@ -51,6 +91,15 @@ class Util {
 		default: ExprTools.map(expr, removeDisp);
 	}
 	#end
+	
+	/*
+	 * ==================================================================
+	 * ============================ WARNING =============================
+	 * ===|----------------------------------------------------------|===
+	 * ===| pain and suffering awaits those who go beyond this point |===
+	 * ===|----------------------------------------------------------|===
+	 * ==================================================================
+	*/
 	
 	static macro function _match<T>(value: ExprOf<T>, cases: Array<Expr>): Expr {
 		var defaultExpr = None;
@@ -74,34 +123,39 @@ class Util {
 				default: Context.error("error!", _case.pos);
 			};
 		}
-
-		var type = Context.typeof(value);
-
-		while(type.match(TType(_, _))) switch type {
-			case TType(_.get() => t, _): type = t.type;
-			default: break;
-		}
-
-		switch type {
-			case TEnum(_.get() => {pack: ["util"], name: "List"}, [_]):
-				caseExprs = caseExprs.map(_case -> switch _case {
-					case {values: values, guard: guard, expr: expr}: {
-						values: values.map(value -> mapListPattern(value, true)),
-						guard: guard,
-						expr: expr
-					};
-				});
-			case TEnum(_.get() => {pack: ["util"], name: "List2"}, [_, _]):
-				caseExprs = caseExprs.map(_case -> switch _case {
-					case {values: values, guard: guard, expr: expr}: {
-						values: values.map(value -> mapList2Pattern(value, true)),
-						guard: guard,
-						expr: expr
-					};
-				});
-			default:
-		}
 		
+		switch value {
+			case macro [$a{exprs}]:
+			default: {
+				var type = Context.typeof(value);
+
+				while(type.match(TType(_, _))) switch type {
+					case TType(_.get() => t, _): type = t.type;
+					default: break;
+				}
+
+				switch type {
+					case TEnum(_.get() => {pack: ["util"], name: "List"}, [_]):
+						caseExprs = caseExprs.map(_case -> switch _case {
+							case {values: values, guard: guard, expr: expr}: {
+								values: values.map(value -> mapListPattern(value, true)),
+								guard: guard,
+								expr: expr
+							};
+						});
+					case TEnum(_.get() => {pack: ["util"], name: "List2"}, [_, _]):
+						caseExprs = caseExprs.map(_case -> switch _case {
+							case {values: values, guard: guard, expr: expr}: {
+								values: values.map(value -> mapList2Pattern(value, true)),
+								guard: guard,
+								expr: expr
+							};
+						});
+					default:
+				}
+			}
+		}
+
 		for(_case in caseExprs) {
 			if(_case.values.length > 1) Context.error("wtf", _case.values[0].pos);
 			
@@ -158,6 +212,10 @@ class Util {
 							if(!didChange) didChange = true;
 							macro _ != null => true;
 						
+						case {expr: EUnop(OpNot, true, lhs2)}:
+							if(!didChange) didChange = true;
+							macro Util._unsafeNonNull(_) => $lhs2;
+						
 						case macro $i{name}:
 							if(!didChange) didChange = true;
 							final anon = '__anon${anons++}__$name';
@@ -187,25 +245,71 @@ class Util {
 						default: false;
 					};
 					
-					var beginVal = switch begin {
-						case {expr: EField({expr: EConst(CString(str, k))}, "code")}: nonNull(str.charCodeAt(0));
-						default: ExprTools.getValue(begin);
+					switch begin {
+						case {expr: EField({expr: EConst(CIdent(_))}, _) | EConst(CIdent(_)) | ECall(_)}: {
+							final t = TypeTools.getEnum(switch begin {
+								case macro $ec($a{_}): switch Context.typeExpr(ec).t {
+									case TFun(_, t1): t1;
+									default: Context.error("error!", begin.pos);
+								}
+								default: Context.typeExpr(begin).t;
+							});
+							
+							function caseName(e: Expr) return switch e.expr {
+								case ECall(e2, _): caseName(e2);
+								case EField(_, n) | EConst(CIdent(n)): n;
+								default: Context.error("error!", e.pos);
+							}
+							
+							var start = t.names.indexOf(caseName(begin));
+							var stop = t.names.indexOf(caseName(end));
+							
+							if(start == -1) Context.error("error!", begin.pos);
+							if(stop == -1) Context.error("error!", end.pos);
+							
+							if(beginExcl) start++;
+							if(endExcl) stop--;
+							
+							if(stop <= start) Context.error("error!", end.pos);
+							
+							function makeCase(i: Int) {
+								return switch t.constructs[t.names[i]] {
+									case {name: n, type: TFun(args, _)}: macro $i{n}($a{args.map(_ -> macro _)});
+									case {name: n, type: _}: macro $i{n};
+								}
+							}
+							
+							var res = beginExcl ? makeCase(start) : begin;
+							
+							for(i in (start + 1)...(stop + 1)) {
+								res = macro $res | ${makeCase(i)};
+							}
+							
+							return res;
+						}
+						
+						default: {
+							var beginVal = switch begin {
+								case {expr: EField({expr: EConst(CString(str, k))}, "code")}: nonNull(str.charCodeAt(0));
+								default: ExprTools.getValue(begin);
+							}
+							var endVal = switch end {
+								case {expr: EField({expr: EConst(CString(str, k))}, "code")}: nonNull(str.charCodeAt(0));
+								default: ExprTools.getValue(end);
+							};
+							
+							if(beginExcl) beginVal++;
+							if(endExcl) endVal--;
+							
+							var res = macro $v{beginVal};
+							
+							while(beginVal <= endVal) {
+								res = macro $res | $v{++beginVal};
+							}
+							
+							res;
+						}
 					}
-					var endVal = switch end {
-						case {expr: EField({expr: EConst(CString(str, k))}, "code")}: nonNull(str.charCodeAt(0));
-						default: ExprTools.getValue(end);
-					};
-					
-					if(beginExcl) beginVal++;
-					if(endExcl) endVal--;
-					
-					var res = macro $v{beginVal};
-					
-					while(beginVal <= endVal) {
-						res = macro $res | $v{++beginVal};
-					}
-					
-					res;
 				
 				case {expr: EDisplay(e2, k)}: collect(e2);
 				

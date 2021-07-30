@@ -13,6 +13,7 @@ using util.StringBuilders;
 using util.Option.OptionHelper;
 using util.List.ListHelper;
 using util.List2.List2Helper;
+using util.Strings;
 
 #if !macro
 using compiler.Type.TypeTools;

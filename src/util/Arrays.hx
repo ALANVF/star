@@ -176,9 +176,7 @@ class Arrays {
 				case {expr: EDisplay(v2, _)}: v2;
 				default: v;
 			};
-			var vn = haxe.macro.ExprTools.toString(
-				dv
-			);
+			var vn = haxe.macro.ExprTools.toString(dv);
 			return macro {
 				for($k in 0...$array.length)
 					$b{
@@ -295,10 +293,32 @@ class Arrays {
 	public static inline function last<T>(array: Array<T>): T {
 		return array[array.length - 1];
 	}
+	
+	public static inline function setLast<T>(array: Array<T>, value: T) {
+		array[array.length - 1] = value;
+	}
 
 	public static inline function pushAll<T>(array: Array<T>, values: Array<T>) {
 		for(i in 0...values.length) {
 			array.push(values[i]);
+		}
+	}
+	
+	public static function joinMap<T>(array: Array<T>, sep: String, fn: (T) -> String) {
+		return switch array {
+			case []: "";
+			case [v]: fn(v);
+			case [v1, v2]: fn(v1) + sep + fn(v2);
+			default: {
+				var res = fn(array[0]);
+				
+				for(i in 1...array.length) {
+					res += sep;
+					res += fn(array[i]);
+				}
+				
+				res;
+			}
 		}
 	}
 }

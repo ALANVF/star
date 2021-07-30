@@ -127,5 +127,7 @@ class Main {
 		
 		nl();
 		for(s in new compiler.Compiler().stmts) Sys.println(s.form());
+		
+		compiler.nim.Compiler.test();
 	}
 }
