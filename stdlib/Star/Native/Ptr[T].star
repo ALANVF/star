@@ -38,7 +38,7 @@ class Ptr[T] of Ordered is native[repr: `ptr` elem: T] {
 
 	on [move: length (Int) to: dest (Ptr[T])] is native `ptr_move_to`
 	
-	on [compare: length (Int) with: other (Ptr[T])] (Int8) is native `ptr_cmp_with`
+	on [compare: length (Int) with: other (Ptr[T])] (Int32) is native `ptr_cmp_with`
 	
 	on [fill: length (Int) with: value (T)] is native `ptr_fill_with`
 

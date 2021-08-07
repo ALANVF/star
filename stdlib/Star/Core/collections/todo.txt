@@ -21,3 +21,4 @@
 - [ ] sequences (like kotlin)
 - [ ] unrolled buffers (like scala)
 - [ ] sorted variants of various types
+- [ ] maps that supports lookup of keys and values

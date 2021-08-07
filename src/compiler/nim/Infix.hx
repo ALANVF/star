@@ -5,10 +5,10 @@ enum Infix {
 	IAdd;
 	ISub;
 	IMult;
-	IDiv; // /
-	IIntDiv; // div
-	IMod; // %
-	IIntMod; // mod
+	IDiv; // div
+	IIntDiv; // /
+	IMod; // mod
+	IIntMod; // %
 	IPow;
 	IShl;
 	IShr;

@@ -1,5 +1,13 @@
 package typing;
 
+// THINGS:
+// https://github.com/nim-lang/Nim/blob/devel/compiler/semtypinst.nim
+// https://github.com/nim-lang/Nim/blob/devel/compiler/types.nim
+// https://github.com/nim-lang/Nim/blob/devel/compiler/modulegraphs.nim
+// https://github.com/nim-lang/Nim/blob/devel/compiler/sigmatch.nim#L287
+// https://github.com/nim-lang/Nim/blob/devel/compiler/semcall.nim#L76
+// https://github.com/nim-lang/Nim/blob/devel/compiler/sigmatch.nim#L1980
+
 import text.Span;
 import typing.Traits;
 

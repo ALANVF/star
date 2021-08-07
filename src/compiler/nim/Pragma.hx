@@ -76,7 +76,7 @@ enum Pragma {
 	//define
 	//undef
 	//unroll
-	//this
+	//this: self
 	
 	// Checks
 	PChecks(status: Bool);

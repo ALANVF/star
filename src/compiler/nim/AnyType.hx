@@ -43,8 +43,7 @@ enum AnyType<T> {
 	TRange(type: Type);
 	TSet(type: Type);
 	TSeq(type: Type);
-	TArray(type: Type);
-	TIArray(index: Type, type: Type);
+	TArray(index: Type, type: Type);
 	TOpenArray(type: Type);
 	TUncheckedArray(type: Type);
 	TTuple(types: Types);
@@ -72,6 +71,7 @@ enum AnyType<T> {
 	// Kinds:
 	TPtrKind;
 	TRefKind;
+	TRangeKind;
 	TSetKind;
 	TSeqKind;
 	TArrayKind;
@@ -169,8 +169,7 @@ class AnyTypeTools {
 		at(TRange(t)) => 'range[${t.toNim(tabs)}]',
 		at(TSet(t)) => 'set[${t.toNim(tabs)}]',
 		at(TSeq(t)) => 'seq[${t.toNim(tabs)}]',
-		at(TArray(t)) => 'array[${t.toNim(tabs)}]',
-		at(TIArray(i, t)) => 'array[${i.toNim(tabs)}, ${t.toNim(tabs)}]',
+		at(TArray(i, t)) => 'array[${i.toNim(tabs)}, ${t.toNim(tabs)}]',
 		at(TOpenArray(t)) => 'openarray[${t.toNim(tabs)}]',
 		at(TUncheckedArray(t)) => 'UncheckedArray[${t.toNim(tabs)}]',
 		at(TTuple(types)) => '(${types.toNim(tabs)})',
@@ -194,6 +193,7 @@ class AnyTypeTools {
 		
 		at(TPtrKind) => "ptr",
 		at(TRefKind) => "ref",
+		at(TRangeKind) => "range",
 		at(TSetKind) => "set",
 		at(TSeqKind) => "seq",
 		at(TArrayKind) => "array",
