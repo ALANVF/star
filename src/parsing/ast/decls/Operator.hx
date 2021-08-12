@@ -21,5 +21,5 @@ class Operator {
 	final spec: Option<Delims<{name: Ident, type: Type}>>;
 	final ret: Option<Type>;
 	final attrs: Map<OperatorAttr, Span>;
-	final body: Option<Block>;
+	final body: Option<Body>;
 }

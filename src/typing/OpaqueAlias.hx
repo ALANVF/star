@@ -34,6 +34,8 @@ class OpaqueAlias extends Alias {
 			case IsFriend(_) if(alias.friends.length != 0): alias.errors.push(Errors.duplicateAttribute(alias, ast.name.name, "friend", span));
 			case IsFriend(One(friend)): alias.friends.push(lookup.makeTypePath(friend));
 			case IsFriend(Many(_, friends, _)): for(friend in friends) alias.friends.push(lookup.makeTypePath(friend));
+			
+			case IsNoinherit: alias.errors.push(Errors.invalidAttribute(alias, ast.name.name, "noinherit", span));
 		}
 
 		if(body.isSome()) {
@@ -64,5 +66,9 @@ class OpaqueAlias extends Alias {
 		for(op in operators) result = result.concat(op.allErrors());
 
 		return result;
+	}
+	
+	override function declName() {
+		return "opaque alias";
 	}
 }

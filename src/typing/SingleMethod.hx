@@ -14,7 +14,7 @@ class SingleMethod extends Method {
 				default: throw "Error!";
 			},
 			ret: ast.ret.map(ret -> decl.makeTypePath(ret)),
-			body: ast.body.map(body -> body.stmts)
+			body: ast.body.map(body -> body.stmts())
 		});
 
 		for(attr => span in ast.attrs) switch attr {

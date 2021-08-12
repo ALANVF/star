@@ -17,7 +17,7 @@ class Method of Decl, Generic {
 	my spec (Delims[Spec])
 	my return (Maybe[Type])
 	my attrs (Attrs)
-	my body (Maybe[Block])
+	my body (Maybe[Stmt.Body])
 
 	on [displayName] (Str) is getter {
 		match attrs at Attrs[isStatic: _] & _ {

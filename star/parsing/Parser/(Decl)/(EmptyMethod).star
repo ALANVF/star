@@ -5,5 +5,5 @@ protocol EmptyMethod of Decl {
 	}
 
 	my attrs (Attrs)
-	my body (Block)
+	my body (Stmt.Body)
 }

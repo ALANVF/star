@@ -13,7 +13,7 @@ class Operator of Decl, Generic {
 	my spec (Maybe[Delims[Spec]])
 	my return (Maybe[Type])
 	my attrs (Attrs)
-	my body (Maybe[Block])
+	my body (Maybe[Stmt.Body])
 
 	on [displayName] (Str) is getter {
 		return "operator overload"

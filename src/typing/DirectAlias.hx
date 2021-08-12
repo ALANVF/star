@@ -33,6 +33,8 @@ class DirectAlias extends Alias {
 			case IsFriend(_) if(alias.friends.length != 0): alias.errors.push(Errors.duplicateAttribute(alias, ast.name.name, "friend", span));
 			case IsFriend(One(friend)): alias.friends.push(lookup.makeTypePath(friend));
 			case IsFriend(Many(_, friends, _)): for(friend in friends) alias.friends.push(lookup.makeTypePath(friend));
+			
+			case IsNoinherit: alias.errors.push(Errors.invalidAttribute(alias, ast.name.name, "noinherit", span));
 		}
 
 		return alias;

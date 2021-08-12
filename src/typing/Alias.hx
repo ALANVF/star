@@ -11,7 +11,7 @@ abstract class Alias extends TypeDecl {
 		}
 	}
 
-	inline function declName() {
+	function declName() {
 		return "alias";
 	}
 }

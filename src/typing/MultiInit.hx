@@ -35,7 +35,7 @@ class MultiInit extends Init {
 			span: ast.span,
 			params: params,
 			fuzzyName: params.map(p -> p.label + ":").join(" "),
-			body: ast.body.map(body -> body.stmts)
+			body: ast.body.map(body -> body.stmts())
 		});
 
 		for(generic in ast.generics.mapArray(Generic.fromAST.bind(decl, _))) {
@@ -55,6 +55,8 @@ class MultiInit extends Init {
 			case IsNative(sym): init.native = Some(sym);
 
 			case IsAsm: init.isAsm = true;
+			
+			case IsMacro: init.isMacro = true;
 		}
 
 		return init;

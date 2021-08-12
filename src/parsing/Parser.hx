@@ -28,6 +28,7 @@ import parsing.ast.decls.Case;
 import parsing.ast.decls.Init;
 import parsing.ast.decls.Method;
 import parsing.ast.decls.Operator;
+import parsing.ast.decls.Body;
 import parsing.ast.decls.*;
 
 /*
@@ -248,7 +249,7 @@ class Parser {
 
 			Fatal(tokens, Some(rest));
 		},
-		at([]) => Eof(tokens),
+		//at([]) => Eof(tokens),
 		_ => Failure(tokens, None)
 	);
 
@@ -552,6 +553,10 @@ class Parser {
 								rest2 = rest4;
 							case err: return cast err;
 						},
+						at([T_Is(_2), T_Noinherit(_3), ...rest3]) => {
+							attrs[AliasAttr.IsNoinherit] = Span.range(_2, _3);
+							rest2 = rest3;
+						},
 						_ => break
 					);
 
@@ -588,6 +593,10 @@ class Parser {
 								attrs[AliasAttr.IsFriend(spec)] = Span.range(_2, _3);
 								rest = rest3;
 							case err: return cast err;
+						},
+						at([T_Is(_2), T_Noinherit(_3), ...rest2]) => {
+							attrs[AliasAttr.IsNoinherit] = Span.range(_2, _3);
+							rest = rest2;
 						},
 						_ => break
 					);
@@ -1385,10 +1394,10 @@ class Parser {
 				_ => break
 			);
 
-			final body = switch parseBlock(rest) {
-				case Success(block, rest2):
+			final body = switch parseBody(rest) {
+				case Success(body2, rest2):
 					rest = rest2;
-					Some(block);
+					Some(body2);
 				case Failure(_, _): None;
 				case err: return fatalIfBad(rest, cast err);
 			};
@@ -1457,13 +1466,17 @@ class Parser {
 					attrs[InitAttr.IsAsm] = Span.range(_2, _3);
 					rest = rest2;
 				},
+				at([T_Is(_2), T_Macro(_3), ...rest2]) => {
+					attrs[InitAttr.IsMacro] = Span.range(_2, _3);
+					rest = rest2;
+				},
 				_ => break
 			);
 
-			final body = switch parseBlock(rest) {
-				case Success(block, rest2):
+			final body = switch parseBody(rest) {
+				case Success(body2, rest2):
 					rest = rest2;
-					Some(block);
+					Some(body2);
 				case Failure(_, _): None;
 				case err: return fatalIfBad(rest, cast err);
 			};
@@ -1476,19 +1489,19 @@ class Parser {
 				body: body
 			}), rest);
 		},
-		at([T_Is(_2), T_Static(_3), ...rest]) => switch parseBlock(rest) {
-			case Success(block, rest2): Success(DDefaultInit({
+		at([T_Is(_2), T_Static(_3), ...rest]) => switch parseBody(rest) {
+			case Success(body, rest2): Success(DDefaultInit({
 				span: _1,
 				attrs: [IsStatic => Span.range(_2, _3)],
-				body: block
+				body: body
 			}), rest2);
 			case err: fatalIfBad(rest, cast err);
 		},
-		_ => switch parseBlock(tokens) {
-			case Success(block, rest): Success(DDefaultInit({
+		_ => switch parseBody(tokens) {
+			case Success(body, rest): Success(DDefaultInit({
 				span: _1,
 				attrs: [],
-				body: block
+				body: body
 			}), rest);
 			case err: fatalIfBad(tokens, cast err);
 		}
@@ -1556,10 +1569,10 @@ class Parser {
 				_ => break
 			);
 			
-			final body = switch parseBlock(rest) {
-				case Success(block, rest2):
+			final body = switch parseBody(rest) {
+				case Success(body2, rest2):
 					rest = rest2;
-					Some(block);
+					Some(body2);
 				case Failure(_, _): None;
 				case err: return fatalIfBad(rest, cast err);
 			};
@@ -1582,19 +1595,19 @@ class Parser {
 	/* DEINITS */
 
 	static function parseDeinitDecl(_1, tokens: List<Token>) return tokens._match(
-		at([T_Is(_2), T_Static(_3), ...rest]) => switch parseBlock(rest) {
-			case Success(block, rest2): Success(DDeinit({
+		at([T_Is(_2), T_Static(_3), ...rest]) => switch parseBody(rest) {
+			case Success(body, rest2): Success(DDeinit({
 				span: _1,
 				attrs: [IsStatic => Span.range(_2, _3)],
-				body: block
+				body: body
 			}), rest2);
 			case err: fatalIfBad(rest, cast err);
 		},
-		_ => switch parseBlock(tokens) {
-			case Success(block, rest): Success(DDeinit({
+		_ => switch parseBody(tokens) {
+			case Success(body, rest): Success(DDeinit({
 				span: _1,
 				attrs: [],
-				body: block
+				body: body
 			}), rest);
 			case err: fatalIfBad(tokens, cast err);
 		}
@@ -1771,6 +1784,18 @@ class Parser {
 
 
 	/* STATEMENTS */
+	
+	// TODO: enforce short arrow stmt
+	static function parseBody(tokens: List<Token>): ParseResult<Body> return tokens._match(
+		at([T_EqGt(_1), ...rest]) => switch parseStmt(rest) {
+			case Success(stmt, rest2): Success(BArrow(_1, stmt), rest2);
+			case err: fatalIfFailed(cast err);
+		},
+		_ => switch parseBlock(tokens) {
+			case Success(block, rest): Success(BBlock(block), rest);
+			case err: cast err;
+		}
+	);
 
 	static function parseBlock(tokens: List<Token>): ParseResult<Block> return tokens._match(
 		at([T_LBrace(begin), T_RBrace(end), ...rest]) => Success({begin: begin, stmts: [], end: end}, rest),

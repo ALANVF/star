@@ -25,7 +25,7 @@ class UnaryOperator extends Operator {
 			op: op,
 			opSpan: ast.symbolSpan,
 			ret: ast.ret.map(ret -> decl.makeTypePath(ret)),
-			body: ast.body.map(body -> body.stmts)
+			body: ast.body.map(body -> body.stmts())
 		});
 	}
 

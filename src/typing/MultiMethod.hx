@@ -36,7 +36,7 @@ class MultiMethod extends Method {
 			params: params,
 			fuzzyName: params.map(p -> p.label + ":").join(" "),
 			ret: ast.ret.map(ret -> decl.makeTypePath(ret)),
-			body: ast.body.map(body -> body.stmts)
+			body: ast.body.map(body -> body.stmts())
 		});
 
 		for(generic in ast.generics.mapArray(Generic.fromAST.bind(decl, _))) {

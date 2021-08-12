@@ -3,6 +3,7 @@ kind Alias of TypeDecl {
 		has [empty]
 		has [is: (Span) hidden: (Maybe[Type])]
 		has [is: (Span) friend: (TypeSpec)]
+		has [isNoinherit: (Span)]
 	}
 
 	my attrs (Attrs)

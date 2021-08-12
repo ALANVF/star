@@ -6,11 +6,12 @@ class Init of Decl, Generic {
 		has [isUnordered: (Span)]
 		has [is: (Span) native: (Maybe[Ident])]
 		has [isAsm: (Span)]
+		has [isMacro: (Span)]
 	}
 
 	my spec (Delims[Spec])
 	my attrs (Attrs)
-	my body (Maybe[Block])
+	my body (Maybe[Stmt.Body])
 
 	on [displayName] (Str) is getter {
 		return "initializer"

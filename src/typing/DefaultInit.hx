@@ -5,7 +5,7 @@ class DefaultInit extends EmptyMethod {
 		return new DefaultInit({
 			decl: decl,
 			span: ast.span,
-			body: ast.body.stmts
+			body: ast.body.stmts()
 		});
 	}
 }

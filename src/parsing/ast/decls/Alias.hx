@@ -5,6 +5,7 @@ import text.Span;
 enum AliasAttr {
 	IsHidden(outsideOf: Option<Type>);
 	IsFriend(spec: TypesSpec);
+	IsNoinherit;
 }
 
 enum AliasKind {

@@ -17,5 +17,5 @@ enum CaseKind {
 class Case {
 	final span: Span;
 	final kind: CaseKind;
-	final init: Option<Block>;
+	final init: Option<Block>; // Body currently not allowed due to collision with case alias/assoc syntax
 }

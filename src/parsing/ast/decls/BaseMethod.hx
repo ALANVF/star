@@ -11,5 +11,5 @@ enum BaseMethodAttr {
 class BaseMethod {
 	final span: Span;
 	final attrs: Map<BaseMethodAttr, Span>;
-	final body: Block;
+	final body: Body;
 }

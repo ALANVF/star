@@ -9,7 +9,7 @@ class StaticDeinit extends EmptyMethod {
 		return new StaticDeinit({
 			decl: decl,
 			span: declSpan,
-			body: ast.body.stmts
+			body: ast.body.stmts()
 		});
 	}
 }

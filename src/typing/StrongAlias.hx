@@ -5,6 +5,7 @@ class StrongAlias extends Alias {
 	final staticMethods: Array<StaticMethod> = [];
 	final methods: Array<Method> = [];
 	final operators: Array<Operator> = [];
+	var noInherit: Bool = false;
 
 	static function fromAST(lookup, ast: parsing.ast.decls.Alias) {
 		final alias = new StrongAlias({
@@ -38,6 +39,8 @@ class StrongAlias extends Alias {
 			case IsFriend(_) if(alias.friends.length != 0): alias.errors.push(Errors.duplicateAttribute(alias, ast.name.name, "friend", span));
 			case IsFriend(One(friend)): alias.friends.push(lookup.makeTypePath(friend));
 			case IsFriend(Many(_, friends, _)): for(friend in friends) alias.friends.push(lookup.makeTypePath(friend));
+			
+			case IsNoinherit: alias.noInherit = true;
 		}
 
 		if(body.isSome()) {
@@ -72,5 +75,9 @@ class StrongAlias extends Alias {
 		for(op in operators) result = result.concat(op.allErrors());
 
 		return result;
+	}
+	
+	override function declName() {
+		return "strong alias";
 	}
 }

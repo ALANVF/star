@@ -30,5 +30,5 @@ class Method {
 	final spec: Delims<MethodKind>;
 	final ret: Option<Type>;
 	final attrs: Map<MethodAttr, Span>;
-	final body: Option<Block>;
+	final body: Option<Body>;
 }

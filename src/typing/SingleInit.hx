@@ -13,7 +13,7 @@ class SingleInit extends Init {
 				case Single(name): name;
 				default: throw "Error!";
 			},
-			body: ast.body.map(body -> body.stmts)
+			body: ast.body.map(body -> body.stmts())
 		});
 
 		for(attr => span in ast.attrs) switch attr {
@@ -29,6 +29,8 @@ class SingleInit extends Init {
 			case IsNative(sym): init.native = Some(sym);
 
 			case IsAsm: init.isAsm = true;
+			
+			case IsMacro: init.isMacro = true;
 		}
 
 		return init;

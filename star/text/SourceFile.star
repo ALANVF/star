@@ -6,7 +6,7 @@ class SourceFile {
 
 	init [path: (Str) text: (Str)] {
 		this.path = path
-		fullPath = IO[fullPath: path]
+		fullPath = IO.File[fullPath: path]
 		this.text = text
 		lineStarts = #[0] -> {
 			my cursor = Cursor[new]

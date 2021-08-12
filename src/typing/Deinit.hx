@@ -5,7 +5,7 @@ class Deinit extends EmptyMethod {
 		return new Deinit({
 			decl: decl,
 			span: ast.span,
-			body: ast.body.stmts
+			body: ast.body.stmts()
 		});
 	}
 }

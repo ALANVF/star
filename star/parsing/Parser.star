@@ -558,6 +558,9 @@ module Parser {
 					at #[Token[is: my i], Token[friend: my a], ...my rest] {
 						return This[parseIsFriendAttr: rest, attrs, i | a]
 					}
+					at #[Token[is: my i], Token[noinherit: my a], ...my rest] {
+						return Alias.Attrs[isNoinherit: i | a]
+					}
 					else => break
 				}
 			} {
@@ -1156,8 +1159,8 @@ module Parser {
 				}
 			}
 			
-			my body, match This[parseBlock: rest] {
-				at Result[success: my block, rest = _] => body = Maybe[the: block]
+			my body, match This[parseBody: rest] {
+				at Result[success: my body', rest = _] => body = Maybe[the: body']
 				at Result[failure: _, _] => body = Maybe[none]
 				at my fail => return fail[Result[Decl] fatalIfBad: rest]
 			}
@@ -1222,12 +1225,16 @@ module Parser {
 							attrs |= Init.Attrs[isAsm: i | a]
 						}
 						
+						at #[Token[is: my i], Token[macro: my a], ...rest = _] {
+							attrs |= Init.Attrs[isMacro: i | a]
+						}
+						
 						else => break
 					}
 				}
 				
-				my body, match This[parseBlock: rest] {
-					at Result[success: my block, rest = _] => body = Maybe[the: block]
+				my body, match This[parseBody: rest] {
+					at Result[success: my body', rest = _] => body = Maybe[the: body']
 					at Result[failure: _, _] => body = Maybe[none]
 					at my fail => return fail[Result[Decl] fatalIfBad: rest]
 				}
@@ -1240,7 +1247,7 @@ module Parser {
 					:body
 				], rest]
 			}
-			at #[Token[is: my i], Token[static: my a], ...my rest] => match This[parseBlock: rest] {
+			at #[Token[is: my i], Token[static: my a], ...my rest] => match This[parseBody: rest] {
 				at Result[success: my body, my rest'] {
 					return Result[success: DefaultInit[
 						:span
@@ -1250,7 +1257,7 @@ module Parser {
 				}
 				at my fail => return fail[Result[Decl] fatalIfBad: rest]
 			}
-			else => match This[parseBlock: tokens] {
+			else => match This[parseBody: tokens] {
 				at Result[success: my body, my rest] {
 					return Result[success: DefaultInit[
 						:span
@@ -1266,7 +1273,7 @@ module Parser {
 	
 	;== Operators
 	
-	on [parseInitDecl: generics (Array[Generic.Param]), span (Span), tokens (Tokens)] (Result[Decl]) {
+	on [parseOperatorDecl: generics (Array[Generic.Param]), span (Span), tokens (Tokens)] (Result[Decl]) {
 		match tokens at #[Token[litsym: my sym span: my span'], ...my rest] {
 			my spec, match rest {
 				at #[Token[lBracket], Token[rBracket], ..._] => return Result[fatal: tokens, Maybe[the: rest]] ;@@ TODO: custom error message
@@ -1332,8 +1339,8 @@ module Parser {
 				}
 			}
 			
-			my body, match This[parseBlock: rest] {
-				at Result[success: my block, rest = _] => body = Maybe[the: block]
+			my body, match This[parseBody: rest] {
+				at Result[success: my body', rest = _] => body = Maybe[the: body']
 				at Result[failure: _, _] => body = Maybe[none]
 				at my fail => return fail[Result[Decl] fatalIfBad: rest]
 			}
@@ -1357,7 +1364,7 @@ module Parser {
 	
 	on [parseDeinitDecl: span (Span), tokens (Tokens)] (Result[Decl]) {
 		match tokens at #[Token[is: my i], Token[static: my a], ...my rest] {
-			match This[parseBlock: rest] {
+			match This[parseBody: rest] {
 				at Result[success: my body, my rest'] {
 					return Result[success: Deinit[
 						:span
@@ -1368,7 +1375,7 @@ module Parser {
 				at my fail => return fail[Result[Decl] fatalIfBad: rest]
 			}
 		} else {
-			match This[parseBlock: tokens] {
+			match This[parseBody: tokens] {
 				at Result[success: my body, my rest] {
 					return Result[success: Deinit[:span attrs: Deinit.Attrs[empty] :body], rest]
 				}
@@ -1669,6 +1676,21 @@ module Parser {
 	
 	
 	;== Statements
+	
+	;@@ TODO: enforce short arrow stmt
+	on [parseBody: tokens (Tokens)] (Result[Stmt.Body]) {
+		match tokens at #[Token[eqGt: my arrow], ...my rest] {
+			match This[parseStmt: rest] {
+				at Result[success: my stmt, my rest'] => return Result[success: Stmt.Body[:arrow :stmt], rest']
+				at my fail => return fail[Result[Stmt.Body] fatalIfFailed]
+			}
+		} else {
+			match This[parseBlock: tokens] {
+				at Result[success: my block, my rest] => return Result[success: Stmt.Body[:block], rest]
+				at my fail => return fail[Result[Stmt.Body]]
+			}
+		}
+	}
 	
 	on [parseBlock: tokens (Tokens)] (Result[Block]) {
 		match tokens {

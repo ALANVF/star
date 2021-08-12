@@ -13,7 +13,7 @@ class CastMethod extends Method {
 				default: throw "Error!";
 			},
 			ret: None,
-			body: ast.body.map(body -> body.stmts)
+			body: ast.body.map(body -> body.stmts())
 		});
 
 		for(generic in ast.generics.mapArray(Generic.fromAST.bind(decl, _))) {

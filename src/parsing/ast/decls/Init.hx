@@ -8,6 +8,7 @@ enum InitAttr {
 	IsUnordered;
 	IsNative(sym: Option<Ident>);
 	IsAsm;
+	IsMacro;
 }
 
 enum InitKind {
@@ -22,5 +23,5 @@ class Init {
 	final span: Span;
 	final spec: Delims<InitKind>;
 	final attrs: Map<InitAttr, Span>;
-	final body: Option<Block>;
+	final body: Option<Body>;
 }

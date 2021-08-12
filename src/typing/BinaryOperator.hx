@@ -50,7 +50,7 @@ class BinaryOperator extends Operator {
 			paramName: paramName,
 			paramType: decl.makeTypePath(paramType),
 			ret: ast.ret.map(ret -> decl.makeTypePath(ret)),
-			body: ast.body.map(body -> body.stmts)
+			body: ast.body.map(body -> body.stmts())
 		});
 
 		for(generic in ast.generics.mapArray(Generic.fromAST.bind(decl, _))) {
