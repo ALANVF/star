@@ -155,7 +155,7 @@ class Util {
 				}
 			}
 		}
-
+		// @:this expr metadata seems cool
 		for(_case in caseExprs) {
 			if(_case.values.length > 1) Context.error("wtf", _case.values[0].pos);
 			
@@ -447,6 +447,15 @@ class Util {
 				default:
 					macro ${values.foldRight(macro Nil2, (acc, v) -> macro Cons2($a{getPair(v).concat([acc])}))};
 			}
+		}
+	}
+	
+	private static function getTriple(expr: Expr): Array<Expr> {
+		return switch expr {
+			case {expr: EDisplay(e, k)}: getTriple(e);
+			case macro [$x, $y, $z]: [x, y, z];
+			case macro _: [macro _, macro _, macro _];
+			default: Context.error("Invalid triple pattern", expr.pos);
 		}
 	}
 #end

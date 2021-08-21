@@ -40,7 +40,14 @@ kind Expr {
 	has [prefix: (Span), (Prefix) right: (This)]
 	has [left: (This) suffix: (Span), (Suffix)]
 	has [left: (This) infix: (Span), (Infix) right: (This)]
-
+	
+	has [
+		my: (Span)
+		name: (Ident)
+		type: (Maybe[Type])
+		value: (Maybe[This])
+	]
+	
 	; maybe remove
 	has [type: (Type)]
 }

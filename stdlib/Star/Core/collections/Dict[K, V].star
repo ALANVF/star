@@ -457,8 +457,8 @@ class Dict[K, V] of Iterable[K], Iterable[K, V] is friend #[DictIterator[K], Dic
 		return this.pairs
 	}
 	
-	type K' if K' of K || K of K'
-	type V' if V' of V || V of V'
+	type K' if Power.Castable[K, K']?
+	type V' if Power.Castable[V, V']?
 	on [Dict[K', V']] {
 		my result = Dict[K', V'][new: pairs.capacity]
 		

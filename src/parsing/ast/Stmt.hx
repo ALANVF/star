@@ -16,6 +16,7 @@ enum LoopStop {
 	LoopTo;
 	LoopUpto;
 	LoopDownto;
+	LoopTimes;
 }
 
 enum Stmt {
@@ -31,20 +32,20 @@ enum Stmt {
 		cond: Expr,
 		thenBlk: Block,
 		others: Array<{span: Span, cond: Expr, blk: Block}>,
-		elseBlk: Option<{span: Span, blk: Block}>
+		elseBlk: Option<Tuple2<Span, Block>>
 	);
 	SCase(
 		_begin: Span,
 		cases: Array<{span: Span, cond: Expr, then: Then}>,
-		otherwise: Option<{span: Span, then: Then}>,
+		otherwise: Option<Tuple2<Span, Then>>,
 		_end: Span
 	);
 	SMatch(
 		_: Span,
 		value: Expr,
 		_begin: Span,
-		cases: Array<{span: Span, pattern: Expr, when: Option<{span: Span, cond: Expr}>, then: Then}>,
-		otherwise: Option<{span: Span, then: Then}>,
+		cases: Array<{span: Span, pattern: Expr, when: Option<Tuple2<Span, Expr>>, then: Then}>,
+		otherwise: Option<Tuple2<Span, Then>>,
 		_end: Span
 	);
 	SShortMatch(
@@ -52,18 +53,20 @@ enum Stmt {
 		value: Expr,
 		_2: Span,
 		pattern: Expr,
-		cond: Option<{span: Span, cond: Expr}>,
+		cond: Option<Tuple2<Span, Expr>>,
 		thenBlk: Block,
-		elseBlk: Option<{span: Span, blk: Block}>
+		elseBlk: Option<Tuple2<Span, Block>>
 	);
 
 	SWhile(
 		_: Span,
 		cond: Expr,
+		label: Option<Tuple2<Span, Ident>>,
 		block: Block
 	);
 	SDoWhile(
 		_1: Span,
+		label: Option<Tuple2<Span, Ident>>,
 		block: Block,
 		_2: Span,
 		cond: Expr
@@ -74,7 +77,8 @@ enum Stmt {
 		lvar2: Option<Expr>,
 		inSpan: Span,
 		inExpr: Expr,
-		cond: Option<{span: Span, expr: Expr}>,
+		cond: Option<Tuple2<Span, Expr>>,
+		label: Option<Tuple2<Span, Ident>>,
 		block: Block
 	);
 	SForRange(
@@ -86,21 +90,22 @@ enum Stmt {
 		stopSpan: Span,
 		stopKind: LoopStop,
 		stopExpr: Expr,
-		step: Option<{span: Span, expr: Expr}>,
-		cond: Option<{span: Span, expr: Expr}>,
+		step: Option<Tuple2<Span, Expr>>,
+		cond: Option<Tuple2<Span, Expr>>,
+		label: Option<Tuple2<Span, Ident>>,
 		block: Block
 	);
-	SDo(_: Span, block: Block);
+	SDo(_: Span, label: Option<Tuple2<Span, Ident>>, block: Block);
 	SReturn(_: Span, value: Option<Expr>);
-	SBreak(_: Span, depth: Option<{span: Span, depth: Int}>);
-	SNext(_: Span, depth: Option<{span: Span, depth: Int}>);
+	SBreak(_: Span, depth: Option<Tuple2<Span, Either<Int, String>>>);
+	SNext(_: Span, depth: Option<Tuple2<Span, Either<Int, String>>>);
 	SThrow(_: Span, value: Expr);
 	STry(
 		_: Span,
 		block: Block,
 		_begin: Span,
-		cases: Array<{span: Span, pattern: Expr, when: Option<{span: Span, cond: Expr}>, then: Then}>,
-		otherwise: Option<{span: Span, then: Then}>,
+		cases: Array<{span: Span, pattern: Expr, when: Option<Tuple2<Span, Expr>>, then: Then}>,
+		otherwise: Option<Tuple2<Span, Then>>,
 		_end: Span
 	);
 }

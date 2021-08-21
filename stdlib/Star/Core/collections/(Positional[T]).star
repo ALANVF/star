@@ -1,17 +1,12 @@
 ;@@ TODO: figure out how to include Array#every:?by:?allowPartial: as a generic method
 
 type T
-protocol Positional[T] of Iterable[T] {
+protocol Positional[T] of Collection[T] {
 	;== Creating
 	
 	init [new: capacity (Int)] {
-		this[InPlace new]
+		#init_this This[new]
 	}
-	
-	
-	;== Sizing
-	
-	on [length] (Int) is getter
 	
 	
 	;== Accessing
@@ -84,6 +79,17 @@ protocol Positional[T] of Iterable[T] {
 	;on [after: (Int) downto: (Int) set: values (This)] is setter
 	;on [after: (Int) by: (Int)] (This)
 	;on [after: (Int) by: (Int) set: values (This)] is setter
+	
+	
+	;== Removing values
+	
+	;[on [remove: value (T)] (Bool)
+	on [remove: value (T) times: (Int)] (Bool)
+	
+	on [removeWhere: func (Func[Bool, T, Int])] (This)
+	
+	on [removeLast: value (T)] (Bool)
+	on [removeLast: value (T) times: (Int)] (Bool)]
 	
 	
 	;== Removing elements

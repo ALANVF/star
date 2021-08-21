@@ -3,8 +3,7 @@ package parsing.ast.decls;
 import text.Span;
 
 enum UseKind {
-	Import(spec: TypesSpec);
-	ImportFrom(spec: TypesSpec, _: Span, from: Type);
+	Import(spec: UseTree, ?from: UseFrom, ?as: Tuple2<Span, UseTree>);
 	Pragma(_: Span, pragma: String);
 }
 

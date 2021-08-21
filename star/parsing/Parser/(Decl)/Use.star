@@ -1,6 +1,5 @@
 kind Use of Decl, Generic {
-	has [import: (TypeSpec)]
-	has [import: (TypeSpec) from: (Span), (Type)]
+	has [import: (Tree) from: (Maybe[From]) as: (Maybe[Tuple[Span, Tree]])]
 	has [pragma: (Ident)]
 
 	on [displayName] (Str) is getter {

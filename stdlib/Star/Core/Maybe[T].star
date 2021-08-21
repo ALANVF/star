@@ -84,6 +84,15 @@ kind Maybe[T] of Iterable[T] {
 			return EmptyIterator[new]
 		}
 	}
+	
+	type T' if Power.Castable[T, T']?
+	on [Maybe[T']] {
+		match this at Maybe[the: my value] {
+			return Maybe[the: value[T']]
+		} else {
+			return Maybe[none]
+		}
+	}
 }
 
 type T

@@ -149,7 +149,7 @@ class Array[T] of Values[T] {
 	
 	;== Converting
 	
-	type T' if T' of T || T of T'
+	type T' if Power.Castable[T, T']?
 	on [Array[T']] {
 		my result = Array[new: length]
 		

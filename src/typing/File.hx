@@ -94,32 +94,30 @@ class File {
 						throw "NYI!";
 					}
 
-					imports.push(new Import({
-						span: span,
-						imports: switch kind {
-							case Import(One(imp)) | ImportFrom(One(imp), _, _): [imp];
-							case Import(Many(_, imps, _)) | ImportFrom(Many(_, imps, _), _, _): imps.copy();
-							case Pragma(span2, pragma):
-								status = false;
-								errors.push(new Diagnostic({
-									severity: Severity.ERROR,
-									message: "Unknown pragma",
-									info: [
-										Spanned({
-											span: span2,
-											message: 'Unknown pragma `$pragma`',
-											isPrimary: true
-										})
-									]
-								}));
-								continue;
-						},
-						from: switch kind {
-							case Import(_): None;
-							case ImportFrom(_, _, from): Some(from);
-							case Pragma(_, _): continue;
-						}
-					}));
+					switch kind {
+					case Import(spec, from, as):
+						imports.push(new Import({
+							span: span,
+							spec: spec,
+							from: Option.fromNull(from),
+							as: as._andOr(a => Some(a._2), None)
+						}));
+					
+					case Pragma(span2, pragma):
+						status = false;
+						errors.push(new Diagnostic({
+							severity: Severity.ERROR,
+							message: "Unknown pragma",
+							info: [
+								Spanned({
+									span: span2,
+									message: 'Unknown pragma `$pragma`',
+									isPrimary: true
+								})
+							]
+						}));
+						continue;
+					}
 
 				default: if(lastWasUse) lastWasUse = false;
 			}

@@ -24,4 +24,27 @@ class List2Helper {
 			}
 		}
 	}
+	
+	static function mapArray<T, U, V>(list: List2<T, U>, func: (T, U) -> V) {
+		final array = [];
+		
+		while(true) switch list {
+			case Nil2: break;
+			case Cons2(h1, h2, tl):
+				array.push(func(h1, h2));
+				list = tl;
+		}
+
+		return array;
+	}
+	
+	static inline function mapList<T, U, V>(self: List2<T, U>, func: (T, U) -> V) return switch self {
+		case Nil2: Nil;
+		case Cons2(h1, h2, tl): Cons(func(h1, h2), tl.mapList(func));
+	}
+	
+	static inline function fold<T, U, Acc>(self: List2<T, U>, acc: Acc, func: (Acc, T, U) -> Acc): Acc return switch self {
+		case Nil2: acc;
+		case Cons2(h1, h2, tl): tl.fold(func(acc, h1, h2), func);
+	}
 }
