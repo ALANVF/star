@@ -303,7 +303,7 @@ class Util {
 							
 							var res = macro $v{beginVal};
 							
-							while(beginVal <= endVal) {
+							while(beginVal < endVal) {
 								res = macro $res | $v{++beginVal};
 							}
 							
