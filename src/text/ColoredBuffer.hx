@@ -1,15 +1,24 @@
 package text;
 
+import haxe.io.BytesData;
 import hx.strings.Char;
 import hx.strings.ansi.*;
 import hx.strings.StringBuilder;
 
-@:struct
 @:structInit
 @:publicFields
 class Color {
 	final fg: Option<AnsiColor>;
 	final bg: Option<AnsiColor>;
+	
+	@:keep private function __compare(other: Any) {
+		return other._match(
+			at(color is Color) => if(
+				hl.Api.comparePointer(other, this) == 0 || (fg.equals(color.fg) && bg.equals(color.bg))
+			) 0 else -1,
+			_ => -1
+		);
+	}
 }
 
 @:publicFields
@@ -127,27 +136,36 @@ class ColoredBuffer {
 
 		for(line in lines) {
 			final lineStr = line.text.toString();
+			final lineLen = lineStr.length8();
 			var i = 0;
 
-			while(i < line.text.length) {
+			while(i < lineLen) {
 				final start = i;
 
-				while(i < line.text.length && line.color[i] == lastColor) i++;
+				while(i < lineLen && line.color[i] == lastColor) i++;
 				
 				// Print portion
-				writer.write(lineStr.substr8(start, i - start));
+				final sub = lineStr.substr8(start, i - start);
+				#if windows
+					// Windows terminal doesn't like unicode strings for some reason :/
+					for(j in 0...sub.length8()) {
+						writer.write(sub.charAt8(j));
+					}
+				#else
+					writer.write(sub);
+				#end
 				
 				// If the line has not ended, we must have changed color
-				if(i < line.text.length) {
+				if(i < lineLen) {
 					final c = line.color[i];
-
+					
 					switch [c.fg, c.bg] {
 						case [Some(fg), Some(bg)]:
 							writer.fg(fg);
 							writer.bg(bg);
 						
 						case [Some(fg), None]:
-							writer.attr(RESET);
+								writer.attr(RESET);
 							writer.fg(fg);
 						
 						case [None, Some(bg)]:
@@ -155,7 +173,8 @@ class ColoredBuffer {
 							writer.bg(bg);
 
 						case [None, None]:
-							writer.attr(RESET);
+							if(lastColor.bg.isSome() || lastColor.fg.isSome())
+								writer.attr(RESET);
 					}
 					
 					lastColor = c;
@@ -165,7 +184,7 @@ class ColoredBuffer {
 		}
 
 		writer.flush();
-		writer.attr(RESET);
+		if(lastColor.bg.isSome() || lastColor.fg.isSome()) writer.attr(RESET);
 	}
 
 	private function ensureBuffer(x: Int, y: Int) {

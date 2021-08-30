@@ -120,19 +120,21 @@ class Lexer {
 	];
 
 	static function retoken(tokens: List<Token>) {
+		final ogTokens = tokens;
+
 		while(true) tokens = tokens._match(
-			at([d = T_Dot(_), n = T_Name(_, _), ...rest]) => rest,
+			at([T_Dot(_), T_Name(_, _), ...rest]) => rest,
 			//at([b = T_LBracket(_), ...rest]) => Cons(b, retokenGroup(rest)),
 			
 			at([T_Name(span, "this"), ...rest]) => {tokens.setHead(T_This(span)); rest;},
 			at([T_Name(span, "true"), ...rest]) => {tokens.setHead(T_Bool(span, true)); rest;},
 			at([T_Name(span, "false"), ...rest]) => {tokens.setHead(T_Bool(span, false)); rest;},
 			
-			at([T_Name(span, "my"), n = T_Name(_, _), ...rest]) => {
+			at([T_Name(span, "my"), T_Name(_, _), ...rest]) => {
 				tokens.setHead(T_My(span));
 				rest;
 			},
-			at([T_Name(span, "has"), n = T_Name(_, _), ...rest]) => {
+			at([T_Name(span, "has"), T_Name(_, _), ...rest]) => {
 				tokens.setHead(T_Has(span));
 				rest;
 			},
@@ -144,17 +146,16 @@ class Lexer {
 			},
 			at([T_Name(span, KEYWORDS[_] => kw!), ...rest]) => {
 				tokens.setHead(kw(span));
-				tokens.setTail(retoken(rest));
-				tokens;
+				rest;
 			},
 			
-			at([s = T_Str(_, segs), ...rest]) => {
+			at([T_Str(_, segs), ...rest]) => {
 				retokenStr(segs);
 				rest;
 			},
 			
-			at([token, ...rest]) => rest,
-			at([]) => return tokens
+			at([_, ...rest]) => rest,
+			at([]) => return ogTokens
 		);
 	}
 

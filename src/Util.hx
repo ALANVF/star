@@ -7,6 +7,13 @@ import haxe.macro.TypeTools;
 
 @:publicFields
 class Util {
+	#if macro
+	@:noUsing
+	public static function setOS() {
+		haxe.macro.Compiler.define(Sys.systemName().toLowerCase());
+	}
+	#end
+
 	@:noUsing
 	static macro function assert(expr) {
 		return macro {

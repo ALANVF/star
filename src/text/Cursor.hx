@@ -25,11 +25,12 @@ class Cursor {
 			column = 0;
 			lastCR = true;
 		} else if(char == Char.LF) {
-			if(!lastCR) {
+			if(lastCR) {
+				lastCR = false;
+			} else {
 				line++;
 				column = 0;
 			}
-			lastCR = false;
 		} else {
 			if(char.isAsciiPrintable() || char == Char.TAB) {
 				column++;

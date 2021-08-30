@@ -3578,22 +3578,46 @@ class Parser {
 
 	/* MISC */
 	
-	static function trimTokens(tokens: List<Token>) return tokens._match(
-		at([t = T_LParen(_)
-			| T_LBracket(_)
-			| T_LBrace(_)
-			| T_HashLParen(_)
-			| T_HashLBracket(_)
-			| T_HashLBrace(_), T_LSep(_), ...rest]) => Cons(t, trimTokens(rest)),
-		at([T_LSep(_), t = T_RParen(_) | T_RBracket(_) | T_RBrace(_), ...rest]) => Cons(t, trimTokens(rest)),
-		at([T_Str(_1, segs), ...rest]) => Cons(T_Str(_1, segs.map(seg -> switch seg {
-			case SCode(Cons(T_LSep(_), tokens) | tokens): SCode(trimTokens(tokens));
-			default: seg;
-		})), trimTokens(rest)),
-		at([T_LSep(_)]) => Nil,
-		at([t, ...rest]) => Cons(t, trimTokens(rest)),
-		at([]) => Nil
-	);
+	static function trimTokens(tokens: List<Token>) {
+		final ogTokens = tokens;
+
+		while(true) tokens = tokens._match(
+			at([( T_LParen(_)
+				| T_LBracket(_)
+				| T_LBrace(_)
+				| T_HashLParen(_)
+				| T_HashLBracket(_)
+				| T_HashLBrace(_)
+			), T_LSep(_), ...rest]) => {
+				tokens.setTail(rest);
+				rest;
+			},
+			at([T_LSep(_), t = T_RParen(_) | T_RBracket(_) | T_RBrace(_), T_LSep(_)]) => {
+				tokens.setHead(t);
+				tokens.setTail(Nil);
+				return ogTokens;
+			},
+			at([T_LSep(_), t = T_RParen(_) | T_RBracket(_) | T_RBrace(_), ...rest]) => {
+				tokens.setHead(t);
+				tokens.setTail(rest);
+				rest;
+			},
+			at([T_Str(_, segs), ...rest]) => {
+				for(i in 0...segs.length) switch segs[i] {
+					case SCode(Cons(T_LSep(_), inner) | inner): segs[i] = SCode(trimTokens(inner));
+					default:
+				}
+				rest;
+			},
+			at([_, T_LSep(_)]) => {
+				tokens.setTail(Nil);
+				return ogTokens;
+			},
+			at([T_LSep(_)]) => throw "impossible!",
+			at([_, ...rest]) => rest,
+			at([]) => return ogTokens
+		);
+	}
 
 	
 	static inline function isAnySep(token: Token) return token.match(T_LSep(_) | T_CSep(_) | T_Comma(_));
