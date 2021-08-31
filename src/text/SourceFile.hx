@@ -15,17 +15,17 @@ private class _SourceFile {
 	var lineCount(get, never): Int;
 	private function get_lineCount() return lineStarts.length;
 	
-	function new(path, text) {
+	function new(path, text: String) {
 		this.path = path;
 		fullPath = sys.FileSystem.fullPath(path);
-		this.text = text;
+		this.text = text.replaceAll("\r\n", "\n").replaceAll("\r", ""); // LF makes life easier. CRLF does not
 		calculateLineStarts();
 	}
 
 	function line(index) {
 		var startIndex = lineIndexToTextIndex(index);
 		var endIndex = lineIndexToTextIndex(index + 1);
-		return text.substr8(startIndex, endIndex - startIndex);
+		return text.substring8(startIndex, endIndex + 1);
 	}
 
 
@@ -44,7 +44,7 @@ private class _SourceFile {
 		
 		lineStarts.push(0);
 		
-		for(i in 0...text.length) {
+		for(i in 0...text.length8()) {
 			cursor.append(text.charAt8(i));
 
 			if(cursor.column == 0) {

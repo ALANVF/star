@@ -1,18 +1,21 @@
 package text;
 
-//@:struct
-@:structInit
 @:publicFields
 private class _Pos {
 	final line: Int;
 	final column: Int;
+
+	public inline function new(line: Int, column: Int) {
+		this.line = line;
+		this.column = column;
+	}
 
 	public function toString() return 'line ${line + 1}, column ${column + 1}';
 }
 
 @:forward(line, column, toString)
 abstract Pos(_Pos) {
-	public inline function new(line, column) this = {line: line, column: column};
+	public inline function new(line, column) this = new _Pos(line, column);
 
 	public function compare(other: Pos) return switch this.line - other.line {
 		case 0: this.column - other.column;

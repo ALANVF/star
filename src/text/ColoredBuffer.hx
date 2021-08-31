@@ -11,13 +11,8 @@ class Color {
 	final fg: Option<AnsiColor>;
 	final bg: Option<AnsiColor>;
 	
-	@:keep private function __compare(other: Any) {
-		return other._match(
-			at(color is Color) => if(
-				hl.Api.comparePointer(other, this) == 0 || (fg.equals(color.fg) && bg.equals(color.bg))
-			) 0 else -1,
-			_ => -1
-		);
+	function equals(color: Color) {
+		return this == color || (fg.equals(color.fg) && bg.equals(color.bg));
 	}
 }
 
@@ -63,12 +58,14 @@ class ColoredBuffer {
 	}
 
 	function writeAt(left: Int, top: Int, str: String) {
-		ensureBuffer(left + str.length8() - 1, top);
+		ensureBuffer(left + str.length8(), top);
 		
 		final line = lines[top];
 		
 		for(i in 0...str.length8()) {
-			line.text.setChar(left + i, str.charCodeAt8(i));
+			final c = str.charCodeAt8(i);
+			if(c==-1) throw "NUUUU";
+			line.text.setChar(left + i, c);
 			line.color[left + i] = {fg: fg, bg: bg};
 		}
 		
@@ -100,8 +97,16 @@ class ColoredBuffer {
 			for(i in 0...width) {
 				final xp = left + i;
 
-				line.text.setChar(xp, ch);
-				line.color[xp] = {fg: fg, bg: bg};
+				if(line.text.length < xp) {
+					for(_ in 0...left+2) line.color.push({fg: fg, bg: bg});
+					line.text.add(" ".repeat(left));
+					line.text.add(ch.toString());
+					line.text.add(" ".repeat(xp - line.text.length));
+					line.text = new StringBuilder(line.text.toString().trimRight());
+				} else {
+					line.text.setChar(xp, ch);
+					line.color[xp] = {fg: fg, bg: bg};
+				}
 			}
 		}
 
@@ -132,59 +137,136 @@ class ColoredBuffer {
 	}
 
 	function outputTo(writer: AnsiWriter<haxe.io.Output>) {
-		var lastColor: Color = {fg: None, bg: None};
+		// DO NOT TOUCH ANY OF THE WINDOWS STUFF I HATE IT THX
 
+		writer.write("\033[0m");
+		#if windows
+			writer.cursor(SavePos);
+			while(true) try {
+				Sys.sleep(0.01);
+				writer.write(" ");
+				writer.cursor(RestorePos);
+				break;
+			} catch(_: haxe.io.Eof) {
+				Sys.sleep(0.01);
+			}
+		#end
 		for(line in lines) {
-			final lineStr = line.text.toString();
+			#if windows
+				writer.write("\033[0m");
+				writer.cursor(SavePos);
+				writer.write("\033[0m");
+				writer.write(" ".repeat(line.text.length) + " \033[0m");
+				writer.write("\033[G\r");
+				writer.cursor(RestorePos);
+				writer.write("\033[0m\r");
+			#end
+
+			final lineStr: String = untyped line.text.toString();
 			final lineLen = lineStr.length8();
 			var i = 0;
 
 			while(i < lineLen) {
-				final start = i;
+				{
+					final c = line.color[i];
+					if(c == null) throw '??? $i $lineLen';
+					switch c.fg {
+						case Some(f):
+							#if windows
+								hl.Gc.blocking(true);
+								// Buffer the terminal because it's stupid
+								writer.write("\033[39m\033[0m");
+								writer.write("\033[39m\033[0m");
+								writer.write("\033[39m\033[0m");
+								writer.write("\033[39m\033[0m");
+								writer.write("\033[39m\033[0m");
+								#end
+							writer.fg(f);
+							#if windows
+								hl.Gc.blocking(false);
+							#end
+						
+						case None:
+							#if windows
+								hl.Gc.blocking(true);
+								// Buffer the terminal because it's stupid
+								writer.write("\033[39m\033[0m");
+								writer.write("\033[39m\033[0m");
+								writer.write("\033[39m\033[0m");
+								writer.write("\033[39m\033[0m");
+								writer.write("\033[39m\033[0m");
+							#end
+							writer.write("\033[39m\033[0m");
+							#if windows
+								hl.Gc.blocking(false);
+							#end
+					}
+				}
 
-				while(i < lineLen && line.color[i] == lastColor) i++;
+				final start = i++;
 				
+				while(i < lineLen && line.color[start].equals(line.color[i])) i++;
+
 				// Print portion
-				final sub = lineStr.substr8(start, i - start);
+				final sub = lineStr.substring8(start, i);
 				#if windows
 					// Windows terminal doesn't like unicode strings for some reason :/
-					for(j in 0...sub.length8()) {
-						writer.write(sub.charAt8(j));
+					for(ch in sub.toChars()) {
+						try {
+							writer.cursor(SavePos);
+							final b = ch.toString().toBytes();
+							writer.out.writeFullBytes(b, 0, b.length);
+						} catch(_: haxe.io.Eof) {
+							if(ch <= 0xff) {
+								writer.cursor(RestorePos);
+								writer.out.writeByte(ch.toInt());
+							} else
+								throw 'bad ${ch.toInt()} $sub';
+						}
 					}
 				#else
 					writer.write(sub);
 				#end
 				
-				// If the line has not ended, we must have changed color
-				if(i < lineLen) {
-					final c = line.color[i];
-					
-					switch [c.fg, c.bg] {
-						case [Some(fg), Some(bg)]:
-							writer.fg(fg);
-							writer.bg(bg);
-						
-						case [Some(fg), None]:
-								writer.attr(RESET);
-							writer.fg(fg);
-						
-						case [None, Some(bg)]:
-							writer.attr(RESET);
-							writer.bg(bg);
-
-						case [None, None]:
-							if(lastColor.bg.isSome() || lastColor.fg.isSome())
-								writer.attr(RESET);
-					}
-					
-					lastColor = c;
-				}
 			}
-			writer.write(Strings.NEW_LINE);
+			
+			#if windows
+				writer.write("\033[0m");
+				try {
+					writer.cursor(SavePos);
+					writer.write("\n\033[0m");
+				} catch(_: haxe.io.Eof) {
+					while(true) try {
+						hl.Gc.blocking(true);
+						writer.cursor(RestorePos);
+						writer.write("\033[0m ");
+						writer.write("\n\033[0m");
+						hl.Gc.blocking(true);
+						break;
+					} catch(_: haxe.io.Eof) {
+						Sys.sleep(0.01);
+						writer.write("");
+						continue;
+					}
+				}
+				writer.write("\033[0m");
+			#else
+				writer.write("\033[0m\n");
+			#end
 		}
-
+		
+		#if windows
+			writer.write("\033[0m");
+			try {
+				writer.write("\n\033[0m");
+			} catch(_: haxe.io.Eof) {
+				writer.write("\n\033[0m");
+			}
+			writer.write("\033[0m");
+		#else
+			writer.write("\033[0m\n");
+		#end
 		writer.flush();
-		if(lastColor.bg.isSome() || lastColor.fg.isSome()) writer.attr(RESET);
 	}
 
 	private function ensureBuffer(x: Int, y: Int) {
@@ -193,7 +275,7 @@ class ColoredBuffer {
 
 		// Now ensure x character in line y
 		final line = lines[y];
-		final requiredChars = x - line.text.length + 1;
+		final requiredChars = (x - line.text.length) + 1;
 		
 		if(requiredChars > 0) {
 			line.text.add(" ".repeat(requiredChars));

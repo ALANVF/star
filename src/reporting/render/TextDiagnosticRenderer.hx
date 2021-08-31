@@ -33,7 +33,7 @@ class TextDiagnosticRenderer implements IDiagnosticRenderer {
 	}
 
 	function render(diagnostic: Diagnostic) {
-		buffer.clear();
+		buffer = new ColoredBuffer();
 
 		renderDiagnosticHead(diagnostic);
 
@@ -47,6 +47,7 @@ class TextDiagnosticRenderer implements IDiagnosticRenderer {
 		diagnostic.info.filterMap(i -> i.getFootnote()).forEach(renderFootnote);
 
 		buffer.outputTo(writer);
+		writer.write("\033[0m");
 	}
 
 	private function renderDiagnosticHead(diagnostic: Diagnostic) {
@@ -66,6 +67,7 @@ class TextDiagnosticRenderer implements IDiagnosticRenderer {
 					}
 				});
 
+				buffer.resetColor();
 				diagnostic.message.forEach(buffer.write);
 
 				buffer.newLine();

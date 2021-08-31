@@ -5,28 +5,12 @@ import reporting.Diagnostic;
 import text.SourceFile;
 
 class Main {
+	static final NEW_LINE = #if windows Strings.NEW_LINE_WIN #else Strings.NEW_LINE_NIX #end;
 	static final stdout = Sys.stdout();
 	public static final renderer = new TextDiagnosticRenderer(stdout);
 
-	static inline function print(str: String) {
-		#if windows
-			stdout.writeString(str);
-		#else
-			Sys.print(str);
-		#end
-	}
-
-	static inline function println(str: String) {
-		#if windows
-			stdout.writeString(str);
-			stdout.writeString(Strings.NEW_LINE);
-		#else
-			Sys.println(str);
-		#end
-	}
-
 	static inline function nl() {
-		print(Strings.NEW_LINE);
+		Sys.print("\n");
 	}
 
 	static inline function round(float: Float) {
@@ -34,7 +18,7 @@ class Main {
 	}
 	
 	static function testProject(path, buildDecls = false, ?callback: (typing.Project) -> Void) {
-		println('Path: $path');
+		Sys.println('Path: $path');
 		
 		var time = 0.0;
 
@@ -43,7 +27,7 @@ class Main {
 		final stopProject = haxe.Timer.stamp();
 		final timeProject = round(stopProject*1000 - startProject*1000);
 		time += timeProject * 10000;
-		println('Gather sources time: ${timeProject}ms');
+		Sys.println('Gather sources time: ${timeProject}ms');
 
 		final files = project.allFiles();
 		
@@ -52,21 +36,21 @@ class Main {
 		final stopSources = haxe.Timer.stamp();
 		final timeSources = round(stopSources*1000 - startSources*1000);
 		time += timeSources * 10000;
-		println('Init sources time: ${timeSources}ms');
+		Sys.println('Init sources time: ${timeSources}ms');
 
 		final startParse = haxe.Timer.stamp();
 		for(file in files) file.parse();
 		final stopParse = haxe.Timer.stamp();
 		final timeParse = round(stopParse*1000 - startParse*1000);
 		time += timeParse * 10000;
-		println('Parse sources time: ${timeParse}ms');
+		Sys.println('Parse sources time: ${timeParse}ms');
 
 		final startImports = haxe.Timer.stamp();
 		for(file in files) file.buildImports();
 		final stopImports = haxe.Timer.stamp();
 		final timeImports = round(stopImports*1000 - startImports*1000);
 		time += timeImports * 10000;
-		println('Build imports time: ${timeImports}ms');
+		Sys.println('Build imports time: ${timeImports}ms');
 
 		if(buildDecls) {
 			final startDecls = haxe.Timer.stamp();
@@ -74,15 +58,22 @@ class Main {
 			final stopDecls = haxe.Timer.stamp();
 			final timeDecls = round(stopDecls*1000 - startDecls*1000);
 			time += timeDecls * 10000;
-			println('Build declarations time: ${timeDecls}ms');
+			Sys.println('Build declarations time: ${timeDecls}ms');
 		}
 
 		for(file in files) {
-			file.allErrors().forEach(renderer.render);
+			for(err in file.allErrors()) {
+				#if windows
+					renderer.writer.cursor(MoveDown(1));
+					renderer.writer.write("\033[G");
+					renderer.writer.clearLine();
+				#end
+				renderer.render(err);
+			}
 		}
 
-		println('Status: ${files.none(file -> file.hasErrors())}');
-		println('Total time: ${time / 10000}ms');
+		Sys.println('Status: ${files.none(file -> file.hasErrors())}');
+		Sys.println('Total time: ${time / 10000}ms');
 
 		if(callback != null) {
 			callback(project);
@@ -94,7 +85,7 @@ class Main {
 		util.HLSys.setFlags(util.HLSys.AUTO_FLUSH | util.HLSys.WIN_UTF8);
 		#end
 
-		/*println("=== EXAMPLES ===");
+		/*Sys.println("=== EXAMPLES ===");
 
 		for(file in allFiles("examples")) {
 			parse(newSource(file), false);
@@ -147,7 +138,7 @@ class Main {
 		});
 		
 		nl();
-		for(s in new compiler.Compiler().stmts) println(s.form());
+		for(s in new compiler.Compiler().stmts) Sys.println(s.form());
 		
 		compiler.nim.Compiler.test();
 	}
