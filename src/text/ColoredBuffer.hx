@@ -241,7 +241,7 @@ class ColoredBuffer {
 						writer.cursor(RestorePos);
 						writer.write("\033[0m ");
 						writer.write("\n\033[0m");
-						hl.Gc.blocking(true);
+						hl.Gc.blocking(false);
 						break;
 					} catch(_: haxe.io.Eof) {
 						Sys.sleep(0.01);
