@@ -152,60 +152,39 @@ class TokenHelper {
 		return token.getParameters()[0];
 	}
 
-	static function basicTokenName(token: Token) return switch token {
-		case T_CSep(_) | T_Comma(_): "comma";
-		case T_LSep(_): "newline";
-		case T_Module(_) | T_My(_) | T_On(_) | T_Return(_)
-			| T_Init(_) | T_Deinit(_) | T_Operator(_) | T_Class(_) | T_Alias(_)
-			| T_Type(_) | T_Kind(_) | T_Category(_) | T_Protocol(_) | T_Is(_)
-			| T_Of(_) | T_Use(_) | T_Has(_) | T_If(_) | T_Orif(_) | T_Else(_)
-			| T_While(_) | T_For(_) | T_Do(_) | T_Case(_) | T_Match(_) | T_At(_)
-			| T_Break(_) | T_Next(_) | T_Throw(_) | T_Try(_) | T_Catch(_): "keyword";
-		case T_Static(_) | T_Hidden(_) | T_Readonly(_) | T_Friend(_) | T_Unordered(_)
-			| T_Getter(_) | T_Setter(_) | T_Main(_) | T_Inline(_) | T_Noinherit(_)
-			| T_Pattern(_) | T_Asm(_) | T_Native(_) | T_Flags(_) | T_Uncounted(_)
-			| T_Strong(_) | T_Sealed(_) | T_Macro(_): "attribute";
-		case T_Dot(_): "dot";
-		case T_Tilde(_) | T_Eq(_) | T_EqGt(_)
-			| T_Plus(_) | T_PlusEq(_) | T_PlusPlus(_)
-			| T_Minus(_) | T_MinusEq(_) | T_MinusMinus(_)
-			| T_Star(_) | T_StarEq(_) | T_StarStar(_) | T_StarStarEq(_)
-			| T_Div(_) | T_DivEq(_) | T_DivDiv(_) | T_DivDivEq(_)
-			| T_Mod(_) | T_ModEq(_) | T_ModMod(_) | T_ModModEq(_)
-			| T_And(_) | T_AndEq(_) | T_AndAnd(_) | T_AndAndEq(_)
-			| T_Bar(_) | T_BarEq(_) | T_BarBar(_) | T_BarBarEq(_)
-			| T_Caret(_) | T_CaretEq(_) | T_CaretCaret(_) | T_CaretCaretEq(_)
-			| T_Bang(_) | T_BangEq(_) | T_BangBang(_) | T_BangBangEq(_)
-			| T_Question(_) | T_QuestionEq(_)
-			| T_Gt(_) | T_GtEq(_) | T_GtGt(_) | T_GtGtEq(_)
-			| T_Lt(_) | T_LtEq(_) | T_LtLt(_) | T_LtLtEq(_)
-			| T_DotDotDot(_): "operator";
-		case T_Cascade(_, _): "cascade";
-		case T_LParen(_): "opening parenthesis";
-		case T_LBracket(_): "opening bracket";
-		case T_LBrace(_): "opening brace";
-		case T_HashLParen(_): "hash and opening parenthesis";
-		case T_HashLBracket(_): "hash and opening bracket";
-		case T_HashLBrace(_): "hash and opening brace";
-		case T_RParen(_): "closing parenthesis";
-		case T_RBracket(_): "closing bracket";
-		case T_RBrace(_): "closing brace";
-		case T_Name(_, _): "name";
-		case T_TypeName(_, _): "type name";
-		case T_Label(_, _): "label";
-		case T_Punned(_, _): "punned label";
-		case T_Tag(_, _): "tag";
-		case T_Litsym(_, _): "litsym";
-		case T_Int(_, _, _): "integer literal";
-		case T_Hex(_, _): "hexdecimal literal";
-		case T_Dec(_, _, _, _): "decimal literal";
-		case T_Str(_, _): "string literal";
-		case T_Char(_, _): "character literal";
-		case T_Bool(_, _): "boolean literal";
-		case T_This(_): "`this` literal";
-		case T_Wildcard(_): "wildcard literal";
-		case T_AnonArg(_, _, _): "anonymous argument literal";
-	}
+	static function basicTokenName(token: Token) return token._match(
+		at(T_CSep(_) | T_Comma(_)) => "comma",
+		at(T_LSep(_)) => "newline",
+		at(T_Module(_) ... T_Catch(_)) => "keyword",
+		at(T_Static(_) ... T_Macro(_)) => "attribute",
+		at(T_Dot(_)) => "dot",
+		at(T_Tilde(_) | (T_Eq(_) ... T_DotDotDot(_))) => "operator",
+		at(T_Cascade(_, _)) => "cascade",
+		at(T_LParen(_)) => "opening parenthesis",
+		at(T_LBracket(_)) => "opening bracket",
+		at(T_LBrace(_)) => "opening brace",
+		at(T_HashLParen(_)) => "hash and opening parenthesis",
+		at(T_HashLBracket(_)) => "hash and opening bracket",
+		at(T_HashLBrace(_)) => "hash and opening brace",
+		at(T_RParen(_)) => "closing parenthesis",
+		at(T_RBracket(_)) => "closing bracket",
+		at(T_RBrace(_)) => "closing brace",
+		at(T_Name(_, _)) => "name",
+		at(T_TypeName(_, _)) => "type name",
+		at(T_Label(_, _)) => "label",
+		at(T_Punned(_, _)) => "punned label",
+		at(T_Tag(_, _)) => "tag",
+		at(T_Litsym(_, _)) => "litsym",
+		at(T_Int(_, _, _)) => "integer literal",
+		at(T_Hex(_, _)) => "hexdecimal literal",
+		at(T_Dec(_, _, _, _)) => "decimal literal",
+		at(T_Str(_, _)) => "string literal",
+		at(T_Char(_, _)) => "character literal",
+		at(T_Bool(_, _)) => "boolean literal",
+		at(T_This(_)) => "`this` literal",
+		at(T_Wildcard(_)) => "wildcard literal",
+		at(T_AnonArg(_, _, _)) => "anonymous argument literal"
+	);
 
 	static function asSoftName(token: Token) return switch token {
 		case T_Module(span): T_Name(span, "module");

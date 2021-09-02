@@ -147,6 +147,9 @@ class ListHelper {
 			util.EnumValues.setParameter(list, 0, value);
 		}
 	}
+	static inline function unsafeSetHead<T>(list: List<T>, value: T) {
+		util.EnumValues.setParameter(list, 0, value);
+	}
 
 	static inline function tail<T>(list: List<T>) return switch list {
 		case Nil: throw "Empty list!";
@@ -159,6 +162,9 @@ class ListHelper {
 		} else {
 			util.EnumValues.setParameter(list, 1, value);
 		}
+	}
+	static inline function unsafeSetTail<T>(list: List<T>, value: List<T>) {
+		util.EnumValues.setParameter(list, 1, value);
 	}
 
 	static function last<T>(list: List<T>) return switch list {

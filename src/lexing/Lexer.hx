@@ -1,48 +1,29 @@
 package lexing;
 
+import hl.NativeArray;
 import text.SourceFile;
 import text.Pos;
 import hx.strings.Char;
 import text.Span;
 import lexing.Token;
 import reporting.*;
+import util.Enums.getIndex as getEnumIndex;
 
 using util.Strings;
 
 class Lexer {
-	static inline function range(from: Char, to: Char) {
-		return [for(char in from.toInt()...(to.toInt() + 1)) char];
-	}
-
-	static final HSPACE = Charset.from(" \t");
-	static final VSPACE = Charset.of(range(10, 13));
-	static final DIGIT = Charset.of(range('0'.code, '9'.code));
-	static final LOWER = Charset.of(range('a'.code, 'z'.code));
-	static final UPPER = Charset.of(range('A'.code, 'Z'.code));
-	static final ALPHA = UPPER | LOWER;
-	static final ALNUM = DIGIT | LOWER | UPPER | '_'.code;
-	static final XDIGIT = DIGIT | Charset.of(range('a'.code, 'f'.code).concat(range('A'.code, 'F'.code)));
-	static final ODIGIT = Charset.of(range('0'.code, '7'.code));
-	
-	static final HSPACE_SEMI = Charset.from(" \t;");
-	static final LOWER_U = LOWER | '_'.code;
-	static final ALPHA_U = ALPHA | '_'.code;
-	static final ALNUM_Q = ALNUM | "'".code;
-	static final SINGLE_CHAR = Charset.from("()[]{}~");
-
 	final rdr: Reader;
 	final source: SourceFile;
 	var begin: Pos;
-	public var tokens: List<Token> = Nil;
 
-	public function new(source: SourceFile) {
+	public inline function new(source: SourceFile) {
 		this.source = source;
 		begin = new Pos(0, 0);
 		rdr = new Reader(source.text);
 	}
 	
 	public function tokenize() {
-		tokens = Cons(readToken(), null);
+		var tokens = Cons(readToken(), null);
 		
 		var end = tokens;
 		
@@ -50,102 +31,104 @@ class Lexer {
 			while(rdr.hasNext()) {
 				final newEnd = Cons(readToken(), null);
 				
-				end.setTail(newEnd);
+				end.unsafeSetTail(newEnd);
 				end = newEnd;
 			}
-		} catch(e: Eof) {}
+		} catch(_: Eof) {}
 		
-		end.setTail(Nil);
+		end.unsafeSetTail(Nil);
 		
-		tokens = retoken(tokens);
-		
-		return tokens;
+		return retoken(tokens);
 	}
 
 
 	// TODO: replace these all with indexes since those are probably faster than closures
 	static final KEYWORDS = [
-		"module" => T_Module,
-		"my" => T_My,
-		"on" => T_On,
-		"return" => T_Return,
-		"init" => T_Init,
-		"deinit" => T_Deinit,
-		"operator" => T_Operator,
-		"class" => T_Class,
-		"alias" => T_Alias,
-		"type" => T_Type,
-		"kind" => T_Kind,
-		"category" => T_Category,
-		"protocol" => T_Protocol,
-		"is" => T_Is,
-		"of" => T_Of,
-		"use" => T_Use,
-		"has" => T_Has,
-		"if" => T_If,
-		"orif" => T_Orif,
-		"else" => T_Else,
-		"while" => T_While,
-		"for" => T_For,
-		"do" => T_Do,
-		"case" => T_Case,
-		"match" => T_Match,
-		"at" => T_At,
-		"break" => T_Break,
-		"next" => T_Next,
-		"throw" => T_Throw,
-		"try" => T_Try,
-		"catch" => T_Catch
+		"module" => getEnumIndex(Token, T_Module),
+		"my" => getEnumIndex(Token, T_My),
+		"on" => getEnumIndex(Token, T_On),
+		"return" => getEnumIndex(Token, T_Return),
+		"init" => getEnumIndex(Token, T_Init),
+		"deinit" => getEnumIndex(Token, T_Deinit),
+		"operator" => getEnumIndex(Token, T_Operator),
+		"class" => getEnumIndex(Token, T_Class),
+		"alias" => getEnumIndex(Token, T_Alias),
+		"type" => getEnumIndex(Token, T_Type),
+		"kind" => getEnumIndex(Token, T_Kind),
+		"category" => getEnumIndex(Token, T_Category),
+		"protocol" => getEnumIndex(Token, T_Protocol),
+		"is" => getEnumIndex(Token, T_Is),
+		"of" => getEnumIndex(Token, T_Of),
+		"use" => getEnumIndex(Token, T_Use),
+		"has" => getEnumIndex(Token, T_Has),
+		"if" => getEnumIndex(Token, T_If),
+		"orif" => getEnumIndex(Token, T_Orif),
+		"else" => getEnumIndex(Token, T_Else),
+		"while" => getEnumIndex(Token, T_While),
+		"for" => getEnumIndex(Token, T_For),
+		"do" => getEnumIndex(Token, T_Do),
+		"case" => getEnumIndex(Token, T_Case),
+		"match" => getEnumIndex(Token, T_Match),
+		"at" => getEnumIndex(Token, T_At),
+		"break" => getEnumIndex(Token, T_Break),
+		"next" => getEnumIndex(Token, T_Next),
+		"throw" => getEnumIndex(Token, T_Throw),
+		"try" => getEnumIndex(Token, T_Try),
+		"catch" => getEnumIndex(Token, T_Catch)
 	];
 
 	static final ATTRS = [
-		"static" => T_Static,
-		"hidden" => T_Hidden,
-		"readonly" => T_Readonly,
-		"friend" => T_Friend,
-		"unordered" => T_Unordered,
-		"getter" => T_Getter,
-		"setter" => T_Setter,
-		"main" => T_Main,
-		"inline" => T_Inline,
-		"noinherit" => T_Noinherit,
-		"pattern" => T_Pattern,
-		"asm" => T_Asm,
-		"native" => T_Native,
-		"flags" => T_Flags,
-		"uncounted" => T_Uncounted,
-		"strong" => T_Strong,
-		"sealed" => T_Sealed,
-		"macro" => T_Macro
+		"static" => getEnumIndex(Token, T_Static),
+		"hidden" => getEnumIndex(Token, T_Hidden),
+		"readonly" => getEnumIndex(Token, T_Readonly),
+		"friend" => getEnumIndex(Token, T_Friend),
+		"unordered" => getEnumIndex(Token, T_Unordered),
+		"getter" => getEnumIndex(Token, T_Getter),
+		"setter" => getEnumIndex(Token, T_Setter),
+		"main" => getEnumIndex(Token, T_Main),
+		"inline" => getEnumIndex(Token, T_Inline),
+		"noinherit" => getEnumIndex(Token, T_Noinherit),
+		"pattern" => getEnumIndex(Token, T_Pattern),
+		"asm" => getEnumIndex(Token, T_Asm),
+		"native" => getEnumIndex(Token, T_Native),
+		"flags" => getEnumIndex(Token, T_Flags),
+		"uncounted" => getEnumIndex(Token, T_Uncounted),
+		"strong" => getEnumIndex(Token, T_Strong),
+		"sealed" => getEnumIndex(Token, T_Sealed),
+		"macro" => getEnumIndex(Token, T_Macro)
 	];
 
 	static function retoken(tokens: List<Token>) {
 		final ogTokens = tokens;
+		final tokenType = hl.Type.get((null : Token));
+		final tokenArgs = new hl.NativeArray<Span>(1);
 
 		while(true) tokens = tokens._match(
 			at([T_Dot(_), T_Name(_, _), ...rest]) => rest,
 			//at([b = T_LBracket(_), ...rest]) => Cons(b, retokenGroup(rest)),
 			
-			at([T_Name(span, "this"), ...rest]) => {tokens.setHead(T_This(span)); rest;},
-			at([T_Name(span, "true"), ...rest]) => {tokens.setHead(T_Bool(span, true)); rest;},
-			at([T_Name(span, "false"), ...rest]) => {tokens.setHead(T_Bool(span, false)); rest;},
+			at([T_Name(span, "this"), ...rest]) => { tokens.unsafeSetHead(T_This(span)); rest;},
+			at([T_Name(span, "true"), ...rest]) => { tokens.unsafeSetHead(T_Bool(span, true)); rest; },
+			at([T_Name(span, "false"), ...rest]) => { tokens.unsafeSetHead(T_Bool(span, false)); rest; },
 			
 			at([T_Name(span, "my"), T_Name(_, _), ...rest]) => {
-				tokens.setHead(T_My(span));
+				tokens.unsafeSetHead(T_My(span));
 				rest;
 			},
 			at([T_Name(span, "has"), T_Name(_, _), ...rest]) => {
-				tokens.setHead(T_Has(span));
+				tokens.unsafeSetHead(T_Has(span));
 				rest;
 			},
 			
-			at([T_Name(span1, "is"), ...rest0 = [T_Name(span2, ATTRS[_] => attr!), ...rest]]) => {
-				tokens.setHead(T_Is(span1));
-				rest0.setHead(attr(span2));
+			at([T_Name(span1, "is"), ...rest0 = [T_Name(span2, ATTRS[_] => attrIndex!), ...rest]]) => {
+				tokens.unsafeSetHead(T_Is(span1));
+				tokenArgs[0] = span2;
+				rest0.unsafeSetHead((tokenType.allocEnum(attrIndex, tokenArgs, 1) : Token));
 				rest;
 			},
-			at([T_Name(span, KEYWORDS[_] => kw!), ...rest]) => {
-				tokens.setHead(kw(span));
+			at([T_Name(span, KEYWORDS[_] => kwIndex!), ...rest]) => {
+				tokenArgs[0] = span;
+				tokens.unsafeSetHead((tokenType.allocEnum(kwIndex, tokenArgs, 1) : Token));
 				rest;
 			},
 			
@@ -182,73 +165,104 @@ class Lexer {
 	}
 
 	inline function trim() {
-		while(rdr.peek(HSPACE_SEMI)) {
-			if(rdr.eat() == ';'.code && rdr.peekNot(VSPACE)) readComment();
-		}
+		while(rdr.hasNext()) rdr.unsafePeek()._match(
+			at(' '.code | '\t'.code) => rdr.next(),
+			at(';'.code) => {
+				rdr.next();
+				if(rdr.hasNext()) rdr.unsafePeek()._match(
+					at('\n'.code ... '\r'.code) => break,
+					_ => readComment()
+				);
+			},
+			_ => break
+		);
 	}
 
 	inline function readComment() {
 		if(rdr.eat('['.code)) {
 			readNestedComment();
-			if(rdr.peek(VSPACE)) rdr.next();
+			if(rdr.hasNext()) rdr.unsafePeek()._match(
+				at('\n'.code ... '\r'.code) => rdr.next(),
+				_ => {}
+			);
 		} else {
-			while(rdr.peekNot(VSPACE)) rdr.next();
+			while(rdr.hasNext()) rdr.unsafePeek()._match(
+				at('\n'.code ... '\r'.code) => break,
+				_ => rdr.next()
+			);
 		}
 	}
 
-	function readNestedComment() {
-		while(true) {
-			if(!rdr.hasNext()) throw "unterminated comment!";
-			if(rdr.eat('['.code)) readNestedComment();
-			else if(rdr.eat(']'.code)) break;
-			else rdr.next();
-		}
+	function readNestedComment(): Void {
+		while(rdr.hasNext()) rdr.eat()._match(
+			at('['.code) => readNestedComment(),
+			at(']'.code) => return,
+			_ => {}
+		);
+		
+		throw "unterminated comment!";
 	}
 
-	/*inline*/ function readToken() {
-		begin = here();
+	/*inline*/ function readToken(): Token {
+		final oldBegin = begin = here();
 
 		trim();
 
-		final cur = (rdr.peek() : Char);
-
-		if(VSPACE[cur]) {
-			return readLSep();
+		if(!rdr.hasNext()) {
+			throw new Eof();
 		}
 
-		begin = here();
+		final cur = rdr.unsafePeek();
 		
-		if(rdr.eat(','.code)) {
-			return readComma();
-		}
+		begin = here();
 
-		return (
-			if(DIGIT[cur]) {
+		return cur._match(
+			at('\n'.code ... '\r'.code) => {
+				begin = oldBegin;
+				readLSep();
+			},
+
+			at(','.code) => {
+				rdr.next();
+				readComma();
+			},
+
+			at('0'.code ... '9'.code) => {
 				readNumberStart();
-			}
+			},
 
-			else if(LOWER[cur]) {
+			at('a'.code ... 'z'.code) => {
 				readName();
-			}
+			},
 
-			else if(cur == '_'.code) {
-				if(rdr.peekAt(1, ALNUM_Q)) {
-					readName();
-				} else {
-					rdr.next();
-					T_Wildcard(span());
-				}
-			}
+			at('_'.code) => {
+				rdr.unsafePeekAt(1)._match(
+					at(('a'.code ... 'z'.code)
+					 | ('A'.code ... 'Z'.code)
+					 | ('0'.code ... '9'.code)
+					 | '_'.code
+					 | "'".code
+					) => {
+						readName();
+					},
+					_ => {
+						rdr.next();
+						T_Wildcard(span());
+					}
+				);
+			},
 
-			else if(rdr.eat(':'.code)) {
+			at(':'.code) => {
+				rdr.next();
 				readPunned();
-			}
+			},
 
-			else if(UPPER[cur]) {
+			at('A'.code ... 'Z'.code) => {
 				readTypeName();
-			}
+			},
 
-			else if(rdr.eat('.'.code)) {
+			at('.'.code) => {
+				rdr.next();
 				if(rdr.eat('.'.code)) {
 					if(rdr.eat('.'.code)) {
 						T_DotDotDot(span());
@@ -268,262 +282,292 @@ class Lexer {
 				} else {
 					T_Dot(span());
 				}
-			}
+			},
 
-			else if(SINGLE_CHAR[cur]) {
-				switch rdr.eat() {
-					case '('.code: T_LParen(span());
-					case ')'.code: T_RParen(span());
-					case '['.code: T_LBracket(span());
-					case ']'.code: T_RBracket(span());
-					case '{'.code: T_LBrace(span());
-					case '}'.code: T_RBrace(span());
-					case '~'.code: T_Tilde(span());
-					default: throw "error!";
-				};
-			}
-
-			else if(rdr.eat('"'.code)) (
+			at('('.code) => { rdr.next(); T_LParen(span()); },
+			at(')'.code) => { rdr.next(); T_RParen(span()); },
+			at('['.code) => { rdr.next(); T_LBracket(span()); },
+			at(']'.code) => { rdr.next(); T_RBracket(span()); },
+			at('{'.code) => { rdr.next(); T_LBrace(span()); },
+			at('}'.code) => { rdr.next(); T_RBrace(span()); },
+			at('~'.code) => { rdr.next(); T_Tilde(span()); },
+			
+			at('"'.code) => {
+				rdr.next();
 				if(rdr.eat('"'.code))
-					T_Str(span(), [])
+					T_Str(span(), []);
 				else
-					readStr()
-			)
+					readStr();
+			},
 
-			else if(rdr.eat('#'.code)) (
-				if(LOWER[rdr.peek()]) readTag()
-				else if(rdr.eat('('.code)) T_HashLParen(span())
-				else if(rdr.eat('['.code)) T_HashLBracket(span())
-				else if(rdr.eat('{'.code)) T_HashLBrace(span())
-				else if(rdr.eat('"'.code)) readChar()
-				else throw new Diagnostic({
-					severity: Severity.ERROR,
-					message: "Syntax error",
-					info: [
-						Spanned({
-							span: Span.at(here(), source),
-							message: 'Unexpected `${rdr.peek()}` after `#`',
-							isPrimary: true
-						}),
-						Spanned({
-							span: Span.at(begin, source),
-							isSecondary: true
-						})
-					]
-				})
-			)
-
-			// =, =>
-			else if(rdr.eat('='.code)) (
-				if(rdr.eat('>'.code))
-					T_EqGt(span())
-				else if(rdr.eat('='.code))
-					throw new Diagnostic({
+			at('#'.code) => {
+				rdr.next();
+				rdr.unsafePeek()._match(
+					at('a'.code ... 'z'.code) => readTag(),
+					at('('.code) => { rdr.next(); T_HashLParen(span()); },
+					at('['.code) => { rdr.next(); T_HashLBracket(span()); },
+					at('{'.code) => { rdr.next(); T_HashLBrace(span()); },
+					at('"'.code) => { rdr.next(); readChar(); },
+					_ => throw new Diagnostic({
 						severity: Severity.ERROR,
 						message: "Syntax error",
 						info: [
 							Spanned({
-								span: span(),
-								message: "Please use `?=` instead of `==` in Star",
+								span: Span.at(here(), source),
+								message: 'Unexpected `${rdr.peek()}` after `#`',
 								isPrimary: true
+							}),
+							Spanned({
+								span: Span.at(begin, source),
+								isSecondary: true
 							})
 						]
 					})
-				else
-					T_Eq(span())
-			)
+				);
+			},
+
+			// =, =>
+			at('='.code) => {
+				rdr.next();
+				rdr.unsafePeek()._match(
+					at('>'.code) => { rdr.next(); T_EqGt(span()); },
+					at('='.code) => {
+						rdr.next();
+						throw new Diagnostic({
+							severity: Severity.ERROR,
+							message: "Syntax error",
+							info: [
+								Spanned({
+									span: span(),
+									message: "Please use `?=` instead of `==` in Star",
+									isPrimary: true
+								})
+							]
+						});
+					},
+					_ => T_Eq(span())
+				);
+			},
 
 			// ?, ?=
-			else if(rdr.eat('?'.code)) (
+			at('?'.code) => {
+				rdr.next();
 				if(rdr.eat('='.code))
 					T_QuestionEq(span())
 				else
-					T_Question(span())
-			)
+					T_Question(span());
+			},
 
 			// !, !=, !!, !!=
-			else if(rdr.eat('!'.code)) (
-				if(rdr.eat('='.code))
-					T_BangEq(span())
-				else if(rdr.eat('!'.code)) (
-					if(rdr.eat('='.code))
-						T_BangBangEq(span())
-					else
-						T_BangBang(span())
-				) else
-					T_Bang(span())
-			)
+			at('!'.code) => {
+				rdr.next();
+				rdr.unsafePeek()._match(
+					at('='.code) => { rdr.next(); T_BangEq(span()); },
+					at('!'.code) => {
+						rdr.next();
+						if(rdr.eat('='.code))
+							T_BangBangEq(span())
+						else
+							T_BangBang(span());
+					},
+					_ => T_Bang(span())
+				);
+			},
 
 			// +, +=, ++
-			else if(rdr.eat('+'.code)) (
-				if(rdr.eat('='.code))
-					T_PlusEq(span())
-				else if(rdr.eat('+'.code))
-					T_PlusPlus(span())
-				else
-					T_Plus(span())
-			)
+			at('+'.code) => {
+				rdr.next();
+				rdr.unsafePeek()._match(
+					at('='.code) => { rdr.next(); T_PlusEq(span()); },
+					at('+'.code) => { rdr.next(); T_PlusPlus(span()); },
+					_ => T_Plus(span())
+				);
+			},
 
 			// -, -=, --, ->
-			else if(rdr.eat('-'.code)) (
-				if(rdr.eat('='.code))
-					T_MinusEq(span())
-				else if(rdr.eat('-'.code)) {
-					switch rdr.peek() {
-						case '-'.code: {
-							var depth = 2;
+			at('-'.code) => {
+				rdr.next();
+				rdr.unsafePeek()._match(
+					at('='.code) => { rdr.next(); T_MinusEq(span()); },
+					at('-'.code) => {
+						rdr.next();
+						rdr.unsafePeek()._match(
+							at('-'.code) => {
+								rdr.next();
+								
+								var depth = 2;
 
-							while(rdr.eat('-'.code)) depth++;
+								while(rdr.eat('-'.code)) depth++;
 
-							if(rdr.eat('>'.code)) {
-								T_Cascade(span(), depth);
-							} else {
-								final end = here();
-								throw new Diagnostic({
-									severity: Severity.ERROR,
-									message: "Unterminated cascade",
-									info: [
-										Spanned({
-											span: Span.at(end, source),
-											message: "Expected a `>` to finish the cascade operator",
-											isPrimary: true
-										}),
-										Spanned({
-											span: new Span(begin, end, source),
-											isSecondary: true
-										})
-									]
-								});
-							}
-						}
-						case '>'.code:
-							rdr.next();
-							T_Cascade(span(), 2);
-						default: T_MinusMinus(span());
-					}
-				} else if(rdr.eat('>'.code))
-					T_Cascade(span(), 1)
-				else
-					T_Minus(span())
-			)
+								if(rdr.eat('>'.code)) {
+									T_Cascade(span(), depth);
+								} else {
+									final end = here();
+									throw new Diagnostic({
+										severity: Severity.ERROR,
+										message: "Unterminated cascade",
+										info: [
+											Spanned({
+												span: Span.at(end, source),
+												message: "Expected a `>` to finish the cascade operator",
+												isPrimary: true
+											}),
+											Spanned({
+												span: new Span(begin, end, source),
+												isSecondary: true
+											})
+										]
+									});
+								}
+							},
+							at('>'.code) => { rdr.next(); T_Cascade(span(), 2); },
+							_ => T_MinusMinus(span())
+						);
+					},
+					at('>'.code) => { rdr.next(); T_Cascade(span(), 1); },
+					_ => T_Minus(span())
+				);
+			},
 
 			// *, *=, **, **=
-			else if(rdr.eat('*'.code)) (
-				if(rdr.eat('='.code))
-					T_StarEq(span())
-				else if(rdr.eat('*'.code)) (
-					if(rdr.eat('='.code))
-						T_StarStarEq(span())
-					else
-						T_StarStar(span())
-				) else
-					T_Star(span())
-			)
+			at('*'.code) => {
+				rdr.next();
+				rdr.unsafePeek()._match(
+					at('='.code) => { rdr.next(); T_StarEq(span()); },
+					at('*'.code) => {
+						rdr.next();
+						if(rdr.eat('='.code))
+							T_StarStarEq(span())
+						else
+							T_StarStar(span());
+					},
+					_ => T_Star(span())
+				);
+			},
 
 			// /, /=, //, //=
-			else if(rdr.eat('/'.code)) (
-				if(rdr.eat('='.code))
-					T_DivEq(span())
-				else if(rdr.eat('/'.code)) (
-					if(rdr.eat('='.code))
-						T_DivDivEq(span())
-					else
-						T_DivDiv(span())
-				) else
-					T_Div(span())
-			)
+			at('/'.code) => {
+				rdr.next();
+				rdr.unsafePeek()._match(
+					at('='.code) => { rdr.next(); T_DivEq(span()); },
+					at('/'.code) => {
+						rdr.next();
+						if(rdr.eat('='.code))
+							T_DivDivEq(span())
+						else
+							T_DivDiv(span());
+					},
+					_ => T_Div(span())
+				);
+			},
 
 			// %, %=, %%, %%=
-			else if(rdr.eat('%'.code)) (
-				if(rdr.eat('='.code))
-					T_ModEq(span())
-				else if(rdr.eat('%'.code)) (
-					if(rdr.eat('='.code))
-						T_ModModEq(span())
-					else
-						T_ModMod(span())
-				) else
-					T_Mod(span())
-			)
+			at('%'.code) => {
+				rdr.next();
+				rdr.unsafePeek()._match(
+					at('='.code) => { rdr.next(); T_ModEq(span()); },
+					at('%'.code) => {
+						rdr.next();
+						if(rdr.eat('='.code))
+							T_ModModEq(span())
+						else
+							T_ModMod(span());
+					},
+					_ => T_Mod(span())
+				);
+			},
 
 			// &, &=, &&, &&=
-			else if(rdr.eat('&'.code)) (
-				if(rdr.eat('='.code))
-					T_AndEq(span())
-				else if(rdr.eat('&'.code)) (
-					if(rdr.eat('='.code))
-						T_AndAndEq(span())
-					else
-						T_AndAnd(span())
-				) else
-					T_And(span())
-			)
+			at('&'.code) => {
+				rdr.next();
+				rdr.unsafePeek()._match(
+					at('='.code) => { rdr.next(); T_AndEq(span()); },
+					at('&'.code) => {
+						rdr.next();
+						if(rdr.eat('='.code))
+							T_AndAndEq(span())
+						else
+							T_AndAnd(span());
+					},
+					_ => T_And(span())
+				);
+			},
 
 			// |, |=, ||, ||=
-			else if(rdr.eat('|'.code)) (
-				if(rdr.eat('='.code))
-					T_BarEq(span())
-				else if(rdr.eat('|'.code)) (
-					if(rdr.eat('='.code))
-						T_BarBarEq(span())
-					else
-						T_BarBar(span())
-				) else
-					T_Bar(span())
-			)
+			at('|'.code) => {
+				rdr.next();
+				rdr.unsafePeek()._match(
+					at('='.code) => { rdr.next(); T_BarEq(span()); },
+					at('|'.code) => {
+						rdr.next();
+						if(rdr.eat('='.code))
+							T_BarBarEq(span())
+						else
+							T_BarBar(span());
+					},
+					_ => T_Bar(span())
+				);
+			},
 
 			// ^, ^=, ^^, ^^=
-			else if(rdr.eat('^'.code)) (
-				if(rdr.eat('='.code))
-					T_CaretEq(span())
-				else if(rdr.eat('^'.code)) (
-					if(rdr.eat('='.code))
-						T_CaretCaretEq(span())
-					else
-						T_CaretCaret(span())
-				) else
-					T_Caret(span())
-			)
+			at('^'.code) => {
+				rdr.next();
+				rdr.unsafePeek()._match(
+					at('='.code) => { rdr.next(); T_CaretEq(span()); },
+					at('^'.code) => {
+						rdr.next();
+						if(rdr.eat('='.code))
+							T_CaretCaretEq(span())
+						else
+							T_CaretCaret(span());
+					},
+					_ => T_Caret(span())
+				);
+			},
 
 			// <, <=, <<, <<=
-			else if(rdr.eat('<'.code)) (
-				if(rdr.eat('='.code))
-					T_LtEq(span())
-				else if(rdr.eat('<'.code)) (
-					if(rdr.eat('='.code))
-						T_LtLtEq(span())
-					else
-						T_LtLt(span())
-				) else
-					T_Lt(span())
-			)
+			at('<'.code) => {
+				rdr.next();
+				rdr.unsafePeek()._match(
+					at('='.code) => { rdr.next(); T_LtEq(span()); },
+					at('<'.code) => {
+						rdr.next();
+						if(rdr.eat('='.code))
+							T_LtLtEq(span())
+						else
+							T_LtLt(span());
+					},
+					_ => T_Lt(span())
+				);
+			},
 
 			// >, >=, >>, >>=
-			else if(rdr.eat('>'.code)) (
-				if(rdr.eat('='.code))
-					T_GtEq(span())
-				else if(rdr.eat('>'.code)) (
-					if(rdr.eat('='.code))
-						T_GtGtEq(span())
-					else
-						T_GtGt(span())
-				) else
-					T_Gt(span())
-			)
+			at('>'.code) => {
+				rdr.next();
+				rdr.unsafePeek()._match(
+					at('='.code) => { rdr.next(); T_GtEq(span()); },
+					at('>'.code) => {
+						rdr.next();
+						if(rdr.eat('='.code))
+							T_GtGtEq(span())
+						else
+							T_GtGt(span());
+					},
+					_ => T_Gt(span())
+				);
+			},
 
-			else if(rdr.eat('`'.code)) {
+			at('`'.code) => {
+				rdr.next();
 				readLitsym();
-			}
+			},
 			
-			else if(rdr.eat("$".code)) {
+			at("$".code) => {
+				rdr.next();
 				readAnonArg();
-			}
+			},
 
-			else if(!rdr.hasNext()) {
-				throw new Eof();
-			}
-
-			else {
+			_ => {
 				throw new Diagnostic({
 					severity: Severity.ERROR,
 					message: "Syntax error",
@@ -543,7 +587,10 @@ class Lexer {
 		do {
 			rdr.next();
 			trim();
-		} while(rdr.peek(VSPACE));
+		} while(rdr.hasNext() && rdr.unsafePeek()._match(
+			at('\n'.code ... '\r'.code) => true,
+			_ => false
+		));
 
 		return if(rdr.eat(','.code)) {
 			readCSep();
@@ -556,7 +603,10 @@ class Lexer {
 	function readCSep() {
 		trim();
 		
-		while(rdr.peek(VSPACE)) {
+		while(rdr.hasNext() && rdr.unsafePeek()._match(
+			at('\n'.code ... '\r'.code) => true,
+			_ => false
+		)) {
 			rdr.next();
 			trim();
 		};
@@ -568,7 +618,10 @@ class Lexer {
 	function readComma() {
 		trim();
 
-		if(rdr.peek(VSPACE)) {
+		if(rdr.hasNext() && rdr.unsafePeek()._match(
+			at('\n'.code ... '\r'.code) => true,
+			_ => false
+		)) {
 			rdr.next();
 			return readCSep();
 		}
@@ -576,25 +629,33 @@ class Lexer {
 		return T_Comma(span());
 	}
 
-	inline function readNumberStart() {
-		if(rdr.eat("0x")) {
-			if(rdr.peek(XDIGIT)) {
-				return readHex();
-			} else {
-				throw new Diagnostic({
-					severity: Severity.ERROR,
-					message: "Unexpected start of hexdecimal literal",
-					info: [
-						Spanned({
-							span: span(),
-							message: "Were you wanting a hexdecimal literal here or what?",
-							isPrimary: true
-						})
-					]
-				});
-			}
+	inline function readNumberStart() return {
+		if(rdr.hasNextAt(2) && rdr.unsafePeekAt(1) == 'x'.code && rdr.unsafePeek() == '0'.code) {
+			rdr.next();
+			rdr.next();
+			rdr.unsafePeek()._match(
+				at(('a'.code ... 'f'.code)
+				 | ('A'.code ... 'F'.code)
+				 | ('0'.code ... '9'.code)
+				) => {
+					readHex();
+				},
+				_ => {
+					throw new Diagnostic({
+						severity: Severity.ERROR,
+						message: "Unexpected start of hexdecimal literal",
+						info: [
+							Spanned({
+								span: span(),
+								message: "Were you wanting a hexdecimal literal here or what?",
+								isPrimary: true
+							})
+						]
+					});
+				}
+			);
 		} else {
-			return readNumber();
+			readNumber();
 		}
 	}
 
@@ -603,33 +664,45 @@ class Lexer {
 
 		do {
 			rdr.next();
-		} while(rdr.peek(XDIGIT));
+		} while(rdr.hasNext() && rdr.unsafePeek()._match(
+			at(('a'.code ... 'f'.code)
+			 | ('A'.code ... 'F'.code)
+			 | ('0'.code ... '9'.code)
+			) => true,
+			_ => false
+		));
 
-		if(rdr.peek(ALPHA_U)) {
-			final end = here();
+		rdr.unsafePeek()._match(
+			at(('a'.code ... 'z'.code)
+			 | ('A'.code ... 'Z'.code)
+			 | '_'.code
+			) => {
+				final end = here();
 
-			while(rdr.peek(ALNUM_Q)) rdr.next();
+				while(rdr.peekAlnumQ()) rdr.next();
 
-			final endName = here();
+				final endName = here();
 
-			throw new Diagnostic({
-				severity: Severity.ERROR,
-				message: "Invalid hexdecimal literal",
-				info: [
-					Spanned({
-						span: new Span(end, endName, source),
-						message: "Make sure to separate names from numbers",
-						isPrimary: true
-					}),
-					Spanned({
-						span: new Span(begin, end, source),
-						isSecondary: true
-					})
-				]
-			});
-		} else {
-			return T_Hex(span(), rdr.substring(start));
-		}
+				throw new Diagnostic({
+					severity: Severity.ERROR,
+					message: "Invalid hexdecimal literal",
+					info: [
+						Spanned({
+							span: new Span(end, endName, source),
+							message: "Make sure to separate names from numbers",
+							isPrimary: true
+						}),
+						Spanned({
+							span: new Span(begin, end, source),
+							isSecondary: true
+						})
+					]
+				});
+			},
+			_ => {
+				return T_Hex(span(), rdr.substring(start));
+			}
+		);
 	}
 
 	inline function readNumber() {
@@ -637,41 +710,46 @@ class Lexer {
 		
 		do {
 			rdr.next();
-		} while(rdr.peek(DIGIT));
+		} while(rdr.peekDigit());
 
 		final int = rdr.substring(start);
 		final afterDigits = here();
 
-		final dec = if(rdr.peek('.'.code) && rdr.peekNotAt(1, LOWER_U)) {
+		final dec = if(rdr.hasNextAt(1) && rdr.unsafePeek('.'.code) && rdr.unsafePeekAt(1)._match(
+			at(('a'.code ... 'z'.code) | '_'.code) => false,
+			_ => true
+		)) {
 			rdr.next();
+			rdr.unsafePeek()._match(
+				at('0'.code ... '9'.code) => {
+					start = rdr.offset;
 
-			if(rdr.peek(DIGIT)) {
-				start = rdr.offset;
+					do {
+						rdr.next();
+					} while(rdr.peekDigit());
 
-				do {
-					rdr.next();
-				} while(rdr.peek(DIGIT));
-
-				Some(rdr.substring(start));
-			} else {
-				final end = here();
-				
-				throw new Diagnostic({
-					severity: Severity.ERROR,
-					message: "Invalid decimal literal",
-					info: [
-						Spanned({
-							span: Span.at(afterDigits, source),
-							message: "At least 1 digit is required on both sides of the decimal point",
-							isPrimary: true
-						}),
-						Spanned({
-							span: new Span(begin, end.advance(-1), source),
-							isSecondary: true
-						})
-					]
-				});
-			}
+					Some(rdr.substring(start));
+				},
+				_ => {
+					final end = here();
+					
+					throw new Diagnostic({
+						severity: Severity.ERROR,
+						message: "Invalid decimal literal",
+						info: [
+							Spanned({
+								span: Span.at(afterDigits, source),
+								message: "At least 1 digit is required on both sides of the decimal point",
+								isPrimary: true
+							}),
+							Spanned({
+								span: new Span(begin, end.advance(-1), source),
+								isSecondary: true
+							})
+						]
+					});
+				}
+			);
 		} else {
 			None;
 		};
@@ -682,71 +760,80 @@ class Lexer {
 			None;
 		};
 
-		if(rdr.peek(ALPHA_U)) {
-			final end = here();
+		rdr.unsafePeek()._match(
+			at(('a'.code ... 'z'.code)
+			 | ('A'.code ... 'Z'.code)
+			 | '_'.code
+			) => {
+				final end = here();
 
-			while(rdr.peek(ALNUM_Q)) rdr.next();
+				while(rdr.peekAlnumQ()) rdr.next();
 
-			final endName = here();
+				final endName = here();
 
-			throw new Diagnostic({
-				severity: Severity.ERROR,
-				message: "Invalid number literal",
-				info: [
-					Spanned({
-						span: new Span(end, endName, source),
-						message: "Make sure to separate names from numbers",
-						isPrimary: true
-					}),
-					Spanned({
-						span: new Span(begin, end, source),
-						isSecondary: true
-					})
-				]
-			});
-		} else {
-			return switch dec {
-				case None: T_Int(span(), int, exp);
-				case Some(d): T_Dec(span(), int, d, exp);
+				throw new Diagnostic({
+					severity: Severity.ERROR,
+					message: "Invalid number literal",
+					info: [
+						Spanned({
+							span: new Span(end, endName, source),
+							message: "Make sure to separate names from numbers",
+							isPrimary: true
+						}),
+						Spanned({
+							span: new Span(begin, end, source),
+							isSecondary: true
+						})
+					]
+				});
+			},
+			_ => {
+				return switch dec {
+					case None: T_Int(span(), int, exp);
+					case Some(d): T_Dec(span(), int, d, exp);
+				}
 			}
-		}
+		);
 	}
 
 	inline function readExponent() {
 		final start = rdr.offset;
-		final cur = rdr.peek();
+		final cur = rdr.unsafePeek();
 		final ruleBegin = here();
 
 		if(cur == '+'.code || cur == '-'.code) {
 			rdr.next();
 		}
 
-		if(rdr.peek(DIGIT)) {
-			do {
-				rdr.next();
-			} while(rdr.peek(DIGIT));
+		rdr.unsafePeek()._match(
+			at('0'.code ... '9'.code) => {
+				do {
+					rdr.next();
+				} while(rdr.peekDigit());
 
-			return rdr.substring(start);
-		} else {
-			final end = here();
+				return rdr.substring(start);
+			},
+			_ => {
+				final end = here();
 
-			throw new Diagnostic({
-				severity: Severity.ERROR,
-				message: "Invalid number literal",
-				info: [
-					Spanned({
-						span: new Span(end, end.advance(1), source),
-						message: "Expected a number after the exponent indicator",
-						isPrimary: true
-					}),
-					Spanned({
-						span: new Span(ruleBegin.advance(-1), end, source),
-						message: "This indicates that the number has an exponent",
-						isSecondary: true
-					})
-				]
-			});
-		}
+				throw new Diagnostic({
+					severity: Severity.ERROR,
+					message: "Invalid number literal",
+					info: [
+						Spanned({
+							span: new Span(end, end.advance(1), source),
+							message: "Expected a number after the exponent indicator",
+							isPrimary: true
+						}),
+						Spanned({
+							span: new Span(ruleBegin.advance(-1), end, source),
+							message: "This indicates that the number has an exponent",
+							isSecondary: true
+						})
+					]
+				});
+			}
+		);
 	}
 
 	inline function readName() {
@@ -754,7 +841,7 @@ class Lexer {
 
 		do {
 			rdr.next();
-		} while(rdr.peek(ALNUM_Q));
+		} while(rdr.peekAlnumQ());
 
 		final n = rdr.substring(start);
 
@@ -768,55 +855,61 @@ class Lexer {
 	inline function readPunned() {
 		final start = rdr.offset;
 
-		if(rdr.peek(LOWER_U)) {
-			rdr.next();
-		} else {
-			final end = here();
+		rdr.unsafePeek()._match(
+			at(('a'.code ... 'z'.code) | '_'.code) => {
+				rdr.next();
+			},
+			_ => {
+				final end = here();
 
-			if(rdr.peek(UPPER)) {
-				while(rdr.peek(ALNUM_Q)) rdr.next();
+				rdr.unsafePeek()._match(
+					at('A'.code ... 'Z'.code) => {
+						while(rdr.peekAlnumQ()) rdr.next();
 
-				final endName = here();
+						final endName = here();
 
-				throw new Diagnostic({
-					severity: Severity.ERROR,
-					message: "Invalid punned label",
-					info: [
-						Spanned({
-							span: Span.at(end, source),
-							message: "Punned labels may not start with an uppercase letter",
-							isPrimary: true
-						}),
-						Spanned({
-							span: Span.at(begin, source),
-							isSecondary: true
-						}),
-						Spanned({
-							span: new Span(end, endName, source),
-							isSecondary: true
-						})
-					]
-				});
-			} else {
-				throw new Diagnostic({
-					severity: Severity.ERROR,
-					message: "Invalid punned label",
-					info: [
-						Spanned({
-							span: Span.at(begin.advance(1), source),
-							message: "Was expecting a name for the punned label",
-							isPrimary: true
-						}),
-						Spanned({
-							span: Span.at(begin, source),
-							isSecondary: true
-						})
-					]
-				});
+						throw new Diagnostic({
+							severity: Severity.ERROR,
+							message: "Invalid punned label",
+							info: [
+								Spanned({
+									span: Span.at(end, source),
+									message: "Punned labels may not start with an uppercase letter",
+									isPrimary: true
+								}),
+								Spanned({
+									span: Span.at(begin, source),
+									isSecondary: true
+								}),
+								Spanned({
+									span: new Span(end, endName, source),
+									isSecondary: true
+								})
+							]
+						});
+					},
+					_ => {
+						throw new Diagnostic({
+							severity: Severity.ERROR,
+							message: "Invalid punned label",
+							info: [
+								Spanned({
+									span: Span.at(begin.advance(1), source),
+									message: "Was expecting a name for the punned label",
+									isPrimary: true
+								}),
+								Spanned({
+									span: Span.at(begin, source),
+									isSecondary: true
+								})
+							]
+						});
+					}
+				);
 			}
-		}
+		);
 
-		while(rdr.peek(ALNUM_Q)) {
+		while(rdr.peekAlnumQ()) {
 			rdr.next();
 		}
 
@@ -828,7 +921,7 @@ class Lexer {
 
 		do {
 			rdr.next();
-		} while(rdr.peek(ALNUM_Q));
+		} while(rdr.peekAlnumQ());
 		
 		final n = rdr.substring(start);
 
@@ -872,7 +965,7 @@ class Lexer {
 	inline function readTag() {
 		final start = rdr.offset;
 
-		while(rdr.peek(ALNUM)) {
+		while(rdr.peekAlnum()) {
 			rdr.next();
 		}
 
@@ -880,7 +973,7 @@ class Lexer {
 	}
 
 	inline function readChar(): Token {
-		final char = switch rdr.peek() {
+		final char = switch rdr.unsafePeek() {
 			case '"'.code:
 				final end = here();
 				if(rdr.peekAt(1, '"'.code)) {
@@ -920,19 +1013,19 @@ class Lexer {
 			case '\\'.code:
 				rdr.next();
 				switch rdr.eat() {
-					case c = "\\".code | "\"".code: c;
-					case "t".code: "\t".code;
-					case "n".code: "\n".code;
-					case "r".code: "\r".code;
-					case "v".code: 0x0b;
-					case "f".code: 0x0c;
-					case "0".code: 0x00;
-					case "e".code: 0x1b;
-					case "a".code: 0x07;
-					case "b".code: 0x08;
-					case "x".code: readHexEsc();
-					case "u".code: readUniEsc();
-					case "o".code: readOctEsc();
+					case c = '\\'.code | '"'.code: c;
+					case 't'.code: '\t'.code;
+					case 'n'.code: '\n'.code;
+					case 'r'.code: '\r'.code;
+					case 'v'.code: 0x0b;
+					case 'f'.code: 0x0c;
+					case '0'.code: 0x00;
+					case 'e'.code: 0x1b;
+					case 'a'.code: 0x07;
+					case 'b'.code: 0x08;
+					case 'x'.code: readHexEsc();
+					case 'u'.code: readUniEsc();
+					case 'o'.code: readOctEsc();
 					case c:
 						final end = here().advance(-1);
 						throw new Diagnostic({
@@ -990,26 +1083,32 @@ class Lexer {
 		final start = rdr.offset;
 		
 		for(_ in 0...2) {
-			if(rdr.peek(XDIGIT)) {
-				rdr.next();
-			} else {
-				final end = here();
-				throw new Diagnostic({
-					severity: Severity.ERROR,
-					message: "Invalid hexdecimal escape code",
-					info: [
-						Spanned({
-							span: Span.at(end, source),
-							message: "Was expecting a hexdecimal digit here",
-							isPrimary: true
-						}),
-						Spanned({
-							span: new Span(end.advance(rdr.offset - start - 2), end, source),
-							isSecondary: true
-						})
-					]
-				});
-			}
+			rdr.unsafePeek()._match(
+				at(('a'.code ... 'f'.code)
+				 | ('A'.code ... 'F'.code)
+				 | ('0'.code ... '9'.code)
+				) => {
+					rdr.next();
+				},
+				_ => {
+					final end = here();
+					throw new Diagnostic({
+						severity: Severity.ERROR,
+						message: "Invalid hexdecimal escape code",
+						info: [
+							Spanned({
+								span: Span.at(end, source),
+								message: "Was expecting a hexdecimal digit here",
+								isPrimary: true
+							}),
+							Spanned({
+								span: new Span(end.advance(rdr.offset - start - 2), end, source),
+								isSecondary: true
+							})
+						]
+					});
+				}
+			);
 		}
 		
 		return rdr.substring(start).parseHex();
@@ -1019,26 +1118,32 @@ class Lexer {
 		final start = rdr.offset;
 
 		for(_ in 0...4) {
-			if(rdr.peek(XDIGIT)) {
-				rdr.next();
-			} else {
-				final end = here();
-				throw new Diagnostic({
-					severity: Severity.ERROR,
-					message: "Invalid unicode escape code",
-					info: [
-						Spanned({
-							span: Span.at(end, source),
-							message: "Was expecting a hexdecimal digit here",
-							isPrimary: true
-						}),
-						Spanned({
-							span: new Span(end.advance(rdr.offset - start - 2), end, source),
-							isSecondary: true
-						})
-					]
-				});
-			}
+			rdr.unsafePeek()._match(
+				at(('a'.code ... 'f'.code)
+				 | ('A'.code ... 'F'.code)
+				 | ('0'.code ... '9'.code)
+				) => {
+					rdr.next();
+				},
+				_ => {
+					final end = here();
+					throw new Diagnostic({
+						severity: Severity.ERROR,
+						message: "Invalid unicode escape code",
+						info: [
+							Spanned({
+								span: Span.at(end, source),
+								message: "Was expecting a hexdecimal digit here",
+								isPrimary: true
+							}),
+							Spanned({
+								span: new Span(end.advance(rdr.offset - start - 2), end, source),
+								isSecondary: true
+							})
+						]
+					});
+				}
+			);
 		}
 
 		return rdr.substring(start).parseHex();
@@ -1048,26 +1153,29 @@ class Lexer {
 		final start = rdr.offset;
 
 		for(_ in 0...3) {
-			if(rdr.peek(ODIGIT)) {
-				rdr.next();
-			} else {
-				final end = here();
-				throw new Diagnostic({
-					severity: Severity.ERROR,
-					message: "Invalid octal escape code",
-					info: [
-						Spanned({
-							span: Span.at(end, source),
-							message: "Was expecting an octal digit here",
-							isPrimary: true
-						}),
-						Spanned({
-							span: new Span(end.advance(rdr.offset - start - 2), end, source),
-							isSecondary: true
-						})
-					]
-				});
-			}
+			rdr.unsafePeek()._match(
+				at('0'.code ... '7'.code) => {
+					rdr.next();
+				},
+				_ => {
+					final end = here();
+					throw new Diagnostic({
+						severity: Severity.ERROR,
+						message: "Invalid octal escape code",
+						info: [
+							Spanned({
+								span: Span.at(end, source),
+								message: "Was expecting an octal digit here",
+								isPrimary: true
+							}),
+							Spanned({
+								span: new Span(end.advance(rdr.offset - start - 2), end, source),
+								isSecondary: true
+							})
+						]
+					});
+				}
+			);
 		}
 
 		return rdr.substring(start).parseOctal();
@@ -1108,19 +1216,19 @@ class Lexer {
 					SCode(tokens.rev());
 				} else {
 					final char = switch esc {
-						case c = "\\".code | "\"".code: c;
-						case "t".code: "\t".code;
-						case "n".code: "\n".code;
-						case "r".code: "\r".code;
-						case "v".code: 0x0b;
-						case "f".code: 0x0c;
-						case "0".code: 0x00;
-						case "e".code: 0x1b;
-						case "a".code: 0x07;
-						case "b".code: 0x08;
-						case "x".code: readHexEsc();
-						case "u".code: readUniEsc();
-						case "o".code: readOctEsc();
+						case c = '\\'.code | '"'.code: c;
+						case 't'.code: '\t'.code;
+						case 'n'.code: '\n'.code;
+						case 'r'.code: '\r'.code;
+						case 'v'.code: 0x0b;
+						case 'f'.code: 0x0c;
+						case '0'.code: 0x00;
+						case 'e'.code: 0x1b;
+						case 'a'.code: 0x07;
+						case 'b'.code: 0x08;
+						case 'x'.code: readHexEsc();
+						case 'u'.code: readUniEsc();
+						case 'o'.code: readOctEsc();
 						case c:
 							final end = here().advance(-1);
 							throw new Diagnostic({
@@ -1171,27 +1279,55 @@ class Lexer {
 
 		while(rdr.eat('.'.code)) depth++;
 
-		if(rdr.peek(DIGIT)) {
-			final start = rdr.offset;
+		rdr.unsafePeek()._match(
+			at('0'.code ... '9'.code) => {
+				final start = rdr.offset;
 
-			do {
-				rdr.next();
-			} while(rdr.peek(DIGIT));
+				do {
+					rdr.next();
+				} while(rdr.peekDigit());
 
-			if(rdr.peek(ALPHA_U)) {
+				rdr.unsafePeek()._match(
+					at(('a'.code ... 'z'.code)
+					 | ('A'.code ... 'Z'.code)
+					 | '_'.code
+					) => {
+						final end = here();
+			
+						while(rdr.peekAlnumQ()) rdr.next();
+			
+						final endName = here();
+			
+						throw new Diagnostic({
+							severity: Severity.ERROR,
+							message: "Invalid anonymous argument",
+							info: [
+								Spanned({
+									span: new Span(end, endName, source),
+									message: "Make sure to separate names from numbers",
+									isPrimary: true
+								}),
+								Spanned({
+									span: new Span(begin, end, source),
+									isSecondary: true
+								})
+							]
+						});
+					},
+					_ => {
+						return T_AnonArg(span(), depth, rdr.substring(start).parseInt());
+					}
+				);
+			},
+			_ => {
 				final end = here();
-	
-				while(rdr.peek(ALNUM_Q)) rdr.next();
-	
-				final endName = here();
-	
 				throw new Diagnostic({
 					severity: Severity.ERROR,
-					message: "Invalid anonymous argument",
+					message: "Unterminated anonymous argument",
 					info: [
 						Spanned({
-							span: new Span(end, endName, source),
-							message: "Make sure to separate names from numbers",
+							span: Span.at(end, source),
+							message: "Was expecting a number here",
 							isPrimary: true
 						}),
 						Spanned({
@@ -1200,26 +1336,7 @@ class Lexer {
 						})
 					]
 				});
-			} else {
-				return T_AnonArg(span(), depth, rdr.substring(start).parseInt());
 			}
-		} else {
-			final end = here();
-			throw new Diagnostic({
-				severity: Severity.ERROR,
-				message: "Unterminated anonymous argument",
-				info: [
-					Spanned({
-						span: Span.at(end, source),
-						message: "Was expecting a number here",
-						isPrimary: true
-					}),
-					Spanned({
-						span: new Span(begin, end, source),
-						isSecondary: true
-					})
-				]
-			});
-		}
+		);
 	}
 }

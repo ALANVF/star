@@ -5,7 +5,6 @@ import reporting.Diagnostic;
 import text.SourceFile;
 
 class Main {
-	static final NEW_LINE = #if windows Strings.NEW_LINE_WIN #else Strings.NEW_LINE_NIX #end;
 	static final stdout = Sys.stdout();
 	public static final renderer = new TextDiagnosticRenderer(stdout);
 
@@ -76,7 +75,7 @@ class Main {
 		Sys.println('Total time: ${time / 10000}ms');
 
 		if(callback != null) {
-			callback(project);
+			//callback(project);
 		}
 	}
 
@@ -137,9 +136,9 @@ class Main {
 			});
 		});
 		
-		nl();
+		/*nl();
 		for(s in new compiler.Compiler().stmts) Sys.println(s.form());
 		
-		compiler.nim.Compiler.test();
+		compiler.nim.Compiler.test();*/
 	}
 }

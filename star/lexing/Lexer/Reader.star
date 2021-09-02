@@ -82,6 +82,13 @@ class Reader of Series[Char] is hidden Lexer {
 		return Maybe[None]
 	}
 
+	on [next] (This) {
+		cursor[append: this[first]]
+		offset++
+
+		return this
+	}
+
 	on [skip: by (Int)] (This) {
 		if 0 <= offset + by < buffer.length {
 			my offset' = offset + by

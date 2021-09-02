@@ -10,7 +10,7 @@ class Reader {
 	private final length: Int;
 	var offset = 0;
 
-	function new(input: String) {
+	inline function new(input: String) {
 		this.input = input;
 		length = input.length8();
 	}
@@ -23,8 +23,14 @@ class Reader {
 		return offset + index < length;
 	}
 
-	inline function unsafePeek() {
+	extern inline overload function unsafePeek() return unsafePeekNext();
+	private inline function unsafePeekNext() {
 		return @:privateAccess input._charCodeAt8Unsafe(offset);
+	}
+
+	extern inline overload function unsafePeek(char: Char) return unsafePeekChar(char);
+	private inline function unsafePeekChar(char: Char) {
+		return @:privateAccess input._charCodeAt8Unsafe(offset) == char;
 	}
 
 	inline function unsafePeekAt(index: Int) {
@@ -32,7 +38,7 @@ class Reader {
 	}
 
 	extern inline overload function peek() return peekNext();
-	private function peekNext() {
+	private inline function peekNext() {
 		return if(hasNext()) {
 			unsafePeek();
 		} else {
@@ -41,7 +47,7 @@ class Reader {
 	}
 
 	extern inline overload function peek(char: Char) return peekChar(char);
-	private function peekChar(char: Char) {
+	private inline function peekChar(char: Char) {
 		return hasNext() && char == unsafePeek();
 	}
 
@@ -59,34 +65,39 @@ class Reader {
 	}
 	
 	extern inline overload function peek(charset: Charset) return peekCharset(charset);
-	private function peekCharset(charset: Charset) {
+	private inline function peekCharset(charset: Charset) {
 		return hasNext() && charset[unsafePeek()];
 	}
 
 
+	extern inline overload function peekAt(index: Int) return peekAtNext(index);
+	private inline function peekAtNext(index: Int) {
+		return hasNextAt(index) ? unsafePeekAt(index) : null;
+	}
+	
 	extern inline overload function peekAt(index: Int, char: Char) return peekAtChar(index, char);
-	private function peekAtChar(index: Int, char: Char) {
+	private inline function peekAtChar(index: Int, char: Char) {
 		return hasNextAt(index) && char == unsafePeekAt(index);
 	}
 
 	extern inline overload function peekAt(index: Int, charset: Charset) return peekAtCharset(index, charset);
-	private function peekAtCharset(index: Int, charset: Charset) {
+	private inline function peekAtCharset(index: Int, charset: Charset) {
 		return hasNextAt(index) && charset[unsafePeekAt(index)];
 	}
 
 	
 	extern inline overload function peekNot(char: Char) return peekNotChar(char);
-	private function peekNotChar(char: Char) {
+	private inline function peekNotChar(char: Char) {
 		return hasNext() && char != unsafePeek();
 	}
 	
 	extern inline overload function peekNot(charset: Charset) return peekNotCharset(charset);
-	private function peekNotCharset(charset: Charset) {
+	private inline function peekNotCharset(charset: Charset) {
 		return hasNext() && !charset[unsafePeek()];
 	}
 
 
-	function peekNotAt(index: Int, charset: Charset) {
+	inline function peekNotAt(index: Int, charset: Charset) {
 		return hasNextAt(index) && !charset[unsafePeekAt(index)];
 	}
 
@@ -123,11 +134,16 @@ class Reader {
 		}
 	}
 
-	function next() {
+	function safeNext() {
 		if(hasNext()) {
 			cursor.appendChar(unsafePeek());
 			offset++;
 		}
+	}
+
+	inline function next() {
+		cursor.appendChar(unsafePeek());
+		offset++;
 	}
 	
 	extern inline overload function substring(startIndex) {
@@ -136,4 +152,44 @@ class Reader {
 	extern inline overload function substring(startIndex, endIndex) {
 		return input.substring(startIndex, endIndex);
 	}
+
+
+	inline function peekDigit() return hasNext() && unsafePeek()._match(
+		at('0'.code ... '9'.code) => true,
+		_ => false
+	);
+
+	inline function peekLowerU() return hasNext() && unsafePeek()._match(
+		at(('a'.code ... 'z'.code)
+		 | '_'.code
+		) => true,
+		_ => false
+	);
+
+	inline function peekAlphaU() return hasNext() && unsafePeek()._match(
+		at(('a'.code ... 'z'.code)
+		 | ('A'.code ... 'Z'.code)
+		 | '_'.code
+		) => true,
+		_ => false
+	);
+
+	inline function peekAlnum() return hasNext() && unsafePeek()._match(
+		at(('a'.code ... 'z'.code)
+		 | ('A'.code ... 'Z'.code)
+		 | ('0'.code ... '9'.code)
+		 | '_'.code
+		) => true,
+		_ => false
+	);
+	
+	inline function peekAlnumQ() return hasNext() && unsafePeek()._match(
+		at(('a'.code ... 'z'.code)
+		 | ('A'.code ... 'Z'.code)
+		 | ('0'.code ... '9'.code)
+		 | '_'.code
+		 | "'".code
+		) => true,
+		_ => false
+	);
 }

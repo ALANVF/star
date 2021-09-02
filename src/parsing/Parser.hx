@@ -2915,7 +2915,16 @@ class Parser {
 	);
 
 
-	static function parseExpr4CascadeContents(_1, level, tokens: List<Token>): ParseResult<Cascade<Expr>> {
+	static function parseExpr4(tokens: List<Token>) return tokens._match(
+		at([T_Tag(_1, tag), ...rest]) => switch parseExpr4(rest) {
+			case Success(expr, rest2): Success(ETag(_1, tag, expr), rest2);
+			case err: fatalIfBad(rest, err);
+		},
+		_ => parseExpr3(tokens)
+	);
+
+
+	static function parseExpr5CascadeContents(_1, level, tokens: List<Token>): ParseResult<Cascade<Expr>> {
 		var rest = tokens;
 		
 		final kind: CascadeKind<Expr> = tokens._match(
@@ -2929,7 +2938,7 @@ class Parser {
 						rest = rest4;
 						StepMessage(msg, _2, Decr);
 					},
-					at([getAssignableOp(_) => Some({span: _2, op: op}), ...rest4]) => switch parseExpr3(rest4) {
+					at([getAssignableOp(_) => Some({span: _2, op: op}), ...rest4]) => switch parseExpr4(rest4) {
 						case Success(expr, rest5):
 							rest = rest5;
 							AssignMessage(msg, _2, op, expr);
@@ -2956,7 +2965,7 @@ class Parser {
 				rest = rest2;
 				StepMember({span: _2, name: name}, _3, Decr);
 			},
-			at([_.asSoftName() => T_Name(_2, name), getAssignableOp(_) => Some({span: _3, op: op}), ...rest2]) => switch parseExpr3(rest2) {
+			at([_.asSoftName() => T_Name(_2, name), getAssignableOp(_) => Some({span: _3, op: op}), ...rest2]) => switch parseExpr4(rest2) {
 				case Success(expr, rest3):
 					rest = rest3;
 					AssignMember({span: _2, name: name}, _3, op, expr);
@@ -2968,7 +2977,7 @@ class Parser {
 		final nextLevel = level + 1;
 
 		while(true) rest._match(
-			at([T_Cascade(_2, _ == nextLevel => true), ...rest2]) => switch parseExpr4CascadeContents(_2, level + 1, rest2) {
+			at([T_Cascade(_2, _ == nextLevel => true), ...rest2]) => switch parseExpr5CascadeContents(_2, level + 1, rest2) {
 				case Success(cascade, rest3):
 					rest = rest3;
 					nested.push(cascade);
@@ -2985,7 +2994,7 @@ class Parser {
 		}, rest);
 	}
 
-	static function parseExpr4TypeCascadeContents(_1, level, tokens: List<Token>): ParseResult<Cascade<Type>> {
+	static function parseExpr5TypeCascadeContents(_1, level, tokens: List<Token>): ParseResult<Cascade<Type>> {
 		var rest = tokens;
 		
 		final kind: CascadeKind<Type> = tokens._match(
@@ -2999,7 +3008,7 @@ class Parser {
 						rest = rest4;
 						StepMessage(msg, _2, Decr);
 					},
-					at([getAssignableOp(_) => Some({span: _2, op: op}), ...rest4]) => switch parseExpr3(rest4) {
+					at([getAssignableOp(_) => Some({span: _2, op: op}), ...rest4]) => switch parseExpr4(rest4) {
 						case Success(expr, rest5):
 							rest = rest5;
 							AssignMessage(msg, _2, op, expr);
@@ -3026,7 +3035,7 @@ class Parser {
 				rest = rest2;
 				StepMember({span: _2, name: name}, _3, Decr);
 			},
-			at([_.asSoftName() => T_Name(_2, name), getAssignableOp(_) => Some({span: _3, op: op}), ...rest2]) => switch parseExpr3(rest2) {
+			at([_.asSoftName() => T_Name(_2, name), getAssignableOp(_) => Some({span: _3, op: op}), ...rest2]) => switch parseExpr4(rest2) {
 				case Success(expr, rest3):
 					rest = rest3;
 					AssignMember({span: _2, name: name}, _3, op, expr);
@@ -3038,7 +3047,7 @@ class Parser {
 		final nextLevel = level + 1;
 
 		while(true) rest._match(
-			at([T_Cascade(_2, _ == nextLevel => true), ...rest2]) => switch parseExpr4CascadeContents(_2, level + 1, rest2) {
+			at([T_Cascade(_2, _ == nextLevel => true), ...rest2]) => switch parseExpr5CascadeContents(_2, level + 1, rest2) {
 				case Success(cascade, rest3):
 					rest = rest3;
 					nested.push(cascade);
@@ -3055,9 +3064,9 @@ class Parser {
 		}, rest);
 	}
 
-	static function parseExpr4(tokens) return switch parseExpr3(tokens) {
+	static function parseExpr5(tokens) return switch parseExpr4(tokens) {
 		case Success(EType(type), Cons(T_Cascade(_1, 1), rest)):
-			final cascades = [switch parseExpr4TypeCascadeContents(_1, 1, rest) {
+			final cascades = [switch parseExpr5TypeCascadeContents(_1, 1, rest) {
 				case Success(cascade, rest2):
 					rest = rest2;
 					cascade;
@@ -3065,7 +3074,7 @@ class Parser {
 			}];
 
 			while(true) rest._match(
-				at([T_Cascade(_2, 1), ...rest2]) => switch parseExpr4TypeCascadeContents(_2, 1, rest2) {
+				at([T_Cascade(_2, 1), ...rest2]) => switch parseExpr5TypeCascadeContents(_2, 1, rest2) {
 					case Success(cascade, rest3):
 						rest = rest3;
 						cascades.push(cascade);
@@ -3077,7 +3086,7 @@ class Parser {
 			Success(ETypeCascade(type, cascades), rest);
 
 		case Success(expr, Cons(T_Cascade(_1, 1), rest)):
-			final cascades = [switch parseExpr4CascadeContents(_1, 1, rest) {
+			final cascades = [switch parseExpr5CascadeContents(_1, 1, rest) {
 				case Success(cascade, rest2):
 					rest = rest2;
 					cascade;
@@ -3085,7 +3094,7 @@ class Parser {
 			}];
 
 			while(true) rest._match(
-				at([T_Cascade(_2, 1), ...rest2]) => switch parseExpr4CascadeContents(_2, 1, rest2) {
+				at([T_Cascade(_2, 1), ...rest2]) => switch parseExpr5CascadeContents(_2, 1, rest2) {
 					case Success(cascade, rest3):
 						rest = rest3;
 						cascades.push(cascade);
@@ -3098,15 +3107,6 @@ class Parser {
 
 		case res: res;
 	}
-
-
-	static function parseExpr5(tokens: List<Token>) return tokens._match(
-		at([T_Tag(_1, tag), ...rest]) => switch parseExpr5(rest) {
-			case Success(expr, rest2): Success(ETag(_1, tag, expr), rest2);
-			case err: fatalIfBad(rest, err);
-		},
-		_ => parseExpr4(tokens)
-	);
 
 
 	static function parseExpr6(tokens) return switch parseExpr5(tokens) {
