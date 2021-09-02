@@ -2,15 +2,15 @@ package typing;
 
 import typing.Traits;
 
-enum GenericRule {
+enum TypeRule {
 	Eq(l: Type, r: Type);
 	Of(l: Type, r: Type);
 	Lt(l: Type, r: Type);
 	Le(l: Type, r: Type);
-	All(conds: List<GenericRule>);
-	Any(conds: List<GenericRule>);
-	One(conds: List<GenericRule>);
-	Not(rule: GenericRule);
+	All(conds: List<TypeRule>);
+	Any(conds: List<TypeRule>);
+	One(conds: List<TypeRule>);
+	Not(rule: TypeRule);
 	Negate(t: Type);
 	Exists(t: Type);
 }
@@ -44,14 +44,13 @@ inline function recCmp(lookup: ILookupType, l, chain) return switch chain {
 }
 
 @:publicFields
-@:noCompletion
-class Tools {
-	static inline function fromAST(_: Enum<GenericRule>, lookup: ILookupType, parserRule: parsing.ast.decls.GenericRule) {
+class TypeRuleTools {
+	static inline function fromAST(_: Enum<TypeRule>, lookup: ILookupType, parserRule: parsing.ast.decls.GenericRule) {
 		return _fromAST(lookup, parserRule);
 	}
 
 	@:noUsing
-	static function _fromAST(lookup: ILookupType, parserRule: parsing.ast.decls.GenericRule)  return switch parserRule {
+	static function _fromAST(lookup: ILookupType, parserRule: parsing.ast.decls.GenericRule) return switch parserRule {
 		case Negate(_, t): Negate(lookup.makeTypePath(t));
 		case Exists(t, _): Exists(lookup.makeTypePath(t));
 		

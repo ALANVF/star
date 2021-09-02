@@ -23,7 +23,10 @@ class TypePathTools {
 				}
 			},
 			at(type is typing.TypeDecl) => {
-				getFullPath(cmp, type.lookup).concat([{name: type.name.name, args: type.params.map(params -> params.map(p -> Type.fromType(cmp, p)))}]);
+				getFullPath(cmp, type.lookup).concat([{name: type.name.name, args: switch type.params.map(p -> Type.fromType(cmp, p)) {
+					case []: None;
+					case params: Some(params);
+				}}]);
 			},
 			_ => throw "error!"
 		);

@@ -15,15 +15,15 @@ class Protocol extends Namespace {
 			lookup: lookup,
 			span: ast.span,
 			name: ast.name,
-			params: None
+			params: []
 		});
 
-		for(generic in ast.generics.mapArray(Generic.fromAST.bind(lookup, _))) {
-			protocol.generics.add(generic.name.name, generic);
+		for(typevar in ast.generics.mapArray(a -> TypeVar.fromAST(lookup, a))) {
+			protocol.typevars.add(typevar.name.name, typevar);
 		}
 
 		if(ast.params.isSome()) {
-			protocol.params = Some(ast.params.value().of.map(param -> protocol.makeTypePath(param)));
+			protocol.params = ast.params.value().of.map(param -> protocol.makeTypePath(param));
 		}
 
 		if(ast.parents.isSome()) {

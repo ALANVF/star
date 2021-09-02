@@ -26,7 +26,8 @@ abstract class Kind extends Namespace {
 	}
 
 	override function hasErrors() {
-		return super.hasErrors() || methods.some(m -> m.hasErrors())
+		return super.hasErrors()
+			|| methods.some(m -> m.hasErrors())
 			|| operators.some(o -> o.hasErrors());
 	}
 

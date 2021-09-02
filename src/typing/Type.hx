@@ -19,7 +19,7 @@ enum TypeKind {
 	TErased(span: Span);
 	TMulti(types: Array<Type>);
 	TApplied(type: Type, params: Array<Type>);
-	TGeneric(generic: Generic);
+	TGeneric(typevar: TypeVar);
 	TModular(type: Type, unit: Unit);
 }
 
@@ -62,13 +62,13 @@ class Type {
 
 	function simpleName(): String return switch t {
 		case TPath(path, _): path.simpleName();
-		case TConcrete({lookup: lookup, name: {name: name}, params: None}):
+		case TConcrete({lookup: lookup, name: {name: name}, params: []}):
 			getFullPath(lookup).map(p -> '$p.$name').orElse(name);
-		case TGeneric({name: {name: name}, params: None}): name;
-		case TConcrete({lookup: lookup, name: {name: name}, params: Some(params)}):
+		case TConcrete({lookup: lookup, name: {name: name}, params: params}):
 			getFullPath(lookup).map(p -> '$p.$name').orElse(name)
 			+ '[${params.map(_ -> "...").join(", ")}]';
-		case TGeneric({name: {name: name}, params: Some(params)}): '$name[${params.map(_ -> "...").join(", ")}]';
+		case TGeneric({name: {name: name}, params: []}): name;
+		case TGeneric({name: {name: name}, params: params}): '$name[${params.map(_ -> "...").join(", ")}]';
 		case TThis(_, _): "This";
 		case TErased(_): "_";
 		case TMulti(types): types[0].simpleName();
@@ -96,7 +96,7 @@ class Type {
 			case TErased(span): None;
 			case TMulti(types): throw "NYI!";
 			case TApplied(type, params): throw "NYI!";
-			case TGeneric(generic): throw "NYI!";
+			case TGeneric(typevar): throw "NYI!";
 			case TModular(_, unit): unit.findType(path, absolute, cache);
 		}
 	}

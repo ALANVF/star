@@ -10,10 +10,10 @@ import typing.Traits;
 abstract class TypeDecl {
 	final errors: Array<Diagnostic> = [];
 	final lookup: ILookupType;
-	@:ignore final generics = new MultiMap<String, Generic>();
+	@:ignore final typevars = new MultiMap<String, TypeVar>();
 	final span: Span;
 	final name: Ident;
-	var params: Option<Array<Type>>;
+	var params: Array<Type>;
 	var hidden: Option<Option<Type>> = None;
 	final friends: Array<Type> = [];
 	@:ignore var thisType: Type;
@@ -41,15 +41,15 @@ abstract class TypeDecl {
 					errors.push(Errors.notYetImplemented(this.span));
 					None;
 				},
-				at([[typeName, args]]) => switch generics.find(typeName) {
+				at([[typeName, args]]) => switch typevars.find(typeName) {
 					case None: lookup.findType(path, true, cache);
 					case Some([type]): switch [args, type.params] {
 						case [[], _]: Some(type.thisType); // should probably curry parametrics but eh
-						case [_, None]:
+						case [_, []]:
 							// should this check for type aliases?
 							errors.push(Errors.invalidTypeApply(this.span, "Attempt to apply arguments to a non-parametric type"));
 							None;
-						case [_, Some(params)]:
+						case [_, params]:
 							if(args.length > params.length) {
 								errors.push(Errors.invalidTypeApply(this.span, "Too many arguments"));
 								None;
@@ -74,13 +74,14 @@ abstract class TypeDecl {
 	}
 
 	function hasErrors() {
-		return errors.length != 0 || generics.allValues().some(g -> g.hasErrors());
+		return errors.length != 0
+			|| typevars.allValues().some(g -> g.hasErrors());
 	}
 
 	function allErrors() {
 		var result = errors;
 
-		for(generic in generics) result = result.concat(generic.allErrors());
+		for(typevar in typevars) result = result.concat(typevar.allErrors());
 
 		return result;
 	}

@@ -6,7 +6,7 @@ import parsing.ast.Ident;
 import typing.Traits;
 
 class MultiInit extends Init {
-	@:ignore final generics = new MultiMap<String, Generic>();
+	@:ignore final typevars = new MultiMap<String, TypeVar>();
 	final params: Array<{label: Ident, name: Ident, type: Type, value: Option<Expr>}> = [];
 	final fuzzyName: String;
 	var isUnordered: Bool = true;
@@ -38,8 +38,8 @@ class MultiInit extends Init {
 			body: ast.body.map(body -> body.stmts())
 		});
 
-		for(generic in ast.generics.mapArray(Generic.fromAST.bind(decl, _))) {
-			init.generics.add(generic.name.name, generic);
+		for(typevar in ast.generics.mapArray(a -> TypeVar.fromAST(decl, a))) {
+			init.typevars.add(typevar.name.name, typevar);
 		}
 		
 		for(attr => span in ast.attrs) switch attr {

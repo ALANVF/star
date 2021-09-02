@@ -5,13 +5,13 @@ import reporting.Diagnostic;
 import text.Span;
 import typing.Traits;
 
-private inline function notOverloadable(decl: ITypeDecl, ast: parsing.ast.decls.Operator) {
+private inline function notOverloadable(decl: ITypeDecl, ast: parsing.ast.decls.Operator, yet = false) {
 	return new Diagnostic({
 		message: "Invalid operator overload",
 		info: [
 			Spanned({
 				span: ast.symbolSpan,
-				message: 'The `${ast.symbol}` operator cannot be overloaded',
+				message: 'The `${ast.symbol}` operator cannot be overloaded' + (yet? " (yet)" : ""),
 				isPrimary: true
 			}),
 			Spanned({
@@ -117,6 +117,9 @@ abstract class Operator extends AnyMethod {
 					case "+=" | "-=" | "*=" | "**=" | "/=" | "//=" | "%=" | "%%=" | "&=" | "|=" | "^=" | "<<=" | ">>=" | "&&=" | "||=" | "^^=" | "!!=":
 						decl.errors.push(notOverloadable(decl, ast));
 						return None;
+					case "...":
+						decl.errors.push(notOverloadable(decl, ast, true));
+						return None;
 					default:
 						decl.errors.push(unknownOp(decl, ast));
 						return None;
@@ -154,6 +157,9 @@ abstract class Operator extends AnyMethod {
 						return None;
 					case "+=" | "-=" | "*=" | "**=" | "/=" | "//=" | "%=" | "%%=" | "&=" | "|=" | "^=" | "<<=" | ">>=" | "&&=" | "||=" | "^^=" | "!!=":
 						decl.errors.push(notOverloadable(decl, ast));
+						return None;
+					case "...":
+						decl.errors.push(notOverloadable(decl, ast, true));
 						return None;
 					default:
 						decl.errors.push(unknownOp(decl, ast));

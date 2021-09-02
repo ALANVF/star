@@ -1,7 +1,7 @@
 package typing;
 
 class CastMethod extends Method {
-	@:ignore final generics = new MultiMap<String, Generic>();
+	@:ignore final typevars = new MultiMap<String, TypeVar>();
 	var type: Type;
 
 	static function fromAST(decl, ast: parsing.ast.decls.Method) {
@@ -16,8 +16,8 @@ class CastMethod extends Method {
 			body: ast.body.map(body -> body.stmts())
 		});
 
-		for(generic in ast.generics.mapArray(Generic.fromAST.bind(decl, _))) {
-			method.generics.add(generic.name.name, generic);
+		for(typevar in ast.generics.mapArray(a -> TypeVar.fromAST(decl, a))) {
+			method.typevars.add(typevar.name.name, typevar);
 		}
 
 		final typeName = method.type.simpleName();
@@ -53,10 +53,11 @@ class CastMethod extends Method {
 	}
 
 	override function hasErrors() {
-		return super.hasErrors() || generics.allValues().some(g -> g.hasErrors());
+		return super.hasErrors()
+			|| typevars.allValues().some(g -> g.hasErrors());
 	}
 
 	override function allErrors() {
-		return super.allErrors().concat(generics.allValues().flatMap(g -> g.allErrors()));
+		return super.allErrors().concat(typevars.allValues().flatMap(g -> g.allErrors()));
 	}
 }

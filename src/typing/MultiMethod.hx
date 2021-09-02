@@ -6,7 +6,7 @@ import parsing.ast.Ident;
 import typing.Traits;
 
 class MultiMethod extends Method {
-	@:ignore final generics = new MultiMap<String, Generic>();
+	@:ignore final typevars = new MultiMap<String, TypeVar>();
 	final params: Array<{label: Ident, name: Ident, type: Type, value: Option<Expr>}> = [];
 	final fuzzyName: String;
 	var isUnordered: Bool = false;
@@ -39,8 +39,8 @@ class MultiMethod extends Method {
 			body: ast.body.map(body -> body.stmts())
 		});
 
-		for(generic in ast.generics.mapArray(Generic.fromAST.bind(decl, _))) {
-			method.generics.add(generic.name.name, generic);
+		for(typevar in ast.generics.mapArray(a -> TypeVar.fromAST(decl, a))) {
+			method.typevars.add(typevar.name.name, typevar);
 		}
 
 		for(attr => span in ast.attrs) switch attr {

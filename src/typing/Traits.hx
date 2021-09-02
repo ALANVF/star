@@ -89,7 +89,6 @@ typedef ITaggedCases = ITypeDecl & {
 typedef ITypeDecl = ILookupType & IDecl & {
 	final lookup: ILookupType;
 	final name: Ident;
-	var params: Option<Array<Type>>;
 }
 
 typedef ITypeDecls = {

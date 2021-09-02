@@ -13,15 +13,15 @@ class TaggedKind extends Kind {
 			lookup: lookup,
 			span: ast.span,
 			name: ast.name,
-			params: None
+			params: []
 		});
 
-		for(generic in ast.generics.mapArray(Generic.fromAST.bind(lookup, _))) {
-			kind.generics.add(generic.name.name, generic);
+		for(typevar in ast.generics.mapArray(a -> TypeVar.fromAST(lookup, a))) {
+			kind.typevars.add(typevar.name.name, typevar);
 		}
 
 		if(ast.params.isSome()) {
-			kind.params = Some(ast.params.value().of.map(param -> kind.makeTypePath(param)));
+			kind.params = ast.params.value().of.map(param -> kind.makeTypePath(param));
 		}
 
 		if(ast.repr.isSome()) {
@@ -103,7 +103,9 @@ class TaggedKind extends Kind {
 	}
 
 	override function hasErrors() {
-		return super.hasErrors() || taggedCases.some(c -> c.hasErrors()) || members.some(m -> m.hasErrors());
+		return super.hasErrors()
+			|| taggedCases.some(c -> c.hasErrors())
+			|| members.some(m -> m.hasErrors());
 	}
 
 	override function allErrors() {

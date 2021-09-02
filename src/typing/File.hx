@@ -74,7 +74,7 @@ class File {
 			var lastWasUse = true;
 
 			for(decl in decls) switch decl {
-				case DUse({span: span, kind: kind, generics: generics}):
+				case DUse({span: span, kind: kind, generics: typevars}):
 					if(!lastWasUse) {
 						lastWasUse = true;
 						errors.push(new Diagnostic({
@@ -90,7 +90,7 @@ class File {
 						}));
 					}
 
-					if(generics != Nil) {
+					if(typevars != Nil) {
 						throw "NYI!";
 					}
 

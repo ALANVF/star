@@ -10,11 +10,11 @@ class OpaqueAlias extends Alias {
 			lookup: lookup,
 			span: ast.span,
 			name: ast.name,
-			params: None
+			params: []
 		});
 
-		for(generic in ast.generics.mapArray(Generic.fromAST.bind(lookup, _))) {
-			alias.generics.add(generic.name.name, generic);
+		for(typevar in ast.generics.mapArray(a -> TypeVar.fromAST(lookup, a))) {
+			alias.typevars.add(typevar.name.name, typevar);
 		}
 
 		final body = switch ast.kind {
@@ -23,7 +23,7 @@ class OpaqueAlias extends Alias {
 		};
 
 		if(ast.params.isSome()) {
-			alias.params = Some(ast.params.value().of.map(param -> alias.makeTypePath(param)));
+			alias.params = ast.params.value().of.map(param -> alias.makeTypePath(param));
 		}
 
 		for(attr => span in ast.attrs) switch attr {

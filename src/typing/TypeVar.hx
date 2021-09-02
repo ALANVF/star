@@ -5,19 +5,19 @@ import text.Span;
 import parsing.ast.Ident;
 import typing.Traits;
 
-using typing.GenericRule.Tools;
+using typing.TypeRule.TypeRuleTools;
 
 // Dear god what have I gotten myself into
 
 @:build(util.Auto.build({keepInit: true}))
-class Generic {
+class TypeVar {
 	final errors: Array<Diagnostic> = [];
 	final lookup: ILookupType;
 	final span: Span;
 	final name: Ident;
-	var params: Option<Array<Type>>;
-	var parents: Option<Array<Type>>;
-	var rule: Option<GenericRule>;
+	var params: Array<Type>;
+	var parents: Array<Type>;
+	var rule: Option<TypeRule>;
 	var defaultInit: Option<DefaultInit> = None;
 	var deinit: Option<Deinit> = None;
 	final inits: Array<Init> = [];
@@ -40,86 +40,86 @@ class Generic {
 		thisType = new Type(TGeneric(this));
 	}
 
-	static function fromAST(lookup, ast: parsing.ast.decls.GenericParam): Generic {
-		final generic = new Generic({
+	static function fromAST(lookup, ast: parsing.ast.decls.GenericParam): TypeVar {
+		final typevar = new TypeVar({
 			lookup: lookup,
 			span: ast.span,
 			name: ast.name,
-			params: ast.params.map(p -> p.of.map(x -> lookup.makeTypePath(x))),
-			parents: ast.parents.map(p -> p.parents.map(x -> lookup.makeTypePath(x))),
-			rule: ast.rule.map(r -> GenericRule.fromAST(lookup, r.rule))
+			params: ast.params.doOrElse(p => p.of.map(x -> lookup.makeTypePath(x)), []),
+			parents: ast.parents.doOrElse(p => p.parents.map(x -> lookup.makeTypePath(x)), []),
+			rule: ast.rule.map(r -> TypeRule.fromAST(lookup, r.rule))
 		});
 		
 		for(attr => span in ast.attrs) switch attr {
-			case IsNative(_, _, _) if(generic.native.isSome()): generic.errors.push(Errors.duplicateAttribute(generic, ast.name.name, "native", span));
+			case IsNative(_, _, _) if(typevar.native.isSome()): typevar.errors.push(Errors.duplicateAttribute(typevar, ast.name.name, "native", span));
 			case IsNative(_, [{label: {name: "repr"}, expr: ELitsym(_, repr)}], _): switch repr {
-				case "void": generic.native = Some(NVoid);
-				case "bool": generic.native = Some(NBool);
-				case "voidptr": generic.native = Some(NVoidPtr);
-				default: generic.errors.push(Errors.invalidAttribute(generic, generic.name.name, "native", span));
+				case "void": typevar.native = Some(NVoid);
+				case "bool": typevar.native = Some(NBool);
+				case "voidptr": typevar.native = Some(NVoidPtr);
+				default: typevar.errors.push(Errors.invalidAttribute(typevar, typevar.name.name, "native", span));
 			}
 			case IsNative(_, [
 				{label: {name: "repr"}, expr: ELitsym(_, "ptr")},
 				{label: {name: "elem"}, expr: EType(t)}
-			], _): generic.native = Some(NPtr(generic.makeTypePath(t)));
+			], _): typevar.native = Some(NPtr(typevar.makeTypePath(t)));
 			case IsNative(_, [
 				{label: {name: "repr"}, expr: ELitsym(_, "dec")},
 				{label: {name: "bits"}, expr: EInt(_, bits, _)}
 			], _): switch bits {
-				case 32: generic.native = Some(NDec32);
-				case 64: generic.native = Some(NDec64);
-				default: generic.errors.push(Errors.invalidAttribute(generic, generic.name.name, "native", span));
+				case 32: typevar.native = Some(NDec32);
+				case 64: typevar.native = Some(NDec64);
+				default: typevar.errors.push(Errors.invalidAttribute(typevar, typevar.name.name, "native", span));
 			}
 			case IsNative(_, [
 				{label: {name: "repr"}, expr: ELitsym(_, "int")},
 				{label: {name: "bits"}, expr: EInt(_, bits, _)},
 				{label: {name: "signed"}, expr: EBool(_, signed)}
 			], _): switch bits {
-				case 8: generic.native = Some(signed ? NInt8 : NUInt8);
-				case 16: generic.native = Some(signed ? NInt16 : NUInt16);
-				case 32: generic.native = Some(signed ? NInt32 : NUInt32);
-				case 64: generic.native = Some(signed ? NInt64 : NUInt64);
-				default: generic.errors.push(Errors.invalidAttribute(generic, generic.name.name, "native", span));
+				case 8: typevar.native = Some(signed ? NInt8 : NUInt8);
+				case 16: typevar.native = Some(signed ? NInt16 : NUInt16);
+				case 32: typevar.native = Some(signed ? NInt32 : NUInt32);
+				case 64: typevar.native = Some(signed ? NInt64 : NUInt64);
+				default: typevar.errors.push(Errors.invalidAttribute(typevar, typevar.name.name, "native", span));
 			}
-			case IsNative(_, _, _): generic.errors.push(Errors.invalidAttribute(generic, generic.name.name, "native", span));
+			case IsNative(_, _, _): typevar.errors.push(Errors.invalidAttribute(typevar, typevar.name.name, "native", span));
 			
-			case IsFlags: generic.isFlags = true;
+			case IsFlags: typevar.isFlags = true;
 			
-			case IsStrong: generic.isStrong = true;
+			case IsStrong: typevar.isStrong = true;
 
-			case IsUncounted: generic.isUncounted = true;
+			case IsUncounted: typevar.isUncounted = true;
 		}
 
 		if(ast.body.isSome()) {
 			for(decl in ast.body.value().of) switch decl {
-				case DMember(m) if(m.attrs.exists(IsStatic)): generic.staticMembers.push(Member.fromAST(generic, m));
-				case DMember(m): generic.members.push(Member.fromAST(generic, m));
+				case DMember(m) if(m.attrs.exists(IsStatic)): typevar.staticMembers.push(Member.fromAST(typevar, m));
+				case DMember(m): typevar.members.push(Member.fromAST(typevar, m));
 
-				case DCase(c = {kind: Tagged(_)}): generic.taggedCases.push(TaggedCase.fromAST(generic, c));
-				case DCase(c = {kind: Scalar(_, _)}): generic.valueCases.push(ValueCase.fromAST(generic, c));
+				case DCase(c = {kind: Tagged(_)}): typevar.taggedCases.push(TaggedCase.fromAST(typevar, c));
+				case DCase(c = {kind: Scalar(_, _)}): typevar.valueCases.push(ValueCase.fromAST(typevar, c));
 	
-				case DMethod(m) if(m.attrs.exists(IsStatic)): StaticMethod.fromAST(generic, m).forEach(x -> generic.staticMethods.push(x));
-				case DMethod(m): generic.methods.push(Method.fromAST(generic, m));
+				case DMethod(m) if(m.attrs.exists(IsStatic)): StaticMethod.fromAST(typevar, m).forEach(x -> typevar.staticMethods.push(x));
+				case DMethod(m): typevar.methods.push(Method.fromAST(typevar, m));
 	
-				case DInit(i): generic.inits.push(Init.fromAST(generic, i));
+				case DInit(i): typevar.inits.push(Init.fromAST(typevar, i));
 	
-				case DOperator(o): Operator.fromAST(generic, o).forEach(x -> generic.operators.push(x));
+				case DOperator(o): Operator.fromAST(typevar, o).forEach(x -> typevar.operators.push(x));
 	
-				case DDefaultInit(i) if(generic.staticInit.isSome()): generic.staticInit = Some(StaticInit.fromAST(generic, i));
-				case DDefaultInit(i): generic.defaultInit = Some(DefaultInit.fromAST(generic, i));
+				case DDefaultInit(i) if(typevar.staticInit.isSome()): typevar.staticInit = Some(StaticInit.fromAST(typevar, i));
+				case DDefaultInit(i): typevar.defaultInit = Some(DefaultInit.fromAST(typevar, i));
 				
-				case DDeinit(d) if(generic.staticDeinit.isSome()): generic.staticDeinit = Some(StaticDeinit.fromAST(generic, d));
-				case DDeinit(d): generic.deinit = Some(Deinit.fromAST(generic, d));
+				case DDeinit(d) if(typevar.staticDeinit.isSome()): typevar.staticDeinit = Some(StaticDeinit.fromAST(typevar, d));
+				case DDeinit(d): typevar.deinit = Some(Deinit.fromAST(typevar, d));
 				
-				default: generic.errors.push(Errors.unexpectedDecl(generic, ast.name.name, decl));
+				default: typevar.errors.push(Errors.unexpectedDecl(typevar, ast.name.name, decl));
 			}
 		}
 
-		return generic;
+		return typevar;
 	}
 
 	inline function declName() {
-		return "generic type";
+		return "type variable";
 	}
 
 	function findType(path: LookupPath, absolute = false, cache: List<{}> = Nil) {

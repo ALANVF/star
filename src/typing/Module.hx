@@ -14,15 +14,15 @@ class Module extends Namespace {
 			lookup: lookup,
 			span: ast.span,
 			name: ast.name,
-			params: None
+			params: []
 		});
 
-		for(generic in ast.generics.mapArray(Generic.fromAST.bind(lookup, _))) {
-			module.generics.add(generic.name.name, generic);
+		for(typevar in ast.generics.mapArray(a -> TypeVar.fromAST(lookup, a))) {
+			module.typevars.add(typevar.name.name, typevar);
 		}
 
 		if(ast.params.isSome()) {
-			module.params = Some(ast.params.value().of.map(param -> module.makeTypePath(param)));
+			module.params = ast.params.value().of.map(param -> module.makeTypePath(param));
 		}
 
 		if(ast.parents.isSome()) {

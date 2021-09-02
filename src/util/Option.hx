@@ -1,11 +1,12 @@
 package util;
 
+import haxe.macro.Expr;
+
 enum Option<T> {
 	None;
 	Some(value: T);
 }
 
-@:noCompletion
 @:publicFields
 class OptionHelper {
 	static inline function fromNull<T>(t: Enum<Option<T>>, value: Null<T>) {
@@ -70,6 +71,20 @@ class OptionHelper {
 			case Some(v): v;
 			case None: other;
 		};
+	}
+
+	static macro function doOrElse<T, U>(value: ExprOf<Option<T>>, and, or: ExprOf<U>): ExprOf<U> {
+		switch and { case macro $i{n} => $v:
+			var dv = switch v {
+				case {expr: EDisplay(v2, _)}: v2;
+				default: v;
+			};
+			return macro switch($value) {
+				case Some($i{n}): $dv;
+				case None: $or;
+			};
+			
+		default: throw "error!"; }
 	}
 
 	static inline function isNone<T>(opt: Option<T>) {

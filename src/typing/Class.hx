@@ -21,15 +21,15 @@ class Class extends Namespace {
 			lookup: lookup,
 			span: ast.span,
 			name: ast.name,
-			params: None
+			params: []
 		});
 
-		for(generic in ast.generics.mapArray(Generic.fromAST.bind(lookup, _))) {
-			cls.generics.add(generic.name.name, generic);
+		for(typevar in ast.generics.mapArray(a -> TypeVar.fromAST(lookup, a))) {
+			cls.typevars.add(typevar.name.name, typevar);
 		}
 
 		if(ast.params.isSome()) {
-			cls.params = Some(ast.params.value().of.map(param -> cls.makeTypePath(param)));
+			cls.params = ast.params.value().of.map(param -> cls.makeTypePath(param));
 		}
 
 		if(ast.parents.isSome()) {
