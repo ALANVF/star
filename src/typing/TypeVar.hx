@@ -37,7 +37,7 @@ class TypeVar {
 	@:ignore var thisType: Type;
 
 	function new() {
-		thisType = new Type(TGeneric(this));
+		thisType = new Type(TTypeVar(this));
 	}
 
 	static function fromAST(lookup, ast: parsing.ast.decls.GenericParam): TypeVar {
