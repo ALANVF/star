@@ -177,12 +177,10 @@ category Power for Int {
 
 		my int = this[abs]
 		my digits = {
-			if int ?= 0 {
-				return "0"
-			} orif base ?= 10 {
-				return int[Str]
-			} else {
-				return "" -> {
+			case {
+				at int ?= 0 => return "0"
+				at base ?= 10 => return int[Str]
+				else => return "" -> {
 					my alphaStart = isUpper[yes: #"A" no: #"a"]
 
 					while int > 0 {

@@ -4,7 +4,6 @@ kind Stmt {
 	has [
 		if: (Span), (Expr)
 		then: (Block)
-		others: (Array[OrIf])
 		else: (Maybe[Tuple[Span, Block]])
 	]
 	

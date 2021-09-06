@@ -51,12 +51,18 @@ module Main {
 
 			my cpuChoice = choices[max][weakness]
 
-			if userChoice ?= cpuChoice[weakness] {
-				Core[say: "\(userChoice[name][capitalize]) beats \(cpuChoice[name]), so you win!"]
-			} orif cpuChoice ?= userChoice[weakness] {
-				Core[say: "\(cpuChoice[name][capitalize]) beats \(userChoice[name]), so you lose..."]
-			} else {
-				Core[say: "It's a draw"]
+			case {
+				at userChoice ?= cpuChoice[weakness] {
+					Core[say: "\(userChoice[name][capitalize]) beats \(cpuChoice[name]), so you win!"]
+				}
+				
+				at cpuChoice ?= userChoice[weakness] {
+					Core[say: "\(cpuChoice[name][capitalize]) beats \(userChoice[name]), so you lose..."]
+				}
+
+				else {
+					Core[say: "It's a draw"]
+				}
 			}
 
 			choices[at: userChoice]++

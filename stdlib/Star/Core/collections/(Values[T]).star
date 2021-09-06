@@ -28,11 +28,14 @@ protocol Values[T] of Positional[T] {
 			throw LengthError[new: newCapacity]
 		}
 
-		if newCapacity > capacity {
-			buffer = buffer[resized: newCapacity]
-			capacity = newCapacity
-		} orif newCapacity < length {
-			length = newCapacity
+		case {
+			at newCapacity > capacity {
+				buffer = buffer[resized: newCapacity]
+				capacity = newCapacity
+			}
+			at newCapacity < length {
+				length = newCapacity
+			}
 		}
 	}
 
@@ -199,14 +202,17 @@ protocol Values[T] of Positional[T] {
 		if 0 <= to < length {
 			my diff = values.length - to
 
-			if diff < 0 {
-				;-- Move and then resize
-				this[from: to moveBy: diff]
-				this[resizeBy: diff[abs]]
-			} orif diff > 0 {
-				;-- Resize and then move
-				this[resizeBy: diff]
-				this[from: to moveBy: diff]
+			case {
+				at diff < 0 {
+					;-- Move and then resize
+					this[from: to moveBy: diff]
+					this[resizeBy: diff[abs]]
+				}
+				at diff > 0 {
+					;-- Resize and then move
+					this[resizeBy: diff]
+					this[from: to moveBy: diff]
+				}
 			}
 
 			values[copyInto: buffer]

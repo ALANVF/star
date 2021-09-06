@@ -1,12 +1,10 @@
 module Main {
 	on [evaluateGuess: guess (Str) withCode: code (Str)] (Str) {
 		return guess[collect: {|char, i|
-			if char ?= code[at: i] {
-				return #"X"
-			} orif code[contains: char] {
-				return #"O"
-			} else {
-				return #"-"
+			case {
+				at char ?= code[at: i] => return #"X"
+				at code[contains: char] => return #"O"
+				else => return #"-"
 			}
 		}][sort][reverse]
 	}
@@ -58,11 +56,14 @@ module Main {
 
 			Core[say: "-" * 30]
 
-			if res[all: $0 ?= #"X"] {
-				Core[say: "You won! The code was \(code)"]
-				break
-			} orif i ?= maxGuesses {
-				Core[say: "You lost... The code was \(code)"]
+			case {
+				at res[all: $0 ?= #"X"] {
+					Core[say: "You won! The code was \(code)"]
+					break
+				}
+				at i ?= maxGuesses {
+					Core[say: "You lost... The code was \(code)"]
+				}
 			}
 		}
 	}

@@ -62,7 +62,6 @@ class Lexer {
 		"use" => getEnumIndex(Token, T_Use),
 		"has" => getEnumIndex(Token, T_Has),
 		"if" => getEnumIndex(Token, T_If),
-		"orif" => getEnumIndex(Token, T_Orif),
 		"else" => getEnumIndex(Token, T_Else),
 		"while" => getEnumIndex(Token, T_While),
 		"for" => getEnumIndex(Token, T_For),

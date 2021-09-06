@@ -361,19 +361,29 @@
 		"keywords": {
 			"patterns": [
 				{
-					"match": "(?<!\\.)\\b(?:if|orif|else|case|match|at)\\b(?!')",
+					"match": "(?<![\\.'])\\b(?:if|else|case|match|at)\\b(?!')",
 					"name": "keyword.control.branch.star"
 				},
 				{
-					"match": "(?<!\\.)\\b(?:next|break|return)\\b(?!')",
-					"name": "keyword.control.transfer.star"
+					"match": "(?<![\\.'])\\breturn\\b(?!')",
+					"name": "keyword.control.return.star"
 				},
 				{
-					"match": "(?<!\\.)\\bwhile\\b(?!')",
-					"name": "keyword.control.loop.star"
+					"begin": "(?<![\\.'])\\b(?:next|break)\\b(?![A-Z'])",
+					"beginCaptures": [
+						{
+							"name": "keyword.control.transfer.star"
+						}
+					],
+					"end": "(?=\\s*$|^|\\s*[;,}])",
+					"patterns": [
+						{
+							"include": "#literals"
+						}
+					]
 				},
 				{
-					"begin": "(?<!\\.)\\bfor\\b(?![A-Z'])",
+					"begin": "(?<![\\.'])\\bwhile\\b(?![A-Z'])",
 					"beginCaptures": [
 						{
 							"name": "keyword.control.loop.star"
@@ -382,7 +392,7 @@
 					"end": "^",
 					"patterns": [
 						{
-							"match": "\\b(in|from|after|(?:up|down)?to|by|while)(:)",
+							"match": "\\b(label)(:)",
 							"captures": {
 								"1": {
 									"name": "entity.name.function.label.star"
@@ -398,12 +408,58 @@
 					]
 				},
 				{
-					"match": "(?<!\\.)\\b(?:catch|throw|try)\\b(?!')",
+					"begin": "(?<![\\.'])\\bfor\\b(?![A-Z'])",
+					"beginCaptures": [
+						{
+							"name": "keyword.control.loop.star"
+						}
+					],
+					"end": "^",
+					"patterns": [
+						{
+							"match": "\\b(in|from|after|(?:up|down)?to|times|by|while|label)(:)",
+							"captures": {
+								"1": {
+									"name": "entity.name.function.label.star"
+								},
+								"2": {
+									"name": "punctuation.separator.label.star"
+								}
+							}
+						},
+						{
+							"include": "#expressions"
+						}
+					]
+				},
+				{
+					"match": "(?<![\\.'])\\b(?:catch|throw|try)\\b(?!')",
 					"name": "keyword.control.exception.star"
 				},
 				{
-					"match": "(?<!\\.)\\bdo\\b(?!')",
-					"name": "keyword.control.exception.star"
+					"begin": "(?<![\\.'])\\bdo\\b(?![A-Z'])",
+					"beginCaptures": [
+						{
+							"name": "keyword.control.star"
+						}
+					],
+					"end": "^",
+					"patterns": [
+						{
+							"match": "\\b(label)(:)",
+							"captures": {
+								"1": {
+									"name": "entity.name.function.label.star"
+								},
+								"2": {
+									"name": "punctuation.separator.label.star"
+								}
+							}
+						},
+						{
+							"include": "#expressions"
+						}
+					]
 				},
 				{
 					"match": "(?:(?<=\\.{3})|(?<!\\.))\\b(my)\\s+([a-z_][\\w']*)(?:(?<=')|\\b)",
@@ -431,19 +487,19 @@
 					}
 				},
 				{
-					"match": "(?<!\\.)\\bmy\\b(?!')",
+					"match": "(?<![\\.'])\\bmy\\b(?!')",
 					"name": "keyword.variable-declaration.star"
 				},
 				{
-					"match": "(?<!\\.)\\bhas\\b(?!')",
+					"match": "(?<![\\.'])\\bhas\\b(?!')",
 					"name": "keyword.case.star"
 				},
 				{
-					"match": "(?<!\\.)\\bthis\\b(?!')",
+					"match": "(?<![\\.'])\\bthis\\b(?!')",
 					"name": "variable.language.star"
 				},
 				{
-					"match": "(?<!\\.)\\bof\\b(?!')",
+					"match": "(?<![\\.'])\\bof\\b(?!')",
 					"name": "keyword.other.star"
 				}
 			]
@@ -819,7 +875,7 @@
 							"name": "keyword.decl.star"
 						}
 					],
-					"end": "$",
+					"end": "(?=\\s*$|^|\\s*[;}]|\\s*,(?!\\s*[A-Z]))",
 					"patterns": [
 						{
 							"include": "#comments"

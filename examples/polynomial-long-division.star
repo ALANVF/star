@@ -92,20 +92,18 @@ class Poly {
 		
 		for my i, my e in: terms {
 			if e != 0 {
-				if i != 0 {
-					out[add: [e < 0 yes: " - " no: " + "]]
-				} orif e < 0 {
-					out[add: "-"]
+				case {
+					at i != 0 => out[add: [e < 0 yes: " - " no: " + "]]
+					at e < 0  => out[add: "-"]
 				}
 
 				if e[abs] != 1 {
 					out[add: e[abs]]
 				}
 
-				if i < terms.length - 2 {
-					out[add: "x^\(i)"]
-				} orif i ?= terms.length - 2 {
-					out[add: "x"]
+				case {
+					at i < terms.length - 2  => out[add: "x^\(i)"]
+					at i ?= terms.length - 2 => out[add: "x"]
 				}
 			}
 		}

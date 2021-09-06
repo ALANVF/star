@@ -34,7 +34,6 @@ class Lexer {
 		"use" => #case_id Token[use]
 		"has" => #case_id Token[has]
 		"if" => #case_id Token[if]
-		"orif" => #case_id Token[orif]
 		"else" => #case_id Token[else]
 		"while" => #case_id Token[while]
 		"for" => #case_id Token[for]
@@ -99,12 +98,10 @@ class Lexer {
 
 	on [trim] {
 		while true {
-			if reader[eat: hspace]? {
-				next
-			} orif reader[eat: #";"] && reader[peekNot: vspace] {
-				this[readComment]
-			} else {
-				break
+			case {
+				at reader[eat: hspace]? => next
+				at reader[eat: #";"] && reader[peekNot: vspace] => this[readComment]
+				else => break
 			}
 		}
 	}
@@ -234,22 +231,23 @@ class Lexer {
 
 				;-- =, =>
 				at #"=" {
-					if reader[next][eat: #">"] {
-						return Token[eqGt]
-					} orif reader[eat: #"="] {
-						throw Diagnostic[
-							severity: Severity.error
-							message: "Syntax error"
-							info: #[
-								Info[
-									span: this[span]
-									message: "Please use `?=` instead of `==` in Star"
-									priority: Priority.primary
+					reader[next]
+					case {
+						at reader[eat: #">"] => return Token[eqGt]
+						at reader[eat: #"="] {
+							throw Diagnostic[
+								severity: Severity.error
+								message: "Syntax error"
+								info: #[
+									Info[
+										span: this[span]
+										message: "Please use `?=` instead of `==` in Star"
+										priority: Priority.primary
+									]
 								]
 							]
-						]
-					} else {
-						return Token[eq]
+						}
+						else => return Token[eq]
 					}
 				}
 
@@ -264,27 +262,25 @@ class Lexer {
 
 				;-- !, !=, !!, !!=
 				at #"!" {
-					if reader[next][eat: #"="] {
-						return Token[bangEq]
-					} orif reader[eat: #"!"] {
-						if reader[eat: #"="] {
-							return Token[bangBangEq]
-						} else {
-							return Token[bangBang]
+					case {
+						at reader[next][eat: #"="] => return Token[bangEq]
+						at reader[eat: #"!"] {
+							if reader[eat: #"="] {
+								return Token[bangBangEq]
+							} else {
+								return Token[bangBang]
+							}
 						}
-					} else {
-						return Token[bang]
+						else => return Token[bang]
 					}
 				}
 
 				;-- +, +=, ++
 				at #"+" {
-					if reader[next][eat: #"="] {
-						return Token[plusEq]
-					} orif reader[eat: #"+"] {
-						return Token[plusPlus]
-					} else {
-						return Token[plus]
+					case {
+						at reader[next][eat: #"="] => return Token[plusEq]
+						at reader[eat: #"+"] => return Token[plusPlus]
+						else => return Token[plus]
 					}
 				}
 
@@ -294,8 +290,8 @@ class Lexer {
 					case {
 						at reader[eat: #"="] => return Token[minusEq]
 						at reader[eat: #">"] => return Token[cascade: 1]
-						at reader[eat: #"-"] {
-							if reader[peek: #"-"] {
+						at reader[eat: #"-"] => case {
+							at reader[peek: #"-"] {
 								my depth = 2
 
 								while reader[eat: #"-"] {
@@ -321,11 +317,9 @@ class Lexer {
 										]
 									]
 								}
-							} orif reader[eat: #">"] {
-								return Token[cascade: 2]
-							} else {
-								return Token[minusMinus]
 							}
+							at reader[eat: #">"] => return Token[cascade: 2]
+							else => return Token[minusMinus]
 						}
 						else => return Token[minus]
 					}
@@ -333,121 +327,121 @@ class Lexer {
 
 				;-- *, *=, **, **=
 				at #"*" {
-					if reader[next][eat: #"="] {
-						return Token[starEq]
-					} orif reader[eat: #"*"] {
-						if reader[eat: #"="] {
-							return Token[starStarEq]
-						} else {
-							return Token[starStar]
+					case {
+						at reader[next][eat: #"="] => return Token[starEq]
+						at reader[eat: #"*"] {
+							if reader[eat: #"="] {
+								return Token[starStarEq]
+							} else {
+								return Token[starStar]
+							}
 						}
-					} else {
-						return Token[star]
+						else => return Token[star]
 					}
 				}
 
 				;-- /, /=, //, //=
 				at #"/" {
-					if reader[next][eat: #"="] {
-						return Token[divEq]
-					} orif reader[eat: #"/"] {
-						if reader[eat: #"="] {
-							return Token[divDivEq]
-						} else {
-							return Token[divDiv]
+					case {
+						at reader[next][eat: #"="] => return Token[divEq]
+						at reader[eat: #"/"] {
+							if reader[eat: #"="] {
+								return Token[divDivEq]
+							} else {
+								return Token[divDiv]
+							}
 						}
-					} else {
-						return Token[div]
+						else => return Token[div]
 					}
 				}
 
 				;-- %, %=, %%, %%=
 				at #"%" {
-					if reader[next][eat: #"="] {
-						return Token[modEq]
-					} orif reader[eat: #"%"] {
-						if reader[eat: #"="] {
-							return Token[modModEq]
-						} else {
-							return Token[modMod]
+					case {
+						at reader[next][eat: #"="] => return Token[modEq]
+						at reader[eat: #"%"] {
+							if reader[eat: #"="] {
+								return Token[modModEq]
+							} else {
+								return Token[modMod]
+							}
 						}
-					} else {
-						return Token[mod]
+						else => return Token[mod]
 					}
 				}
 
 				;-- &, &=, &&, &&=
 				at #"&" {
-					if reader[next][eat: #"="] {
-						return Token[andEq]
-					} orif reader[eat: #"&"] {
-						if reader[eat: #"="] {
-							return Token[andAndEq]
-						} else {
-							return Token[andAnd]
+					case {
+						at reader[next][eat: #"="] => return Token[andEq]
+						at reader[eat: #"&"] {
+							if reader[eat: #"="] {
+								return Token[andAndEq]
+							} else {
+								return Token[andAnd]
+							}
 						}
-					} else {
-						return Token[and]
+						else => return Token[and]
 					}
 				}
 
 				;-- |, |=, ||, ||=
 				at #"|" {
-					if reader[next][eat: #"="] {
-						return Token[barEq]
-					} orif reader[eat: #"|"] {
-						if reader[eat: #"="] {
-							return Token[barBarEq]
-						} else {
-							return Token[barBar]
+					case {
+						at reader[next][eat: #"="] => return Token[barEq]
+						at reader[eat: #"|"] {
+							if reader[eat: #"="] {
+								return Token[barBarEq]
+							} else {
+								return Token[barBar]
+							}
 						}
-					} else {
-						return Token[bar]
+						else => return Token[bar]
 					}
 				}
 
 				;-- ^, ^=, ^^, ^^=
 				at #"^" {
-					if reader[next][eat: #"="] {
-						return Token[caretEq]
-					} orif reader[eat: #"^"] {
-						if reader[eat: #"="] {
-							return Token[caretCaretEq]
-						} else {
-							return Token[caretCaret]
+					case {
+						at reader[next][eat: #"="] => return Token[caretEq]
+						at reader[eat: #"^"] {
+							if reader[eat: #"="] {
+								return Token[caretCaretEq]
+							} else {
+								return Token[caretCaret]
+							}
 						}
-					} else {
-						return Token[caret]
+						else => return Token[caret]
 					}
 				}
 
 				;-- <, <=, <<, <<=
 				at #"<" {
-					if reader[next][eat: #"="] {
-						return Token[ltEq]
-					} orif reader[eat: #"<"] {
-						if reader[eat: #"="] {
-							return Token[ltLtEq]
-						} else {
-							return Token[ltLt]
+					case {
+						at reader[next][eat: #"="] => return Token[ltEq]
+						at reader[eat: #"<"] {
+							if reader[eat: #"="] {
+								return Token[ltLtEq]
+							} else {
+								return Token[ltLt]
+							}
 						}
-					} else {
-						return Token[lt]
+						else => return Token[lt]
 					}
 				}
 
 				;-- >, >=, >>, >>=
 				at #">" {
-					if reader[next][eat: #"="] {
-						return Token[gtEq]
-					} orif reader[eat: #">"] {
-						if reader[eat: #"="] {
-							return Token[gtGtEq]
-						} else {
-							return Token[gtGt]
+					case {
+						at reader[next][eat: #"="] => return Token[gtEq]
+						at reader[eat: #">"] {
+							if reader[eat: #"="] {
+								return Token[gtGtEq]
+							} else {
+								return Token[gtGt]
+							}
 						}
-					} else {
-						return Token[gt]
+						else => return Token[gt]
 					}
 				}
 
@@ -956,7 +950,7 @@ class Lexer {
 	on [readHexEsc] (Char) {
 		my hex = ""
 
-		for _ from: 1 to: 2 {
+		for _ from: 1 times: 2 {
 			match reader[eat: xdigit] at Maybe[the: my xdigit'] {
 				hex[add: xdigit']
 			} else {
@@ -985,7 +979,7 @@ class Lexer {
 	on [readUniEsc] (Char) {
 		my uni = ""
 
-		for _ from: 1 to: 4 {
+		for _ from: 1 times: 4 {
 			match reader[eat: xdigit] at Maybe[the: my xdigit'] {
 				uni[add: xdigit']
 			} else {
@@ -1015,7 +1009,7 @@ class Lexer {
 	on [readOctEsc] (Char) {
 		my oct = ""
 
-		for _ from: 1 to: 3 {
+		for _ from: 1 times: 3 {
 			match reader[eat: odigit] at Maybe[the: my odigit'] {
 				oct[add: odigit']
 			} else {

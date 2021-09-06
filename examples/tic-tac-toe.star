@@ -26,10 +26,9 @@ class Board {
 		]
 		
 		for my line in: wins {
-			if line[all: $0 ?= Cell.player1] {
-				return Winner.player1
-			} orif line[all: $0 ?= Cell.player2] {
-				return Winner.player2
+			case {
+				at line[all: $0 ?= Cell.player1] => return Winner.player1
+				at line[all: $0 ?= Cell.player2] => return Winner.player2
 			}
 		}
 		

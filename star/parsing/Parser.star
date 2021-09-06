@@ -1869,54 +1869,9 @@ module Parser {
 	
 	on [parseStmt: tokens (Tokens)] (Result[Stmt]) {
 		match tokens {
-			;[at #[
-				Token[my: my span]
-				Token[name: my name span: my span'] = _[asSoftName]
-				...my rest
-			] {
-				my type
-				match This[parseTypeAnno: rest] {
-					at Result[success: my t, rest = _] => type = Maybe[the: t]
-					at Result[failure: _, _] => type = Maybe[none]
-					at my fail => return fail[Result[Stmt]]
-				}
-				
-				my value
-				match rest at #[Token[eq], ...my rest'] {
-					match This[parseFullExpr: rest'] {
-						at Result[success: my expr, rest = _] => value = Maybe[the: expr]
-						at my fail => return fail[Result[Stmt] fatalIfFailed]
-					}
-				} else {
-					value = Maybe[none]
-				}
-				
-				return Result[
-					success: Stmt[my: span name: Ident[span: span' :name] :type :value],
-					rest
-				]
-			}]
-			
 			at #[Token[if: my span], ...my rest] => match This[parseExpr: rest] {
 				at Result[success: my cond, my rest'] => match This[parseBlock: rest'] {
 					at Result[success: my then, my rest''] {
-						my others = #[]
-						while true {
-							match rest'' at #[Token[orif: my span'], ...my rest'''] {
-								match This[parseExpr: rest'''] {
-									at Result[success: my cond', my rest''''] => match This[parseBlock: rest''''] {
-										at Result[success: my block, rest'' = _] {
-											others[add: Stmt.OrIf[span: span' cond: cond' :block]]
-										}
-										at my fail => return fail[Result[Stmt]]
-									}
-									at my fail => return fail[Result[Stmt]]
-								}
-							} else {
-								break
-							}
-						}
-						
 						my else'
 						match rest'' at #[Token[else: my span'], ...my rest'''] {
 							match This[parseBlock: rest'''] {
@@ -1927,10 +1882,7 @@ module Parser {
 							else' = Maybe[none]
 						}
 						
-						return Result[
-							success: Stmt[if: span, cond :then :others else: else'],
-							rest''
-						]
+						return Result[success: Stmt[if: span, cond :then else: else'], rest'']
 					}
 					at my fail => return fail[Result[Stmt]]
 				}
@@ -2634,7 +2586,7 @@ module Parser {
 			parts[add: Expr.StrPart[str: buf]]
 		}
 
-		return Result[success: parts, Series[Token] #[]] ;@@ TODO: generalize Result so we don't need a dummy series
+		return Result[success: parts, Tokens #[]] ;@@ TODO: generalize Result so we don't need a dummy series
 	}
 
 

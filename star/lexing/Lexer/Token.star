@@ -23,7 +23,6 @@ kind Token {
 	has [use: span (Span)]      => [use]      { this.span = span }
 	has [has: span (Span)]      => [has]      { this.span = span }
 	has [if: span (Span)]       => [if]       { this.span = span }
-	has [orif: span (Span)]     => [orif]     { this.span = span }
 	has [else: span (Span)]     => [else]     { this.span = span }
 	has [while: span (Span)]    => [while]    { this.span = span }
 	has [for: span (Span)]      => [for]      { this.span = span }
@@ -209,7 +208,6 @@ kind Token {
 			at Token[use] => return Token[:span name: "use"]
 			at Token[has] => return Token[:span name: "has"]
 			at Token[if] => return Token[:span name: "if"]
-			at Token[orif] => return Token[:span name: "orif"]
 			at Token[else] => return Token[:span name: "else"]
 			at Token[while] => return Token[:span name: "while"]
 			at Token[for] => return Token[:span name: "for"]

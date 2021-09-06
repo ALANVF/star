@@ -1979,21 +1979,6 @@ class Parser {
 		at([T_If(_1), ...rest]) => switch parseExpr(rest) {
 			case Success(trueCond, rest2): switch parseBlock(rest2) {
 				case Success(trueBlk, rest3):
-					final conds = [];
-
-					while(true) rest3._match(
-						at([T_Orif(_2), ...rest4]) => switch parseExpr(rest4) {
-							case Success(cond, rest5): switch parseBlock(rest5) {
-								case Success(blk, rest6):
-									rest3 = rest6;
-									conds.push({span: _2, cond: cond, blk: blk});
-								case err: return cast err;
-							}
-							case err: return cast err;
-						},
-						_ => break
-					);
-
 					final otherwise = rest3._match(
 						at([T_Else(_2), ...rest4]) => switch parseBlock(rest4) {
 							case Success(elseBlk, rest5):
@@ -2004,7 +1989,7 @@ class Parser {
 						_ => None
 					);
 
-					Success(SIf(_1, trueCond, trueBlk, conds, otherwise), rest3);
+					Success(SIf(_1, trueCond, trueBlk, otherwise), rest3);
 
 				case err: cast err;
 			}

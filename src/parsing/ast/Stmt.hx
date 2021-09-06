@@ -25,7 +25,6 @@ enum Stmt {
 		_: Span,
 		cond: Expr,
 		thenBlk: Block,
-		others: Array<{span: Span, cond: Expr, blk: Block}>,
 		elseBlk: Option<Tuple2<Span, Block>>
 	);
 	SCase(
