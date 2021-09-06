@@ -30,12 +30,15 @@ class Auto {
 			var fields: Array<Field> = [];
 			var inits = [];
 			var isOptional = true;
-			
+			final toRemove = [];
+
 			for(f in thisFields) {
+				if(f.access.contains(AStatic)) continue;
+
 				final getThis = ["this", f.name];
 				final getInit = ["init", f.name];
 
-				if(f.meta.find(m -> m.name == ":ignore") != null) {
+				if(f.meta.find(m -> m.name == "ignore") != null) {
 					continue;
 				}
 
@@ -69,11 +72,19 @@ class Auto {
 					
 					default:
 				}
+
+				if(f.meta.find(m -> m.name == "fromInterface") != null) {
+					toRemove.push(f);
+				}
+			}
+
+			if(toRemove.length != 0) for(f in toRemove) {
+				thisFields.remove(f);
 			}
 
 			if(thisClass.superClass != null) {
 				var superIsOptional = false;
-				
+
 				switch thisClass.superClass {
 					case {t: _.get() => superClass}:
 						switch superClass.constructor {

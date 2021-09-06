@@ -1,10 +1,10 @@
 package typing;
 
+import typing.Traits;
 import parsing.ast.Ident;
 import reporting.Diagnostic;
 
 class Class extends Namespace {
-	final parents: Array<Type> = [];
 	final members: Array<Member> = [];
 	final methods: Array<Method> = [];
 	final inits: Array<Init> = [];
@@ -14,7 +14,6 @@ class Class extends Namespace {
 	var native: Option<NativeKind> = None;
 	var isStrong: Bool = false;
 	var isUncounted: Bool = false;
-	var sealed: Option<Option<Type>> = None;
 
 	static function fromAST(lookup, ast: parsing.ast.decls.Class) {
 		final cls = new Class({
@@ -24,7 +23,7 @@ class Class extends Namespace {
 			params: []
 		});
 
-		for(typevar in ast.generics.mapArray(a -> TypeVar.fromAST(lookup, a))) {
+		for(typevar in ast.generics.mapArray(a -> TypeVar.fromAST(cls, a))) {
 			cls.typevars.add(typevar.name.name, typevar);
 		}
 
@@ -34,22 +33,22 @@ class Class extends Namespace {
 
 		if(ast.parents.isSome()) {
 			for(parent in ast.parents.value().parents) {
-				cls.parents.push(lookup.makeTypePath(parent));
+				cls.parents.push(cls.makeTypePath(parent));
 			}
 		}
 
 		for(attr => span in ast.attrs) switch attr {
 			case IsHidden(_) if(cls.hidden.isSome()): cls.errors.push(Errors.duplicateAttribute(cls, ast.name.name, "hidden", span));
 			case IsHidden(None): cls.hidden = Some(None);
-			case IsHidden(Some(outsideOf)): cls.hidden = Some(Some(lookup.makeTypePath(outsideOf)));
+			case IsHidden(Some(outsideOf)): cls.hidden = Some(Some(cls.makeTypePath(outsideOf)));
 
 			case IsFriend(_) if(cls.friends.length != 0): cls.errors.push(Errors.duplicateAttribute(cls, ast.name.name, "friend", span));
-			case IsFriend(One(friend)): cls.friends.push(lookup.makeTypePath(friend));
-			case IsFriend(Many(_, friends, _)): for(friend in friends) cls.friends.push(lookup.makeTypePath(friend));
+			case IsFriend(One(friend)): cls.friends.push(cls.makeTypePath(friend));
+			case IsFriend(Many(_, friends, _)): for(friend in friends) cls.friends.push(cls.makeTypePath(friend));
 
 			case IsSealed(_) if(cls.sealed.isSome()): cls.errors.push(Errors.duplicateAttribute(cls, ast.name.name, "sealed", span));
 			case IsSealed(None): cls.sealed = Some(None);
-			case IsSealed(Some(outsideOf)): cls.sealed = Some(Some(lookup.makeTypePath(outsideOf)));
+			case IsSealed(Some(outsideOf)): cls.sealed = Some(Some(cls.makeTypePath(outsideOf)));
 
 			case IsNative(_, _, _) if(cls.native.isSome()): cls.errors.push(Errors.duplicateAttribute(cls, ast.name.name, "native", span));
 			case IsNative(_, [{label: {name: "repr"}, expr: ELitsym(_, repr)}], _): switch repr {
@@ -92,15 +91,17 @@ class Class extends Namespace {
 			case DMember(m) if(m.attrs.exists(IsStatic)): cls.staticMembers.push(Member.fromAST(cls, m));
 			case DMember(m): cls.members.push(Member.fromAST(cls, m));
 
-			case DModule(m): cls.decls.push(Module.fromAST(cls, m));
+			case DModule(m): cls.addTypeDecl(Module.fromAST(cls, m));
 
-			case DClass(c): cls.decls.push(Class.fromAST(cls, c));
+			case DClass(c): cls.addTypeDecl(Class.fromAST(cls, c));
 
-			case DProtocol(p): cls.decls.push(Protocol.fromAST(cls, p));
+			case DProtocol(p): cls.addTypeDecl(Protocol.fromAST(cls, p));
 
-			case DKind(k): cls.decls.push(Kind.fromAST(cls, k));
+			case DKind(k): cls.addTypeDecl(Kind.fromAST(cls, k));
 			
-			case DAlias(a): cls.decls.push(Alias.fromAST(cls, a));
+			case DAlias(a): cls.addTypeDecl(Alias.fromAST(cls, a));
+
+			case DCategory(c): cls.categories.push(Category.fromAST(cls, c));
 
 			case DMethod(m) if(m.attrs.exists(IsStatic)): StaticMethod.fromAST(cls, m).forEach(x -> cls.staticMethods.push(x));
 			case DMethod(m): cls.methods.push(Method.fromAST(cls, m));

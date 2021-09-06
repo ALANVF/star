@@ -13,22 +13,26 @@ import typing.Traits;
 
 // probably need to add something for hkts?
 enum TypeKind {
-	TPath(path: TypePath, source: ILookupType);
+	TPath(depth: Int, lookup: LookupPath, source: ILookupType);
+	TLookup(type: Type, lookup: LookupPath, source: ILookupType);
 	TConcrete(decl: TypeDecl);
-	TThis(span: Option<Span>, source: ITypeDecl);
-	TErased(span: Span);
+	TThis(source: ITypeDecl);
+	TBlank;
 	TMulti(types: Array<Type>);
 	TApplied(type: Type, params: Array<Type>);
 	TTypeVar(typevar: TypeVar);
 	TModular(type: Type, unit: Unit);
 }
 
+@:structInit
 @:build(util.Auto.build())
 class Type {
 	var t: TypeKind;
+	var span: Null<Span> = null;
 
-	function new(t: TypeKind) {
+	function new(t: TypeKind, ?span: Span) {
 		this.t = t;
+		this.span = span;
 	}
 	
 	static function getFullPath(lookup: ILookupType): Option<String> {
@@ -61,7 +65,12 @@ class Type {
 	}
 
 	function simpleName(): String return switch t {
-		case TPath(path, _): path.simpleName();
+		case TPath(depth, lookup, _):
+			"_.".repeat(depth)
+			+ lookup.mapArray((_, n, p) -> n + (p.length == 0 ? "" : '[${p.joinMap(", ", _ -> "...")}]')).join(".");
+		case TLookup(type, lookup, _):
+			type.simpleName()
+			+ lookup.mapArray((_, n, p) -> '.$n' + (p.length == 0 ? "" : '[${p.joinMap(", ", _ -> "...")}]')).join("");
 		case TConcrete({lookup: lookup, name: {name: name}, params: []}):
 			getFullPath(lookup).map(p -> '$p.$name').orElse(name);
 		case TConcrete({lookup: lookup, name: {name: name}, params: params}):
@@ -69,8 +78,8 @@ class Type {
 			+ '[${params.map(_ -> "...").join(", ")}]';
 		case TTypeVar({name: {name: name}, params: []}): name;
 		case TTypeVar({name: {name: name}, params: params}): '$name[${params.map(_ -> "...").join(", ")}]';
-		case TThis(_, _): "This";
-		case TErased(_): "_";
+		case TThis(_): "This";
+		case TBlank: "_";
 		case TMulti(types): types[0].simpleName();
 		case TApplied(type, params): // Probably bad but eh
 			final name = type.simpleName();
@@ -82,7 +91,7 @@ class Type {
 		case TModular(type, _): return type.simpleName();
 	}
 
-	function findType(path: LookupPath, absolute = false, cache: List<{}> = Nil) {
+	function findType(path: LookupPath, absolute = false, cache: List<{}> = Nil): Option<Type> {
 		if(cache.contains(this)) {
 			return None;
 		} else {
@@ -90,19 +99,23 @@ class Type {
 		}
 
 		return switch t {
-			case TPath(path2, source): throw "NYI!";
+			case TPath(depth, lookup, source): throw "NYI!";
+			case TLookup(type, lookup, source): throw "NYI!";
 			case TConcrete(decl): decl.findType(path, absolute, cache);
-			case TThis(span, source): throw "NYI!";
-			case TErased(span): None;
+			case TThis(_): throw "NYI!";
+			case TBlank: None;
 			case TMulti(types): throw "NYI!";
 			case TApplied(type, params): throw "NYI!";
 			case TTypeVar(typevar): throw "NYI!";
-			case TModular(_, unit): unit.findType(path, absolute, cache);
+			case TModular(t, unit): switch unit.findType(path, false, cache) {
+				case res = Some(_): res;
+				case None: t.findType(path, absolute, cache);
+			}
 		}
 	}
 
 	function makeTypePath(path: TypePath) {
-		return new Type(TPath(path, this));
+		return path.toType(this);
 	}
 
 	@:keep private function __compare(other: Any) {
@@ -110,5 +123,9 @@ class Type {
 			at(type is Type) => (t.equals(type.t) ? 0 : -1),
 			_ => -1
 		);
+	}
+
+	function toString() {
+		return Std.string(t);
 	}
 }

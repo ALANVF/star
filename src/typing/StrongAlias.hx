@@ -16,13 +16,13 @@ class StrongAlias extends Alias {
 			type: null // Hack for partial initialization
 		});
 
-		for(typevar in ast.generics.mapArray(a -> TypeVar.fromAST(lookup, a))) {
+		for(typevar in ast.generics.mapArray(a -> TypeVar.fromAST(alias, a))) {
 			alias.typevars.add(typevar.name.name, typevar);
 		}
 
 		final body = switch ast.kind {
 			case Strong(type, body):
-				alias.type = lookup.makeTypePath(type); // Fix
+				alias.type = alias.makeTypePath(type); // Fix
 				body;
 			default: throw "Error!";
 		};
@@ -34,11 +34,11 @@ class StrongAlias extends Alias {
 		for(attr => span in ast.attrs) switch attr {
 			case IsHidden(_) if(alias.hidden.isSome()): alias.errors.push(Errors.duplicateAttribute(alias, ast.name.name, "hidden", span));
 			case IsHidden(None): alias.hidden = Some(None);
-			case IsHidden(Some(outsideOf)): alias.hidden = Some(Some(lookup.makeTypePath(outsideOf)));
+			case IsHidden(Some(outsideOf)): alias.hidden = Some(Some(alias.makeTypePath(outsideOf)));
 
 			case IsFriend(_) if(alias.friends.length != 0): alias.errors.push(Errors.duplicateAttribute(alias, ast.name.name, "friend", span));
-			case IsFriend(One(friend)): alias.friends.push(lookup.makeTypePath(friend));
-			case IsFriend(Many(_, friends, _)): for(friend in friends) alias.friends.push(lookup.makeTypePath(friend));
+			case IsFriend(One(friend)): alias.friends.push(alias.makeTypePath(friend));
+			case IsFriend(Many(_, friends, _)): for(friend in friends) alias.friends.push(alias.makeTypePath(friend));
 			
 			case IsNoinherit: alias.noInherit = true;
 		}
@@ -56,11 +56,7 @@ class StrongAlias extends Alias {
 
 		return alias;
 	}
-
-	override function makeTypePath(path) {
-		return type.makeTypePath(path);
-	}
-
+	
 	override function hasErrors() {
 		return super.hasErrors()
 			|| staticMethods.some(m -> m.hasErrors())

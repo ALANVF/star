@@ -84,14 +84,15 @@ class TypeTools {
 	
 	static function fromType(_: std.Enum<Type>, cmp: Compiler, type: typing.Type) {
 		return switch type.t {
-			case TPath(path, _): Type.fromTypePath(cmp, path);
+			case TPath(path, _): throw "todo";//Type.fromTypePath(cmp, path);
+			case TLookup(type, lookup, source): throw "todo";
 			case TConcrete(decl): TPath(TypePathTools.getFullPath(cmp, decl));
-			case TThis(_, _): TPath([{name: "$This", args: None}]);
-			case TErased(span): throw "todo";
+			case TThis(_): TPath([{name: "$This", args: None}]);
+			case TBlank: throw "todo";
 			case TMulti(types): throw "todo";
-			case TApplied({t: TThis(_, _)}, params): TPath([{name: "$This", args: Some(params.map(p -> Type.fromType(cmp, p)))}]);
+			case TApplied({t: TThis(_)}, params): TPath([{name: "$This", args: Some(params.map(p -> Type.fromType(cmp, p)))}]);
 			case TApplied(type, params): throw "todo";
-			case TGeneric(generic): throw "todo";
+			case TTypeVar(generic): throw "todo";
 			case TModular(type, _): Type.fromType(cmp, type);
 		}
 	}

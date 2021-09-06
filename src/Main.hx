@@ -4,6 +4,13 @@ import reporting.render.TextDiagnosticRenderer;
 import reporting.Diagnostic;
 import text.SourceFile;
 
+@:publicFields @:structInit class Options {
+	var buildDecls = true;
+	var isStdlib = false;
+	var pass1 = false;
+	var callback: Null<(typing.Project) -> Void> = null;
+}
+
 class Main {
 	static final stdout = Sys.stdout();
 	public static final renderer = new TextDiagnosticRenderer(stdout);
@@ -15,14 +22,16 @@ class Main {
 	static inline function round(float: Float) {
 		return Math.fround(float * 10000) / 10000;
 	}
-	
-	static function testProject(path, buildDecls = false, ?callback: (typing.Project) -> Void) {
+
+	static overload extern inline function testProject(path) _testProject(path, {});
+	static overload extern inline function testProject(path, opt: Options) _testProject(path, opt);
+	static function _testProject(path, opt: Options) {
 		Sys.println('Path: $path');
 		
 		var time = 0.0;
 
 		final startProject = haxe.Timer.stamp();
-		final project = typing.Project.fromMainPath(path);
+		final project = typing.Project.fromMainPath(path, !opt.isStdlib);
 		final stopProject = haxe.Timer.stamp();
 		final timeProject = round(stopProject*1000 - startProject*1000);
 		time += timeProject * 10000;
@@ -51,7 +60,7 @@ class Main {
 		time += timeImports * 10000;
 		Sys.println('Build imports time: ${timeImports}ms');
 
-		if(buildDecls) {
+		if(opt.buildDecls) {
 			final startDecls = haxe.Timer.stamp();
 			for(file in files) file.buildDecls();
 			final stopDecls = haxe.Timer.stamp();
@@ -60,22 +69,38 @@ class Main {
 			Sys.println('Build declarations time: ${timeDecls}ms');
 		}
 
+		if(opt.pass1) {
+			final startPass1 = haxe.Timer.stamp();
+			project.pass1();
+			final stopPass1 = haxe.Timer.stamp();
+			final timePass1 = round(stopPass1*1000 - startPass1*1000);
+			time += timePass1 * 10000;
+			Sys.println('Typer pass 1 time: ${timePass1}ms');
+		}
+
 		for(file in files) {
-			for(err in file.allErrors()) {
+			for(i => err in file.allErrors()) {
 				#if windows
 					renderer.writer.cursor(MoveDown(1));
 					renderer.writer.write("\033[G");
 					renderer.writer.clearLine();
+					Sys.sleep(0.05);
 				#end
 				renderer.render(err);
+
+				if(i == 25) throw "too many error!";
 			}
 		}
 
 		Sys.println('Status: ${files.none(file -> file.hasErrors())}');
 		Sys.println('Total time: ${time / 10000}ms');
 
-		if(callback != null) {
-			//callback(project);
+		opt.callback._and(cb => {
+			cb(project);
+		});
+
+		if(opt.isStdlib) {
+			typing.Project.STDLIB = project;
 		}
 	}
 
@@ -90,27 +115,30 @@ class Main {
 			parse(newSource(file), false);
 		}*/
 
-		testProject("stdlib", true, project -> {
+		testProject("stdlib", {
+			isStdlib: true,
+			pass1: true
+		});/*(project: typing.Project) -> {
 			project.findType(List2.of(["Star", []], ["Core", []], ["Array", []]), true).forEach(array -> {
 				trace(array.simpleName());
 			});
-		});
+		});*/
+		/*nl();
+		testProject("tests/hello-world", {pass1: true});
 		nl();
-		testProject("tests/hello-world", true);
+		testProject("tests/classes/point", {pass1: true});
 		nl();
-		testProject("tests/classes/point", true);
+		testProject("tests/kinds", {pass1: true});
 		nl();
-		testProject("tests/kinds", true);
-		nl();
-		testProject("tests/aliases", true, project -> {
+		testProject("tests/aliases", {pass1: true} /*, (project: typing.Project) -> {
 			project.findType(List2.of(["Direct", []]), true).forEach(direct -> {
 				trace(direct.simpleName());
 			});
-		});
+		}* /);*/
 		nl();
-		testProject("star", true);
-		nl();
-		testProject("tests/self", true, project -> {
+		testProject("star", {pass1: true});
+		/*nl();
+		testProject("tests/self", true, (project: typing.Project) -> {
 			project.findType(List2.of(["Slot", []]), true).forEach(slot -> {
 				trace(slot.simpleName());
 			});
@@ -134,7 +162,7 @@ class Main {
 				trace(method.findType(List2.of(["AST", []], ["Slot", []]), true).map(t -> t.simpleName()));
 				trace(method.findType(List2.of(["Slot", []]), true).map(t -> t.simpleName()));
 			});
-		});
+		});*/
 		
 		/*nl();
 		for(s in new compiler.Compiler().stmts) Sys.println(s.form());

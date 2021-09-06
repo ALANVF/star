@@ -24,6 +24,13 @@ class OptionHelper {
 		}
 	}
 
+	static inline function contains<T>(opt: Option<T>, value: T) {
+		return switch opt {
+			case None: false;
+			case Some(v): v == value;
+		}
+	}
+
 	static inline function map<T, U>(opt: Option<T>, fn: T -> U) {
 		return switch opt {
 			case None: None;
@@ -73,6 +80,22 @@ class OptionHelper {
 		};
 	}
 
+	static macro function orElseDo<T, U>(value: ExprOf<Option<T>>, or: ExprOf<U>): ExprOf<U> {
+
+		return macro switch($value) {
+			case Some(__anon__Some): __anon__Some;
+			case None: $or;
+		};
+	}
+
+	static macro function orDo<T, U>(value: ExprOf<Option<T>>, or: ExprOf<U>): ExprOf<Option<U>> {
+
+		return macro switch($value) {
+			case __anon__Some = Some(_): __anon__Some;
+			case None: $or;
+		};
+	}
+	
 	static macro function doOrElse<T, U>(value: ExprOf<Option<T>>, and, or: ExprOf<U>): ExprOf<U> {
 		switch and { case macro $i{n} => $v:
 			var dv = switch v {

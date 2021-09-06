@@ -125,6 +125,17 @@ class Util {
 					expr: expr
 				});
 
+				case macro at($pattern, when($cond)): caseExprs.push({
+					values: [pattern],
+					guard: cond,
+					expr: macro throw "error!"
+				});
+
+				case macro at($pattern): caseExprs.push({
+					values: [pattern],
+					expr: macro throw "error!"
+				});
+
 				case macro _ => $expr: defaultExpr = Some(expr);
 
 				default: Context.error("error!", _case.pos);
@@ -150,6 +161,7 @@ class Util {
 								expr: expr
 							};
 						});
+					
 					case TEnum(_.get() => {pack: ["util"], name: "List2"}, [_, _]):
 						caseExprs = caseExprs.map(_case -> switch _case {
 							case {values: values, guard: guard, expr: expr}: {
@@ -158,6 +170,16 @@ class Util {
 								expr: expr
 							};
 						});
+					
+					case TEnum(_.get() => {pack: ["util"], name: "List3"}, [_, _, _]):
+						caseExprs = caseExprs.map(_case -> switch _case {
+							case {values: values, guard: guard, expr: expr}: {
+								values: values.map(value -> mapList3Pattern(value, true)),
+								guard: guard,
+								expr: expr
+							};
+						});
+					
 					default:
 				}
 			}
@@ -397,6 +419,14 @@ class Util {
 		default: pattern;
 	}
 
+	private static function mapList3Pattern(pattern: Expr, isOuter = false) return switch pattern {
+		case {expr: EDisplay(e, _)}: macro ${mapList3Pattern(e, isOuter)};
+		case macro $l | $r: macro ${mapList3Pattern(l)} | ${mapList3Pattern(r)};
+		case macro []: macro Nil3;
+		case macro [$a{values}]: macro ${list3Of(values)};
+		default: pattern;
+	}
+
 	private static function mapPattern(pattern: Expr, isOuter = false) return switch pattern {
 		case {expr: EDisplay(e, _)}: macro ${mapPattern(e, isOuter)};
 		case macro [$a{values}]: macro $a{values.map(v -> mapPattern(v))};
@@ -463,6 +493,28 @@ class Util {
 			case macro [$x, $y, $z]: [x, y, z];
 			case macro _: [macro _, macro _, macro _];
 			default: Context.error("Invalid triple pattern", expr.pos);
+		}
+	}
+
+	private static function list3Of<T, U, V>(values: Array<Expr>): ExprOf<List3<T, U, V>> {
+		if(values.length == 0) {
+			return macro Nil3;
+		} else {
+			return switch switch values.last() {
+				case {expr: EDisplay(e, _)}: e;
+				case e: e;
+			} {
+				case macro ...$rest = $expr:
+					values.pop();
+					macro ${values.foldRight(macro $rest = ${mapList3Pattern(expr)}, (acc, v) -> macro Cons3($a{getTriple(v).concat([acc])}))};
+
+				case macro ...$rest:
+					values.pop();
+					macro ${values.foldRight(rest/*mapList3Pattern(rest)*/, (acc, v) -> macro Cons3($a{getTriple(v).concat([acc])}))};
+				
+				default:
+					macro ${values.foldRight(macro Nil3, (acc, v) -> macro Cons3($a{getTriple(v).concat([acc])}))};
+			}
 		}
 	}
 #end

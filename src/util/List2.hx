@@ -47,4 +47,11 @@ class List2Helper {
 		case Nil2: acc;
 		case Cons2(h1, h2, tl): tl.fold(func(acc, h1, h2), func);
 	}
+
+	static inline function forEach<T, U>(self: List2<T, U>, func: (T, U) -> Void) switch self {
+		case Nil2:
+		case Cons2(h1, h2, tl):
+			func(h1, h2);
+			tl.forEach(func);
+	}
 }

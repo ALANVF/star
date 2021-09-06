@@ -128,7 +128,11 @@ abstract class Dir {
 		}
 	}
 
-	function findType(path: LookupPath, absolute = false, cache: List<{}> = Nil) {
+	function makeTypePath(path: TypePath) {
+		return path.toType(this);
+	}
+
+	function findType(path: LookupPath, absolute = false, cache: List<{}> = Nil): Option<Type> {
 		if(absolute) {
 			if(cache.contains(this)) {
 				return None;
@@ -138,14 +142,14 @@ abstract class Dir {
 		}
 		
 		for(file in files) {
-			switch file.findType(path, absolute, cache) {
+			switch file.findType(path, false, cache) {
 				case t = Some(_): return t;
 				case None:
 			}
 		}
 
 		for(unit in units) {
-			switch unit.findType(path, absolute, cache) {
+			switch unit.findType(path, false, cache) {
 				case t = Some(_): return t;
 				case None:
 			}

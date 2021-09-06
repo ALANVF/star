@@ -29,6 +29,10 @@ class UnaryOperator extends Operator {
 		});
 	}
 
+	function methodName() {
+		return opName();
+	}
+
 	inline function opName() {
 		return op.symbol();
 	}

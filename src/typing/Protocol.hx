@@ -1,14 +1,12 @@
 package typing;
 
 class Protocol extends Namespace {
-	final parents: Array<Type> = [];
 	final members: Array<Member> = [];
 	final methods: Array<Method> = [];
 	final inits: Array<Init> = [];
 	final operators: Array<Operator> = [];
 	var defaultInit: Option<DefaultInit> = None;
 	var deinit: Option<Deinit> = None;
-	var sealed: Option<Option<Type>> = None;
 
 	static function fromAST(lookup, ast: parsing.ast.decls.Protocol) {
 		final protocol = new Protocol({
@@ -18,7 +16,7 @@ class Protocol extends Namespace {
 			params: []
 		});
 
-		for(typevar in ast.generics.mapArray(a -> TypeVar.fromAST(lookup, a))) {
+		for(typevar in ast.generics.mapArray(a -> TypeVar.fromAST(protocol, a))) {
 			protocol.typevars.add(typevar.name.name, typevar);
 		}
 
@@ -28,37 +26,39 @@ class Protocol extends Namespace {
 
 		if(ast.parents.isSome()) {
 			for(parent in ast.parents.value().parents) {
-				protocol.parents.push(lookup.makeTypePath(parent));
+				protocol.parents.push(protocol.makeTypePath(parent));
 			}
 		}
 
 		for(attr => span in ast.attrs) switch attr {
 			case IsHidden(_) if(protocol.hidden.isSome()): protocol.errors.push(Errors.duplicateAttribute(protocol, ast.name.name, "hidden", span));
 			case IsHidden(None): protocol.hidden = Some(None);
-			case IsHidden(Some(outsideOf)): protocol.hidden = Some(Some(lookup.makeTypePath(outsideOf)));
+			case IsHidden(Some(outsideOf)): protocol.hidden = Some(Some(protocol.makeTypePath(outsideOf)));
 
 			case IsFriend(_) if(protocol.friends.length != 0): protocol.errors.push(Errors.duplicateAttribute(protocol, ast.name.name, "friend", span));
-			case IsFriend(One(friend)): protocol.friends.push(lookup.makeTypePath(friend));
-			case IsFriend(Many(_, friends, _)): for(friend in friends) protocol.friends.push(lookup.makeTypePath(friend));
+			case IsFriend(One(friend)): protocol.friends.push(protocol.makeTypePath(friend));
+			case IsFriend(Many(_, friends, _)): for(friend in friends) protocol.friends.push(protocol.makeTypePath(friend));
 
 			case IsSealed(_) if(protocol.sealed.isSome()): protocol.errors.push(Errors.duplicateAttribute(protocol, ast.name.name, "sealed", span));
 			case IsSealed(None): protocol.sealed = Some(None);
-			case IsSealed(Some(outsideOf)): protocol.sealed = Some(Some(lookup.makeTypePath(outsideOf)));
+			case IsSealed(Some(outsideOf)): protocol.sealed = Some(Some(protocol.makeTypePath(outsideOf)));
 		}
 
 		for(decl in ast.body.of) switch decl {
 			case DMember(m) if(m.attrs.exists(IsStatic)): protocol.staticMembers.push(Member.fromAST(protocol, m));
 			case DMember(m): protocol.members.push(Member.fromAST(protocol, m));
 
-			case DModule(m): protocol.decls.push(Module.fromAST(protocol, m));
+			case DModule(m): protocol.addTypeDecl(Module.fromAST(protocol, m));
 
-			case DClass(c): protocol.decls.push(Class.fromAST(protocol, c));
+			case DClass(c): protocol.addTypeDecl(Class.fromAST(protocol, c));
 
-			case DProtocol(p): protocol.decls.push(Protocol.fromAST(protocol, p));
+			case DProtocol(p): protocol.addTypeDecl(Protocol.fromAST(protocol, p));
 			
-			case DKind(k): protocol.decls.push(Kind.fromAST(protocol, k));
+			case DKind(k): protocol.addTypeDecl(Kind.fromAST(protocol, k));
 
-			case DAlias(a): protocol.decls.push(Alias.fromAST(protocol, a));
+			case DAlias(a): protocol.addTypeDecl(Alias.fromAST(protocol, a));
+
+			case DCategory(c): protocol.categories.push(Category.fromAST(protocol, c));
 
 			case DMethod(m) if(m.attrs.exists(IsStatic)): StaticMethod.fromAST(protocol, m).forEach(x -> protocol.staticMethods.push(x));
 			case DMethod(m): protocol.methods.push(Method.fromAST(protocol, m));

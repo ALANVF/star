@@ -24,4 +24,34 @@ class List3Helper {
 			}
 		}
 	}
+
+	static function mapArray<T, U, V, W>(list: List3<T, U, V>, func: (T, U, V) -> W) {
+		final array = [];
+		
+		while(true) switch list {
+			case Nil3: break;
+			case Cons3(h1, h2, h3, tl):
+				array.push(func(h1, h2, h3));
+				list = tl;
+		}
+
+		return array;
+	}
+	
+	static inline function mapList<T, U, V, W>(self: List3<T, U, V>, func: (T, U, V) -> W) return switch self {
+		case Nil3: Nil;
+		case Cons3(h1, h2, h3, tl): Cons(func(h1, h2, h3), tl.mapList(func));
+	}
+	
+	static inline function fold<T, U, V, Acc>(self: List3<T, U, V>, acc: Acc, func: (Acc, T, U, V) -> Acc): Acc return switch self {
+		case Nil3: acc;
+		case Cons3(h1, h2, h3, tl): tl.fold(func(acc, h1, h2, h3), func);
+	}
+
+	static inline function forEach<T, U, V>(self: List3<T, U, V>, func: (T, U, V) -> Void) switch self {
+		case Nil3:
+		case Cons3(h1, h2, h3, tl):
+			func(h1, h2, h3);
+			tl.forEach(func);
+	}
 }

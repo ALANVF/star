@@ -1,5 +1,6 @@
 package typing;
 
+import typing.Traits.ILookupType;
 import reporting.Severity;
 import reporting.Diagnostic;
 
@@ -8,7 +9,7 @@ class TaggedKind extends Kind {
 	final members: Array<Member> = [];
 	var defaultInit: Option<DefaultInit> = None;
 
-	static function fromAST(lookup, ast: parsing.ast.decls.Kind) {
+	static function fromAST(lookup: ILookupType, ast: parsing.ast.decls.Kind) {
 		final kind = new TaggedKind({
 			lookup: lookup,
 			span: ast.span,
@@ -16,7 +17,7 @@ class TaggedKind extends Kind {
 			params: []
 		});
 
-		for(typevar in ast.generics.mapArray(a -> TypeVar.fromAST(lookup, a))) {
+		for(typevar in ast.generics.mapArray(a -> TypeVar.fromAST(kind, a))) {
 			kind.typevars.add(typevar.name.name, typevar);
 		}
 
@@ -45,22 +46,22 @@ class TaggedKind extends Kind {
 
 		if(ast.parents.isSome()) {
 			for(parent in ast.parents.value().parents) {
-				kind.parents.push(lookup.makeTypePath(parent));
+				kind.parents.push(kind.makeTypePath(parent));
 			}
 		}
 
 		for(attr => span in ast.attrs) switch attr {
 			case IsHidden(_) if(kind.hidden.isSome()): kind.errors.push(Errors.duplicateAttribute(kind, ast.name.name, "hidden", span));
 			case IsHidden(None): kind.hidden = Some(None);
-			case IsHidden(Some(outsideOf)): kind.hidden = Some(Some(lookup.makeTypePath(outsideOf)));
+			case IsHidden(Some(outsideOf)): kind.hidden = Some(Some(kind.makeTypePath(outsideOf)));
 
 			case IsFriend(_) if(kind.friends.length != 0): kind.errors.push(Errors.duplicateAttribute(kind, ast.name.name, "friend", span));
-			case IsFriend(One(friend)): kind.friends.push(lookup.makeTypePath(friend));
-			case IsFriend(Many(_, friends, _)): for(friend in friends) kind.friends.push(lookup.makeTypePath(friend));
+			case IsFriend(One(friend)): kind.friends.push(kind.makeTypePath(friend));
+			case IsFriend(Many(_, friends, _)): for(friend in friends) kind.friends.push(kind.makeTypePath(friend));
 
 			case IsSealed(_) if(kind.sealed.isSome()): kind.errors.push(Errors.duplicateAttribute(kind, ast.name.name, "sealed", span));
 			case IsSealed(None): kind.sealed = Some(None);
-			case IsSealed(Some(outsideOf)): kind.sealed = Some(Some(lookup.makeTypePath(outsideOf)));
+			case IsSealed(Some(outsideOf)): kind.sealed = Some(Some(kind.makeTypePath(outsideOf)));
 
 			case IsFlags: kind.isFlags = true;
 
@@ -75,15 +76,17 @@ class TaggedKind extends Kind {
 
 			case DCase(c = {kind: Tagged(_)}): kind.taggedCases.push(TaggedCase.fromAST(kind, c));
 
-			case DModule(m): kind.decls.push(Module.fromAST(kind, m));
+			case DModule(m): kind.addTypeDecl(Module.fromAST(kind, m));
 
-			case DClass(c): kind.decls.push(Class.fromAST(kind, c));
+			case DClass(c): kind.addTypeDecl(Class.fromAST(kind, c));
 
-			case DProtocol(p): kind.decls.push(Protocol.fromAST(kind, p));
+			case DProtocol(p): kind.addTypeDecl(Protocol.fromAST(kind, p));
 			
-			case DKind(k): kind.decls.push(Kind.fromAST(kind, k));
+			case DKind(k): kind.addTypeDecl(Kind.fromAST(kind, k));
 
-			case DAlias(a): kind.decls.push(Alias.fromAST(kind, a));
+			case DAlias(a): kind.addTypeDecl(Alias.fromAST(kind, a));
+
+			case DCategory(c): kind.categories.push(Category.fromAST(kind, c));
 
 			case DMethod(m) if(m.attrs.exists(IsStatic)): StaticMethod.fromAST(kind, m).forEach(x -> kind.staticMethods.push(x));
 			case DMethod(m): kind.methods.push(Method.fromAST(kind, m));

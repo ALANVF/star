@@ -46,4 +46,8 @@ class SingleMethod extends Method {
 
 		return method;
 	}
+
+	function methodName() {
+		return name.name;
+	}
 }

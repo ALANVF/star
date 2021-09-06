@@ -10,7 +10,7 @@ import typing.Traits;
 
 @:build(util.Auto.build())
 @:autoBuild(util.Auto.build())
-class TaggedCase {
+class TaggedCase implements IErrors {
 	final errors: Array<Diagnostic> = [];
 	final decl: ITaggedCases;
 	final span: Span;

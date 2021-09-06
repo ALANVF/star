@@ -5,14 +5,20 @@ import text.Span;
 import parsing.ast.Stmt;
 import parsing.ast.Ident;
 
-typedef IErrors = {
+interface IErrors {
+	final errors: Array<Diagnostic>;
+
+	function hasErrors(): Bool;
+	function allErrors(): Array<Diagnostic>;
+}
+typedef VErrors = {
 	final errors: Array<Diagnostic>;
 
 	function hasErrors(): Bool;
 	function allErrors(): Array<Diagnostic>;
 }
 
-typedef IDecl = IErrors & {
+typedef IDecl = VErrors & {
 	final span: Span;
 	
 	function declName(): String;
@@ -66,10 +72,6 @@ typedef IOperators = {
 	final operators: Array<Operator>;
 }
 
-typedef IParents = {
-	final parents: Array<Type>;
-}
-
 typedef IStaticDeinit = {
 	var staticDeinit: Option<StaticDeinit>;
 }
@@ -91,8 +93,17 @@ typedef ITypeDecl = ILookupType & IDecl & {
 	final name: Ident;
 }
 
+typedef IFullTypeDecl = ITypeDecl & {
+	var params: Array<Type>;
+	var thisType: Type;
+}
+
 typedef ITypeDecls = {
 	final decls: Array<TypeDecl>;
+}
+
+typedef ITypeVars = {
+	final typevars: MultiMap<String, TypeVar>;
 }
 
 typedef IValueCases = ITypeDecl & {

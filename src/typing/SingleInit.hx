@@ -35,4 +35,8 @@ class SingleInit extends Init {
 
 		return init;
 	}
+
+	function methodName() {
+		return name.name;
+	}
 }

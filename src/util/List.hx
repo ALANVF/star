@@ -124,7 +124,7 @@ class ListHelper {
 		case Cons(head, tail): Std.string(head) + sep + tail.join(sep);
 	}
 
-	static function contains<T>(list: List<T>, value: T) return switch list {
+	static inline function contains<T>(list: List<T>, value: T) return switch list {
 		case Nil: false;
 		case Cons(head, tail): value == head || tail.contains(value);
 	}

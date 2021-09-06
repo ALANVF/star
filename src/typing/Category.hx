@@ -6,13 +6,13 @@ import reporting.Diagnostic;
 import typing.Traits;
 
 @:build(util.Auto.build())
-class Category {
+class Category implements IErrors {
 	final errors: Array<Diagnostic> = [];
-	@:ignore final typevars = new MultiMap<String, TypeVar>();
+	@ignore final typevars = new MultiMap<String, TypeVar>();
 	final lookup: ILookupType;
 	final span: Span;
 	final name: Ident;
-	var path: TypePath;
+	var path: Type;
 	var type: Option<Type>;
 	final staticMembers: Array<Member> = [];
 	final staticMethods: Array<StaticMethod> = [];
@@ -23,31 +23,31 @@ class Category {
 	final friends: Array<Type> = [];
 
 	static function fromAST(lookup, ast: parsing.ast.decls.Category) {
-		var path: TypePath = switch ast.path {
-			case TSegs(_, Nil) | TBlank(_) | TBlankParams(_, _): throw "Error!";
-			default: ast.path;
-		};
-		
 		final category = new Category({
 			lookup: lookup,
 			span: ast.span,
 			name: new Ident(ast.path.span(), ast.path.simpleName()),
-			path: path,
-			type: ast.type.map(x -> lookup.makeTypePath(x)),
+			path: null, // hack for partial initialization
+			type: null  // hack for partial initialization
 		});
 
-		for(typevar in ast.generics.mapArray(a -> TypeVar.fromAST(lookup, a))) {
+		var path = (ast.path : TypePath).toType(category);
+
+		category.path = path;
+		category.type = ast.type.map(x -> category.makeTypePath(x));
+
+		for(typevar in ast.generics.mapArray(a -> TypeVar.fromAST(category, a))) {
 			category.typevars.add(typevar.name.name, typevar);
 		}
 
 		for(attr => span in ast.attrs) switch attr {
 			case IsHidden(_) if(category.hidden.isSome()): category.errors.push(Errors.duplicateAttribute(category, category.name.name, "hidden", span));
 			case IsHidden(None): category.hidden = Some(None);
-			case IsHidden(Some(outsideOf)): category.hidden = Some(Some(lookup.makeTypePath(outsideOf)));
+			case IsHidden(Some(outsideOf)): category.hidden = Some(Some(category.makeTypePath(outsideOf)));
 
 			case IsFriend(_) if(category.friends.length != 0): category.errors.push(Errors.duplicateAttribute(category, category.name.name, "friend", span));
-			case IsFriend(One(friend)): category.friends.push(lookup.makeTypePath(friend));
-			case IsFriend(Many(_, friends, _)): for(friend in friends) category.friends.push(lookup.makeTypePath(friend));
+			case IsFriend(One(friend)): category.friends.push(category.makeTypePath(friend));
+			case IsFriend(Many(_, friends, _)): for(friend in friends) category.friends.push(category.makeTypePath(friend));
 		}
 
 		for(decl in ast.body.of) switch decl {
@@ -93,28 +93,67 @@ class Category {
 		return "category";
 	}
 
-	function findType(path: LookupPath, absolute = false, cache: List<{}> = Nil) {
+	function findType(path: LookupPath, absolute = false, cache: List<{}> = Nil): Option<Type> {
 		if(cache.contains(this)) {
 			return None;
 		} else {
 			cache = cache.prepend(this);
 		}
 
-		return if(absolute) {
-			path._match(
-				at([[typeName, _]]) => switch typevars.find(typeName) {
-					case None: lookup.findType(path, true, cache);
-					case Some([type]): Some(type.thisType);
-					case Some(found): Some(new Type(TMulti(found.map(g -> g.thisType))));
-				},
-				_ => lookup.findType(path, true, cache)
-			);
-		} else {
-			None;
-		}
+		return path._match(
+			at([[_, "This", []]], when(absolute)) => type.doOrElse(
+				t => Some(t),
+				lookup.findType(path, true, cache)
+			),
+			at([[span, "This", _]], when(absolute)) => {
+				// prob shouldn't be attatched to *this* category decl, but eh
+				errors.push(Errors.notYetImplemented(span));
+				None;
+			},
+			at([[span, typeName, args], ...rest]) => {
+				final res: Option<Type> = switch typevars.find(typeName) {
+					case None: return if(absolute) lookup.findType(path, true, cache) else None;
+					case Some([type]):
+						switch [args, type.params] {
+							case [[], _]: Some({t: type.thisType.t, span: span}); // should probably curry parametrics but eh
+							case [_, []]:
+								// should this check for type aliases?
+								errors.push(Errors.invalidTypeApply(span, "Attempt to apply arguments to a non-parametric type"));
+								None;
+							case [_, params]:
+								if(args.length > params.length) {
+									errors.push(Errors.invalidTypeApply(span, "Too many arguments"));
+									None;
+								} else if(args.length < params.length) {
+									errors.push(Errors.invalidTypeApply(span, "Not enough arguments"));
+									None;
+								} else {
+									Some({t: TApplied(type.thisType, args), span: span});
+								}
+							}
+					case Some(found):
+						if(args.length == 0) {
+							Some({t: TMulti(found.map(t -> t.thisType)), span: span});
+						} else switch found.filter(t -> t.params.length == args.length).map(g -> g.thisType) {
+							case []:
+								errors.push(Errors.invalidTypeApply(span, "No candidate matches the type arguments"));
+								None;
+							case [type]: Some({t: TApplied(type, args), span: span});
+							case types: Some({t: TMulti(types), span: span});
+						}
+				};
+
+				switch [rest, res] {
+					case [Nil3, _]: res;
+					case [_, Some(type)]: Some({t: TLookup(type, rest, this), span: span});
+					case [_, None]: res;
+				}
+			},
+			_ => if(absolute) lookup.findType(path, true, cache) else None
+		);
 	}
 
-	function makeTypePath(path) {
-		return lookup.makeTypePath(path);
+	function makeTypePath(path: TypePath) {
+		return path.toType(this);
 	}
 }

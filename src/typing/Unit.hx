@@ -10,7 +10,7 @@ class Unit extends Dir {
 		super.gatherFiles(gather);
 	}
 
-	override function findType(path: LookupPath, absolute = false, cache: List<{}> = Nil) {
+	override function findType(path: LookupPath, absolute = false, cache: List<{}> = Nil): Option<Type> {
 		if(absolute) {
 			if(cache.contains(this)) {
 				return None;
@@ -18,51 +18,33 @@ class Unit extends Dir {
 				cache = cache.prepend(this);
 			}
 		}
-
+		
 		return path._match(
-			at([[typeName, _]], when(typeName == name)) => switch primary.flatMap(p -> p.findType(path, false, cache)) {
-				case Some(type): Some(new Type(TModular(type, this)));
-				case None: None;
+			at([[span, typeName, _]], when(typeName == name)) => switch primary.flatMap(p -> p.findType(path, false, cache)) {
+				case Some(type): Some({t: TModular(type, this), span: span});
+				case None:
+					super.findType(path, false, cache).orDo(
+						if(absolute) outer.findType(path, true, cache) else None
+					);
 			},
-			at([[typeName, _], ...rest], when(typeName == name)) => switch primary.flatMap(p -> p.findType(path, false, cache)) {
-				case Some(type): Some(new Type(TModular(type, this)));
-				case None: switch primary.flatMap(p -> p.findType(rest, false, cache)) {
+			at([[span, typeName, _], ...rest], when(typeName == name)) => switch primary.flatMap(p -> p.findType(path, false, cache)) {
+				case Some(type): Some({t: TModular(type, this), span: span});
+				// lol is this dead code?
+				case None: switch primary.flatMap(p -> p.findType(path, false, cache)) {
 					case Some(type): Some(type);
 					case None:
-						for(unit in units) {
-							switch unit.findType(rest, false, cache) {
-								case Some(type): return Some(type);
-								case None:
-							}
-						}
-						for(file in files) {
-							switch file.findType(rest, false, cache) {
-								case Some(type): return Some(type);
-								case None:
-							}
-						}
-						None;
+						super.findType(rest, false, cache.prepend(this)).orDo(
+							outer.findType(path, true, cache.prepend(this))
+						);
 				}
 			},
 			_ => {
 				switch primary.flatMap(p -> p.findType(path, false, cache)) {
-					case Some(type): Some(new Type(TModular(type, this)));
+					case Some(type): Some({t: TModular(type, this)});
 					case None:
-						for(unit in units) {
-							switch unit.findType(path, false, cache) {
-								case Some(type): return Some(type);
-								case None:
-							}
-						}
-		
-						for(file in files) {
-							switch file.findType(path, false, cache) {
-								case Some(type): return Some(type);
-								case None:
-							}
-						}
-		
-						if(absolute) outer.findType(path, true, cache) else None;
+						super.findType(path, false, cache.prepend(this)).orDo(
+							outer.findType(path, true, cache.prepend(this))
+						);
 				}
 			}
 		);

@@ -36,10 +36,10 @@ enum abstract BinaryOp(Int) {
 }
 
 class BinaryOperator extends Operator {
-	@:ignore final typevars = new MultiMap<String, TypeVar>();
+	@ignore final typevars = new MultiMap<String, TypeVar>();
 	final op: BinaryOp;
 	final paramName: Ident;
-	final paramType: Type;
+	var paramType: Type;
 
 	static function fromAST(decl, op, paramName, paramType, ast: parsing.ast.decls.Operator) {
 		final oper = new BinaryOperator({
@@ -48,16 +48,23 @@ class BinaryOperator extends Operator {
 			op: op,
 			opSpan: ast.symbolSpan,
 			paramName: paramName,
-			paramType: decl.makeTypePath(paramType),
-			ret: ast.ret.map(ret -> decl.makeTypePath(ret)),
+			paramType: null, // hack for partial initialization
+			ret: null,       // hack for partial initialization
 			body: ast.body.map(body -> body.stmts())
 		});
 
-		for(typevar in ast.generics.mapArray(a -> TypeVar.fromAST(decl, a))) {
+		oper.paramType = oper.makeTypePath(paramType);
+		oper.ret = ast.ret.map(ret -> oper.makeTypePath(ret));
+
+		for(typevar in ast.generics.mapArray(a -> TypeVar.fromAST(oper, a))) {
 			oper.typevars.add(typevar.name.name, typevar);
 		}
 
 		return oper;
+	}
+
+	function methodName() {
+		return opName();
 	}
 
 	override function hasErrors() {

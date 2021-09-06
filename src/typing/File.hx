@@ -6,9 +6,10 @@ import parsing.Parser;
 import lexing.Lexer;
 import parsing.ast.Program;
 import text.SourceFile;
+import typing.Traits;
 
 @:build(util.Auto.build())
-class File {
+class File implements IErrors {
 	final errors: Array<Diagnostic>;
 	final dir: Dir;
 	final path: String;
@@ -17,6 +18,7 @@ class File {
 	var program: Option<Program>;
 	var status: Bool;
 	final imports: Array<Import>;
+	final imported: Array<ILookupType>;
 	final decls: MultiMap<String, TypeDecl>;
 	final categories: Array<Category>;
 
@@ -28,6 +30,7 @@ class File {
 		program = None;
 		status = false;
 		imports = [];
+		imported = [];
 		decls = new MultiMap();
 		categories = [];
 	}
@@ -154,11 +157,11 @@ class File {
 		});
 	}
 
-	function addTypeDecl(decl: TypeDecl) {
+	inline function addTypeDecl(decl: TypeDecl) {
 		decls.add(decl.name.name, decl);
 	}
 
-	function findType(path: LookupPath, absolute = false, cache: List<{}> = Nil) {
+	function findType(path: LookupPath, absolute = false, cache: List<{}> = Nil): Option<Type> {
 		if(absolute) {
 			if(cache.contains(this)) {
 				return None;
@@ -168,7 +171,7 @@ class File {
 		}
 
 		return path._match(
-			at([[typeName, _]]) => switch decls.find(typeName) {
+			/*at([[typeName, _]]) => switch decls.find(typeName) {
 				case None: if(absolute) dir.findType(path, true, cache) else None;
 				case Some([decl]): Some(decl.thisType);
 				case Some(found): Some(new Type(TMulti(found.map(d -> d.thisType))));
@@ -177,13 +180,76 @@ class File {
 				case None: if(absolute) dir.findType(path, true, cache) else None;
 				case Some([decl]): decl.findType(rest, false, cache);
 				case Some(found): throw "NYI!";
+			},*/
+			at([[span, typeName, args], ...rest]) => {
+				final res: Option<Type> = switch decls.find(typeName) {
+					case None:
+						var res2 = null;
+						if(absolute) {
+							for(imp in imported) imp.findType(path, true, cache.prepend(imp))._match(
+								at(Some(found)) => {
+									res2 = Some(found);
+									break;
+								},
+								_ => {}
+							);
+						}
+
+						res2._match(
+							at(r!) => r,
+							_ => return if(absolute) unit.orElse(dir).findType(path, true, cache) else None
+						);
+					
+					case Some([type]): switch [args, type.params] {
+						case [[], _]: Some({t: type.thisType.t, span: span}); // should probably curry parametrics but eh
+						case [_, []]:
+							// should this check for type aliases?
+							errors.push(Errors.invalidTypeApply(span, "Attempt to apply arguments to a non-parametric type"));
+							None;
+						case [_, params]:
+							if(args.length > params.length) {
+								errors.push(Errors.invalidTypeApply(span, "Too many arguments"));
+								None;
+							} else if(args.length < params.length) {
+								errors.push(Errors.invalidTypeApply(span, "Not enough arguments"));
+								None;
+							} else {
+								Some({t: TApplied(type.thisType, args), span: span});
+							}
+					}
+					case Some(found):
+						if(args.length == 0) {
+							Some({t: TMulti(found.map(t -> t.thisType)), span: span});
+						} else switch found.filter(t -> t.params.length == args.length).map(g -> g.thisType) {
+							case []:
+								errors.push(Errors.invalidTypeApply(span, "No matching candidates were found"));
+								None;
+							case [type]: Some({t: TApplied(type, args), span: span});
+							case types: Some({t: TMulti(types), span: span});
+						}
+				};
+
+				switch [rest, res] {
+					case [_, None]: if(absolute) unit.orElse(dir).findType(path, true, cache) else None;
+					case [Nil3, _]: res;
+					case [_, Some(type={t: TConcrete(decl)})]:
+						unit.doOrElse(u => {
+							type = new Type(TModular(type, u));
+							type.findType(path, false, cache);
+						}, {
+							type.findType(rest, false, cache);
+						});
+					/*case [_, Some({t: TModular(t, u)})]:
+						t.findType(rest, false, cache).orDo(u.findType(rest, false, cache.prepend(t)));*/
+					case [_, Some(type)]: Some({t: TLookup(type, rest, this), span: span});
+				}
 			},
-			_ => if(absolute) dir.findType(path, true, cache) else None
+			_ => if(absolute) unit.orElse(dir).findType(path, true, cache) else None
 		);
 	}
 
 	function makeTypePath(path: TypePath) {
-		return new Type(TPath(path, this));
+		return path.toType(this);
 	}
 
 	function hasErrors() {

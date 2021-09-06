@@ -10,9 +10,9 @@ using typing.TypeRule.TypeRuleTools;
 // Dear god what have I gotten myself into
 
 @:build(util.Auto.build({keepInit: true}))
-class TypeVar {
+class TypeVar implements IErrors {
 	final errors: Array<Diagnostic> = [];
-	final lookup: ILookupType;
+	final lookup: ILookupType & ITypeVars;
 	final span: Span;
 	final name: Ident;
 	var params: Array<Type>;
@@ -30,25 +30,29 @@ class TypeVar {
 	final staticMethods: Array<StaticMethod> = [];
 	final taggedCases: Array<TaggedCase> = [];
 	final valueCases: Array<ValueCase> = [];
+	final categories: Array<Category> = [];
 	var native: Option<NativeKind> = None;
 	var isFlags: Bool = false;
 	var isStrong: Bool = false;
 	var isUncounted: Bool = false;
-	@:ignore var thisType: Type;
+	@ignore var thisType: Type;
 
 	function new() {
 		thisType = new Type(TTypeVar(this));
 	}
 
-	static function fromAST(lookup, ast: parsing.ast.decls.GenericParam): TypeVar {
+	static function fromAST(lookup: ILookupType & ITypeVars, ast: parsing.ast.decls.GenericParam): TypeVar {
 		final typevar = new TypeVar({
 			lookup: lookup,
 			span: ast.span,
 			name: ast.name,
-			params: ast.params.doOrElse(p => p.of.map(x -> lookup.makeTypePath(x)), []),
-			parents: ast.parents.doOrElse(p => p.parents.map(x -> lookup.makeTypePath(x)), []),
+			params: null,  // hack for partial initialization
+			parents: null, // hack for partial initialization
 			rule: ast.rule.map(r -> TypeRule.fromAST(lookup, r.rule))
 		});
+
+		typevar.params = ast.params.doOrElse(p => p.of.map(x -> typevar.makeTypePath(x)), []);
+		typevar.parents = ast.parents.doOrElse(p => p.parents.map(x -> typevar.makeTypePath(x)), []);
 		
 		for(attr => span in ast.attrs) switch attr {
 			case IsNative(_, _, _) if(typevar.native.isSome()): typevar.errors.push(Errors.duplicateAttribute(typevar, ast.name.name, "native", span));
@@ -97,6 +101,8 @@ class TypeVar {
 
 				case DCase(c = {kind: Tagged(_)}): typevar.taggedCases.push(TaggedCase.fromAST(typevar, c));
 				case DCase(c = {kind: Scalar(_, _)}): typevar.valueCases.push(ValueCase.fromAST(typevar, c));
+
+				case DCategory(c): typevar.categories.push(Category.fromAST(typevar, c));
 	
 				case DMethod(m) if(m.attrs.exists(IsStatic)): StaticMethod.fromAST(typevar, m).forEach(x -> typevar.staticMethods.push(x));
 				case DMethod(m): typevar.methods.push(Method.fromAST(typevar, m));
@@ -122,22 +128,26 @@ class TypeVar {
 		return "type variable";
 	}
 
-	function findType(path: LookupPath, absolute = false, cache: List<{}> = Nil) {
+	function findType(path: LookupPath, absolute = false, cache: List<{}> = Nil): Option<Type> {
 		if(cache.contains(this)) {
 			return None;
 		} else {
 			cache = cache.prepend(this);
 		}
 
-		return if(absolute) {
-			lookup.findType(path, true, cache);
-		} else {
-			None;
-		}
+		return path._match(
+			at([[span, "This", []]], when(absolute)) => Some({t: TThis(this), span: span}),
+			at([[span, "This", _]], when(absolute)) => {
+				// prob shouldn't be attatched to *this* type var, but eh
+				errors.push(Errors.notYetImplemented(span));
+				None;
+			},
+			_ => if(absolute) lookup.findType(path, true, cache) else None
+		);
 	}
 
-	function makeTypePath(path) {
-		return new Type(TPath(path, this));
+	function makeTypePath(path: TypePath) {
+		return path.toType(this);
 	}
 
 	function hasErrors() {
@@ -149,7 +159,8 @@ class TypeVar {
 			|| inits.some(i -> i.hasErrors())
 			|| operators.some(o -> o.hasErrors())
 			|| valueCases.some(c -> c.hasErrors())
-			|| taggedCases.some(c -> c.hasErrors());
+			|| taggedCases.some(c -> c.hasErrors())
+			|| categories.some(c -> c.hasErrors());
 	}
 
 	function allErrors() {
@@ -163,6 +174,7 @@ class TypeVar {
 		for(op in operators) result = result.concat(op.allErrors());
 		for(taggedCase in taggedCases) result = result.concat(taggedCase.allErrors());
 		for(valueCase in valueCases) result = result.concat(valueCase.allErrors());
+		for(category in categories) result = result.concat(category.allErrors());
 
 		return result;
 	}

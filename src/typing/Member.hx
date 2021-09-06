@@ -8,7 +8,7 @@ import text.Span;
 import typing.Traits;
 
 @:build(util.Auto.build())
-class Member {
+class Member implements IErrors {
 	final errors: Array<Diagnostic> = [];
 	final lookup: ILookupType;
 	final span: Span;

@@ -8,7 +8,7 @@ import parsing.ast.Ident;
 import typing.Traits;
 
 @:build(util.Auto.build())
-class ValueCase {
+class ValueCase implements IErrors {
 	final errors: Array<Diagnostic> = [];
 	final decl: IValueCases;
 	final span: Span;

@@ -46,4 +46,8 @@ class SingleStaticMethod extends StaticMethod {
 
 		return method;
 	}
+
+	function methodName() {
+		return name.name;
+	}
 }
