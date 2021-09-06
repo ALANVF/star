@@ -1,12 +1,5 @@
 kind Stmt {
 	has [expr: (Expr)]
-
-	has [
-		my: (Span)
-		name: (Ident)
-		type: (Maybe[Type])
-		value: (Maybe[Expr])
-	]
 	
 	has [
 		if: (Span), (Expr)

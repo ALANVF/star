@@ -21,12 +21,6 @@ enum LoopStop {
 
 enum Stmt {
 	SExpr(expr: Expr);
-	SVarDecl(
-		_: Span,
-		name: Ident,
-		type: Option<Type>,
-		value: Option<Expr>
-	);
 	SIf(
 		_: Span,
 		cond: Expr,

@@ -42,7 +42,7 @@ enum Expr {
 	ESuffix(left: Expr, _: Span, op: Suffix);
 	EInfix(left: Expr, _: Span, op: Infix, right: Expr);
 
-	ECapture(_: Span, name: Ident, type: Option<Type>, value: Option<Expr>);
+	EVarDecl(_: Span, name: Ident, type: Option<Type>, value: Option<Expr>);
 
 	EType(type: Type);
 }

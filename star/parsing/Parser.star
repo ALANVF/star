@@ -97,7 +97,8 @@ module Parser {
 					|| Result[fatal: my begin, Maybe[the: my end]]
 				) {
 					my first = begin[first]
-					my last = [end? yes: end[first] no: begin[last]]
+					my last = end?[yes: end[first] no: begin[last]]
+					end?[yes: 1 no: 2]
 					
 					if !badTokens[contains: last] {
 						errors[add: Diagnostic[
@@ -1868,7 +1869,7 @@ module Parser {
 	
 	on [parseStmt: tokens (Tokens)] (Result[Stmt]) {
 		match tokens {
-			at #[
+			;[at #[
 				Token[my: my span]
 				Token[name: my name span: my span'] = _[asSoftName]
 				...my rest
@@ -1894,7 +1895,7 @@ module Parser {
 					success: Stmt[my: span name: Ident[span: span' :name] :type :value],
 					rest
 				]
-			}
+			}]
 			
 			at #[Token[if: my span], ...my rest] => match This[parseExpr: rest] {
 				at Result[success: my cond, my rest'] => match This[parseBlock: rest'] {
@@ -2346,7 +2347,397 @@ module Parser {
 			at my fail => return fail[Result[Stmt] fatalIfFailed]
 		}
 	}
+
+
+	;== Expressions
+
+	on [parseBasicExpr: tokens (Tokens)] (Result[Expr]) {
+		match tokens {
+			at #[Token[span: my span, name: my name] = _[asSoftName], ...my rest] {
+				return Result[success: Expr[name: Ident[:span :name]], rest]
+			}
+			
+			at #[Token[span: my span litsym: my name], ...my rest] => return Result[success: Expr[litsym: Ident[:span :name]], rest]
+
+			at #[Token[span: my span int: my int exp: Maybe[none]], ...my rest] {
+				return Result[success: Expr[:span :int], rest]
+			}
+			at #[Token[span: my span int: my int exp: Maybe[the: my exp]], ...my rest] {
+				return Result[success: Expr[:span :int exp: exp[Int]], rest]
+			}
+
+			at #[Token[span: my span int: my int dec: my dec exp: Maybe[none]], ...my rest] {
+				return Result[success: Expr[:span :int :dec], rest]
+			}
+			at #[Token[span: my span int: my int dec: my dec exp: Maybe[the: my exp]], ...my rest] {
+				return Result[success: Expr[:span :int :dec exp: exp[Int]], rest]
+			}
+
+			at #[Token[span: my span str: my str], ...my rest] => match This[parseStrSegs: segs] {
+				at Result[success: my parts, _] => return Result[success: Expr[:span str: parts], rest]
+				at my fail => return fail[Result[Expr]]
+			}
+
+			at #[Token[span: my span char: my char], ...my rest] => return Result[success: Expr[:span :char], rest]
+
+			at #[Token[span: my span bool: my bool], ...my rest] => return Result[success: Expr[:span :bool], rest]
+
+			at #[Token[this: my this], ...my rest] => return Result[success: Expr[:this], rest]
+
+			at #[Token[span: my span anonArg: my nth depth: my depth], ...my rest] {
+				return Result[success: Expr[:span :anonArg :depth], rest]
+			}
+
+			at #[my head = Token[typeName: _] || Token[wildcard: _], ...my rest] => match This[parseType: tokens] {
+				at Result[success: my type, my rest'] => return Result[success: Expr[:type], rest']
+				at my fail = Result[failure: _, _] => match head {
+					at Token[wildcard: my wildcard] => return Result[success: Expr[:wildcard], rest]
+					else => return fail[Result[Expr]]
+				}
+				at my fail => return fail[Result[Expr]]
+			}
+
+			at #[Token[hashLBracket: my begin], Token[hashRBracket: my end], ...my rest] {
+				return Result[success: Expr[:begin array: #[] :end], rest]
+			}
+			at #[Token[hashLBracket: my begin], ...my rest] => match This[parseArrayContents: rest] {
+				at Result[success: #{my array, my end}, my rest'] => return Result[success: Expr[:begin :array :end], rest']
+				at my fail => return fail[Result[Expr]]
+			}
+
+			at #[Token[hashLParen: my begin], Token[hashRParen: my end], ...my rest] {
+				return Result[success: Expr[:begin hash: #[] :end], rest]
+			}
+			at #[Token[hashLParen: my begin], ...my rest] => match This[parseHashContents: rest] {
+				at Result[success: #{my hash, my end}, my rest'] => return Result[success: Expr[:begin :hash :end], rest']
+				at my fail => return fail[Result[Expr]]
+			}
+
+			at #[Token[hashLBrace: my begin], Token[hashRBrace: my end], ...my rest] {
+				return Result[success: Expr[:begin tuple: #[] :end], rest]
+			}
+			at #[Token[hashLBrace: my begin], ...my rest] => match This[parseTupleContents: rest] {
+				at Result[success: #{my tuple, my end}, my rest'] => return Result[success: Expr[:begin :tuple :end], rest']
+				at my fail => return fail[Result[Expr]]
+			}
+
+			at #[Token[lParen: my begin], ...my rest] => match This[parseParenContents: rest] {
+				at Result[success: #{my paren, my end}, my rest'] => return Result[success: Expr[:begin :paren :end], rest']
+				at my fail => return fail[Result[Expr]]
+			}
+
+			at #[Token[lBracket: my begin], ...my rest] => match This[parseFullExpr: rest] {
+				at Result[success: Expr[type: my type], #[Token[lSep]?, ...my rest']] => match This[finishTypeMsg: rest'] {
+					at Result[success: #{my message, my end}, my rest''] => return Result[success: Expr[:type :begin :message :end], rest'']
+					at my fail => return fail[Result[Expr] fatalIfFailed]
+				}
+
+				at Result[success: my expr, #[Token[lSep]?, ...my rest']] => match This[finishExprMsg: rest'] {
+					at Result[success: #{my message, my end}, my rest''] => return Result[success: Expr[:expr :begin :message :end], rest'']
+					at my fail => return fail[Result[Expr] fatalIfFailed]
+				}
+
+				at my fail => return fail[Result[Expr] fatalIfFailed]
+			}
+
+			at #[Token[lBrace: my begin], Token[barBar], ...my rest] => return This[finishFunc: begin, #[], rest]
+			at #[Token[lBrace: my begin], Token[bar], Token[bar], ...my rest] => return This[finishFunc: begin, #[], rest]
+			at #[Token[lBrace: my begin], Token[bar], ...my rest] {
+				my params = #[]
+
+				while true {
+					match rest at #[Token[span: my span, name: my name] = _[asSoftName], ...my rest'] {
+						match rest2 at #[Token[lParen], ..._] {
+							match This[parseTypeAnno: rest'] {
+								at Result[success: my type, rest = _] => params[add: #{Ident[:span :name], Maybe[the: type]}]
+								at my fail => return fail[Result[Expr] fatalIfFailed]
+							}
+						} else {
+							rest = rest'
+							params[add: #{Ident[:span :name], Maybe[none]}]
+						}
+					} else {
+						return Result[fatal: tokens, Maybe[the: rest]]
+					}
+
+					match rest {
+						at #[Token[bar], ...rest = _] => break
+						at #[Token[comma], ...rest = _] => next
+						else => return Result[fatal: tokens, Maybe[the: rest]]
+					}
+				}
+
+				return This[finishFunc: begin, params, rest]
+			}
+			at #[Token[lBrace], ..._] => match This[parseBlock: tokens] {
+				at Result[success: my block, my rest] => return Result[success: Expr[:block], rest]
+				at my fail => return fail[Result[Expr] fatalIfFailed]
+			}
+
+			at #[Token[my: my my], ...my rest] => match rest {
+				at #[Token[span: my span, name: my name] = _[asSoftName], ...my rest'] {
+					my type, match This[parseTypeAnno: rest'] {
+						at Result[success: my type', rest' = _] => type = Maybe[the: type']
+						at Result[failure: _, _] => type = Maybe[none]
+						at my fail => return fail[Result[Expr]]
+					}
+
+					my value, match rest' at #[Token[eq], ...my rest''] {
+						match This[parseFullExpr: rest''] {
+							at Result[success: my expr, rest' = _] => value = Maybe[the: expr]
+							at my fail => return fail[Result[Expr] fatalIfFailed]
+						}
+					} else {
+						value = Maybe[none]
+					}
+
+					return Result[success: Expr[:my name: Ident[:span :name] :type :value], rest']
+				}
+
+				else => return Result[fatal: tokens, Maybe[none]]
+			}
+
+			else => return Result[failure: tokens, Maybe[none]]
+		}
+	}
+
+	on [finishFunc: begin (Span), params (Array[Tuple[Ident, Maybe[Type]]]), tokens (Tokens)] (Result[Expr]) {
+		match This[parseTypeAnno: tokens] {
+			at Result[success: my ret, #[Token[rBrace: my end], ...my rest]] {
+				return Result[success: Expr[:begin :params return: Maybe[the: ret] func: #[] :end]]
+			}
+			at Result[success: my ret, #[Token[lSep]?, ...my rest]] => return This[finishFuncBody: begin, params, Maybe[the: ret], rest]
+			at Result[failure: _, _] => return This[finishFuncBody: begin, params, Maybe[none], {
+				match tokens at #[Token[lSep], ...my rest] {
+					return rest
+				} else {
+					return tokens
+				}
+			}]
+			at my fail => return fail[Result[Expr]]
+		}
+	}
+
+	on [finishFuncBody: begin (Span), params (Array[Tuple[Ident, Maybe[Type]]]), ret (Maybe[Type]), tokens (Tokens)] (Result[Expr]) {
+		my stmts = #[]
+		my rest = tokens
+
+		while true {
+			match This[parseStmt: rest] {
+				at Result[success: my stmt, my rest'] {
+					stmts[add: stmt]
+
+					match rest' {
+						at #[Token[rBrace: my end], ...my rest''] => return Result[success: Expr[:begin :params return: ret func: stmts :end], rest'']
+						at #[] || #[_[isAnySep]] => return Result[eof: tokens]
+						at #[_[isAnySep], ...rest = _] {}
+						else => return Result[fatal: tokens, Maybe[the: rest']]
+					}
+				}
+				at my fail => return fail[Result[Expr] fatalIfBad: rest]
+			}
+		}
+	}
+
+	on [parseArrayContents: tokens (Tokens)] (Result[Tuple[Array[Expr], Span]]) {
+		my exprs = #[]
+		my rest = tokens
+
+		while true {
+			match This[parseFullExpr: rest] {
+				at Result[success: my expr, my rest'] {
+					exprs[add: expr]
+
+					match rest' {
+						at #[Token[rBracket: my end], ...my rest''] => return Result[success: #{exprs, end}, rest'']
+						at #[] || #[_[isAnySep]] => return Result[eof: tokens]
+						at #[_[isAnySep], ...rest = _] {}
+						else => return Result[fatal: tokens, Maybe[the: rest']]
+					}
+				}
+				at my fail => return fail[Result[Tuple[Array[Expr], Span]] fatalIfBad: rest]
+			}
+		}
+	}
+
+	on [parseTupleContents: tokens (Tokens)] (Result[Tuple[Array[Expr], Span]]) {
+		my exprs = #[]
+		my rest = tokens
+
+		while true {
+			match This[parseFullExpr: rest] {
+				at Result[success: my expr, my rest'] {
+					exprs[add: expr]
+
+					match rest' {
+						at #[Token[rBrace: my end], ...my rest''] => return Result[success: #{exprs, end}, rest'']
+						at #[] || #[_[isAnySep]] => return Result[eof: tokens]
+						at #[_[isAnySep], ...rest = _] {}
+						else => return Result[fatal: tokens, Maybe[the: rest']]
+					}
+				}
+				at my fail => return fail[Result[Tuple[Array[Expr], Span]] fatalIfBad: rest]
+			}
+		}
+	}
 	
+	alias HashContents is hidden = Tuple[Array[Tuple[Expr, Expr]], Span]
+	on [parseHashContents: tokens (Tokens)] (Result[HashContents]) {
+		my pairs = #[]
+		my rest = tokens
+
+		while true {
+			match This[parseExpr: rest] {
+				at Result[success: my key, #[Token[eqGt], ...my rest']] => match This[parseFullExpr: rest'] {
+					at Result[success: my value, my rest''] {
+						pairs[add: #{key, value}]
+
+						match rest'' {
+							at #[Token[rParen: my end], ...my rest'''] => return Result[success: #{pairs, end}, rest''']
+							at #[] || #[_[isAnySep]] => return Result[eof: tokens]
+							at #[_[isAnySep], ...rest = _] {}
+							else => return Result[fatal: tokens, Maybe[the: rest'']]
+						}
+					}
+					at my fail => return fail[Result[HashContents]]
+				}
+				at Result[success: _, my rest'] => return Result[fatal: tokens, Maybe[the: rest']]
+				at my fail => return fail[Result[HashContents] fatalIfBad: rest]
+			}
+		}
+	}
+	
+	on [parseStrSegs: segs (Array[StrSegment])] (Result[Array[Expr.StrPart]]) {
+		my parts = #[]
+		my buf = ""
+
+		for my seg in: segs {
+			match seg {
+				at StrSegment[str: my str] => buf[add: str]
+				at StrSegment[char: my char] => buf[add: char]
+				at StrSegment[code: my code] => match This[parseFullExpr: code] {
+					at Result[success: my expr, #[]] {
+						if buf? {
+							parts[add: Expr.StrPart[str: buf]]
+							buf = ""
+						}
+
+						parts[add: Expr.StrPart[code: expr]]
+					}
+					at Result[success: _, my rest] => return Result[fatal: code, Maybe[the: rest]]
+					at my fail => return fail[Result[Array[Expr.StrPart]]]
+				}
+			}
+		}
+
+		if buf? {
+			parts[add: Expr.StrPart[str: buf]]
+		}
+
+		return Result[success: parts, Series[Token] #[]] ;@@ TODO: generalize Result so we don't need a dummy series
+	}
+
+
+	on [skipParen: token (Tokens)] (Tokens) {
+		while true {
+			match tokens {
+				at #[Token[lParen] || Token[hashLParen], ...my rest] => tokens = This[skipParen: rest][next]
+				at #[Token[lBracket] || Token[hashLBracket], ...my rest] => tokens = This[skipBracket: rest][next]
+				at #[Token[lBrace] || Token[hashLBrace], ...my rest] => tokens = This[skipBrace: rest][next]
+				at #[Token[rParen], ..._] => return tokens
+				at #[_, ...tokens = _] {}
+				at #[] => throw "Error!"
+			}
+		}
+	}
+
+	on [skipBracket: token (Tokens)] (Tokens) {
+		while true {
+			match tokens {
+				at #[Token[lParen] || Token[hashLParen], ...my rest] => tokens = This[skipParen: rest][next]
+				at #[Token[lBracket] || Token[hashLBracket], ...my rest] => tokens = This[skipBracket: rest][next]
+				at #[Token[lBrace] || Token[hashLBrace], ...my rest] => tokens = This[skipBrace: rest][next]
+				at #[Token[rBracket], ..._] => return tokens
+				at #[_, ...tokens = _] {}
+				at #[] => throw "Error!"
+			}
+		}
+	}
+
+	on [skipBrace: token (Tokens)] (Tokens) {
+		while true {
+			match tokens {
+				at #[Token[lParen] || Token[hashLParen], ...my rest] => tokens = This[skipParen: rest][next]
+				at #[Token[lBracket] || Token[hashLBracket], ...my rest] => tokens = This[skipBracket: rest][next]
+				at #[Token[lBrace] || Token[hashLBrace], ...my rest] => tokens = This[skipBrace: rest][next]
+				at #[Token[rBrace], ..._] => return tokens
+				at #[_, ...tokens = _] {}
+				at #[] => throw "Error!"
+			}
+		}
+	}
+
+	on [removeNewlines: tokens (Tokens)] (Bool) {
+		while true {
+			match tokens {
+				at #[Token[lParen] || Token[hashLParen], ...my rest] => tokens = This[skipParen: rest]
+				at #[Token[lBracket] || Token[hashLBracket], ...my rest] => tokens = This[skipBracket: rest]
+				at #[Token[lBrace] || Token[hashLBrace], ...my rest] => tokens = This[skipBrace: rest]
+				at #[Token[rParen], ..._] => return true
+				at #[_, Token[lSep], Token[cascade: _], ...tokens = _] {}
+				at #[_, Token[lSep], ..._] {
+					tokens[removeAt: 1]
+					tokens++
+				}
+				at #[_, ...tokens = _] {}
+				at #[] => return false
+			}
+		}
+	}
+
+	on [parseParenContents: tokens (Tokens)] (Result[Tuple[Array[Expr], Span]]) {
+		my exprs = #[]
+
+		if !This[removeNewlines: tokens] {
+			return Result[eof: tokens]
+		}
+
+		my rest = tokens
+		my leadingOp = {
+			match rest {
+				at #[Token[andAnd], ...rest = _] => return Maybe[the: Infix[and]]
+				at #[Token[barBar], ...rest = _] => return Maybe[the: Infix[or]]
+				at #[Token[caretCaret], ...rest = _] => return Maybe[the: Infix[xor]]
+				at #[Token[bangBang], ...rest = _] => return Maybe[the: Infix[nor]]
+				else => return Maybe[none]
+			}
+		}
+
+		while true {
+			match This[parseFullExpr: rest] {
+				at Result[success: my expr, my rest'] {
+					exprs[add: expr]
+
+					match rest' {
+						at #[Token[rParen: my end], ...my rest''] {
+							match leadingOp at Maybe[the: my op] {
+								match exprs[at: 0] at !Expr[left: _ infix: _, op right: _] {
+									return Result[fatal: tokens, Maybe[none]]
+								}
+							}
+
+							return Result[success: #{exprs, end}, rest'']
+						}
+						at #[] || #[_[isAnyComma]] => return Result[eof: tokens]
+						at #[_[isAnyComma], ...rest = _] {}
+						else => return Result[fatal: tokens, Maybe[the: rest']]
+					}
+				}
+				at my fail => return fail[Result[Tuple[Array[Expr], Span]]]
+			}
+		}
+	}
+
 	
 	;== Misc
 	
