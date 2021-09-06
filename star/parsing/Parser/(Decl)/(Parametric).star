@@ -1,3 +1,3 @@
 protocol Parametric {
-	my params (Maybe[Type.Params])
+	my params (Maybe[Type.Args])
 }

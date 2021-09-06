@@ -2,7 +2,7 @@
 ==| The Onceterator class is a type of iterator that only provides one value.
 ]
 
-type E
+type T
 class OnceIterator[T] of Iterator[T] {
 	my value (Maybe[T]) is hidden
 

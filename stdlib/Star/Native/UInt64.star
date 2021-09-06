@@ -1,4 +1,4 @@
-class Int64 of Core.Ordered is native[repr: `int` bits: 64 signed: false] is strong {
+class UInt64 of Core.Ordered is native[repr: `int` bits: 64 signed: false] is strong {
 	on [next] (This) is native `u64_succ`
 	on [previous] (This) is native `u64_pred`
 	

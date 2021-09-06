@@ -1,7 +1,7 @@
 kind InitList {
 	has [exprs: (Array[Expr])]
-	has [named: (Array[Tuple[String, Expr]])]
-	has [namedInit: (Array[Tuple[String, InitList]])]
+	has [named: (Array[Tuple[Str, Expr]])]
+	has [namedInit: (Array[Tuple[Str, InitList]])]
 	
 	on [form: (Int) = 0] (Str) {
 		return "{"

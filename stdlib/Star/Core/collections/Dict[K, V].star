@@ -1,11 +1,12 @@
 type K
+type V
 class DictIterator[K] of Iterator[K] is hidden {
-	my pairs (Array[Tuple[K, _]])
+	my keys (Array[K])
 	my index (Int) = 0
 	
 	on [next] (Maybe[K]) {
 		if index < pairs.length {
-			return Maybe[the: pairs[Unsafe at: index++].key]
+			return Maybe[the: keys[Unsafe at: index++]]
 		} else {
 			return Maybe[none]
 		}
@@ -15,12 +16,12 @@ class DictIterator[K] of Iterator[K] is hidden {
 type K
 type V
 class DictIterator[K, V] of Iterator[K, V] is hidden {
-	my pairs (Array[Dict[K, V].Pair])
+	my pairs (Array[Tuple[K, V]])
 	my index (Int) = 0
 	
 	on [next] (Maybe[Tuple[K, V]]) {
 		if index < pairs.length {
-			return Maybe[the: pairs[Unsafe at: index++][Tuple[K, V]]]
+			return Maybe[the: pairs[Unsafe at: index++]]
 		} else {
 			return Maybe[none]
 		}
@@ -443,7 +444,7 @@ class Dict[K, V] of Iterable[K], Iterable[K, V] is friend #[DictIterator[K], Dic
 	}
 	
 	on [Iterator[K]] is inline {
-		return DictIterator[K][:pairs]
+		return DictIterator[K][:keys]
 	}
 	
 	on [Iterator[K, V]] is inline {

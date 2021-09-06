@@ -1,4 +1,4 @@
-type T of ElemOfStep[S]
+type T of ElemWithStep[S]
 type S of Step
 class BackwardsIterator[T, S] of Iterator[T] is hidden {
 	my from (T)
@@ -18,7 +18,7 @@ class BackwardsIterator[T, S] of Iterator[T] is hidden {
 	}
 }
 
-type T of ElemOfStep[S]
+type T of ElemWithStep[S]
 type S of Step
 class Backwards[T, S] of Range[T, S] is hidden Range {
 	;== Creating

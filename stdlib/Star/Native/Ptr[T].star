@@ -76,19 +76,19 @@ class Ptr[T] of Ordered is native[repr: `ptr` elem: T] {
 }
 
 class Ptr[Void] of Comparable is native[repr: `voidptr`] {
-	operator `<` [other (Ptr[T])] (Bool) {
+	operator `<` [other (Ptr[Void])] (Bool) {
 		return this[UInt64] < other[UInt64]
 	}
 
-	operator `<=` [other (Ptr[T])] (Bool) {
+	operator `<=` [other (Ptr[Void])] (Bool) {
 		return this[UInt64] <= other[UInt64]
 	}
 
-	operator `>` [other (Ptr[T])] (Bool) {
+	operator `>` [other (Ptr[Void])] (Bool) {
 		return this[UInt64] > other[UInt64]
 	}
 
-	operator `>=` [other (Ptr[T])] (Bool) {
+	operator `>=` [other (Ptr[Void])] (Bool) {
 		return this[UInt64] >= other[UInt64]
 	}
 	

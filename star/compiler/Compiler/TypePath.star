@@ -1,4 +1,4 @@
-alias TypePath (Array[Tuple[String, Maybe[Array[Type]]]]) {
+alias TypePath (Array[Tuple[Str, Maybe[Array[Type]]]]) {
 	on [named: name (Str)] (This) is static is inline {
 		return This #[#{name, Maybe[none]}]
 	}

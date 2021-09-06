@@ -62,7 +62,7 @@ category InPlace for Dict[K, V] {
 	
 	;== Collecting *and* filtering
 	
-	on [collectIf: func (Func[Maybe[K, V], K, V])] {
+	on [collectIf: func (Func[Maybe[Tuple[K, V]], K, V])] {
 		my oldPairs = pairs
 		my i = 0
 		
@@ -91,7 +91,7 @@ category InPlace for Dict[K, V] {
 		}
 	}
 	
-	on [collectWhile: func (Func[Maybe[K, V], K, V])] {
+	on [collectWhile: func (Func[Maybe[Tuple[K, V]], K, V])] {
 		my oldPairs = pairs
 		my i = 0
 		
