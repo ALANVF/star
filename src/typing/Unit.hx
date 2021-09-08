@@ -40,6 +40,8 @@ class Unit extends Dir {
 			},
 			_ => {
 				switch primary.flatMap(p -> p.findType(path, false, cache)) {
+					case Some(type) if(cache.contains(type)):
+						return outer.findType(path, true, cache.prepend(this));
 					case Some(type): Some({t: TModular(type, this)});
 					case None:
 						super.findType(path, false, cache.prepend(this)).orDo(

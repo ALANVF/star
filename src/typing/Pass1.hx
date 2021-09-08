@@ -223,10 +223,7 @@ static function resolveBasicType(
 						at(e is IErrors) => {
 							e.errors.push(Errors.invalidTypeLookup(
 								type.span.nonNull(),
-								"Type does not exist! "+lookup.simpleName()+" "+cur._match(
-									at(t is Type) => t.simpleName(),
-									_ => Std.string(cur)
-								)
+								"Type does not exist!"
 							));
 							return;
 						},

@@ -45,6 +45,7 @@ abstract class Namespace extends TypeDecl {
 					);
 				} : cast decls.find(typeName)) {
 					case None: return if(absolute) lookup.findType(path, true, cache) else None;
+					case Some([type]) if(cache.contains(type)): return lookup.findType(path, true, cache.prepend(this.thisType));
 					case Some([type]): switch [args, type.params] {
 						case [[], _]: Some(type.thisType); // should probably curry parametrics but eh
 						case [_, []]:

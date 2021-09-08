@@ -41,9 +41,13 @@ abstract class TypeDecl implements IErrors {
 				errors.push(Errors.notYetImplemented(span));
 				None;
 			},
+			/*at([[span, typeName, args]], when(typeName == this.name.name && !cache.contains(this))) => {
+				return lookup.findType(path, false, cache);
+			},*/
 			at([[span, typeName, args], ...rest]) => {
 				final res: Option<Type> = switch typevars.find(typeName) {
 					case None: return if(absolute) lookup.findType(path, true, cache) else None;
+					case Some([type]) if(cache.contains(type)): return lookup.findType(path, true, cache.prepend(this.thisType));
 					case Some([type]): switch [args, type.params] {
 						case [[], _]: Some({t: type.thisType.t, span: span}); // should probably curry parametrics but eh
 						case [_, []]:

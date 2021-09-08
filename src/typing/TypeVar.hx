@@ -131,8 +131,6 @@ class TypeVar implements IErrors {
 	function findType(path: LookupPath, absolute = false, cache: List<{}> = Nil): Option<Type> {
 		if(cache.contains(this)) {
 			return None;
-		} else {
-			cache = cache.prepend(this);
 		}
 
 		return path._match(
@@ -142,7 +140,10 @@ class TypeVar implements IErrors {
 				errors.push(Errors.notYetImplemented(span));
 				None;
 			},
-			_ => if(absolute) lookup.findType(path, true, cache) else None
+			at([[span, typeName, args]], when(typeName == this.name.name && !cache.contains(this))) => {
+				return lookup.findType(path, false, cache);
+			},
+			_ => if(absolute) lookup.findType(path, true, cache.prepend(this)) else None
 		);
 	}
 

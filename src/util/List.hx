@@ -124,9 +124,20 @@ class ListHelper {
 		case Cons(head, tail): Std.string(head) + sep + tail.join(sep);
 	}
 
-	static inline function contains<T>(list: List<T>, value: T) return switch list {
+	/*static inline function contains<T>(list: List<T>, value: T) return switch list {
 		case Nil: false;
 		case Cons(head, tail): value == head || tail.contains(value);
+	}*/
+	static function contains<T>(list: List<T>, value: T) {
+		while(true) switch list {
+			case Nil: return false;
+			case Cons(v, rest):
+				if(value == v) {
+					return true;
+				} else {
+					list = rest;
+				}
+		}
 	}
 
 	static function nth<T>(list: List<T>, i: Int) return switch [i, list] {

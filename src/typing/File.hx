@@ -200,6 +200,9 @@ class File implements IErrors {
 							_ => return if(absolute) unit.orElse(dir).findType(path, true, cache) else None
 						);
 					
+					case Some([type]) if(cache.contains(type.thisType)):
+						return unit.orElse(dir).findType(path, true, cache.prepend(this));
+					
 					case Some([type]): switch [args, type.params] {
 						case [[], _]: Some({t: type.thisType.t, span: span}); // should probably curry parametrics but eh
 						case [_, []]:

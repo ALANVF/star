@@ -25,6 +25,13 @@ class List3Helper {
 		}
 	}
 
+	static function map<T, U, V, A, B, C>(self: List3<T, U, V>, func: (T, U, V) -> Tuple3<A, B, C>) return switch self {
+		case Nil3: Nil3;
+		case Cons3(h1, h2, h3, tl):
+			final r = func(h1, h2, h3);
+			Cons3(r._1, r._2, r._3, tl.map(func));
+	}
+
 	static function mapArray<T, U, V, W>(list: List3<T, U, V>, func: (T, U, V) -> W) {
 		final array = [];
 		
