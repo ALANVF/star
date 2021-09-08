@@ -276,7 +276,7 @@
 					begin "(?<![\.'])\b(?:next|break)\b(?![A-Z'])"
 					beginCaptures [#(name "keyword.control.transfer.star")]
 					
-					end "(?=\s*$|^^|\s*[;,}])"
+					end "(?=\s*$|^^|\s*;(?!\[)|\s*[,}])"
 					
 					patterns [
 						#(include #literals)
@@ -668,7 +668,7 @@
 					begin "(?<!\.)\b(class|kind|category|protocol|type|alias|module)\b(?!')"
 					beginCaptures [#(name "keyword.decl.star")]
 					
-					end "(?=\s*$|^^|\s*[;}]|\s*,(?!\s*[A-Z]))"
+					end "(?=\s*$|^^|\s*\}|\s*;(?!\[)|\s*,(?!\s*[A-Z]))"
 					
 					patterns [
 						#(include #comments)

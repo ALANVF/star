@@ -375,7 +375,7 @@
 							"name": "keyword.control.transfer.star"
 						}
 					],
-					"end": "(?=\\s*$|^|\\s*[;,}])",
+					"end": "(?=\\s*$|^|\\s*;(?!\\[)|\\s*[,}])",
 					"patterns": [
 						{
 							"include": "#literals"
@@ -875,7 +875,7 @@
 							"name": "keyword.decl.star"
 						}
 					],
-					"end": "(?=\\s*$|^|\\s*[;}]|\\s*,(?!\\s*[A-Z]))",
+					"end": "(?=\\s*$|^|\\s*\\}|\\s*;(?!\\[)|\\s*,(?!\\s*[A-Z]))",
 					"patterns": [
 						{
 							"include": "#comments"
