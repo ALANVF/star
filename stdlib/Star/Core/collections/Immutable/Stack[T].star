@@ -2,9 +2,7 @@ type T
 alias Stack[T] (List[T]) {
 	;== Pushing
 	
-	on [push: value (T)] (This) is inline {
-		return This[head: value rest: this]
-	}
+	on [push: value (T)] (This) is inline => return This[head: value rest: this]
 	
 	
 	;== Peeking

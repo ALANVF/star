@@ -2,7 +2,7 @@ type T
 class ListIterator[T] of Iterator[T] is hidden {
 	my list (List[T])
 	
-	on [next] (Maybe[T]) {
+	on [next] (Maybe[T]) is inline {
 		match list at List[head: my head tail: my tail] {
 			list = tail
 			return Maybe[the: head]
@@ -14,23 +14,15 @@ class ListIterator[T] of Iterator[T] is hidden {
 
 type T
 kind List[T] of Iterable[T] {
-	type U
-	alias This'[U] is hidden = Power.Reapply[This, U]
-	
-	
 	has [nil]
 	has [head: (T) tail: (This)]
 	
 	
 	;== Creating
 	
-	on [new] (This) is static is inline {
-		return This[nil]
-	}
+	on [new] (This) is static is inline => return This[nil]
 	
-	on [new: values (Iterable[T])] (This) is static {
-		return This[new: values[Iterator[T]]]
-	}
+	on [new: values (Iterable[T])] (This) is static => return This[new: values[Iterator[T]]]
 	
 	on [new: iter (Iterator[T])] (This) is static is hidden {
 		match iter[next] at Maybe[the: my value] {
@@ -108,9 +100,7 @@ kind List[T] of Iterable[T] {
 		}
 	}
 	
-	on [after: (Int)] (This) is inline {
-		return this[from: after + 1]
-	}
+	on [after: (Int)] (This) is inline => return this[from: after + 1]
 	
 	;... and all other variants
 	
@@ -123,9 +113,8 @@ kind List[T] of Iterable[T] {
 		}
 		
 		try {
-			match this[from: index] at #{my value, my rest} {
-				return #{value, this[upto: index] + rest}
-			}
+			#{my value, my rest} = this[from: index]
+			return #{value, this[upto: index] + rest}
 		} catch {
 			at RangeError[Int] => throw IndexError[at: index]
 		}
@@ -137,9 +126,8 @@ kind List[T] of Iterable[T] {
 		}
 		
 		try {
-			match this[from: index] at #{my value, my rest} {
-				return Maybe[the: #{value, this[upto: index] + rest}]
-			}
+			#{my value, my rest} = this[from: index]
+			return Maybe[the: #{value, this[upto: index] + rest}]
 		} catch {
 			at RangeError[Int] => return Maybe[none]
 		}
@@ -159,16 +147,12 @@ kind List[T] of Iterable[T] {
 	
 	;== Prepending
 	
-	on [prepend: value (T)] (This) is inline {
-		return This[head: value tail: this]
-	}
+	on [prepend: value (T)] (This) is inline => return This[head: value tail: this]
 	
 	
 	;== Iterating
 	
-	on [Iterator[T]] is inline {
-		return ListIterator[list: this]
-	}
+	on [Iterator[T]] is inline => return ListIterator[list: this]
 	
 	on [each: func (Func[Void, T, Int])] {
 		my i = 0
@@ -205,14 +189,14 @@ kind List[T] of Iterable[T] {
 	;== Collecting
 	
 	type U
-	on [collect: func (Func[U, T])] (This'[U]) {
+	on [collect: func (Func[U, T])] (This[U]) {
 		match this at This[head: my head tail: my tail] {
 			my head' = func[call: head]
 			return tail[collect: func][prepend: head']
 		}
 	}
 	type U
-	on [collect: func (Func[U, T, Int])] (This'[U]) {
+	on [collect: func (Func[U, T, Int])] (This[U]) {
 		my i = 0
 		my list = this
 		my result = This[nil]
@@ -285,23 +269,23 @@ kind List[T] of Iterable[T] {
 	;== Collecting *and* filtering
 	
 	type U
-	on [collectIf: func (Func[Maybe[U], T])] (This'[U]) {
+	on [collectIf: func (Func[Maybe[U], T])] (This[U]) {
 		match this at This[head: my head tail: my tail] {
 			match func[call: head] at Maybe[the: my head'] {
-				return This'[U][head: head' tail: tail[collectIf: func]]
+				return This[U][head: head' tail: tail[collectIf: func]]
 			} else {
 				return tail[collectIf: func]
 			}
 		} else {
-			return This'[U][nil]
+			return This[U][nil]
 		}
 	}
 	
 	type U
-	on [collectIf: func (Func[Maybe[U], T, Int])] (This'[U]) {
+	on [collectIf: func (Func[Maybe[U], T, Int])] (This[U]) {
 		my i = 0
 		my list = this
-		my result = This'[U][nil]
+		my result = This[U][nil]
 		
 		while true {
 			match list at This[head: my head tail: my tail] {
@@ -317,23 +301,23 @@ kind List[T] of Iterable[T] {
 	}
 	
 	type U
-	on [collectWhile: func (Func[Maybe[U], T])] (This'[U]) {
+	on [collectWhile: func (Func[Maybe[U], T])] (This[U]) {
 		match this at This[head: my head tail: my tail] {
 			match func[call: head] at Maybe[the: my head'] {
-				return This'[U][head: head' tail: tail[collectWhile: func]]
+				return This[U][head: head' tail: tail[collectWhile: func]]
 			} else {
-				return This'[U][nil]
+				return This[U][nil]
 			}
 		} else {
-			return This'[U][nil]
+			return This[U][nil]
 		}
 	}
 	
 	type U
-	on [collectWhile: func (Func[Maybe[U], T, Int])] (This'[U]) {
+	on [collectWhile: func (Func[Maybe[U], T, Int])] (This[U]) {
 		my i = 0
 		my list = this
-		my result = This'[U][nil]
+		my result = This[U][nil]
 		
 		while true {
 			match list at This[head: my head tail: my tail] {
@@ -365,7 +349,5 @@ kind List[T] of Iterable[T] {
 	
 	;== Checking
 	
-	operator `?` (Bool) {
-		return this != This[nil]
-	}
+	operator `?` (Bool) => return this != This[nil]
 }

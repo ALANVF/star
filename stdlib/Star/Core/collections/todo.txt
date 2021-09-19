@@ -1,14 +1,14 @@
 - [ ] sets
 - [ ] binary/hash sets/maps
 - [ ] span (like c++, maybe like rust slices?)
-- [ ] more kinds of iterators (like c++)
+- [ ] more kinds of iterators (like c++) or something better
 - [ ] complex numbers
 - [ ] bigint
 - [ ] rational/fraction
 - [x] stacks / fifo queues
 - [ ] queues
 - [ ] deques
-- [/] (linked) lists
+- [x] (linked) lists
 - [ ] rings
 - [ ] something like rust's VecDeque
 - [ ] heaps

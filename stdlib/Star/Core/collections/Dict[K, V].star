@@ -4,7 +4,7 @@ class DictIterator[K] of Iterator[K] is hidden {
 	my keys (Array[K])
 	my index (Int) = 0
 	
-	on [next] (Maybe[K]) {
+	on [next] (Maybe[K]) is inline {
 		if index < pairs.length {
 			return Maybe[the: keys[Unsafe at: index++]]
 		} else {
@@ -19,7 +19,7 @@ class DictIterator[K, V] of Iterator[K, V] is hidden {
 	my pairs (Array[Tuple[K, V]])
 	my index (Int) = 0
 	
-	on [next] (Maybe[Tuple[K, V]]) {
+	on [next] (Maybe[Tuple[K, V]]) is inline {
 		if index < pairs.length {
 			return Maybe[the: pairs[Unsafe at: index++]]
 		} else {
@@ -30,22 +30,27 @@ class DictIterator[K, V] of Iterator[K, V] is hidden {
 
 type K
 type V
-class Dict[K, V] of Iterable[K], Iterable[K, V] is friend #[DictIterator[K], DictIterator[K, V]] {
-	type K'
-	type V'
-	alias This'[K', V'] is hidden = Power.Reapply[This, K', V']
-	
-	class Pair is hidden is strong {
-		my key (K)
-		my value (V)
-		
-		on [Tuple[K, V]] is inline {
-			return #{key, value}
-		}
+class Dict[K, V] of Mapped[K, V] is friend #[DictIterator[K], DictIterator[K, V]] {
+	alias Pair (Tuple[K, V]) is hidden {
+		my first is getter `key` is setter `key`
+		my second is getter `value` is setter `value`
 	}
 	
 	
 	my pairs (Array[Pair]) is hidden
+	
+	
+	;== Creating (macros)
+
+	init [_: entries (Dict[K, V])] is macro {
+		my entries' = #quote Array[Pair] #[]
+
+		for my key, my value in: entries {
+			entries'[add: #quote Pair #{#expand key, #expand value}]
+		}
+
+		pairs = #expand entries'
+	}
 	
 	
 	;== Creating
@@ -59,47 +64,35 @@ class Dict[K, V] of Iterable[K], Iterable[K, V] is friend #[DictIterator[K], Dic
 	}
 	
 	init [new: pairs (Array[Tuple[K, V]])] {
-		this.pairs = pairs[collect: Pair[key: $.0.first value: $.0.second]]
+		this.pairs = pairs[Array[Pair]]
 	}
 	
 	
 	;== Copying
 	
-	on [new] (This) {
-		return This[pairs: pairs[collect: $0[new]]]
-	}
+	on [new] (This) => return This[pairs: pairs[collect: $0[new]]]
 	
 	
 	;== Sizes
 	
-	on [size] (Int) is getter is inline {
-		return pairs.length
-	}
+	on [size] (Int) is getter is inline => return pairs.length
 	
-	on [capacity] (Int) is getter is inline {
-		return pairs.capacity
-	}
+	on [capacity] (Int) is getter is inline => return pairs.capacity
 	
 	
 	;== Keys
 	
-	on [keys] (Array[K]) is getter {
-		return pairs[collect: $0.key]
-	}
+	on [keys] (Array[K]) is getter => return pairs[collect: $0.key]
 	
 	
 	;== Values
 	
-	on [values] (Array[V]) is getter {
-		return pairs[collect: $0.value]
-	}
+	on [values] (Array[V]) is getter => return pairs[collect: $0.value]
 	
 	
 	;== Pairs
 	
-	on [pairs] (Array[Tuple[K, V]]) is getter {
-		return pairs[collect: $0[Tuple[K, V]]]
-	}
+	on [pairs] (Array[Tuple[K, V]]) is getter => return pairs[Array[Tuple[K, V]]]
 	
 	
 	;== Internal
@@ -151,7 +144,7 @@ class Dict[K, V] of Iterable[K], Iterable[K, V] is friend #[DictIterator[K], Dic
 		match this[pairForKey: key] at Maybe[the: my pair] {
 			pair.value = value
 		} else {
-			pairs[add: Pair[:key :value]]
+			pairs[add: Pair #{key, value}]
 		}
 	}
 	
@@ -173,7 +166,13 @@ class Dict[K, V] of Iterable[K], Iterable[K, V] is friend #[DictIterator[K], Dic
 	
 	on [atNew: key (K) set: value (V)] is setter {
 		match this[pairForKey: key] at Maybe[none] {
-			pairs[add: Pair[:key :value]]
+			pairs[add: Pair #{key, value}]
+		}
+	}
+
+	on [atExisting: key (K) set: value (V)] is setter {
+		match this[pairForKey: key] at Maybe[the: my pair] {
+			pair.value = value
 		}
 	}
 	
@@ -196,28 +195,6 @@ class Dict[K, V] of Iterable[K], Iterable[K, V] is friend #[DictIterator[K], Dic
 		}
 	}
 	
-	on [removeAllKeys: keys (Iterable[K])] (Array[V]) {
-		my values = #[]
-		
-		for my key in: keys {
-			values[add: this[removeKey: key]]
-		}
-		
-		return values
-	}
-	
-	on [removeAnyKeys: keys (Iterable[K])] (Array[V]) {
-		my values = #[]
-		
-		for my key in: keys {
-			match this[maybeRemoveKey: key] at Maybe[the: my value] {
-				values[add: value]
-			}
-		}
-		
-		return values
-	}
-	
 	
 	;== Removing by value
 	
@@ -237,82 +214,25 @@ class Dict[K, V] of Iterable[K], Iterable[K, V] is friend #[DictIterator[K], Dic
 		}
 	}
 	
-	on [removeAllValues: values (Iterable[V])] (Array[K]) {
-		my keys = #[]
-		
-		for my value in: values {
-			keys[add: this[removeValue: value]]
-		}
-		
-		return keys
-	}
-	
-	on [removeAnyValues: values (Iterable[V])] (Array[K]) {
-		my keys = #[]
-		
-		for my value in: values {
-			match this[maybeRemoveValue: value] at Maybe[the: my key] {
-				keys[add: key]
-			}
-		}
-		
-		return keys
-	}
-	
 	
 	;== Clearing
 	
-	on [clear] is inline {
-		pairs[clear]
-	}
+	on [clear] is inline => pairs[clear]
 	
 	
 	;== Collecting
 	
 	type K'
 	type V'
-	on [collect: func (Func[Tuple[K', V'], K, V])] (This'[K', V']) {
-		my result = This'[K', V'][new: pairs.capacity]
+	on [collect: func (Func[Tuple[K', V'], K, V])] (This[K', V']) {
+		my result = This[K', V'][new: pairs.capacity]
 		
 		for my i from: 0 upto: pairs.length {
 			my pair = pairs[Unsafe at: i]
 			
-			match func[call: pair.key, pair.value] at #{my key, my value} {
-				result[at: key] = value
-			}
-		}
-		
-		return result
-	}
-	
-	
-	;== Filtering
-	
-	on [keepIf: func (Func[Bool, K, V])] (This) {
-		my result = This[new: pairs.capacity // 2]
-		
-		for my i from: 0 upto: pairs.length {
-			my pair = pairs[Unsafe at: i]
-			
-			if func[call: pair.key, pair.value] {
-				result[add: pair.key] = pair.value
-			}
-		}
-		
-		return result
-	}
-	
-	on [keepWhile: func (Func[Bool, K, V])] (This) {
-		my result = This[new: pairs.capacity // 2]
-		
-		for my i from: 0 upto: pairs.length {
-			my pair = pairs[Unsafe at: i]
-			
-			if func[call: pair.key, pair.value] {
-				result[add: pair.key] = pair.value
-			} else {
-				break
-			}
+			#{my key, my value} = func[call: pair.key, pair.value]
+
+			result[at: key] = value
 		}
 		
 		return result
@@ -323,8 +243,8 @@ class Dict[K, V] of Iterable[K], Iterable[K, V] is friend #[DictIterator[K], Dic
 	
 	type K'
 	type V'
-	on [collectIf: func (Func[Maybe[Tuple[K', V']], K, V])] (This'[K', V']) {
-		my result = This'[K', V'][new: pairs.capacity // 2]
+	on [collectIf: func (Func[Maybe[Tuple[K', V']], K, V])] (This[K', V']) {
+		my result = This[K', V'][new: pairs.capacity // 2]
 		
 		for my i from: 0 upto: pairs.length {
 			my pair = pairs[Unsafe at: i]
@@ -339,8 +259,8 @@ class Dict[K, V] of Iterable[K], Iterable[K, V] is friend #[DictIterator[K], Dic
 	
 	type K'
 	type V'
-	on [collectWhile: func (Func[Maybe[Tuple[K', V']], K, V])] (This'[K', V']) {
-		my result = This'[K', V'][new: pairs.capacity // 2]
+	on [collectWhile: func (Func[Maybe[Tuple[K', V']], K, V])] (This[K', V']) {
+		my result = This[K', V'][new: pairs.capacity // 2]
 		
 		for my i from: 0 upto: pairs.length {
 			my pair = pairs[Unsafe at: i]
@@ -356,164 +276,8 @@ class Dict[K, V] of Iterable[K], Iterable[K, V] is friend #[DictIterator[K], Dic
 	}
 	
 	
-	;== Observing
-
-	on [all: func (Func[Bool, K, V])] (Bool) {
-		for my i from: 0 upto: pairs.length {
-			my pair = pairs[Unsafe at: i]
-			
-			if !func[call: pair.key, pair.value] {
-				return false
-			}
-		}
-
-		return true
-	}
-
-	on [any: func (Func[Bool, K, V])] (Bool) {
-		for my i from: 0 upto: pairs.length {
-			my pair = pairs[Unsafe at: i]
-			
-			if func[call: pair.key, pair.value] {
-				return true
-			}
-		}
-
-		return false
-	}
-
-	on [one: func (Func[Bool, K, V])] (Bool) {
-		my cond = false
-
-		for my i from: 0 upto: pairs.length {
-			my pair = pairs[Unsafe at: i]
-			
-			if func[call: pair.key, pair.value] {
-				if cond {
-					return false
-				} else {
-					cond = true
-				}
-			}
-		}
-
-		return cond
-	}
-
-	on [none: func (Func[Bool, K, V])] (Bool) {
-		for my i from: 0 upto: pairs.length {
-			my pair = pairs[Unsafe at: i]
-			
-			if func[call: pair.key, pair.value] {
-				return false
-			}
-		}
-
-		return true
-	}
-
-	on [containsKey: key (K)] (Bool) {
-		for my i from: 0 upto: pairs.length {
-			if pairs[Unsafe at: i].key ?= key {
-				return true
-			}
-		}
-
-		return false
-	}
-
-	on [containsValue: value (V)] (Bool) {
-		for my i from: 0 upto: pairs.length {
-			if pairs[Unsafe at: i].value ?= value {
-				return true
-			}
-		}
-
-		return false
-	}
-	
-	
 	;== Iterating
 	
-	on [each: func (Func[Void, K, V])] {
-		for my i from: 0 upto: pairs.length {
-			pairs[Unsafe at: i] -> {
-				func[call: key, value]
-			}
-		}
-	}
-	
-	on [Iterator[K]] is inline {
-		return DictIterator[K][:keys]
-	}
-	
-	on [Iterator[K, V]] is inline {
-		return DictIterator[K, V][:pairs]
-	}
-	
-	
-	;== Converting
-	
-	on [Array[Tuple[K, V]]] is inline {
-		return this.pairs
-	}
-	
-	type K' if Power.Castable[K, K']?
-	type V' if Power.Castable[V, V']?
-	on [Dict[K', V']] {
-		my result = Dict[K', V'][new: pairs.capacity]
-		
-		for my i from: 0 upto: pairs.length {
-			my pair = pairs[Unsafe at: i]
-			
-			result[at: pair.key[K']] = pair.value[V']
-		}
-		
-		return result
-	}
-	
-	
-	;== Merging
-	
-	operator `&` [other (This)] (This) {
-		my result = This[new]
-		
-		for my i from: 0 upto: pairs.length {
-			my key = pairs[Unsafe at: i].key
-			
-			match other[maybeAt: key] at Maybe[the: my value] {
-				result[atNew: key] = value
-			}
-		}
-		
-		return result
-	}
-	
-	operator `|` [other (This)] (This) {
-		my result = this[new]
-		
-		for my key, my value in: other {
-			result[atNew: key] = value
-		}
-		
-		return result
-	}
-	
-	operator `^` [other (This)] (This) {
-		my result = This[new]
-		
-		for my i from: 0 upto: pairs.length {
-			my pair = pairs[Unsafe at: i]
-			
-			if !other[containsKey: pair.key] {
-				result[atNew: pair.key] = pair.value
-			}
-		}
-		
-		for my key, my value in: other {
-			if !this[containsKey: key] {
-				result[atNew: key] = value
-			}
-		}
-	}
+	on [Iterator[K]] is inline => return DictIterator[K][keys: this.keys]
+	on [Iterator[K, V]] is inline => return DictIterator[K, V][pairs: this[pairs]]
 }

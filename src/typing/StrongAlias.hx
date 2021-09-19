@@ -2,7 +2,9 @@ package typing;
 
 class StrongAlias extends Alias {
 	var type: Type;
+	final staticMembers: Array<Member> = [];
 	final staticMethods: Array<StaticMethod> = [];
+	final members: Array<Member> = [];
 	final methods: Array<Method> = [];
 	final operators: Array<Operator> = [];
 	var noInherit: Bool = false;
@@ -45,6 +47,9 @@ class StrongAlias extends Alias {
 
 		if(body.isSome()) {
 			for(decl in body.value().of) switch decl {
+				case DMember(m) if(m.attrs.exists(IsStatic)): alias.staticMembers.push(Member.fromAST(alias, m));
+				case DMember(m): alias.members.push(Member.fromAST(alias, m));
+
 				case DMethod(m) if(m.attrs.exists(IsStatic)): StaticMethod.fromAST(alias, m).forEach(x -> alias.staticMethods.push(x));
 				case DMethod(m): alias.methods.push(Method.fromAST(alias, m));
 	
@@ -59,7 +64,9 @@ class StrongAlias extends Alias {
 	
 	override function hasErrors() {
 		return super.hasErrors()
+			|| staticMembers.some(m -> m.hasErrors())
 			|| staticMethods.some(m -> m.hasErrors())
+			|| members.some(m -> m.hasErrors())
 			|| methods.some(m -> m.hasErrors())
 			|| operators.some(o -> o.hasErrors());
 	}
@@ -67,6 +74,9 @@ class StrongAlias extends Alias {
 	override function allErrors() {
 		var result = super.allErrors();
 
+		for(member in staticMembers) result = result.concat(member.allErrors());
+		for(method in staticMethods) result = result.concat(method.allErrors());
+		for(member in members) result = result.concat(member.allErrors());
 		for(method in methods) result = result.concat(method.allErrors());
 		for(op in operators) result = result.concat(op.allErrors());
 

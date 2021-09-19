@@ -2,20 +2,27 @@ use Native
 
 type T
 class Array[T] of Values[T] {
-	type U
-	alias This'[U] is hidden = Power.Reapply[This, U]
-
-
 	my buffer is hidden
 	my length is getter
 	my capacity is getter
 
 
+	;== Creating (macros)
+
+	init [_: values (Array[T])] is macro {
+		#init_this This[new: #expand values.length]
+
+		for my value in: values {
+			this[add: #expand value]
+		}
+	}
+
+
 	;== Collecting
 
 	type U
-	on [collect: func (Func[U, T, Int])] (This'[U]) {
-		return This'[U][new: length] -> {
+	on [collect: func (Func[U, T, Int])] (This[U]) {
+		return This[U][new: length] -> {
 			for my i from: 0 upto: _.length {
 				this[add: func[call: _.buffer[at: i], i]]
 			}
@@ -24,8 +31,8 @@ class Array[T] of Values[T] {
 
 	type U
 	type V of Iterable[U]
-	on [collectAll: func (Func[V, T, Int])] (This'[U]) {
-		return This'[U][new: length] -> {
+	on [collectAll: func (Func[V, T, Int])] (This[U]) {
+		return This[U][new: length] -> {
 			for my i from: 0 upto: _.length {
 				this[addAll: func[call: _.buffer[at: i], i]]
 			}
@@ -36,8 +43,8 @@ class Array[T] of Values[T] {
 	;== Collecting *and* filtering
 
 	type U
-	on [collectIf: func (Func[Maybe[U], T, Int])] (This'[U]) {
-		return This'[U][new: length // 2] -> {
+	on [collectIf: func (Func[Maybe[U], T, Int])] (This[U]) {
+		return This[U][new: length // 2] -> {
 			for my i from: 0 upto: _.length {
 				match func[call: _.buffer[at: i], i] at Maybe[the: my value] {
 					this[add: value]
@@ -47,8 +54,8 @@ class Array[T] of Values[T] {
 	}
 
 	type U
-	on [collectWhile: func (Func[Maybe[U], T, Int])] (This'[U]) {
-		return This'[U][new: length // 2] -> {
+	on [collectWhile: func (Func[Maybe[U], T, Int])] (This[U]) {
+		return This[U][new: length // 2] -> {
 			for my i from: 0 upto: _.length {
 				match func[call: _.buffer[at: i], i] at Maybe[the: my value] {
 					this[add: value]
@@ -61,8 +68,8 @@ class Array[T] of Values[T] {
 
 	type U
 	type V of Iterable[U]
-	on [collectAllIf: func (Func[Maybe[V], T, Int])] (This'[U]) {
-		return This'[U][new: length // 2] -> {
+	on [collectAllIf: func (Func[Maybe[V], T, Int])] (This[U]) {
+		return This[U][new: length // 2] -> {
 			for my i from: 0 upto: _.length {
 				match func[call: _.buffer[at: i], i] at Maybe[the: my values] {
 					this[addAll: values]
@@ -73,8 +80,8 @@ class Array[T] of Values[T] {
 
 	type U
 	type V of Iterable[U]
-	on [collectAllWhile: func (Func[Maybe[V], T, Int])] (This'[U]) {
-		return This'[U][new: length // 2] -> {
+	on [collectAllWhile: func (Func[Maybe[V], T, Int])] (This[U]) {
+		return This[U][new: length // 2] -> {
 			for my i from: 0 upto: _.length {
 				match func[call: _.buffer[at: i], i] at Maybe[the: my values] {
 					this[addAll: values]
@@ -92,7 +99,7 @@ class Array[T] of Values[T] {
 		every: size (Int)
 		by: offset (Int) = 0
 		allowPartial: (Bool) = true
-	] (This'[This]) {
+	] (This[This]) {
 		if size <= 0 {
 			throw "Invalid size"
 		}
@@ -131,7 +138,7 @@ class Array[T] of Values[T] {
 			}
 		}
 		my newSize = (length + by) // (size + by) + partialOffset
-		my result = This'[This][new: newSize]
+		my result = This[This][new: newSize]
 		my i = 0
 
 		while i + size <= length {
@@ -176,18 +183,30 @@ class Array[T] of Values[T] {
 }
 
 type T
-class Array[Array[T]] {
-	type U
-	alias This'[U] is hidden = Power.Reapply[This, U]
-
-	on [flatten] (This'[T]) {
+type U of Collection[T]
+class Array[U] {
+	on [flatten] (This[T]) {
 		my newLength = 0
 
 		for my i from: 0 upto: length {
 			newLength += buffer[at: i].length
 		}
 
-		my result = This'[T][new: newLength]
+		my result = This[T][new: newLength]
+
+		for my i from: 0 upto: length {
+			result[addAll: buffer[at: i]]
+		}
+
+		return result
+	}
+}
+
+type T
+type U of Iterable[T]
+class Array[U] {
+	on [flatten] (This[T]) {
+		my result = This[T][new: length]
 
 		for my i from: 0 upto: length {
 			result[addAll: buffer[at: i]]

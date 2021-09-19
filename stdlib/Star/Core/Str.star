@@ -10,6 +10,25 @@ class Str of Values[Char], Ordered is strong {
 	my capacity is hidden
 
 
+	;== Creating (macros)
+
+	init [_: str (Str)] is macro {
+		#init_this This[new: #expand str.length]
+
+		for my char in: str {
+			this[add: #expand char]
+		}
+	}
+
+	init [_: chars (Array[Char])] is macro {
+		#init_this This[new: #expand chars.length]
+
+		for my char in: chars {
+			this[add: #expand char]
+		}
+	}
+
+	
 	;== Creating
 
 	init [new: char (Char)] {

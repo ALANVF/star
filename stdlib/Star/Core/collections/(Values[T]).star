@@ -39,51 +39,31 @@ protocol Values[T] of Positional[T] {
 		}
 	}
 
-	on [resizeBy: extraCapacity (Int)] is hidden is inline {
-		this[resizeTo: capacity + extraCapacity]
-	}
+	on [resizeBy: extraCapacity (Int)] is hidden is inline => this[resizeTo: capacity + extraCapacity]
 
 
 	;== Moving
 
-	on [from: (Int) moveInto: dest (Ptr[T])] is hidden is inline {
-		[buffer + from move: length - from to: dest]
-	}
+	on [from: (Int) moveInto: dest (Ptr[T])] is hidden is inline => [buffer + from move: length - from to: dest]
 
-	on [from: (Int) moveTo: index (Int)] is hidden is inline {
-		this[:from moveInto: buffer + index]
-	}
+	on [from: (Int) moveTo: index (Int)] is hidden is inline => this[:from moveInto: buffer + index]
 
-	on [from: (Int) moveBy: offset (Int)] is hidden is inline {
-		this[:from moveTo: from + offset]
-	}
+	on [from: (Int) moveBy: offset (Int)] is hidden is inline => this[:from moveTo: from + offset]
 
-	on [after: (Int) moveBy: offset (Int)] is hidden is inline {
-		this[from: after + 1 moveBy: offset]
-	}
+	on [after: (Int) moveBy: offset (Int)] is hidden is inline => this[from: after + 1 moveBy: offset]
 
 
 	;== Copying
 
-	on [new] (This) {
-		return This[buffer: buffer[new: length] :length]
-	}
+	on [new] (This) => return This[buffer: buffer[new: length] :length]
 
-	on [copyInto: dest (Ptr[T])] is hidden {
-		buffer[copy: length to: dest]
-	}
+	on [copyInto: dest (Ptr[T])] is hidden => buffer[copy: length to: dest]
 	
-	on [from: (Int) copyInto: dest (Ptr[T])] is hidden {
-		[buffer + from copy: length - from to: dest]
-	}
+	on [from: (Int) copyInto: dest (Ptr[T])] is hidden => [buffer + from copy: length - from to: dest]
 
-	on [from: (Int) copyTo: index (Int)] is hidden is inline {
-		this[:from copyInto: buffer + index]
-	}
+	on [from: (Int) copyTo: index (Int)] is hidden is inline => this[:from copyInto: buffer + index]
 
-	on [from: (Int) copyBy: offset (Int)] is hidden is inline {
-		this[:from copyTo: from + offset]
-	}
+	on [from: (Int) copyBy: offset (Int)] is hidden is inline => this[:from copyTo: from + offset]
 
 	;[on [to: (Int) copyInto: dest (Ptr[T])] is hidden {
 		for my i from: 0 to: to {
@@ -115,28 +95,6 @@ protocol Values[T] of Positional[T] {
 			buffer[at: index] = value
 		} else {
 			throw IndexError[at: index]
-		}
-	}
-
-	on [maybeAt: index (Int)] (Maybe[T]) {
-		if index < 0 {
-			index += length
-		}
-		
-		if 0 <= index < length {
-			return Maybe[the: buffer[at: index]]
-		} else {
-			return Maybe[none]
-		}
-	}
-
-	on [maybeAt: index (Int) set: value (T)] is setter {
-		if index < 0 {
-			index += length
-		}
-
-		if 0 <= index < length {
-			buffer[at: index] = value
 		}
 	}
 
@@ -287,7 +245,11 @@ protocol Values[T] of Positional[T] {
 		}
 
 		if 0 <= from < length {
+			my res = this[:from]
+
 			this[resizeTo: from]
+			
+			return res
 		} else {
 			throw RangeError[:from]
 		}
@@ -345,7 +307,5 @@ protocol Values[T] of Positional[T] {
 
 	;== Iterating
 
-	on [Iterator[T]] is inline {
-		return ValuesIterator[new: this]
-	}
+	on [Iterator[T]] is inline => return ValuesIterator[new: this]
 }

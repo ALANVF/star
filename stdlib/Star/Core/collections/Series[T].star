@@ -1,17 +1,18 @@
 type T
-type U {
-	on [length] (Int) is getter
-	on [at: index (Int)] (T)
-}
-alias Sequential[T] is hidden = U
-
-type T
 class Series[T] of Ordered, Iterable[T] {
 	my buffer (Values[T]) is hidden
 	my offset (Int) is getter
 
 
-	;== Creation
+	;== Creating (macros)
+
+	init [_: values (Array[T])] is macro {
+		buffer = #expand Array[T][_: values]
+		offset = 0
+	}
+	
+	
+	;== Creating
 
 	init [new: values (Values[T])] {
 		buffer = values[new]
@@ -21,27 +22,19 @@ class Series[T] of Ordered, Iterable[T] {
 	
 	;== Length
 
-	on [length] (Int) is getter is inline {
-		return buffer.length - offset
-	}
+	on [length] (Int) is getter is inline => return buffer.length - offset
 
 
 	;== Copying
 
-	on [new] (This) {
-		return This[buffer: buffer[from: offset] offset: 0]
-	}
+	on [new] (This) => return This[buffer: buffer[from: offset] offset: 0]
 
 
 	;== Accessing
 
-	on [first] (T) is inline {
-		return this[at: 0]
-	}
+	on [first] (T) is inline => return this[at: 0]
 
-	on [last] (T) is inline {
-		return this[at: this.length - 1]
-	}
+	on [last] (T) is inline => return this[at: this.length - 1]
 
 	on [at: index (Int)] (T) {
 		my index' = index + offset
@@ -92,9 +85,7 @@ class Series[T] of Ordered, Iterable[T] {
 		}
 	}
 
-	on [isHead] (Bool) is inline {
-		return offset ?= 0
-	}
+	on [isHead] (Bool) is inline => return offset ?= 0
 
 
 	;== Tail
@@ -107,9 +98,7 @@ class Series[T] of Ordered, Iterable[T] {
 		}
 	}
 
-	on [isTail] (Bool) is inline {
-		return offset ?= buffer.length
-	}
+	on [isTail] (Bool) is inline => return offset ?= buffer.length
 
 
 	;== Skipping
@@ -124,14 +113,10 @@ class Series[T] of Ordered, Iterable[T] {
 		}
 	}
 
-	on [next] (This) is inline {
-		return this[skip: 1]
-	}
+	on [next] (This) is inline => return this[skip: 1]
 
 	
-	on [previous] (This) is inline {
-		return this[skip: -1]
-	}
+	on [previous] (This) is inline => return this[skip: -1]
 
 
 	;== Comparing
@@ -176,7 +161,7 @@ class Series[T] of Ordered, Iterable[T] {
 		}
 	}
 	
-	on [maybeFindEach: values (Sequential[T])] (Maybe[This]) {
+	on [maybeFindEach: values (Positional[T])] (Maybe[This]) {
 		if this[isTail] || values.length > this.length {
 			return Maybe[none]
 		} else {
@@ -205,7 +190,7 @@ class Series[T] of Ordered, Iterable[T] {
 		}
 	}
 
-	on [startsWithEach: values (Sequential[T])] (Bool) {
+	on [startsWithEach: values (Positional[T])] (Bool) {
 		if this[isTail] || values.length > this.length {
 			return false
 		} else {
@@ -222,25 +207,17 @@ class Series[T] of Ordered, Iterable[T] {
 
 	;== Adding
 
-	on [add: value (T)] (T) is inline {
-		return buffer[add: value]
-	}
+	on [add: value (T)] (T) is inline => return buffer[add: value]
 	
 	
 	;== Inserting
 	
-	on [insert: value (T)] (T) is inline {
-		return buffer[at: offset insert: value]
-	}
+	on [insert: value (T)] (T) is inline => return buffer[at: offset insert: value]
 	
 	
 	;== Removing
 	
-	on [remove] (T) is inline {
-		return buffer[removeAt: offset]
-	}
+	on [remove] (T) is inline => return buffer[removeAt: offset]
 	
-	on [removeAt: index (Int)] (T) is inline {
-		return buffer[removeAt: index + offset]
-	}
+	on [removeAt: index (Int)] (T) is inline => return buffer[removeAt: index + offset]
 }

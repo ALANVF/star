@@ -5,19 +5,17 @@ category Power for Int {
 		fromStr: str (Str)
 		usesUnifiedPrefix: (Bool) = false
 	] (Int) is static {
-		match This[getSignFromStr: str] at #{my index, my sign} {
-			my base = {
-				try {
-					match this[getBaseFromStr: str :usesUnifiedPrefix :index] at #{my base', index = _} {
-						return base'
-					}
-				} catch {
-					at _ => return 10
-				}
+		#{my index, my sign} = This[getSignFromStr: str]
+		my base = {
+			try {
+				#{my base', index} = this[getBaseFromStr: str :usesUnifiedPrefix :index]
+				return base'
+			} catch {
+				at _ => return 10
 			}
-
-			return This[fromStr: str withBase: base :sign :index]
 		}
+
+		return This[fromStr: str withBase: base :sign :index]
 	}
 
 	on [
@@ -30,16 +28,16 @@ category Power for Int {
 			throw "Invalid base: must be 2..36"
 		}
 
-		match This[getSignFromStr: str] at #{my index, my sign} {
-			if includesPrefix {
-				match this[getBaseFromStr: str :usesUnifiedPrefix :index] {
-					at #{base, index = _} {}
-					at #{my base', _} => throw "Base \(base') found, expected base \(base)"
-				}
-			}
+		#{my index, my sign} = This[getSignFromStr: str]
 
-			return This[fromStr: str withBase: base :sign :index]
+		if includesPrefix {
+			match this[getBaseFromStr: str :usesUnifiedPrefix :index] {
+				at #{base, index = _} {}
+				at #{my base', _} => throw "Base \(base') found, expected base \(base)"
+			}
 		}
+
+		return This[fromStr: str withBase: base :sign :index]
 	}
 
 	on [getSignFromStr: str (Str)] (Tuple[Int, Int]) is static is hidden {

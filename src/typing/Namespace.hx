@@ -27,10 +27,20 @@ abstract class Namespace extends TypeDecl {
 		
 		return path._match(
 			at([[span, "This", []]], when(absolute)) => Some({t: TThis(this), span: span}),
-			at([[span, "This", _]], when(absolute)) => {
-				// prob shouldn't be attatched to *this* type decl, but eh
-				errors.push(Errors.notYetImplemented(span));
-				None;
+			at([[span, "This", args]], when(absolute)) => {
+				// errors prob shouldn't be attatched to *this* type decl, but eh
+				if(params.length == 0) {
+					errors.push(Errors.invalidTypeApply(span, "Attempt to apply arguments to a non-parametric type"));
+					None;
+				} else if(args.length > params.length) {
+					errors.push(Errors.invalidTypeApply(span, "Too many arguments"));
+					None;
+				} else if(args.length < params.length) {
+					errors.push(Errors.invalidTypeApply(span, "Not enough arguments"));
+					None;
+				} else {
+					Some({t: TApplied({t: TThis(this), span: span}, args), span: span});
+				}
 			},
 			at([[span, typeName, args], ...rest]) => {
 				final res: Option<Type> = switch (absolute ? {

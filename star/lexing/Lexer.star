@@ -160,7 +160,7 @@ class Lexer {
 				at #"a" <= _ <= #"z" => return this[readName]
 				
 				at #"_" {
-					if reader[at: 1 peek: alnum_q] {
+					if reader[at: 1 peek: alnum_q | #":"] {
 						return this[readName]
 					} else {
 						reader[next]

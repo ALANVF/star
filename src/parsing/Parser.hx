@@ -2900,20 +2900,23 @@ class Parser {
 					Block(block);
 				case err: return cast err;
 			},
-			at([_.asSoftName() => T_Name(_2, name), T_PlusPlus(_3), ...rest2]) => {
-				rest = rest2;
-				StepMember({span: _2, name: name}, _3, Incr);
-			},
-			at([_.asSoftName() => T_Name(_2, name), T_MinusMinus(_3), ...rest2]) => {
-				rest = rest2;
-				StepMember({span: _2, name: name}, _3, Decr);
-			},
-			at([_.asSoftName() => T_Name(_2, name), getAssignableOp(_) => Some({span: _3, op: op}), ...rest2]) => switch parseExpr3(rest2) {
-				case Success(expr, rest3):
+			at([_.asAnyName() => T_Name(_2, name), ...rest2]) => rest2._match(
+				at([T_PlusPlus(_3), ...rest3]) => {
 					rest = rest3;
-					AssignMember({span: _2, name: name}, _3, op, expr);
-				case err: return cast err;
-			},
+					StepMember({span: _2, name: name}, _3, Incr);
+				},
+				at([T_MinusMinus(_3), ...rest3]) => {
+					rest = rest3;
+					StepMember({span: _2, name: name}, _3, Decr);
+				},
+				at([getAssignableOp(_) => Some({span: _3, op: op}), ...rest3]) => switch parseExpr3(rest3) {
+					case Success(expr, rest4):
+						rest = rest4;
+						AssignMember({span: _2, name: name}, _3, op, expr);
+					case err: return cast err;
+				},
+				_ => return Fatal(tokens, Some(rest))
+			),
 			_ => return Fatal(tokens, None)
 		);
 		final nested = [];
@@ -2970,20 +2973,23 @@ class Parser {
 					Block(block);
 				case err: return cast err;
 			},
-			at([_.asSoftName() => T_Name(_2, name), T_PlusPlus(_3), ...rest2]) => {
-				rest = rest2;
-				StepMember({span: _2, name: name}, _3, Incr);
-			},
-			at([_.asSoftName() => T_Name(_2, name), T_MinusMinus(_3), ...rest2]) => {
-				rest = rest2;
-				StepMember({span: _2, name: name}, _3, Decr);
-			},
-			at([_.asSoftName() => T_Name(_2, name), getAssignableOp(_) => Some({span: _3, op: op}), ...rest2]) => switch parseExpr3(rest2) {
-				case Success(expr, rest3):
+			at([_.asAnyName() => T_Name(_2, name), ...rest2]) => rest2._match(
+				at([T_PlusPlus(_3), ...rest3]) => {
 					rest = rest3;
-					AssignMember({span: _2, name: name}, _3, op, expr);
-				case err: return cast err;
-			},
+					StepMember({span: _2, name: name}, _3, Incr);
+				},
+				at([T_MinusMinus(_3), ...rest3]) => {
+					rest = rest3;
+					StepMember({span: _2, name: name}, _3, Decr);
+				},
+				at([getAssignableOp(_) => Some({span: _3, op: op}), ...rest3]) => switch parseExpr3(rest3) {
+					case Success(expr, rest4):
+						rest = rest4;
+						AssignMember({span: _2, name: name}, _3, op, expr);
+					case err: return cast err;
+				},
+				_ => return Fatal(tokens, Some(rest))
+			),
 			_ => return Fatal(tokens, None)
 		);
 		final nested = [];
@@ -3390,20 +3396,23 @@ class Parser {
 					Block(block);
 				case err: return cast err;
 			},
-			at([_.asSoftName() => T_Name(_2, name), T_PlusPlus(_3), ...rest2]) => {
-				rest = rest2;
-				StepMember({span: _2, name: name}, _3, Incr);
-			},
-			at([_.asSoftName() => T_Name(_2, name), T_MinusMinus(_3), ...rest2]) => {
-				rest = rest2;
-				StepMember({span: _2, name: name}, _3, Decr);
-			},
-			at([_.asSoftName() => T_Name(_2, name), getAssignableOp(_) => Some({span: _3, op: op}), ...rest2]) => switch parseExpr(rest2) {
-				case Success(expr, rest3):
+			at([_.asAnyName() => T_Name(_2, name), ...rest2]) => rest2._match(
+				at([T_PlusPlus(_3), ...rest3]) => {
 					rest = rest3;
-					AssignMember({span: _2, name: name}, _3, op, expr);
-				case err: return cast err;
-			},
+					StepMember({span: _2, name: name}, _3, Incr);
+				},
+				at([T_MinusMinus(_3), ...rest3]) => {
+					rest = rest3;
+					StepMember({span: _2, name: name}, _3, Decr);
+				},
+				at([getAssignableOp(_) => Some({span: _3, op: op}), ...rest3]) => switch parseExpr3(rest3) {
+					case Success(expr, rest4):
+						rest = rest4;
+						AssignMember({span: _2, name: name}, _3, op, expr);
+					case err: return cast err;
+				},
+				_ => return Fatal(tokens, Some(rest))
+			),
 			_ => return Fatal(tokens, None)
 		);
 		final nested = [];
@@ -3460,20 +3469,23 @@ class Parser {
 					Block(block);
 				case err: return cast err;
 			},
-			at([_.asSoftName() => T_Name(_2, name), T_PlusPlus(_3), ...rest2]) => {
-				rest = rest2;
-				StepMember({span: _2, name: name}, _3, Incr);
-			},
-			at([_.asSoftName() => T_Name(_2, name), T_MinusMinus(_3), ...rest2]) => {
-				rest = rest2;
-				StepMember({span: _2, name: name}, _3, Decr);
-			},
-			at([_.asSoftName() => T_Name(_2, name), getAssignableOp(_) => Some({span: _3, op: op}), ...rest2]) => switch parseExpr(rest2) {
-				case Success(expr, rest3):
+			at([_.asAnyName() => T_Name(_2, name), ...rest2]) => rest2._match(
+				at([T_PlusPlus(_3), ...rest3]) => {
 					rest = rest3;
-					AssignMember({span: _2, name: name}, _3, op, expr);
-				case err: return cast err;
-			},
+					StepMember({span: _2, name: name}, _3, Incr);
+				},
+				at([T_MinusMinus(_3), ...rest3]) => {
+					rest = rest3;
+					StepMember({span: _2, name: name}, _3, Decr);
+				},
+				at([getAssignableOp(_) => Some({span: _3, op: op}), ...rest3]) => switch parseExpr3(rest3) {
+					case Success(expr, rest4):
+						rest = rest4;
+						AssignMember({span: _2, name: name}, _3, op, expr);
+					case err: return cast err;
+				},
+				_ => return Fatal(tokens, Some(rest))
+			),
 			_ => return Fatal(tokens, None)
 		);
 		final nested = [];

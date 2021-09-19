@@ -1,5 +1,23 @@
 type T
 category InPlace for Values[T] {
+	;== Removing sections
+
+	on [removeFrom: from (Int)] {
+		if from < 0 {
+			from += length
+		}
+
+		if 0 <= from < length {
+			this[resizeTo: from]
+		} else {
+			throw RangeError[:from]
+		}
+	}
+
+	;on [removeTo: to (Int)]
+	;on [removeFrom: from (Int) to: (Int)]
+
+
 	;== Collecting
 
 	on [collect: func (Func[T, T, Int])] {
@@ -33,6 +51,7 @@ category InPlace for Values[T] {
 		for my i from: 0 upto: length {
 			if !func[call: buffer[at: i], i] {
 				this[resizeTo: i]
+				break
 			}
 		}
 	}

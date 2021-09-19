@@ -87,8 +87,13 @@ class Main {
 					Sys.sleep(0.05);
 				#end
 				renderer.render(err);
+				#if windows
+					renderer.writer.attr(RESET);
+					Sys.sleep(0.05);
+					renderer.writer.flush();
+				#end
 
-				if(i == 25) throw "too many error!";
+				if(i == 25) throw "too many errors!";
 			}
 		}
 

@@ -13,9 +13,9 @@ category InPlace for Dict[K, V] {
 			while i < oldPairs.length {
 				my pair = oldPairs[Unsafe at: i]
 				
-				match func[call: pair.key, pair.value] at #{my key, my value} {
-					this[at: key] = value
-				}
+				#{my key, my value} = func[call: pair.key, pair.value]
+				
+				this[at: key] = value
 			}
 		} catch {
 			at my err {

@@ -62,6 +62,7 @@ class OpaqueAlias extends Alias {
 	override function allErrors() {
 		var result = super.allErrors();
 
+		for(method in staticMethods) result = result.concat(method.allErrors());
 		for(method in methods) result = result.concat(method.allErrors());
 		for(op in operators) result = result.concat(op.allErrors());
 

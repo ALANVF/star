@@ -241,6 +241,7 @@ class Lexer {
 					 | ('0'.code ... '9'.code)
 					 | '_'.code
 					 | "'".code
+					 | ':'.code
 					) => {
 						readName();
 					},

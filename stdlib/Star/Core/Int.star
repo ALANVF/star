@@ -106,7 +106,7 @@ class Int of Native.Int32, Num {
 			}
 
 			if u > v {
-				match #{u, v} at #{v = _, u = _} {}
+				#{u, v} = #{v, u}
 			}
 		} while (v -= u)?
 
