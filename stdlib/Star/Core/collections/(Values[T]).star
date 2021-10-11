@@ -20,6 +20,14 @@ protocol Values[T] of Positional[T] {
 		this.capacity = capacity
 	}
 
+	init [fill: size (Int) with: value (T)] {
+		buffer = Ptr[new: size]
+		length = capacity = size
+		for my i from: 0 times: size {
+			buffer[at: i] = value
+		}
+	}
+
 
 	;== Sizing
 
@@ -55,7 +63,7 @@ protocol Values[T] of Positional[T] {
 
 	;== Copying
 
-	on [new] (This) => return This[buffer: buffer[new: length] :length]
+	on [new] (This) => return This[buffer: buffer[copy: length] :length]
 
 	on [copyInto: dest (Ptr[T])] is hidden => buffer[copy: length to: dest]
 	
@@ -124,14 +132,14 @@ protocol Values[T] of Positional[T] {
 		}
 
 		if 0 <= from < length {
-			my maxAfterIndex = index + values.length
+			my maxAfterIndex = from + values.length
 			my diff = maxAfterIndex - length
 
 			if diff > 0 {
 				this[resizeBy: diff]
 			}
 
-			values[copyInto: buffer + index]
+			values[copyInto: buffer + from]
 		} else {
 			throw RangeError[:from to: length - 1]
 		}
@@ -270,7 +278,7 @@ protocol Values[T] of Positional[T] {
 
 	on [add: value (T)] (T) {
 		this[resizeBy: 1]
-		ptr[at: length++] = value
+		buffer[at: length++] = value
 
 		return value
 	}
@@ -289,7 +297,7 @@ protocol Values[T] of Positional[T] {
 	on [prepend: value (T)] (T) {
 		this[resizeBy: 1]
 		this[from: 0 moveBy: 1]
-		ptr[at: 0] = value
+		buffer[at: 0] = value
 		length++
 
 		return value

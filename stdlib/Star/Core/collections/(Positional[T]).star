@@ -9,7 +9,7 @@ protocol Positional[T] of Collection[T] {
 	
 	on [maybeAt: index (Int)] (Maybe[T]) {
 		if index < 0 {
-			index += length
+			index += this.length
 		}
 
 		if 0 <= index < this.length {
@@ -20,7 +20,7 @@ protocol Positional[T] of Collection[T] {
 	}
 	on [maybeAt: index (Int) set: value (T)] is setter {
 		if index < 0 {
-			index += length
+			index += this.length
 		}
 
 		if 0 <= index < this.length {
@@ -39,6 +39,15 @@ protocol Positional[T] of Collection[T] {
 	
 	on [from: (Int) to: (Int)] (This)
 	on [from: (Int) to: (Int) set: values (This)] is setter
+
+	on [from: (Int) upto: (Int)] (This) => return this[:from to: upto - 1]
+	on [from: (Int) upto: (Int) set: (This)] is setter => this[:from to: upto - 1 :set]
+
+	;on [from: (Int) downto: (Int)] (This)
+	;on [from: (Int) downto: (Int) set: values (This)] is setter
+
+	on [from: (Int) by: (Int)] (This) => return this[:from upto: from + by]
+	on [from: (Int) by: (Int) set: (This)] is setter => this[:from upto: from + by :set]
 	
 	on [after: (Int)] (This) {
 		my from = after + 1
@@ -73,13 +82,6 @@ protocol Positional[T] of Collection[T] {
 			this[to: upto - 1] = values
 		}
 	}
-	
-	;on [from: (Int) upto: (Int)] (This)
-	;on [from: (Int) upto: (Int) set: values (This)] is setter
-	;on [from: (Int) downto: (Int)] (This)
-	;on [from: (Int) downto: (Int) set: values (This)] is setter
-	;on [from: (Int) by: (Int)] (This)
-	;on [from: (Int) by: (Int) set: values (This)] is setter
 
 	;on [after: (Int) to: (Int)] (This)
 	;on [after: (Int) to: (Int) set: values (This)] is setter
@@ -110,11 +112,16 @@ protocol Positional[T] of Collection[T] {
 		-> [addAll: values]
 		
 		for my i after: values'.length downto: 0 {
-			this[prepend: values[Unsafe at: i]]
+			this[prepend: values'[Unsafe at: i]]
 		}
 		
 		return values
 	}
+
+
+	;== Inserting values
+
+	on [at: (Int) add: value (T)] (T)
 
 	
 	;== Removing values
@@ -375,7 +382,7 @@ protocol Positional[T] of Collection[T] {
 			at offset < 0 => throw "Invalid offset"
 			at offset ?= 0 || this.length < 2 => return this[new]
 			else {
-				my offset' = length - offset
+				my offset' = this.length - offset
 				return this[upto: offset'] + this[from: offset']
 			}
 		}

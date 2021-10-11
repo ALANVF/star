@@ -212,7 +212,7 @@ class Series[T] of Ordered, Iterable[T] {
 	
 	;== Inserting
 	
-	on [insert: value (T)] (T) is inline => return buffer[at: offset insert: value]
+	on [insert: value (T)] (T) is inline => return buffer[at: offset add: value]
 	
 	
 	;== Removing

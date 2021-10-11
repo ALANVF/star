@@ -42,7 +42,7 @@ protocol Range[T, S] of Iterable[T] {
 	}
 
 	on [length] (Int) is getter {
-		return this[extent][Int] // step[Int] + 1
+		return [this[extent] // step Int] + 1
 	}
 
 	on [max] (T)
@@ -111,7 +111,7 @@ protocol Range[T, S] of Iterable[T] {
 	;== Filtering
 	
 	on [keepIf: func (Func[Bool, T])] (Array[T]) is inline {
-		return Array[new: this.length // 2] -> {
+		return Array[T][new: this.length // 2] -> {
 			for my value from: from to: to by: step {
 				if func[call: value] {
 					this[add: value]
@@ -120,7 +120,7 @@ protocol Range[T, S] of Iterable[T] {
 		}
 	}
 	on [keepIf: func (Func[Bool, T, Int])] (Array[T]) is inline {
-		return Array[new: this.length // 2] -> {
+		return Array[T][new: this.length // 2] -> {
 			my i = 0
 			for my value from: from to: to by: step {
 				if func[call: value, i++] {
@@ -135,7 +135,7 @@ protocol Range[T, S] of Iterable[T] {
 	
 	type U
 	on [collectIf: func (Func[Maybe[U], T])] (Array[U]) is inline {
-		return Array[new: this.length // 2] -> {
+		return Array[U][new: this.length // 2] -> {
 			for my value from: from to: to by: step {
 				match func[call: value] at Maybe[the: my value'] {
 					this[add: value']
@@ -145,7 +145,7 @@ protocol Range[T, S] of Iterable[T] {
 	}
 	type U
 	on [collectIf: func (Func[Maybe[U], T, Int])] (Array[U]) is inline {
-		return Array[new: this.length // 2] -> {
+		return Array[U][new: this.length // 2] -> {
 			my i = 0
 			for my value from: from to: to by: step {
 				match func[call: value, i++] at Maybe[the: my value'] {

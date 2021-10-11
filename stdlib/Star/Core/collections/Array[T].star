@@ -129,7 +129,7 @@ class Array[T] of Values[T] {
 		]
 
 		my partialOffset = {
-			my shouldAdd1 = (length - 1) % (size + by) < size - 1
+			my shouldAdd1 = (length - 1) % (size + offset) < size - 1
 			
 			if allowPartial && shouldAdd1 {
 				return 1
@@ -137,13 +137,13 @@ class Array[T] of Values[T] {
 				return 0
 			}
 		}
-		my newSize = (length + by) // (size + by) + partialOffset
+		my newSize = (length + offset) // (size + offset) + partialOffset
 		my result = This[This][new: newSize]
 		my i = 0
 
 		while i + size <= length {
 			result[add: this[from: i by: size]]
-			i += size + by
+			i += size + offset
 		}
 
 		if allowPartial && i < length {

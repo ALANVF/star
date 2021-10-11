@@ -418,8 +418,8 @@ module LLVMC is native `llvm-7` { ;@@ TODO: update to llvm 10 or something
 	on [parseBitcode2: (MemoryBufferRef), (Ptr[ModuleRef])] (Bool) is native `LLVMParseBitcode2`
 	on [parseBitcodeInContext: (ContextRef), (MemoryBufferRef), (Ptr[ModuleRef]), (Ptr[Str])] (Bool) is native `LLVMParseBitcodeInContext`
 	on [parseBitcodeInContext2: (ContextRef), (MemoryBufferRef), (Ptr[ModuleRef])] (Bool) is native `LLVMParseBitcodeInContext2`
-	on [getBitcodeModuleInContext: (ContextRef), (MemoryBufferRef, (Ptr[ModuleRef]), (Ptr[Str])] (Bool) is native `LLVMGetBitcodeModuleInContext`
-	on [getBitcodeModuleInContext2: (LontextRef), (MemoryBufferRef, (Ptr[ModuleRef])] (Bool) is native `LLVMGetBitcodeModuleInContext2`
+	on [getBitcodeModuleInContext: (ContextRef), (MemoryBufferRef), (Ptr[ModuleRef]), (Ptr[Str])] (Bool) is native `LLVMGetBitcodeModuleInContext`
+	on [getBitcodeModuleInContext2: (ContextRef), (MemoryBufferRef), (Ptr[ModuleRef])] (Bool) is native `LLVMGetBitcodeModuleInContext2`
 	on [getBitcodeModule: (MemoryBufferRef), (Ptr[ModuleRef]), (Ptr[Str])] (Bool) is native `LLVMGetBitcodeModule`
 	on [getBitcodeModule2: (MemoryBufferRef), (Ptr[ModuleRef])] (Bool) is native `LLVMGetBitcodeModule2`
 

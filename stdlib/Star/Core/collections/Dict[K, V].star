@@ -5,7 +5,7 @@ class DictIterator[K] of Iterator[K] is hidden {
 	my index (Int) = 0
 	
 	on [next] (Maybe[K]) is inline {
-		if index < pairs.length {
+		if index < keys.length {
 			return Maybe[the: keys[Unsafe at: index++]]
 		} else {
 			return Maybe[none]
@@ -31,9 +31,9 @@ class DictIterator[K, V] of Iterator[K, V] is hidden {
 type K
 type V
 class Dict[K, V] of Mapped[K, V] is friend #[DictIterator[K], DictIterator[K, V]] {
-	alias Pair (Tuple[K, V]) is hidden {
-		my first is getter `key` is setter `key`
-		my second is getter `value` is setter `value`
+	class Pair[K, V] is hidden {
+		my key (K)
+		my value (V)
 	}
 	
 	

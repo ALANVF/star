@@ -2,7 +2,7 @@ class Param of Decl, Named, Parents, Parametric {
 	kind Attrs is flags {
 		has [empty]
 		has [begin: (Span) isNative: (Array[Tuple[Ident, Expr]]) end: (Span)]
-		has [isFlags]
+		has [isFlags: (Span)]
 		has [isStrong: (Span)]
 		has [isUncounted: (Span)]
 	}

@@ -9,7 +9,7 @@ category Unsafe for Str {
 			at my strLength {
 				this[resizeBy: strLength]
 				this[after: index moveBy: strLength]
-				str[copyTo: buffer + index]
+				str[copyInto: buffer + index]
 				length += strLength - 1
 			}
 		}

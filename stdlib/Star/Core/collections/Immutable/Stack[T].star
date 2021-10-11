@@ -2,13 +2,13 @@ type T
 alias Stack[T] (List[T]) {
 	;== Pushing
 	
-	on [push: value (T)] (This) is inline => return This[head: value rest: this]
+	on [push: value (T)] (This) is inline => return This[head: value tail: this]
 	
 	
 	;== Peeking
 	
 	on [peek] (T) {
-		match this at This[head: my head rest: _] {
+		match this at This[head: my head tail: _] {
 			return head
 		} else {
 			throw "empty stack!"
@@ -16,7 +16,7 @@ alias Stack[T] (List[T]) {
 	}
 	
 	on [maybePeek] (Maybe[T]) {
-		match this at This[head: my head rest: _] {
+		match this at This[head: my head tail: _] {
 			return Maybe[the: head]
 		} else {
 			return Maybe[none]
@@ -27,16 +27,16 @@ alias Stack[T] (List[T]) {
 	;== Popping
 	
 	on [pop] (Tuple[T, This]) {
-		match this at This[head: my head rest: my rest] {
-			return #{head, rest}
+		match this at This[head: my head tail: my tail] {
+			return #{head, tail}
 		} else {
 			throw "empty stack!"
 		}
 	}
 	
 	on [maybePop] (Maybe[Tuple[T, This]]) {
-		match this at This[head: my head rest: my rest] {
-			return Maybe[the: #{head, rest}]
+		match this at This[head: my head tail: my tail] {
+			return Maybe[the: #{head, tail}]
 		} else {
 			return Maybe[none]
 		}

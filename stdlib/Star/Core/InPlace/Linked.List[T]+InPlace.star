@@ -87,7 +87,7 @@ category InPlace for Linked.List[T] {
 			at offset < 0 => throw "Invalid offset"
 			at offset ?= 0 || length < 2 {}
 			else => for _ from: 0 times: offset {
-				my link = head.next[Unsafe Value]
+				my link = head.nextValue
 				head.next = link.next
 				tail[insertPrev: link]
 			}
@@ -99,7 +99,7 @@ category InPlace for Linked.List[T] {
 			at offset < 0 => throw "Invalid offset"
 			at offset ?= 0 || length < 2 {}
 			else => for _ from: 0 times: offset {
-				my link = tail.prev[Unsafe Value]
+				my link = tail.prevValue
 				tail.prev = link.prev
 				head[insertNext: link]
 			}

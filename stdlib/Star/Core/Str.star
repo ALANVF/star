@@ -171,7 +171,7 @@ class Str of Values[Char], Ordered is strong {
 		match str.length {
 			at 0 {}
 			at 1 => this[add: str[at: 0]]
-			else => this[Super addAll: str]
+			else => this[Super[Values[Char]] addAll: str]
 		}
 
 		return str
@@ -205,7 +205,7 @@ class Str of Values[Char], Ordered is strong {
 		match str.length {
 			at 0 {}
 			at 1 => this[prepend: str[at: 0]]
-			else => this[Super prependAll: str]
+			else => this[Super[Values[Char]] prependAll: str]
 		}
 
 		return str
@@ -337,6 +337,8 @@ class Str of Values[Char], Ordered is strong {
 	;== Concating
 	
 	operator `+` [char (Char)] (This) {
+		"abc" + #"d"
+
 		return This[new: length + 1]
 		-> [add: this]
 		-> [add: char]

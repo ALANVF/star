@@ -1,6 +1,8 @@
 type T
 protocol HasNext[T] of Link[T] is hidden List is sealed List {
-	my next (HasPrev[T]) is setter `rawNext`
+	my next (HasPrev[T]) is getter is setter `rawNext`
+
+	on [nextValue] (Value[T]) is getter is inline => return this.next[Unsafe Value[T]]
 
 	on [next: newNext (HasPrev[T])] is setter {
 		this.next = newNext

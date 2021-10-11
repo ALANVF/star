@@ -5,17 +5,17 @@ category Power for Int {
 		fromStr: str (Str)
 		usesUnifiedPrefix: (Bool) = false
 	] (Int) is static {
-		#{my index, my sign} = This[getSignFromStr: str]
+		#{my index, my sign} = This[Power getSignFromStr: str]
 		my base = {
 			try {
-				#{my base', index} = this[getBaseFromStr: str :usesUnifiedPrefix :index]
+				#{my base', index} = This[Power getBaseFromStr: str :usesUnifiedPrefix :index]
 				return base'
 			} catch {
 				at _ => return 10
 			}
 		}
 
-		return This[fromStr: str withBase: base :sign :index]
+		return This[Power fromStr: str withBase: base :sign :index]
 	}
 
 	on [
@@ -28,16 +28,16 @@ category Power for Int {
 			throw "Invalid base: must be 2..36"
 		}
 
-		#{my index, my sign} = This[getSignFromStr: str]
+		#{my index, my sign} = This[Power getSignFromStr: str]
 
 		if includesPrefix {
-			match this[getBaseFromStr: str :usesUnifiedPrefix :index] {
+			match This[Power getBaseFromStr: str :usesUnifiedPrefix :index] {
 				at #{base, index = _} {}
 				at #{my base', _} => throw "Base \(base') found, expected base \(base)"
 			}
 		}
 
-		return This[fromStr: str withBase: base :sign :index]
+		return This[Power fromStr: str withBase: base :sign :index]
 	}
 
 	on [getSignFromStr: str (Str)] (Tuple[Int, Int]) is static is hidden {
@@ -167,7 +167,7 @@ category Power for Int {
 						at 8 => return #"o"
 						at 10 => return #"d"
 						at 16 => return #"x"
-						else => throw "Base \(b) does not have a prefix!"
+						else => throw "Base \(base) does not have a prefix!"
 					}
 				}]
 			}
@@ -202,7 +202,7 @@ category Power for Int {
 	}
 
 	on [digitLength] (Int) is inline {
-		return this[digitLength: 10]
+		return this[Power digitLength: 10]
 	}
 
 	on [digitLength: base (Int)] (Int) {
@@ -214,7 +214,7 @@ category Power for Int {
 	}
 
 	on [digits] (Array[Int]) is inline {
-		return this[digits: 10]
+		return this[Power digits: 10]
 	}
 
 	on [digits: base (Int)] (Array[Int]) {
@@ -238,11 +238,11 @@ category Power for Int {
 	}
 
 	on [digitAt: position (Int)] (Int) is inline {
-		return this[digitAt: position withBase: 10]
+		return this[Power digitAt: position withBase: 10]
 	}
 
 	on [digitAt: position (Int) withBase: base (Int)] (Int) {
-		return this // base ** exponent % base
+		return (this // base ** position) % base
 	}
 
 	on [nth] (Str) {

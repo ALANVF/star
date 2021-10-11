@@ -224,7 +224,7 @@ protocol Mapped[K, V] of Iterable[K], Iterable[K, V] {
 	}
 
 	on [invert] (This[V, K]) {
-		my result = This[V, K]
+		my result = This[V, K][new]
 
 		for my key, my value in: this {
 			result[at: value] = key

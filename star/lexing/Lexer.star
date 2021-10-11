@@ -1,6 +1,8 @@
 use Info from: Diagnostic
 use Priority from: Info
 
+class Eof is hidden {}
+
 class Lexer {
 	my hspace is static is readonly = Charset[new: " \t"]
 	my vspace is static is readonly = Charset[new: #"\n"[to: #"\r"]]
@@ -16,62 +18,61 @@ class Lexer {
 	my alnum_q is static is readonly = alnum | #"'"
 	
 	my keywords is static is readonly = #(
-		"module" => #case_id Token[module]
-		"my" => #case_id Token[my]
-		"on" => #case_id Token[on]
-		"return" => #case_id Token[return]
-		"init" => #case_id Token[init]
-		"deinit" => #case_id Token[deinit]
-		"operator" => #case_id Token[operator]
-		"class" => #case_id Token[class]
-		"alias" => #case_id Token[alias]
-		"type" => #case_id Token[type]
-		"kind" => #case_id Token[kind]
-		"category" => #case_id Token[category]
-		"protocol" => #case_id Token[protocol]
-		"is" => #case_id Token[is]
-		"of" => #case_id Token[of]
-		"use" => #case_id Token[use]
-		"has" => #case_id Token[has]
-		"if" => #case_id Token[if]
-		"else" => #case_id Token[else]
-		"while" => #case_id Token[while]
-		"for" => #case_id Token[for]
-		"do" => #case_id Token[do]
-		"case" => #case_id Token[case]
-		"match" => #case_id Token[match]
-		"at" => #case_id Token[at]
-		"break" => #case_id Token[break]
-		"next" => #case_id Token[next]
-		"throw" => #case_id Token[throw]
-		"try" => #case_id Token[try]
-		"catch" => #case_id Token[catch]
+		"module" => Token[module: $.0]
+		"my" => Token[my: $.0]
+		"on" => Token[on: $.0]
+		"return" => Token[return: $.0]
+		"init" => Token[init: $.0]
+		"deinit" => Token[deinit: $.0]
+		"operator" => Token[operator: $.0]
+		"class" => Token[class: $.0]
+		"alias" => Token[alias: $.0]
+		"type" => Token[type: $.0]
+		"kind" => Token[kind: $.0]
+		"category" => Token[category: $.0]
+		"protocol" => Token[protocol: $.0]
+		"is" => Token[is: $.0]
+		"of" => Token[of: $.0]
+		"use" => Token[use: $.0]
+		"has" => Token[has: $.0]
+		"if" => Token[if: $.0]
+		"else" => Token[else: $.0]
+		"while" => Token[while: $.0]
+		"for" => Token[for: $.0]
+		"do" => Token[do: $.0]
+		"case" => Token[case: $.0]
+		"match" => Token[match: $.0]
+		"at" => Token[at: $.0]
+		"break" => Token[break: $.0]
+		"next" => Token[next: $.0]
+		"throw" => Token[throw: $.0]
+		"try" => Token[try: $.0]
+		"catch" => Token[catch: $.0]
 	)
 	my attrs is static is readonly = #(
-		"static" => #case_id Token[static]
-		"hidden" => #case_id Token[hidden]
-		"readonly" => #case_id Token[readonly]
-		"friend" => #case_id Token[friend]
-		"unordered" => #case_id Token[unordered]
-		"getter" => #case_id Token[getter]
-		"setter" => #case_id Token[setter]
-		"main" => #case_id Token[main]
-		"inline" => #case_id Token[inline]
-		"noinherit" => #case_id Token[noinherit]
-		"pattern" => #case_id Token[pattern]
-		"asm" => #case_id Token[asm]
-		"native" => #case_id Token[native]
-		"flags" => #case_id Token[flags]
-		"uncounted" => #case_id Token[uncounted]
-		"strong" => #case_id Token[strong]
-		"sealed" => #case_id Token[sealed]
-		"macro" => #case_id Token[macro]
+		"static" => Token[static: $.0]
+		"hidden" => Token[hidden: $.0]
+		"readonly" => Token[readonly: $.0]
+		"friend" => Token[friend: $.0]
+		"unordered" => Token[unordered: $.0]
+		"getter" => Token[getter: $.0]
+		"setter" => Token[setter: $.0]
+		"main" => Token[main: $.0]
+		"inline" => Token[inline: $.0]
+		"noinherit" => Token[noinherit: $.0]
+		"pattern" => Token[pattern: $.0]
+		"asm" => Token[asm: $.0]
+		"native" => Token[native: $.0]
+		"flags" => Token[flags: $.0]
+		"uncounted" => Token[uncounted: $.0]
+		"strong" => Token[strong: $.0]
+		"sealed" => Token[sealed: $.0]
+		"macro" => Token[macro: $.0]
 	)
 
 	my input (SourceFile)
 	my reader (Reader)
 	my begin = Pos[new]
-	my tokens = Tokens[new]
 	
 	init [new: source (SourceFile)] {
 		this.source = source
@@ -79,8 +80,21 @@ class Lexer {
 	}
 
 	on [tokenize] (Tokens) {
-		while reader[hasNext] {
-			tokens[add: this[readToken]]
+		my diags = #[]
+		my tokens = Tokens[new]
+
+		do {
+			try {
+				while reader[hasNext] {
+					tokens[add: this[readToken]]
+				}
+			} catch {
+				at (Eof) => break
+				at my diag (Diagnostic) {
+					diags[add: diag]
+					next
+				}
+			}
 		}
 
 		tokens[Lexer retoken]
@@ -140,6 +154,10 @@ class Lexer {
 		my oldBegin = begin = this[here]
 
 		this[trim]
+
+		if !reader[hasNext] {
+			throw Eof[new]
+		}
 
 		begin = this[here]
 
@@ -1202,6 +1220,31 @@ class Lexer {
 category Lexer for Tokens is hidden {
 	on [retoken] {
 		match tokens {
+			at #[
+				(
+					|| Token[lParen]
+					|| Token[lBracket]
+					|| Token[lBrace]
+					|| Token[hashLParen]
+					|| Token[hashLBracket]
+					|| Token[hashLBrace]
+				)
+				Token[lSep]
+				...my rest
+			] => {
+				this[removeAt: 1]
+				rest[Lexer retoken]
+			}
+
+			at #[
+				Token[lSep]
+				Token[rParen] || Token[rBracket] || Token[rBrace]
+				...my rest
+			] {
+				tokens[removeAt: 0]
+				rest[Lexer retoken]
+			}
+
 			at #[Token[dot], Token[name: _], ...my rest] => rest[Lexer retoken]
 			
 			at #[Token[name: "this" span: my span], ...my rest] {
@@ -1229,16 +1272,14 @@ category Lexer for Tokens is hidden {
 			at #[Token[name: "is" span: my span], Token[name: my name span: my span'], ...my rest] {
 				this[at: 0] = Token[is: span]
 				
-				match Lexer.attrs[maybeAt: name] at Maybe[the: my tokenID] {
-					this[at: 1] = #init_kind #{Token, tokenID, #[]}
-					-> [:span]
+				match Lexer.attrs[maybeAt: name] at Maybe[the: my tokenFunc] {
+					this[at: 1] = tokenFunc[call: span']
 				}
 
 				rest[Lexer retoken]
 			}
 			at #[Token[name: my name span: my span], ...my rest] if Lexer.keywords[hasKey: name] {
-				this[at: 0] = #init_kind #{Token, Lexer.keywords[at: name], #[]}
-				-> [:span]
+				this[at: 0] = Lexer.keywords[at: name][call: span]
 				
 				rest[Lexer retoken]
 			}
@@ -1253,6 +1294,7 @@ category Lexer for Tokens is hidden {
 				rest[Lexer retoken]
 			}
 
+			at #[Token[lSep]] => this[remove]
 			at #[_, ...my rest] => rest[Lexer retoken]
 			at #[] {}
 		}

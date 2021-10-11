@@ -35,6 +35,7 @@ class Ptr[T] of Ordered is native[repr: `ptr` elem: T] {
 	on [resized: length (Int)] (Ptr[T]) is native `ptr_resized`
 	
 	on [copy: length (Int) to: dest (Ptr[T])] is native `ptr_copy_to`
+	on [copy: length (Int)] (Ptr[T]) is inline => return this[new: length]
 
 	on [move: length (Int) to: dest (Ptr[T])] is native `ptr_move_to`
 	
@@ -42,13 +43,8 @@ class Ptr[T] of Ordered is native[repr: `ptr` elem: T] {
 	
 	on [fill: length (Int) with: value (T)] is native `ptr_fill_with`
 
-	on [next] (Ptr[T]) {
-		return this + 1
-	}
-
-	on [previous] (Ptr[T]) {
-		return this - 1
-	}
+	on [next] (Ptr[T]) => return this + 1
+	on [previous] (Ptr[T]) => return this - 1
 
 
 	operator `+` [offset (Int)] (Ptr[T]) is native `ptr_add`

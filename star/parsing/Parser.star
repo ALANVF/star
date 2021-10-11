@@ -98,7 +98,6 @@ module Parser {
 				) {
 					my first = begin[first]
 					my last = end?[yes: end[first] no: begin[last]]
-					end?[yes: 1 no: 2]
 					
 					if !badTokens[contains: last] {
 						errors[add: Diagnostic[
@@ -307,7 +306,7 @@ module Parser {
 	
 	on [parseGenericParam: span (Span), tokens (Tokens)] (Result[Generic.Param]) {
 		match This[parseTypeDeclName: tokens] {
-			at Result[success: #{my name, my params}] {
+			at Result[success: #{my name, my params}, my rest] {
 				try {
 					my parents = {
 						match This[parseTypeParents: rest allowEOL: true] {
@@ -2687,52 +2686,6 @@ module Parser {
 				}
 				at my fail => return fail[Result[Tuple[Array[Expr], Span]]]
 			}
-		}
-	}
-
-	
-	;== Misc
-	
-	on [trimTokens: tokens (Tokens)] {
-		match tokens {
-			at #[
-				(
-					|| Token[lParen]
-					|| Token[lBracket]
-					|| Token[lBrace]
-					|| Token[hashLParen]
-					|| Token[hashLBracket]
-					|| Token[hashLBrace]
-				)
-				Token[lSep]
-				..._
-			] {
-				tokens[removeAt: 1]
-				This[trimTokens: tokens[next]]
-			}
-			
-			at #[
-				Token[lSep]
-				Token[rParen] || Token[rBracket] || Token[rBrace]
-				..._
-			] {
-				tokens[removeAt: 0]
-				This[trimTokens: tokens[next]]
-			}
-			
-			at #[Token[str: my segs], ...my rest] {
-				for my seg in: segs {
-					match seg at StrSegment[code: my code] {
-						This[trimTokens: code]
-					}
-				}
-				
-				This[trimTokens: rest]
-			}
-			
-			at #[Token[lSep]] => tokens[remove]
-			at #[] => return
-			else => This[trimTokens: tokens[next]]
 		}
 	}
 }

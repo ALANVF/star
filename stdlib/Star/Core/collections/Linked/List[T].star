@@ -1,15 +1,7 @@
 type T
 class List[T] of Positional[T] {
-	alias Link = _.Link[T]
-	alias HasPrev = _.HasPrev[T]
-	alias HasNext = _.HasNext[T]
-	alias Head = _.Head[T]
-	alias Tail = _.Tail[T]
-	alias Value = _.Value[T]
-
-
-	my head (Head) is hidden
-	my tail (Tail) is hidden
+	my head (Head[T]) is hidden
+	my tail (Tail[T]) is hidden
 	my length is getter = 0 
 
 	
@@ -37,22 +29,22 @@ class List[T] of Positional[T] {
 
 	;== Accessing
 
-	on [linkAt: index (Int)] (Value) is hidden is inline {
-		my link (Value)
+	on [linkAt: index (Int)] (Value[T]) is hidden is inline {
+		my link (Value[T])
 		
 		if index <= length // 2 {
-			link = head.next[Unsafe Value]
+			link = head.nextValue
 			for _ from: 0 upto: index {
-				link = link.next[Unsafe Value]
+				link = link.nextValue
 			}
 		} else {
-			link = tail.prev[Unsafe Value]
+			link = tail.prevValue
 			for _ after: length downto: index {
-				link = link.prev[Unsafe Value]
+				link = link.prevValue
 			}
 		}
 		
-		return link.value
+		return link
 	}
 	
 	on [at: index (Int)] (T) {
@@ -91,21 +83,21 @@ class List[T] of Positional[T] {
 			my result = This[new]
 			
 			if from <= length // 2 {
-				my link = head.next[Unsafe Value]
+				my link = head.nextValue
 
 				for _ from: 0 upto: from {
-					link = link.next[Unsafe Value]
+					link = link.nextValue
 				}
 
 				for _ from: from upto: length {
 					result[add: link.value]
-					link = link.next[Unsafe Value]
+					link = link.nextValue
 				}
 			} else {
-				my link = tail.prev[Unsafe Value]
+				my link = tail.prevValue
 				for _ after: length downto: from {
 					result[prepend: link.value]
-					link = link.prev[Unsafe Value]
+					link = link.prevValue
 				}
 			}
 
@@ -123,13 +115,13 @@ class List[T] of Positional[T] {
 			if length ?= 0 {
 				this[addAll: values]
 			} else {
-				my link = this[linkAt: from][HasPrev]
+				my link = this[linkAt: from][HasPrev[T]]
 
 				for my value in: values {
 					if link ?= tail {
 						this[add: value]
 					} else {
-						my vlink = link[Unsafe Value]
+						my vlink = link[Unsafe Value[T]]
 						-> value = value
 
 						link = vlink.next
@@ -149,10 +141,10 @@ class List[T] of Positional[T] {
 		if 0 <= to < length {
 			my result = This[new]
 			
-			my link = head.next[Unsafe Value]
+			my link = head.nextValue
 			for _ from: 0 to: to {
 				result[add: link.value]
-				link = link.next[Unsafe Value]
+				link = link.nextValue
 			}
 
 			return result
@@ -176,7 +168,7 @@ class List[T] of Positional[T] {
 						link[insertPrev: Value[:value]]
 						length++
 					} else {
-						my vlink = link[Unsafe Value]
+						my vlink = link[Unsafe Value[T]]
 						-> value = value
 
 						link = vlink.next
@@ -201,21 +193,21 @@ class List[T] of Positional[T] {
 			my result = This[new]
 			
 			if from <= length // 2 {
-				my link = head.next[Unsafe Value]
+				my link = head.nextValue
 
 				for _ from: 0 upto: from {
-					link = link.next[Unsafe Value]
+					link = link.nextValue
 				}
 
 				for _ from: from to: to {
 					result[add: link.value]
-					link = link.next[Unsafe Value]
+					link = link.nextValue
 				}
 			} else {
-				my link = tail.prev[Unsafe Value]
+				my link = tail.prevValue
 				for _ from: to downto: from {
 					result[prepend: link.value]
-					link = link.prev[Unsafe Value]
+					link = link.prevValue
 				}
 			}
 
@@ -237,7 +229,7 @@ class List[T] of Positional[T] {
 			if length ?= 0 {
 				this[addAll: values]
 			} else {
-				my link = this[linkAt: from][HasPrev]
+				my link = this[linkAt: from][HasPrev[T]]
 				
 				; good place to have a parallel loop?
 				my i = from
@@ -245,7 +237,7 @@ class List[T] of Positional[T] {
 					if link ?= tail || i > to {
 						this[add: value]
 					} else {
-						my vlink = link[Unsafe Value]
+						my vlink = link[Unsafe Value[T]]
 						-> value = value
 
 						link = vlink.next
@@ -278,7 +270,7 @@ class List[T] of Positional[T] {
 	
 	type Iter of Iterable[T]
 	on [prependAll: values (Iter)] (Iter) {
-		my link (HasPrev) = head.next
+		my link = head.next
 		for my value in: values {
 			link[insertPrev: Value[:value]]
 			length++
@@ -290,7 +282,7 @@ class List[T] of Positional[T] {
 
 	;== Removing values
 
-	on [removeLink: link (Value)] is inline {
+	on [removeLink: link (Value[T])] is inline {
 		link.prev.next = link.next
 	}
 
@@ -314,7 +306,7 @@ class List[T] of Positional[T] {
 	
 	;== Removing sections
 
-	on [removeFromLink: link (Value)] is inline {
+	on [removeFromLink: link (Value[T])] is inline {
 		link.prev.next = tail
 	}
 
@@ -370,7 +362,7 @@ class List[T] of Positional[T] {
 				begin = link.value
 
 				for _ from: from upto: to {
-					link = link.next[Unsafe Value]
+					link = link.nextValue
 				}
 
 				end = link.value
@@ -398,12 +390,12 @@ class List[T] of Positional[T] {
 
 	on [Iterator[T]] is inline => return ListIterator[link: head.next :tail]
 
-	class Links of Iterable[Value] is hidden {
-		my head (Head)
-		my tail (Tail)
-		on [Iterator[Value]] is inline => return LinkIterator[link: head.next :tail]
+	class Links[T] of Iterable[Value[T]] is hidden {
+		my head (Head[T])
+		my tail (Tail[T])
+		on [Iterator[Value[T]]] is inline => return LinkIterator[link: head.next :tail]
 	}
-	on [links] (Links) is hidden is inline => return Links[:head :tail]
+	on [links] (Links[T]) is hidden is inline => return Links[:head :tail]
 
 
 	;== Reversing
@@ -436,14 +428,14 @@ class List[T] of Positional[T] {
 	
 	operator `?=` [other (This)] (Bool) {
 		return length ?= other.length && (length ?= 0 || {
-			my link1 = head.next[Unsafe Value]
-			my link2 = other.head.next[Unsafe Value]
+			my link1 = head.nextValue
+			my link2 = other.head.nextValue
 			for _ from: 0 upto: length {
 				if link1.value != link2.value {
 					return false
 				} else {
-					link1 = link1.next[Unsafe Value]
-					link2 = link2.next[Unsafe Value]
+					link1 = link1.nextValue
+					link2 = link2.nextValue
 				}
 			}
 			
@@ -453,14 +445,14 @@ class List[T] of Positional[T] {
 	
 	operator `!=` [other (This)] (Bool) {
 		return length != other.length || (length != 0 && {
-			my link1 = head.next[Unsafe Value]
-			my link2 = other.head.next[Unsafe Value]
+			my link1 = head.nextValue
+			my link2 = other.head.nextValue
 			for _ from: 0 upto: length {
 				if link1.value != link2.value {
 					return true
 				} else {
-					link1 = link1.next[Unsafe Value]
-					link2 = link2.next[Unsafe Value]
+					link1 = link1.nextValue
+					link2 = link2.nextValue
 				}
 			}
 			
@@ -502,14 +494,14 @@ class List[T] of Comparable {
 			at _ < other.length => return false
 			at 0 => return false
 			else {
-				my link1 = head.next[Unsafe Value]
-				my link2 = other.head.next[Unsafe Value]
+				my link1 = head.nextValue
+				my link2 = other.head.nextValue
 				for _ from: 0 upto: length {
 					if link1.value <= link2.value {
 						return false
 					} else {
-						link1 = link1.next[Unsafe Value]
-						link2 = link2.next[Unsafe Value]
+						link1 = link1.nextValue
+						link2 = link2.nextValue
 					}
 				}
 				
@@ -524,14 +516,14 @@ class List[T] of Comparable {
 			at _ < other.length => return false
 			at 0 => return true
 			else {
-				my link1 = head.next[Unsafe Value]
-				my link2 = other.head.next[Unsafe Value]
+				my link1 = head.nextValue
+				my link2 = other.head.nextValue
 				for _ from: 0 upto: length {
 					if link1.value < link2.value {
 						return false
 					} else {
-						link1 = link1.next[Unsafe Value]
-						link2 = link2.next[Unsafe Value]
+						link1 = link1.nextValue
+						link2 = link2.nextValue
 					}
 				}
 				
@@ -546,14 +538,14 @@ class List[T] of Comparable {
 			at _ > other.length => return false
 			at 0 => return false
 			else {
-				my link1 = head.next[Unsafe Value]
-				my link2 = other.head.next[Unsafe Value]
+				my link1 = head.nextValue
+				my link2 = other.head.nextValue
 				for _ from: 0 upto: length {
 					if link1.value >= link2.value {
 						return false
 					} else {
-						link1 = link1.next[Unsafe Value]
-						link2 = link2.next[Unsafe Value]
+						link1 = link1.nextValue
+						link2 = link2.nextValue
 					}
 				}
 				
@@ -568,14 +560,14 @@ class List[T] of Comparable {
 			at _ > other.length => return false
 			at 0 => return true
 			else {
-				my link1 = head.next[Unsafe Value]
-				my link2 = other.head.next[Unsafe Value]
+				my link1 = head.nextValue
+				my link2 = other.head.nextValue
 				for _ from: 0 upto: length {
 					if link1.value > link2.value {
 						return false
 					} else {
-						link1 = link1.next[Unsafe Value]
-						link2 = link2.next[Unsafe Value]
+						link1 = link1.nextValue
+						link2 = link2.nextValue
 					}
 				}
 				
@@ -587,8 +579,8 @@ class List[T] of Comparable {
 	
 	;== Querying
 	
-	on [min] (T) is inline => return this[Collection[T] min]
-	on [max] (T) is inline => return this[Collection[T] max]
+	on [min] (T) is inline => return this[Super[Collection[T]] min]
+	on [max] (T) is inline => return this[Super[Collection[T]] max]
 }
 
 type T

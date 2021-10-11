@@ -9,7 +9,7 @@ class ValuesIterator[T] of Iterator[T] {
 	;== Creation
 
 	init [new: values (Values[T])] {
-		this.values = value[new]
+		this.values = values[new]
 		index = 0
 	}
 

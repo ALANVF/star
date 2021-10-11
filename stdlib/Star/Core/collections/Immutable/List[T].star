@@ -36,7 +36,7 @@ kind List[T] of Iterable[T] {
 	;== Length
 	
 	on [length] (Int) is getter {
-		match this at Maybe[head: _ tail: my tail] {
+		match this at This[head: _ tail: my tail] {
 			return 1 + tail.length
 		} else {
 			return 0
@@ -101,6 +101,11 @@ kind List[T] of Iterable[T] {
 	}
 	
 	on [after: (Int)] (This) is inline => return this[from: after + 1]
+
+	
+	on [to: (Int)] (This)
+
+	on [upto: (Int)] (This) => return this[to: upto - 1]
 	
 	;... and all other variants
 	
