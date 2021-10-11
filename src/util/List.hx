@@ -40,7 +40,7 @@ class ListHelper {
 	static function toArray<T>(list: List<T>) {
 		final array = [];
 		
-		list.forEach(array.push);
+		list.forEach(v -> array.push(v));
 
 		return array;
 	}
@@ -49,11 +49,19 @@ class ListHelper {
 
 	}*/
 
-	static function forEach<T>(list: List<T>, func: (T) -> Void) switch list {
+	/*static function forEach<T>(list: List<T>, func: (T) -> Void) switch list {
 		case Nil:
 		case Cons(head, tail):
 			func(head);
 			tail.forEach(func);
+	}*/
+	static inline function forEach<T>(list: List<T>, func: (T) -> Void) {
+		while(true) switch list {
+			case Nil: break;
+			case Cons(value, rest):
+				func(value);
+				list = rest;
+		}
 	}
 
 	static function forEach2<T, U>(list1: List<T>, list2: List<U>, func: (T, U) -> Void) switch [list1, list2] {
@@ -85,6 +93,11 @@ class ListHelper {
 	static function some<T>(list: List<T>, func: (T) -> Bool) return switch list {
 		case Nil: false;
 		case Cons(head, tail): func(head) || tail.some(func);
+	}
+
+	static function every<T>(list: List<T>, func: (T) -> Bool) return switch list {
+		case Nil: true;
+		case Cons(head, tail): func(head) && tail.some(func);
 	}
 
 	static function every2<T, U>(list1: List<T>, list2: List<U>, func: (T, U) -> Bool) return switch [list1, list2] {

@@ -1,5 +1,7 @@
 package typing;
 
+import typing.Traits;
+
 class ValueKind extends Kind {
 	var repr: Option<Type> = None;
 	final valueCases: Array<ValueCase> = [];
@@ -95,5 +97,18 @@ class ValueKind extends Kind {
 		for(valueCase in valueCases) result = result.concat(valueCase.allErrors());
 		
 		return result;
+	}
+
+
+	override function findSingleStatic(name: String, from: ITypeDecl, getter = false, cache: List<Type> = Nil): Null<SingleStaticKind> {
+		if(cache.contains(thisType)) return null;
+		
+		for(vcase in valueCases) {
+			if(vcase.name.name == name) {
+				return SSValueCase(vcase);
+			}
+		}
+
+		return super.findSingleStatic(name, from, getter, cache);
 	}
 }

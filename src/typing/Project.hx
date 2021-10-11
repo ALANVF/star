@@ -43,22 +43,58 @@ class Project extends Dir {
 		return files;
 	}
 
-	override function findType(path: LookupPath, absolute = false, cache: List<{}> = Nil): Option<Type> {
-		switch super.findType(path, absolute, cache) {
+	override function findType(path: LookupPath, search: Search, from: Null<Traits.ITypeDecl>, depth = 0, cache: List<{}> = Nil): Option<Type> {
+		//if(search != Inside && cache.contains(this)) return None;
+
+		/*switch main {
+			case None:
+			case Some(m): if(!cache.contains(m)) switch m.findType(path, Inside, from, 0, cache.prepend(this)) {
+				case None:
+				case Some(t) if(depth != 0):
+					cache = cache.prepend(t);
+					depth--;
+				case Some(t): return Some(t);
+			}
+		}*/
+		
+		return switch super.findType(path, search, from, depth, cache) {
+			case Some(t): Some(t);
+			case None if(search != Inside && useStdlib): STDLIB._match(
+				at(stdlib!, when(!cache.contains(this))) => {
+					cache = cache.prepend(this);
+					
+					final span = path.span();
+					
+					stdlib.findType(List3.of([span, "Star", []], ...path), Inside, from, 0, Nil).orDo(
+						stdlib.findType(List3.of([span, "Star", []], [span, "Core", []], ...path), Inside, from, 0, Nil)
+					);
+				},
+				_ => None
+			);
+			case None: None;
+		};
+	}
+
+	/*override function findTypeOld(path: LookupPath, absolute = false, cache: List<{}> = Nil): Option<Type> {
+		switch super.findTypeOld(path, absolute, cache) {
 			case t = Some(_): return t;
 			case None: if(absolute && useStdlib) STDLIB._match(
 				at(stdlib!, when(!cache.contains(this))) => {
 					cache = cache.prepend(this);
 
-					return STDLIB.findType(List3.of([null, "Star", []]), false, cache).value()
-						.findType(path, false, cache);
+					return STDLIB.findTypeOld(List3.of([null, "Star", []]), false, cache).value()
+						.findTypeOld(path, false, cache)
+						.orDo(
+							STDLIB.findTypeOld(List3.of([null, "Star", []], [null, "Core", []]), false, cache).value()
+								.findTypeOld(path, false, cache)
+						);
 				},
 				_ => return None
 			); else {
 				return None;
 			}
 		}
-	}
+	}*/
 
 	inline function pass1() {
 		Pass1.resolveProjectContents(this);

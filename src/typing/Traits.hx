@@ -48,7 +48,10 @@ typedef IInits = {
 typedef ILookupType = {
 	function makeTypePath(path: TypePath): Type;
 	
-	function findType(vpath: LookupPath, ?absolute: Bool, ?cache: List<{}>): Option<Type>;
+	function findType(path: LookupPath, search: Search, from: Null<ITypeDecl>, ?depth: Int, ?cache: List<{}>): Option<Type>;
+	//function findTypeOld(vpath: LookupPath, ?absolute: Bool, ?cache: List<{}>): Option<Type>;
+
+	function findCategory(cat: Type, forType: Type, from: ITypeDecl, ?cache: List<{}>): Array<Category>;
 }
 
 typedef IMembers = {
@@ -91,6 +94,18 @@ typedef ITaggedCases = ITypeDecl & {
 typedef ITypeDecl = ILookupType & IDecl & {
 	final lookup: ILookupType;
 	final name: Ident;
+	var thisType: Type;
+
+	function fullName(): String;
+
+	function hasParentDecl(decl: TypeDecl): Bool;
+	function hasChildDecl(decl: TypeDecl): Bool;
+
+	function hasParentType(type: Type): Bool;
+	function hasChildType(type: Type): Bool;
+
+	function canSeeMember(member: Member): Bool;
+	function canSeeMethod(method: AnyMethod): Bool;
 }
 
 typedef IFullTypeDecl = ITypeDecl & {

@@ -1,12 +1,11 @@
 package typing;
 
-import typing.Traits.ILookupType;
+import typing.Traits;
 import reporting.Severity;
 import reporting.Diagnostic;
 
 class TaggedKind extends Kind {
 	final taggedCases: Array<TaggedCase> = [];
-	final members: Array<Member> = [];
 	var defaultInit: Option<DefaultInit> = None;
 
 	static function fromAST(lookup: ILookupType, ast: parsing.ast.decls.Kind) {
@@ -118,5 +117,84 @@ class TaggedKind extends Kind {
 		for(member in members) result = result.concat(member.allErrors());
 		
 		return result;
+	}
+
+	override function findSingleStatic(name: String, from: ITypeDecl, getter = false, cache: List<Type> = Nil): Null<SingleStaticKind> {
+		if(cache.contains(thisType)) return null;
+		
+		if(!getter) for(tcase in taggedCases) {
+			tcase._match(
+				at(scase is SingleTaggedCase) => if(scase.name.name == name) return SSTaggedCase(scase),
+				_ => {}
+			);
+
+			tcase.assoc._match(
+				at(Some(Single(_, _, sname)), when(sname == name)) => return SSTaggedCaseAlias(tcase),
+				_ => {}
+			);
+		}
+
+		return super.findSingleStatic(name, from, getter, cache);
+	}
+
+	
+	override function findMultiStatic(names: Array<String>, from: ITypeDecl, setter = false, cache: List<Type> = Nil): Array<MultiStaticKind> {
+		if(cache.contains(thisType)) return [];
+		
+		// TODO: account for leading member initialization labels
+
+		if(!setter) for(tcase in taggedCases) {
+			tcase._match(
+				at(mcase is MultiTaggedCase) => {
+					if(mcase.params.every2Strict(names, (l, n) -> l.label.name == n)) {
+						return [MSTaggedCase([], mcase)];
+					} else {
+						// BAD
+						if(!names.contains("_") && names.isUnique()) {
+							final mems = instMembers(this);
+							final found = [];
+							var bad = false;
+
+							var i = 0;
+							while(i < names.length) {
+								final name = names[i];
+
+								mems.find(mem -> mem.name.name == name)._match(
+									at(mem!) => if(from.canSeeMember(mem)) {
+										found.push(mem);
+									} else {
+										bad = true;
+										break;
+									},
+
+									_ => {
+										break;
+									}
+								);
+
+								i++;
+							}
+
+							if(!bad && mcase.params.every2Strict(names.slice(i), (l, n) -> l.label.name == n)) {
+								return [MSTaggedCase(found, mcase)];
+							}
+						}
+					}
+				},
+				_ => {}
+			);
+
+			tcase.assoc._match(
+				at(Some(Multi(_, labels)), when(
+					labels.every2Strict(names, (l, n) -> switch l {
+						case Named(_, name, _) | Punned(_, name): name == n;
+						case Anon(_): n == "_";
+					})
+				)) => return [MSTaggedCaseAlias(tcase)],
+				_ => {}
+			);
+		}
+		
+		return super.findMultiStatic(names, from, setter, cache);
 	}
 }

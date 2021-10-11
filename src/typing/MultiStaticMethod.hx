@@ -7,7 +7,7 @@ import typing.Traits;
 
 class MultiStaticMethod extends StaticMethod {
 	@ignore final typevars = new MultiMap<String, TypeVar>();
-	var params: Array<{label: Ident, name: Ident, type: Type, value: Option<Expr>}> = [];
+	var params: Array<{label: Ident, name: Ident, type: Type, ?value: Expr}> = [];
 	var fuzzyName: String;
 	var isUnordered: Bool = false;
 
@@ -25,16 +25,16 @@ class MultiStaticMethod extends StaticMethod {
 			case Multi(params2): params2.map(p -> {
 				final type = method.makeTypePath(p.type);
 				return switch [p.label, p.name] {
-					case [Some(l), Some(n)]: {label: l, name: n, type: type, value: p.value};
-					case [Some(l), None]: {label: l, name: l, type: type, value: p.value};
-					case [None, Some(n)]: {label: new Ident(n.span, "_"), name: n, type: type, value: p.value};
+					case [Some(l), Some(n)]: {label: l, name: n, type: type, value: p.value.toNull()};
+					case [Some(l), None]: {label: l, name: l, type: type, value: p.value.toNull()};
+					case [None, Some(n)]: {label: new Ident(n.span, "_"), name: n, type: type, value: p.value.toNull()};
 					case [None, None]:
 						final span = {
 							final s = p.type.span();
 							Span.at(s.start, s.source.toNull());
 						};
 						final ident = new Ident(span, "_");
-						{label: ident, name: ident, type: type, value: p.value};
+						{label: ident, name: ident, type: type, value: p.value.toNull()};
 				}
 			});
 			default: throw "Error!";
@@ -78,11 +78,16 @@ class MultiStaticMethod extends StaticMethod {
 		return method;
 	}
 
-	override function findType(path: LookupPath, absolute = true, cache: List<{}> = Nil): Option<Type> {
+
+	override function findType(path: LookupPath, search: Search, from: Null<Traits.ITypeDecl>, depth = 0, cache: List<{}> = Nil): Option<Type> {
+		return BaseMethod._findType(this, path, depth);
+	}
+
+	/*override function findTypeOld(path: LookupPath, absolute = true, cache: List<{}> = Nil): Option<Type> {
 		return path._match(
 			at([[span, typeName, args], ...rest]) => {
 				final res: Option<Type> = switch typevars.find(typeName) {
-					case None: return decl.findType(path, true, cache);
+					case None: return decl.findTypeOld(path, true, cache);
 					case Some([type]): switch [args, type.params] {
 						case [[], _]: Some({t: type.thisType.t, span: span}); // should probably curry parametrics but eh
 						case [_, []]:
@@ -118,9 +123,9 @@ class MultiStaticMethod extends StaticMethod {
 					case [_, None]: res;
 				}
 			},
-			_ => if(absolute) decl.findType(path, true, cache) else None
+			_ => if(absolute) decl.findTypeOld(path, true, cache) else None
 		);
-	}
+	}*/
 
 	function methodName() {
 		return fuzzyName.replaceAll(" ", "");

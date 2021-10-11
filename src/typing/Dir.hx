@@ -1,6 +1,7 @@
 package typing;
 
 import sys.FileSystem;
+import typing.Traits;
 
 function toName(name: String) {
 	if(name.contains("+")) {
@@ -15,6 +16,8 @@ function toName(name: String) {
 			protocol = protocol.substringBefore("[");
 		}
 		return protocol;
+	} else if(name.endsWith("]")) {
+		return name.substringBefore("[");
 	} else {
 		return name;
 	}
@@ -47,6 +50,26 @@ abstract class Dir {
 		for(name in names) {
 			this.addName(name);
 		}
+
+		/*this._match(
+			at(u is Unit) => if(name == "List") {
+				trace(path);
+				trace(name);
+				trace(u.primary.map(p -> p.path));
+				trace(u.primary.map(p -> p.unit.value() == u));
+				trace(units);
+				trace("files:");
+				for(f in files) trace(f.path);
+			} else if(name == "Linked") {
+				trace(path);
+				trace(name);
+				trace(u.primary.map(p -> p.path));
+				trace(units);
+				trace("files:");
+				for(f in files) trace(f.path);
+			},
+			_ => {}
+		);*/
 	}
 
 	function addNestedName(outer: String, name: String) {
@@ -68,17 +91,28 @@ abstract class Dir {
 		}
 
 		for(dirName in dirNames) {
-			final fileName = '$dirName.star';
-			final filePath = '$path/$fileName';
+			final unitName = toName(dirName);
 			final unit = new Unit({
-				name: toName(dirName),
+				name: unitName,
 				path: '$path/$dirName',
 				outer: this
 			});
+			final fileName = '$dirName.star';
+			final filePath = '$path/$fileName';
 
 			if(FileSystem.exists(filePath) && !FileSystem.isDirectory(filePath)) {
 				unit.primary = Some(new File(this, filePath, unit));
 				fileNames.remove(fileName);
+			} else {
+				fileNames.find(n -> toName(n.substringBeforeLast(".star")) == unitName)._match(
+					at(fileName2!) => {
+						final filePath2 = '$path/$fileName2';
+
+						unit.primary = Some(new File(this, filePath2, unit));
+						fileNames.remove(fileName2);
+					},
+					_ => {}
+				);
 			}
 			
 			unit.buildUnits();
@@ -102,20 +136,34 @@ abstract class Dir {
 			final filePath = '$unitPath.star';
 
 			if(FileSystem.exists(unitPath) && FileSystem.isDirectory(unitPath)) {
+				final unitName = toName(name);
 				final unit = new Unit({
-					name: toName(name),
+					name: unitName,
 					path: unitPath,
 					outer: this
 				});
 
 				if(FileSystem.exists(filePath) && !FileSystem.isDirectory(filePath)) {
 					unit.primary = Some(new File(this, filePath, unit));
+				} else {
+					FileSystem.readDirectory(path)
+					.filter(n -> !FileSystem.isDirectory('$path/$n') && n.endsWith(".star"))
+					.find(n -> toName(n.substringBeforeLast(".star")) == unitName)
+					._match(
+						at(fileName!) => {
+							unit.primary = Some(new File(this, '$path/$fileName', unit));
+						},
+						_ => {}
+					);
 				}
 
 				unit.buildUnits();
 				units.push(unit);
 			} else if(FileSystem.exists(filePath) && !FileSystem.isDirectory(filePath)) {
-				files.push(new File(this, filePath));
+				// don't add files that are already part of a unit
+				if(!units.some(u -> u.primary.exists(p -> p.path == filePath))) {
+					files.push(new File(this, filePath));
+				}
 			}
 		}
 	}
@@ -132,29 +180,105 @@ abstract class Dir {
 		return path.toType(this);
 	}
 
-	function findType(path: LookupPath, absolute = false, cache: List<{}> = Nil): Option<Type> {
+	function findType(path: LookupPath, search: Search, from: Null<Traits.ITypeDecl>, depth = 0, cache: List<{}> = Nil): Option<Type> {
+		if(search!=Inside && cache.contains(this)) {
+			return None;
+		} else {
+			cache = cache.prepend(this);
+		}
+		
+		for(file in files) if(!cache.contains(file)) {
+			//if(path.simpleName().contains("Tail"))trace(from._and(f => f.name.name), path.simpleName(), file.path);
+			switch file.findType(path, Inside, from, 0, cache) {
+				case None:
+				case Some(t) if(depth != 0):
+					cache = cache.prepend(t);
+					depth--;
+				case Some(t):
+					//if(path.simpleName().contains("Tail")) trace(path.span().display());
+					return Some(t);
+			}
+		}
+
+		path._match(
+			at([[span, name, args]], when(depth == 0)) => {
+				for(unit in units) if(!cache.contains(unit) && unit.name == name) {
+					unit.primary._match(
+						at(None) => {},
+						at(Some(p)) => switch p.findType(path, Inside, from, 0, cache.prepend(unit)) {
+							case None:
+							case Some(t) if(depth != 0):
+								cache = cache.prepend(t);
+								depth--;
+							case Some(t): return Some({t: TModular(t, unit), span: span});
+						}
+					);
+				}
+			},
+			at([[_, name, args], ...rest]) => {
+				for(unit in units) if(!cache.contains(unit) && unit.name == name) {
+					switch unit.findType(rest, Inside, from, 0, cache) {
+						case None:
+						case Some(t) if(depth != 0):
+							cache = cache.prepend(t);
+							depth--;
+						case Some(t): return Some(t);
+					}
+				}
+			},
+			_ => throw "bad"
+		);
+
+		return None;
+	}
+
+	/*function findTypeOld(path: LookupPath, absolute = false, cache: List<{}> = Nil): Option<Type> {
 		if(absolute) {
 			if(cache.contains(this)) {
 				return None;
 			} else {
+				//if(cache.some(c -> c is File)) trace(name,path,cache==Nil?null:cache.head());
 				cache = cache.prepend(this);
 			}
 		}
 		
-		for(file in files) {
-			switch file.findType(path, false, cache) {
+		for(file in files) if(!cache.contains(file)) {
+			switch file.findTypeOld(path, false, cache) {
 				case t = Some(_): return t;
 				case None:
 			}
 		}
 
 		for(unit in units) {
-			switch unit.findType(path, false, cache) {
+			switch unit.findTypeOld(path, false, cache) {
 				case t = Some(_): return t;
 				case None:
 			}
 		}
 
 		return None;
+	}*/
+
+
+	function findCategory(cat: Type, forType: Type, from: ITypeDecl, cache: List<{}> = Nil): Array<Category> {
+		if(cache.contains(this)) return [];
+		
+		final candidates = [];
+
+		for(file in files) {
+			switch file.findCategory(cat, forType, from, cache.prepend(this)) {
+				case []:
+				case found: candidates.pushAll(found);
+			}
+		}
+
+		for(unit in units) {
+			switch unit.findCategory(cat, forType, from, cache.prepend(this)) {
+				case []:
+				case found: candidates.pushAll(found);
+			}
+		}
+
+		return candidates;
 	}
 }

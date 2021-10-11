@@ -79,4 +79,9 @@ class BinaryOperator extends Operator {
 	inline function opName() {
 		return op.symbol();
 	}
+
+
+	override function findType(path: LookupPath, search: Search, from: Null<Traits.ITypeDecl>, depth = 0, cache: List<{}> = Nil): Option<Type> {
+		return BaseMethod._findType(this, path, depth);
+	}
 }

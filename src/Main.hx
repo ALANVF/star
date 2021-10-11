@@ -78,6 +78,21 @@ class Main {
 			Sys.println('Typer pass 1 time: ${timePass1}ms');
 		}
 
+		if(opt.isStdlib) {
+			typing.Pass2.initSTD(project);
+		}
+
+		if(opt.isStdlib) {
+			typing.Project.STDLIB = project;
+
+			final startPass2 = haxe.Timer.stamp();
+			typing.Pass2.resolveProject(project);
+			final stopPass2 = haxe.Timer.stamp();
+			final timePass2 = round(stopPass2*1000 - startPass2*1000);
+			time += timePass2 * 10000;
+			Sys.println('Typer pass 2 time: ${timePass2}ms');
+		}
+
 		for(file in files) {
 			for(i => err in file.allErrors()) {
 				#if windows
@@ -96,17 +111,13 @@ class Main {
 				if(i == 25) throw "too many errors!";
 			}
 		}
-
+		
 		Sys.println('Status: ${files.none(file -> file.hasErrors())}');
 		Sys.println('Total time: ${time / 10000}ms');
 
 		opt.callback._and(cb => {
 			cb(project);
 		});
-
-		if(opt.isStdlib) {
-			typing.Project.STDLIB = project;
-		}
 	}
 
 	static function main() {
@@ -124,7 +135,7 @@ class Main {
 			isStdlib: true,
 			pass1: true
 		});/*(project: typing.Project) -> {
-			project.findType(List2.of(["Star", []], ["Core", []], ["Array", []]), true).forEach(array -> {
+			project.findTypeOld(List2.of(["Star", []], ["Core", []], ["Array", []]), true).forEach(array -> {
 				trace(array.simpleName());
 			});
 		});*/
@@ -136,7 +147,7 @@ class Main {
 		testProject("tests/kinds", {pass1: true});
 		nl();
 		testProject("tests/aliases", {pass1: true} /*, (project: typing.Project) -> {
-			project.findType(List2.of(["Direct", []]), true).forEach(direct -> {
+			project.findTypeOld(List2.of(["Direct", []]), true).forEach(direct -> {
 				trace(direct.simpleName());
 			});
 		}* /);*/
@@ -144,28 +155,28 @@ class Main {
 		testProject("star", {pass1: true});
 		/*nl();
 		testProject("tests/self", true, (project: typing.Project) -> {
-			project.findType(List2.of(["Slot", []]), true).forEach(slot -> {
+			project.findTypeOld(List2.of(["Slot", []]), true).forEach(slot -> {
 				trace(slot.simpleName());
 			});
 
-			project.findType(List2.of(["AST", []]), true).forEach(ast -> {
+			project.findTypeOld(List2.of(["AST", []]), true).forEach(ast -> {
 				trace(ast.simpleName());
-				trace(ast.findType(List2.of(["Slot", []])).map(t -> t.simpleName()));
+				trace(ast.findTypeOld(List2.of(["Slot", []])).map(t -> t.simpleName()));
 			});
 
-			project.findType(List2.of(["AST", []], ["Slot", []]), true).forEach(slot -> {
+			project.findTypeOld(List2.of(["AST", []], ["Slot", []]), true).forEach(slot -> {
 				trace(slot.simpleName());
 			});
 
-			project.findType(List2.of(["AST", []], ["Expr", []]), true).forEach(expr -> {
+			project.findTypeOld(List2.of(["AST", []], ["Expr", []]), true).forEach(expr -> {
 				trace(expr.simpleName());
 			});
 
-			project.findType(List2.of(["AST", []], ["Slot", []], ["Method", []]), true).forEach(method -> {
+			project.findTypeOld(List2.of(["AST", []], ["Slot", []], ["Method", []]), true).forEach(method -> {
 				trace(method.simpleName());
-				trace(method.findType(List2.of(["AST", []]), true).map(t -> t.simpleName()));
-				trace(method.findType(List2.of(["AST", []], ["Slot", []]), true).map(t -> t.simpleName()));
-				trace(method.findType(List2.of(["Slot", []]), true).map(t -> t.simpleName()));
+				trace(method.findTypeOld(List2.of(["AST", []]), true).map(t -> t.simpleName()));
+				trace(method.findTypeOld(List2.of(["AST", []], ["Slot", []]), true).map(t -> t.simpleName()));
+				trace(method.findTypeOld(List2.of(["Slot", []]), true).map(t -> t.simpleName()));
 			});
 		});*/
 		

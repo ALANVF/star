@@ -63,6 +63,15 @@ class Arrays {
 		return true;
 	}
 
+	public static function every2Strict<T, U>(array1: Array<T>, array2: Array<U>, callback: (value1: T, value2: U) -> Bool) {
+		if(array1.length != array2.length) return false;
+		
+		for(i => value in array1)
+			if(!callback(value, array2[i]))
+				return false;
+		return true;
+	}
+
 
 	public static inline function some<T>(array: Array<T>, callback: (currentValue: T) -> Bool) {
 		var result = false;
@@ -320,5 +329,65 @@ class Arrays {
 				res;
 			}
 		}
+	}
+
+	public static extern inline overload function unique<T: EnumValue>(array: Array<T>) return _uniqueEnumValues(array);
+	@:noUsing private static function _uniqueEnumValues<T: EnumValue>(array: Array<T>) {
+		final res = [];
+
+		for(i => value in array) {
+			if(i > 0) {
+				var found = false;
+				for(j in 0...i) {
+					if(array[j].equals(value)) {
+						found = true;
+						break;
+					}
+				}
+				if(!found) res.push(value);
+			} else {
+				res.push(value);
+			}
+		}
+
+		return res;
+	}
+
+	public static extern inline overload function unique<T>(array: Array<T>) return _unique(array);
+	@:noUsing private static function _unique<T>(array: Array<T>) {
+		final res = [];
+
+		for(i => value in array) {
+			if(i > 0) {
+				var found = false;
+				for(j in 0...i) {
+					if(array[j] == value) {
+						found = true;
+						break;
+					}
+				}
+				if(!found) res.push(value);
+			} else {
+				res.push(value);
+			}
+		}
+
+		return res;
+	}
+
+
+	public static extern inline overload function isUnique<T>(array: Array<T>) return _isUnique(array);
+	@:noUsing private static function _isUnique<T>(array: Array<T>) {
+		for(i => value in array) {
+			if(i > 0) {
+				for(j in 0...i) {
+					if(array[j] == value) {
+						return false;
+					}
+				}
+			}
+		}
+
+		return true;
 	}
 }

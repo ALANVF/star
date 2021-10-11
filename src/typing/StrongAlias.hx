@@ -1,5 +1,7 @@
 package typing;
 
+import typing.Traits;
+
 class StrongAlias extends Alias {
 	var type: Type;
 	final staticMembers: Array<Member> = [];
@@ -85,5 +87,76 @@ class StrongAlias extends Alias {
 	
 	override function declName() {
 		return "strong alias";
+	}
+
+
+	override function hasParentDecl(decl: TypeDecl) {
+		return super.hasParentDecl(decl)
+			|| type.hasParentDecl(decl);
+	}
+
+
+	override function canSeeMethod(method: AnyMethod) {
+		return super.canSeeMethod(method)
+			|| type.canSeeMethod(method);
+	}
+
+
+	override function findSingleStatic(name: String, from: ITypeDecl, getter = false, cache: List<Type> = Nil): Null<SingleStaticKind> {
+		if(cache.contains(thisType)) return null;
+		
+		for(mem in staticMembers) {
+			if(mem.matchesGetter(name) && from.canSeeMember(mem)) {
+				return SSMember(mem);
+			}
+		}
+
+		for(mth in staticMethods) mth._match(
+			at(sm is SingleStaticMethod) => {
+				if(sm.name.name == name && (!getter || sm.isGetter) && from.canSeeMethod(sm)) {
+					return SSMethod(sm);
+				}
+			},
+			_ => {}
+		);
+		
+		if(!noInherit) type.findSingleStatic(name, from, getter, cache.prepend(thisType))._match(
+			at(ss!) => return ss,
+			_ => {}
+		);
+
+		return null;
+	}
+
+
+	override function findMultiStatic(names: Array<String>, from: ITypeDecl, setter = false, cache: List<Type> = Nil) {
+		if(cache.contains(thisType)) return [];
+		
+		final candidates: Array<MultiStaticKind> = [];
+
+		names._match(at([name]) => for(mem in staticMembers) {
+			if(mem.matchesSetter(name) && from.canSeeMember(mem)) {
+				candidates.push(MSMember(mem));
+			}
+		}, _ => {});
+
+		if(setter) {
+			throw "todo";
+		} else {
+			for(mth in staticMethods) mth._match(
+				at(mm is MultiStaticMethod) => {
+					if(mm.params.every2Strict(names, (l, n) -> l.label.name == n) && from.canSeeMethod(mm)) {
+						candidates.push(MSMethod(mm));
+					}
+				},
+				_ => {}
+			);
+		}
+
+		if(!noInherit) {
+			candidates.pushAll(type.findMultiStatic(names, from, setter, cache.prepend(thisType)));
+		}
+
+		return candidates;
 	}
 }

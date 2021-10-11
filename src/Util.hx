@@ -42,6 +42,21 @@ class Util {
 			}
 		}
 	}
+
+	@:noUsing
+	static macro function detuple2(v1, v2, rhs) {
+		return macro @:mergeBlock {
+			final __anon__Tuple2 = $rhs;
+			${switch v1 {
+				case macro @var $i{n}: macro var $n = __anon__Tuple2._1;
+				default: macro $v1 = __anon__Tuple2._1;
+			}};
+			${switch v2 {
+				case macro @var $i{n}: macro var $n = __anon__Tuple2._2;
+				default: macro $v2 = __anon__Tuple2._2;
+			}};
+		}
+	}
 	
 	@:nullSafety(Strict)
 	static macro function _and<T, U>(value: ExprOf<Null<T>>, and): ExprOf<Null<U>> {

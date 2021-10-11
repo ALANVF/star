@@ -25,12 +25,12 @@ enum Stmt {
 		_: Span,
 		cond: Expr,
 		thenBlk: Block,
-		elseBlk: Option<Tuple2<Span, Block>>
+		elseBlk: Null<Tuple2<Span, Block>>
 	);
 	SCase(
 		_begin: Span,
 		cases: Array<{span: Span, cond: Expr, then: Then}>,
-		otherwise: Option<Tuple2<Span, Then>>,
+		otherwise: Null<Tuple2<Span, Then>>,
 		_end: Span
 	);
 	SMatch(
@@ -38,7 +38,7 @@ enum Stmt {
 		value: Expr,
 		_begin: Span,
 		cases: Array<{span: Span, pattern: Expr, when: Option<Tuple2<Span, Expr>>, then: Then}>,
-		otherwise: Option<Tuple2<Span, Then>>,
+		otherwise: Null<Tuple2<Span, Then>>,
 		_end: Span
 	);
 	SShortMatch(
@@ -46,9 +46,9 @@ enum Stmt {
 		value: Expr,
 		_2: Span,
 		pattern: Expr,
-		cond: Option<Tuple2<Span, Expr>>,
+		cond: Null<Tuple2<Span, Expr>>,
 		thenBlk: Block,
-		elseBlk: Option<Tuple2<Span, Block>>
+		elseBlk: Null<Tuple2<Span, Block>>
 	);
 
 	SWhile(
@@ -67,11 +67,11 @@ enum Stmt {
 	SForIn(
 		_: Span,
 		lvar: Expr,
-		lvar2: Option<Expr>,
+		lvar2: Null<Expr>,
 		inSpan: Span,
 		inExpr: Expr,
-		cond: Option<Tuple2<Span, Expr>>,
-		label: Option<Tuple2<Span, Ident>>,
+		cond: Null<Tuple2<Span, Expr>>,
+		label: Null<Tuple2<Span, Ident>>,
 		block: Block
 	);
 	SForRange(
@@ -83,9 +83,9 @@ enum Stmt {
 		stopSpan: Span,
 		stopKind: LoopStop,
 		stopExpr: Expr,
-		step: Option<Tuple2<Span, Expr>>,
-		cond: Option<Tuple2<Span, Expr>>,
-		label: Option<Tuple2<Span, Ident>>,
+		step: Null<Tuple2<Span, Expr>>,
+		cond: Null<Tuple2<Span, Expr>>,
+		label: Null<Tuple2<Span, Ident>>,
 		block: Block
 	);
 	SDo(_: Span, label: Option<Tuple2<Span, Ident>>, block: Block);
@@ -98,7 +98,7 @@ enum Stmt {
 		block: Block,
 		_begin: Span,
 		cases: Array<{span: Span, pattern: Expr, when: Option<Tuple2<Span, Expr>>, then: Then}>,
-		otherwise: Option<Tuple2<Span, Then>>,
+		otherwise: Null<Tuple2<Span, Then>>,
 		_end: Span
 	);
 }

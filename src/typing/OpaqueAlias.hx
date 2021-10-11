@@ -1,5 +1,7 @@
 package typing;
 
+import typing.Traits;
+
 class OpaqueAlias extends Alias {
 	final staticMethods: Array<StaticMethod> = [];
 	final methods: Array<Method> = [];
@@ -71,5 +73,43 @@ class OpaqueAlias extends Alias {
 	
 	override function declName() {
 		return "opaque alias";
+	}
+
+
+	override function findSingleStatic(name: String, from: ITypeDecl, getter = false, cache: List<Type> = Nil): Null<SingleStaticKind> {
+		if(cache.contains(thisType)) return null;
+		
+		for(mth in staticMethods) mth._match(
+			at(sm is SingleStaticMethod) => {
+				if(sm.name.name == name && (!getter || sm.isGetter) && from.canSeeMethod(sm)) {
+					return SSMethod(sm);
+				}
+			},
+			_ => {}
+		);
+
+		return null;
+	}
+
+
+	override function findMultiStatic(names: Array<String>, from: ITypeDecl, setter = false, cache: List<Type> = Nil) {
+		if(cache.contains(thisType)) return [];
+		
+		final candidates: Array<MultiStaticKind> = [];
+
+		if(setter) {
+			throw "todo";
+		} else {
+			for(mth in staticMethods) mth._match(
+				at(mm is MultiStaticMethod) => {
+					if(mm.params.every2Strict(names, (l, n) -> l.label.name == n) && from.canSeeMethod(mm)) {
+						candidates.push(MSMethod(mm));
+					}
+				},
+				_ => {}
+			);
+		}
+
+		return candidates;
 	}
 }

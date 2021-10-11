@@ -12,4 +12,8 @@ class StaticInit extends EmptyMethod {
 			body: ast.body.stmts()
 		});
 	}
+
+	inline function declName() {
+		return "static initializer";
+	}
 }

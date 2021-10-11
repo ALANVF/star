@@ -2,8 +2,7 @@ package typing;
 
 import typing.Traits;
 
-abstract class Kind extends Namespace {
-	final methods: Array<Method> = [];
+abstract class Kind extends ClassLike {
 	final operators: Array<Operator> = [];
 	var deinit: Option<Deinit> = None;
 	var isFlags: Bool = false;

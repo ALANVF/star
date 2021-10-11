@@ -52,7 +52,7 @@ class OptionHelper {
 		}
 	}
 
-	static inline function every<T>(opt: Option<T>, fn: T -> Bool) {
+	static inline function exists<T>(opt: Option<T>, fn: T -> Bool) {
 		return switch opt {
 			case Some(v): fn(v);
 			case _: false;

@@ -164,4 +164,18 @@ class Member implements IErrors {
 	function allErrors() {
 		return errors;
 	}
+
+	function matchesGetter(name: String) {
+		return switch getter {
+			case Some(Some(n)): n.name == name;
+			default: this.name.name == name;
+		}
+	}
+
+	function matchesSetter(name: String) {
+		return !isReadonly && switch setter {
+			case Some(Some(n)): n.name == name;
+			default: this.name.name == name;
+		}
+	}
 }

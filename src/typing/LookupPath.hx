@@ -13,4 +13,8 @@ typedef LookupPath = List3<Null<Span>, String, Array<Type>>;
 				: '[${p.joinMap(", ", t -> t.simpleName())}]'
 		)).join(".");
 	}
+
+	static function span(self: LookupPath) {
+		return self._match(at([[s!, _, _], ..._]) => s, _ => throw "bad");
+	}
 }

@@ -18,13 +18,19 @@ abstract class AnyMethod implements IErrors {
 	var isAsm: Bool = false;
 	final body: Option<Array<Stmt>>;
 
+	@ignore var typedBody: Null<Array<TStmt>> = null;
+
 	function makeTypePath(path: TypePath) {
 		return path.toType(this);
 	}
 
-	function findType(path: LookupPath, absolute = false, cache: List<{}> = Nil): Option<Type> {
-		return decl.findType(path, absolute, cache);
+	function findType(path: LookupPath, search: Search, from: Null<ITypeDecl>, depth = 0, cache: List<{}> = Nil): Option<Type> {
+		return decl.findType(path, Start, from, depth, cache);
 	}
+
+	/*function findTypeOld(path: LookupPath, absolute = false, cache: List<{}> = Nil): Option<Type> {
+		return decl.findTypeOld(path, absolute, cache);
+	}*/
 
 	abstract function declName(): String;
 
@@ -36,5 +42,10 @@ abstract class AnyMethod implements IErrors {
 
 	function allErrors() {
 		return errors;
+	}
+
+
+	function findCategory(cat: Type, forType: Type, from: ITypeDecl, cache: List<{}> = Nil): Array<Category> {
+		return decl.findCategory(cat, forType, from, cache);
 	}
 }

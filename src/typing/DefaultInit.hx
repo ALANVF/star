@@ -8,4 +8,8 @@ class DefaultInit extends EmptyMethod {
 			body: ast.body.stmts()
 		});
 	}
+
+	inline function declName() {
+		return "default initializer";
+	}
 }

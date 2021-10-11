@@ -5,7 +5,7 @@ import text.Span;
 enum StrSegment {
 	SStr(str: String);
 	SChar(char: Char);
-	SCode(tokens: List<Token>);
+	SCode(tokens: Tokens);
 }
 
 @:using(Token.TokenHelper)
@@ -135,7 +135,7 @@ enum Token {
 	T_Int(_: Span, int: String, exp: Option<String>);
 	T_Hex(_: Span, hex: String);
 	T_Dec(_: Span, int: String, dec: String, exp: Option<String>);
-	T_Str(_: Span, segments: Array<StrSegment>);
+	T_Str(_: Span, segments: List<StrSegment>);
 	T_Char(_: Span, char: Char);
 	T_Bool(_: Span, bool: Bool);
 	T_This(_: Span);

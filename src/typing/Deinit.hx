@@ -8,4 +8,8 @@ class Deinit extends EmptyMethod {
 			body: ast.body.stmts()
 		});
 	}
+
+	inline function declName() {
+		return "deinitializer";
+	}
 }

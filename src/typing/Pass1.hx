@@ -9,9 +9,10 @@ import typing.Traits;
  * - TLookup (sometimes)
  * - TModular (TODO)
  * - TConcrete, which stays concrete
- * If there are generic arguments (TApplied), they are ignored when doing lookup
- * except when checking for arity if the base type is concrete (although the args themselves are still resolved).
-*/
+ * - TApplied
+ *   - If there are generic arguments (TApplied), they are ignored when doing lookup
+ *     except when checking for arity if the base type is concrete (although the args themselves are still resolved).
+ */
 
 
 @:publicFields class Pass1 {
@@ -38,17 +39,37 @@ static function resolveUnitContents(unit: Unit) {
 
 static function resolveFileContents(file: File) {
 	for(imp in file.imports) {
-		var from: ILookupType;
 		switch imp {
 			case {as: Some(_)}:
 				file.errors.push(Errors.notYetImplemented(imp.span));
 				continue;
 			
 			case {from: None}:
-				from = file;
+				var types: Array<TypePath>;
+				switch imp.spec {
+					case UType(type):
+						types = [type];
+					
+					case UTypes(_types):
+						types = _types;
+					
+					default:
+						file.errors.push(Errors.notYetImplemented(imp.span));
+						continue;
+				}
+
+				for(type in types) switch file.findType((type : TypePath).toLookupPath(file), Start, null, 0, Nil) {
+					case Some(t):
+						resolveBasicType(file, t);
+						file.imported.push({from: t, types: []});
+					
+					case None:
+						file.errors.push(Errors.invalidTypeLookup(type.span()));
+				}
 
 			case {from: Some(UType(_, type))}:
-				switch file.findType((type : TypePath).toLookupPath(file), true, Nil) {
+				var from: ILookupType;
+				switch file.findType((type : TypePath).toLookupPath(file), Start, null, 0, Nil) {
 					case Some(t):
 						resolveBasicType(file, t);
 						from = t;
@@ -58,31 +79,34 @@ static function resolveFileContents(file: File) {
 						continue;
 				}
 
+				var types: Array<TypePath>;
+				switch imp.spec {
+					case UType(type):
+						types = [type];
+					
+					case UTypes(_types):
+						types = _types;
+					
+					default:
+						file.errors.push(Errors.notYetImplemented(imp.span));
+						continue;
+				}
+
+				final imported = [];
+				for(type in types) switch from.findType((type : TypePath).toLookupPath(from), Start, null, 0, from == file ? Nil : List.of(file)) {
+					case Some(t):
+						resolveBasicType(from, t);
+						imported.push(t);
+					
+					case None:
+						file.errors.push(Errors.invalidTypeLookup(type.span()));
+				}
+
+				file.imported.push({from: from, types: imported});
+
 			default:
 				file.errors.push(Errors.notYetImplemented(imp.span));
 				continue;
-		}
-
-		var types: Array<TypePath>;
-		switch imp.spec {
-			case UType(type):
-				types = [type];
-			
-			case UTypes(_types):
-				types = _types;
-			
-			default:
-				file.errors.push(Errors.notYetImplemented(imp.span));
-				continue;
-		}
-
-		for(type in types) switch from.findType((type : TypePath).toLookupPath(from), true, from == file ? Nil : List.of(file)) {
-			case Some(t):
-				resolveBasicType(from, t);
-				file.imported.push(t);
-			
-			case None:
-				file.errors.push(Errors.invalidTypeLookup(type.span()));
 		}
 	}
 
@@ -91,161 +115,57 @@ static function resolveFileContents(file: File) {
 }
 
 
-static function resolveBasicType(
-	source: ILookupType,
-	type: Type,
-	cache: List<{}> = Nil
-) {
+static function resolveBasicType(source: ILookupType, type: Type, cache: List<{}> = Nil) {
 	type.t._match(
-		at(TPath(depth, lookup, src)) => {
-			for(_ in 0...depth) {
-				switch src.findType(lookup, true, cache) {
-					case Some(found):
-						cache = cache.prepend(found);
-					
-					case None: if(source != src) {
-						switch source.findType(lookup, true, cache.prepend(source)) {
-							case Some(found):
-								cache = cache.prepend(found);
-							
-							case None: source._match(
-								at(e is IErrors) => {
-									e.errors.push(Errors.invalidTypeLookup(
-										type.span.nonNull(),
-										"Type does not exist!"
-									));
-									return;
-								},
-								_ => throw "I don't know where this error came from!"
-							);
-						}
-					} else source._match(
-						at(e is IErrors) => {
-							e.errors.push(Errors.invalidTypeLookup(
-								type.span.nonNull(),
-								"Type does not exist!"
-							));
-							return;
+		at(TPath(depth, path, src)) => {
+			source.findType(path, Start, null, depth, cache)._match(
+				at(Some(ty)) => {
+					type.t = ty.t;
+				},
+				at(None) => {
+					if(source != src) src.findType(path, Start, null, depth, cache)._match(
+						at(Some(ty)) => {
+							type.t = ty.t;
 						},
-						_ => throw "I don't know where this error came from!"
-					);
-				}
-			}
-
-			switch src.findType(lookup, true, cache) {
-				case Some(found):
-					type.t = found.t;
-				
-				case None: if(source != src) {
-					switch source.findType(lookup, true, cache.prepend(source)) {
-						case Some(found):
-							type.t = found.t;
-						
-						case None: {
-							// a very lazy way of incrementally looking up the type path. works for unknown reasons
-							var cur = source;
-							var status = false;
-							var first = true;
-							final orig = lookup;
-							while(true) {
-								cache = cache.prepend(cur);
-								switch lookup {
-									case Nil3:
-										if(lookup == Nil3) status = true;
-										break;
-									case Cons3(a, b, c, r):
-										final l = lookup;
-										lookup = r;
-										switch cur.findType(List3.of([a, b, c]), first, cache) {
-											case Some(f):
-												if(cur == f) break;
-												cur = f;
-												if(lookup == Nil3) {
-													status = true;
-													break;
-												}
-											case None:
-												lookup = l;
-												break;
-										}
-								}
-								first = false;
-							}
-
-							if(status) {
-								lookup = orig;
-							} source._match(
-								at(e is IErrors) => {
-									e.errors.push(Errors.invalidTypeLookup(
-										type.span.nonNull(),
-										"Type does not exist!"
-									));
-									return;
-								},
-								_ => throw "I don't know where this error came from!"
-							);
-						}
+						at(None) => src._match(
+							at(e is IErrors) => {
+								e.errors.push(Errors.invalidTypeLookup(
+									type.span.nonNull(),
+									"Type does not exist!"
+								));
+								return;
+							},
+							_ => throw "I don't know where this error came from!"
+						)
+					); else {
+						source._match(
+							at(e is IErrors) => {
+								e.errors.push(Errors.invalidTypeLookup(
+									type.span.nonNull(),
+									"Type does not exist!"
+								));
+								return;
+							},
+							_ => throw "I don't know where this error came from!"
+						);
 					}
-				} else {
-					// a very lazy way of incrementally looking up the type path. works for unknown reasons
-					var cur = source;
-					var status = false;
-					var first = true;
-					final orig = lookup;
-					while(true) {
-						cache = cache.prepend(cur);
-						switch lookup {
-							case Nil3:
-								if(lookup == Nil3) status = true;
-								break;
-							case Cons3(a, b, c, r):
-								final l = lookup;
-								lookup = r;
-								switch cur.findType(List3.of([a, b, c]), first, cache) {
-									case Some(f):
-										if(cur == f) break;
-										cur = f;
-										if(lookup == Nil3) {
-											status = true;
-											break;
-										}
-									case None:
-										lookup = l;
-										break;
-								}
-						}
-						first = false;
-					}
-
-					if(status) {
-						lookup = orig;
-					} src._match(
-						at(e is IErrors) => {
-							e.errors.push(Errors.invalidTypeLookup(
-								type.span.nonNull(),
-								"Type does not exist!"
-							));
-							return;
-						},
-						_ => throw "I don't know where this error came from!"
-					);
 				}
-			}
+			);
 
-			lookup.forEach((_, _, ps) -> if(ps.length != 0) {
+			path.forEach((_, _, ps) -> if(ps.length != 0) {
 				for(p in ps) {
-					resolveBasicType(src, p);
+					resolveBasicType(source, p);
 				}
 			});
 		},
 
-		at(TLookup(base, lookup, src)) => {
+		at(TLookup(base, path, src)) => {
 			resolveBasicType(src, base);
 
 			base.t._match(
 				at(TConcrete(c) /*| TModular(_, _)*/) => {
 					cache = cache.prepend(base);
-					switch c.findType(lookup, false, Nil) {
+					switch c.findType(path, Inside, null, 0, Nil) {
 						case Some(found):
 							type.t = found.t;
 						
@@ -255,7 +175,7 @@ static function resolveBasicType(
 								_ => {}
 							);*/
 
-							switch source.findType(lookup, true, cache.prepend(source)) {
+							switch source.findType(path, Start, null, 0, cache.prepend(source)) {
 								case Some(found):
 									type.t = found.t;
 								

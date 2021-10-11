@@ -18,7 +18,7 @@ class Span {
 	}
 
 	static function at(pos, ?source) {
-		return new Span(pos, pos.advance(1), source);
+		return new Span(pos, pos.advance(), source);
 	}
 
 	static function length(start, length, ?source) {
@@ -39,6 +39,13 @@ class Span {
 
 	function intersects(other: Span) {
 		return !(start >= other.end || other.start >= end);
+	}
+
+	function display() {
+		return (switch source {
+			case None: "(Unknown)";
+			case Some(src): src.path;
+		})+':${start.line + 1}:${start.column}';
 	}
 
 	/*function toString() {

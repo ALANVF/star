@@ -8,6 +8,7 @@ import text.Span;
 import reporting.Diagnostic;
 import reporting.DiagnosticInfo;
 import lexing.Token;
+import lexing.Tokens;
 import parsing.ParseResult;
 import parsing.ast.Program;
 import parsing.ast.Type;
@@ -37,13 +38,13 @@ import parsing.ast.decls.*;
  */
 
 class Parser {
-	public static function parse(tokens: List<Token>) return trimTokens(tokens)._match(
+	public static function parse(tokens: Tokens) return tokens._match(
 		at([T_LSep(_), ...rest]) => parse(rest),
 		at([T_Use(_1), T_Litsym(_2, "script"), ...rest]) => parseScript(_1, _2, rest),
 		at(tokens) => parseModular(tokens)
 	);
 
-	static function parseScript(_1: Span, _2: Span, input: List<Token>): Program {
+	static function parseScript(_1: Span, _2: Span, input: Tokens): Program {
 		final decls = [
 			SDecl(DUse({
 				generics: Nil,
@@ -55,7 +56,7 @@ class Parser {
 		throw "NYI";
 	}
 
-	static function parseModular(input: List<Token>) {
+	static function parseModular(input: Tokens) {
 		var tokens = input;
 		var expectSep = false;
 		var lastWasError = false;
@@ -228,7 +229,7 @@ class Parser {
 
 	/* DECLS */
 
-	static function nextDeclBody(tokens: List<Token>) return tokens._match(
+	static function nextDeclBody(tokens: Tokens) return tokens._match(
 		at([T_LBrace(begin), T_RBrace(end), ...rest]) => Success({begin: begin, of: [], end: end}, rest),
 		at([T_LBrace(begin), ...rest]) => {
 			final decls = [];
@@ -253,7 +254,7 @@ class Parser {
 		_ => Failure(tokens, None)
 	);
 
-	static function nextDecl(generics, tokens: List<Token>) return tokens._match(
+	static function nextDecl(generics, tokens: Tokens) return tokens._match(
 		at([T_Type(_1), ...rest]) => switch parseGenericParam(_1, rest) {
 			case Success(param, Cons(isAnySep(_) => true, rest2)): nextDecl(Cons(param, generics), rest2);
 			case Success(_, rest2): Fatal(tokens, Some(rest2));
@@ -412,7 +413,7 @@ class Parser {
 		case err: updateIfBad(tokens, err);
 	}
 
-	static function parseGenericRuleCond(left, tokens: List<Token>): ParseResult<GenericRule> return tokens._match(
+	static function parseGenericRuleCond(left, tokens: Tokens): ParseResult<GenericRule> return tokens._match(
 		at([T_AndAnd(_1), ...rest]) => switch parseGenericRuleTerm(rest) {
 			case Success(right, rest2): parseGenericRuleCond(GenericRule.And(left, _1, right), rest2);
 			case err: err;
@@ -432,7 +433,7 @@ class Parser {
 		_ => Success(left, tokens)
 	);
 	
-	static function parseGenericRuleTerm(tokens: List<Token>) return tokens._match(
+	static function parseGenericRuleTerm(tokens: Tokens) return tokens._match(
 		at([T_LParen(_1), ...rest]) => parseGenericRuleParen(_1, rest),
 		at([T_Bang(_1), T_LParen(_2), ...rest]) => switch parseGenericRuleParen(_2, rest) {
 			case Success(rule, rest2): Success(GenericRule.Not(_1, rule), rest2);
@@ -545,7 +546,7 @@ class Parser {
 		_ => Failure(tokens, None)
 	);
 	
-	static function parseGenericRuleParen(_1, tokens: List<Token>) {
+	static function parseGenericRuleParen(_1, tokens: Tokens) {
 		if(tokens.head().match(T_RParen(_))) return Fatal(tokens, None);
 
 		var rest = tokens;
@@ -631,7 +632,7 @@ class Parser {
 		case err: fatalIfBad(tokens, cast err);
 	};
 	
-	static function parseUseTree(tokens: List<Token>): ParseResult<UseTree> return tokens._match(
+	static function parseUseTree(tokens: Tokens): ParseResult<UseTree> return tokens._match(
 		at([T_HashLBracket(_), ...rest]) => {
 			final types = [];
 			
@@ -1136,7 +1137,7 @@ class Parser {
 	}
 	
 
-	static function parseMemberDecl(_1, tokens: List<Token>) return tokens._match(
+	static function parseMemberDecl(_1, tokens: Tokens) return tokens._match(
 		at([T_Name(_2, name), ...rest]) => {
 			final type = switch parseTypeAnno(rest) {
 				case Success(of, rest2):
@@ -1213,7 +1214,7 @@ class Parser {
 	);
 
 	
-	static function parseCaseDecl(_1, tokens: List<Token>) return tokens._match(
+	static function parseCaseDecl(_1, tokens: Tokens) return tokens._match(
 		at([T_Name(_2, name), ...rest]) => {
 			final value = rest._match(
 				at([T_EqGt(_), ...rest2]) => switch parseExpr(rest2) {
@@ -1360,7 +1361,7 @@ class Parser {
 
 	/* SIGS */
 
-	static function parseMultiSig(tokens: List<Token>): ParseResult<{params: Array<MultiParam>, end: Span}> {
+	static function parseMultiSig(tokens: Tokens): ParseResult<{params: Array<MultiParam>, end: Span}> {
 		var rest = tokens;
 		final params = [rest._match(
 			// Checking for `a: (B)` syntax before `a: a' (B)` syntax is
@@ -1458,7 +1459,7 @@ class Parser {
 	
 	/* METHODS */
 
-	static function parseMethodDecl(generics, _1, tokens: List<Token>) return tokens._match(
+	static function parseMethodDecl(generics, _1, tokens: Tokens) return tokens._match(
 		at([T_LBracket(begin), ...rest]) => {
 			final result = rest._match(
 				at([T_Label(_, _), ..._]) => switch parseMultiSig(rest) {
@@ -1570,7 +1571,7 @@ class Parser {
 
 	/* INITS */
 
-	static function parseInitDecl(generics, _1, tokens: List<Token>) return tokens._match(
+	static function parseInitDecl(generics, _1, tokens: Tokens) return tokens._match(
 		at([T_LBracket(begin), ...rest]) => {
 			final result = rest._match(
 				at([T_Label(_, _), ..._]) => switch parseMultiSig(rest) {
@@ -1663,7 +1664,7 @@ class Parser {
 
 	/* OPERATORS */
 
-	static function parseOperatorDecl(generics, _1, tokens: List<Token>) return tokens._match(
+	static function parseOperatorDecl(generics, _1, tokens: Tokens) return tokens._match(
 		at([T_Litsym(_2, sym), ...rest]) => {
 			final spec = rest._match(
 				at([T_LBracket(_), T_RBracket(_), ..._]) => return Fatal(tokens, Some(rest)), // TODO: custom error message here
@@ -1747,7 +1748,7 @@ class Parser {
 
 	/* DEINITS */
 
-	static function parseDeinitDecl(_1, tokens: List<Token>) return tokens._match(
+	static function parseDeinitDecl(_1, tokens: Tokens) return tokens._match(
 		at([T_Is(_2), T_Static(_3), ...rest]) => switch parseBody(rest) {
 			case Success(body, rest2): Success(DDeinit({
 				span: _1,
@@ -1769,7 +1770,7 @@ class Parser {
 
 	/* TYPES */
 
-	static function parseTypeParents(tokens: List<Token>, allowEOL = false) return tokens._match(
+	static function parseTypeParents(tokens: Tokens, allowEOL = false) return tokens._match(
 		at([T_Of(_1), ...rest]) => switch parseType(rest) {
 			case Success(type, rest2):
 				final parents = [type];
@@ -1792,7 +1793,7 @@ class Parser {
 		_ => Failure(tokens, None)
 	);
 
-	static function parseTypeDeclName(tokens: List<Token>): ParseResult<{name: Ident, params: Option<TypeParams>}> return tokens._match(
+	static function parseTypeDeclName(tokens: Tokens): ParseResult<{name: Ident, params: Option<TypeParams>}> return tokens._match(
 		at([T_TypeName(_1, name), ...rest]) => switch parseTypeArgs(rest) {
 			case Success(params, rest2): Success({name: {span: _1, name: name}, params: Some(params)}, rest2);
 			case Failure(_, _): Success({name: {span: _1, name: name}, params: None}, rest);
@@ -1801,7 +1802,7 @@ class Parser {
 		_ => Failure(tokens, None)
 	);
 
-	static function parseTypeSpec(tokens: List<Token>) return tokens._match(
+	static function parseTypeSpec(tokens: Tokens) return tokens._match(
 		at([T_HashLBracket(begin), ...rest]) => {
 			final types = [];
 			
@@ -1827,7 +1828,7 @@ class Parser {
 		}
 	);
 
-	static function parseType(tokens: List<Token>, allowSingleWildcard = false): ParseResult<Type> {
+	static function parseType(tokens: Tokens, allowSingleWildcard = false): ParseResult<Type> {
 		var rest = tokens;
 		var leading = rest._match(
 			at([T_Wildcard(_1), ...rest2]) => switch parseTypeArgs(rest2) {
@@ -1878,7 +1879,7 @@ class Parser {
 		}
 	}
 
-	static function parseTypeSeg(tokens: List<Token>) return tokens._match(
+	static function parseTypeSeg(tokens: Tokens) return tokens._match(
 		at([T_TypeName(_1, name), ...rest]) => switch parseTypeArgs(rest) {
 			case Success(args, rest2): Success(TypeSeg.NameParams(_1, name, args), rest2);
 			case Failure(_, _): Success(TypeSeg.Name(_1, name), rest);
@@ -1887,7 +1888,7 @@ class Parser {
 		_ => Failure(tokens, None)
 	);
 
-	static function parseTypeSegs(tokens: List<Token>): ParseResult<List<TypeSeg>> return tokens._match(
+	static function parseTypeSegs(tokens: Tokens): ParseResult<List<TypeSeg>> return tokens._match(
 		at([T_Dot(_), ...rest]) => switch parseTypeSeg(rest) {
 			case Success(seg, rest2): switch parseTypeSegs(rest2) {
 				case Success(segs, rest3): Success(Cons(seg, segs), rest3);
@@ -1899,7 +1900,7 @@ class Parser {
 		_ => Failure(tokens, None)
 	);
 
-	static function parseTypeArgs(tokens: List<Token>) return tokens._match(
+	static function parseTypeArgs(tokens: Tokens) return tokens._match(
 		at([T_LBracket(begin), ...rest]) => {
 			final types = [];
 			
@@ -1924,7 +1925,7 @@ class Parser {
 		_ => Failure(tokens, None)
 	);
 
-	static function parseTypeAnno(tokens: List<Token>, allowSingleWildcard = false) return tokens._match(
+	static function parseTypeAnno(tokens: Tokens, allowSingleWildcard = false) return tokens._match(
 		at([T_LParen(_)]) => Eof(tokens),
 		at([T_LParen(_), ...rest]) => switch parseType(rest, allowSingleWildcard) {
 			case Success(type, Cons(T_RParen(_), rest2)): Success(type, rest2);
@@ -1939,7 +1940,7 @@ class Parser {
 	/* STATEMENTS */
 	
 	// TODO: enforce short arrow stmt
-	static function parseBody(tokens: List<Token>): ParseResult<Body> return tokens._match(
+	static function parseBody(tokens: Tokens): ParseResult<Body> return tokens._match(
 		at([T_EqGt(_1), ...rest]) => switch parseStmt(rest) {
 			case Success(stmt, rest2): Success(BArrow(_1, stmt), rest2);
 			case err: fatalIfFailed(cast err);
@@ -1950,7 +1951,7 @@ class Parser {
 		}
 	);
 
-	static function parseBlock(tokens: List<Token>): ParseResult<Block> return tokens._match(
+	static function parseBlock(tokens: Tokens): ParseResult<Block> return tokens._match(
 		at([T_LBrace(begin), T_RBrace(end), ...rest]) => Success({begin: begin, stmts: [], end: end}, rest),
 		at([T_LBrace(begin), ...rest]) => {
 			final stmts = [];
@@ -1975,7 +1976,7 @@ class Parser {
 	);
 
 	
-	static function parseStmt(tokens: List<Token>): ParseResult<Stmt> return tokens._match(
+	static function parseStmt(tokens: Tokens): ParseResult<Stmt> return tokens._match(
 		at([T_If(_1), ...rest]) => switch parseExpr(rest) {
 			case Success(trueCond, rest2): switch parseBlock(rest2) {
 				case Success(trueBlk, rest3):
@@ -1983,10 +1984,10 @@ class Parser {
 						at([T_Else(_2), ...rest4]) => switch parseBlock(rest4) {
 							case Success(elseBlk, rest5):
 								rest3 = rest5;
-								Some(new Tuple2(_2, elseBlk));
+								new Tuple2(_2, elseBlk);
 							case err: return cast err;
 						},
-						_ => None
+						_ => null
 					);
 
 					Success(SIf(_1, trueCond, trueBlk, otherwise), rest3);
@@ -2005,7 +2006,7 @@ class Parser {
 						cases.push(case_);
 						
 						rest3._match(
-							at([T_RBrace(end), ...rest4]) => return Success(SCase(Span.range(_1, begin), cases, None, end), rest4),
+							at([T_RBrace(end), ...rest4]) => return Success(SCase(Span.range(_1, begin), cases, null, end), rest4),
 							at([] | [isAnySep(_) => true]) => return Eof(tokens),
 							at([isAnySep(_) => true, ...rest4]) => rest = rest4,
 							_ => return Fatal(tokens, Some(rest3))
@@ -2014,11 +2015,11 @@ class Parser {
 					case err: return fatalIfFailed(cast err);
 				},
 				at([T_Else(_2), ...rest2]) => switch parseThenStmt(rest2) {
-					case Success(then, Cons(T_RBrace(end), rest3)): return Success(SCase(Span.range(_1, begin), cases, Some(new Tuple2(_2, then)), end), rest3);
+					case Success(then, Cons(T_RBrace(end), rest3)): return Success(SCase(Span.range(_1, begin), cases, new Tuple2(_2, then), end), rest3);
 					case Success(_, rest3): return Fatal(tokens, Some(rest3));
 					case err: return fatalIfFailed(cast err);
 				},
-				at([T_RBrace(end), ...rest2]) => return Success(SCase(Span.range(_1, begin), cases, None, end), rest2),
+				at([T_RBrace(end), ...rest2]) => return Success(SCase(Span.range(_1, begin), cases, null, end), rest2),
 				_ => return Fatal(tokens, Some(rest))
 			);
 
@@ -2035,7 +2036,7 @@ class Parser {
 							cases.push(case_);
 							
 							rest4._match(
-								at([T_RBrace(end), ...rest5]) => return Success(SMatch(_1, expr, begin, cases, None, end), rest5),
+								at([T_RBrace(end), ...rest5]) => return Success(SMatch(_1, expr, begin, cases, null, end), rest5),
 								at([] | [isAnySep(_) => true]) => return Eof(tokens),
 								at([isAnySep(_) => true, ...rest5]) => rest2 = rest5,
 								_ => return Fatal(tokens, Some(rest4))
@@ -2044,11 +2045,11 @@ class Parser {
 						case err: return fatalIfFailed(cast err);
 					},
 					at([T_Else(_2), ...rest3]) => switch parseThenStmt(rest3) {
-						case Success(then, Cons(T_RBrace(end), rest4)): return Success(SMatch(_1, expr, begin, cases, Some(new Tuple2(_2, then)), end), rest4);
+						case Success(then, Cons(T_RBrace(end), rest4)): return Success(SMatch(_1, expr, begin, cases, new Tuple2(_2, then), end), rest4);
 						case Success(_, rest4): return Fatal(tokens, Some(rest4));
 						case err: return fatalIfFailed(cast err);
 					},
-					at([T_RBrace(end), ...rest3]) => return Success(SMatch(_1, expr, begin, cases, None, end), rest3),
+					at([T_RBrace(end), ...rest3]) => return Success(SMatch(_1, expr, begin, cases, null, end), rest3),
 					_ => return Fatal(tokens, Some(rest2))
 				);
 	
@@ -2060,18 +2061,18 @@ class Parser {
 						at([T_If(_3), ...rest4]) => switch parseExpr(rest4) {
 							case Success(made, rest5):
 								rest3 = rest5;
-								Some(new Tuple2(_3, made));
+								new Tuple2(_3, made);
 							case err: return fatalIfFailed(cast err);
 						},
-						_ => None
+						_ => null
 					);
 
 					switch parseBlock(rest3) {
 						case Success(thenBlk, Cons(T_Else(_4), rest4)): switch parseBlock(rest4) {
-							case Success(elseBlk, rest5): Success(SShortMatch(_1, expr, _2, pattern, cond, thenBlk, Some(new Tuple2(_4, elseBlk))), rest5);
+							case Success(elseBlk, rest5): Success(SShortMatch(_1, expr, _2, pattern, cond, thenBlk, new Tuple2(_4, elseBlk)), rest5);
 							case err: fatalIfFailed(cast err);
 						}
-						case Success(thenBlk, rest4): Success(SShortMatch(_1, expr, _2, pattern, cond, thenBlk, None), rest4);
+						case Success(thenBlk, rest4): Success(SShortMatch(_1, expr, _2, pattern, cond, thenBlk, null), rest4);
 						case err: fatalIfFailed(cast err);
 					}
 
@@ -2120,10 +2121,10 @@ class Parser {
 				at([T_Label(startSpan, "from"), ...rest3]) => parseLoopRange(_1, lvar, startSpan, LoopFrom, rest3),
 				at([T_Label(startSpan, "after"), ...rest3]) => parseLoopRange(_1, lvar, startSpan, LoopAfter, rest3),
 				at([T_Comma(_), ...rest3]) => switch parseExpr(rest3) {
-					case Success(lvar2, rest4): parseLoopIn(_1, lvar, Some(lvar2), rest4);
+					case Success(lvar2, rest4): parseLoopIn(_1, lvar, lvar2, rest4);
 					case err: fatalIfFailed(cast err);
 				},
-				_ => parseLoopIn(_1, lvar, None, rest2)
+				_ => parseLoopIn(_1, lvar, null, rest2)
 			);
 			case err: fatalIfFailed(cast err);
 		},
@@ -2159,7 +2160,7 @@ class Parser {
 							cases.push(case_);
 							
 							rest4._match(
-								at([T_RBrace(end), ...rest5]) => return Success(STry(_1, block, begin, cases, None, end), rest5),
+								at([T_RBrace(end), ...rest5]) => return Success(STry(_1, block, begin, cases, null, end), rest5),
 								at([] | [isAnySep(_) => true]) => return Eof(tokens),
 								at([isAnySep(_) => true, ...rest5]) => rest2 = rest5,
 								_ => return Fatal(tokens, Some(rest4))
@@ -2168,11 +2169,11 @@ class Parser {
 						case err: return fatalIfFailed(cast err);
 					},
 					at([T_Else(_2), ...rest3]) => switch parseThenStmt(rest3) {
-						case Success(then, Cons(T_RBrace(end), rest4)): return Success(STry(_1, block, begin, cases, Some(new Tuple2(_2, then)), end), rest4);
+						case Success(then, Cons(T_RBrace(end), rest4)): return Success(STry(_1, block, begin, cases, new Tuple2(_2, then), end), rest4);
 						case Success(_, rest4): return Fatal(tokens, Some(rest4));
 						case err: return fatalIfFailed(cast err);
 					},
-					at([T_RBrace(end), ...rest3]) => return Success(STry(_1, block, begin, cases, None, end), rest3),
+					at([T_RBrace(end), ...rest3]) => return Success(STry(_1, block, begin, cases, null, end), rest3),
 					_ => return Fatal(tokens, Some(rest2))
 				);
 	
@@ -2190,7 +2191,7 @@ class Parser {
 	);
 
 
-	static function parseThenStmt(tokens: List<Token>) return tokens._match(
+	static function parseThenStmt(tokens: Tokens) return tokens._match(
 		at([T_EqGt(_1), ...rest]) => switch parseStmt(rest) {
 			case Success(stmt, rest2): Success(ThenStmt(_1, stmt), rest2);
 			case err: fatalIfFailed(cast err);
@@ -2201,7 +2202,7 @@ class Parser {
 		}
 	);
 
-	static function parseCaseAtStmt(_1, tokens: List<Token>) return switch parseExpr(tokens) {
+	static function parseCaseAtStmt(_1, tokens: Tokens) return switch parseExpr(tokens) {
 		case Success(cond, rest): switch parseThenStmt(rest) {
 			case Success(then, rest2): Success({span: _1, cond: cond, then: then}, rest2);
 			case err: fatalIfFailed(cast err);
@@ -2209,7 +2210,7 @@ class Parser {
 		case err: fatalIfFailed(cast err);
 	}
 
-	static function parseMatchAtStmt(_1, tokens: List<Token>) return switch parseExpr(tokens) {
+	static function parseMatchAtStmt(_1, tokens: Tokens) return switch parseExpr(tokens) {
 		case Success(pattern, Cons(T_If(_2), rest) | Cons(T_LSep(_), Cons(T_If(_2), rest))): switch parseExpr(rest) {
 			case Success(cond, rest2): switch parseThenStmt(rest2) {
 				case Success(then, rest3): Success({span: _1, pattern: pattern, when: Some(new Tuple2(_2, cond)), then: then}, rest3);
@@ -2225,25 +2226,25 @@ class Parser {
 	}
 	
 	
-	static function parseLoopIn(_1, lvar, lvar2, tokens: List<Token>) return tokens._match(
+	static function parseLoopIn(_1, lvar, lvar2, tokens: Tokens) return tokens._match(
 		at([T_Label(inSpan, "in"), ...rest]) => switch parseExpr(rest) {
 			case Success(inExpr, rest2):
 				final cond = rest2._match(
 					at([T_Label(_2, "while"), ...rest3]) => switch parseExpr(rest3) {
 						case Success(expr, rest4):
 							rest2 = rest4;
-							Some(new Tuple2(_2, expr));
+							new Tuple2(_2, expr);
 						case err: return fatalIfFailed(cast err);
 					},
-					_ => None
+					_ => null
 				);
 				
 				final label = rest2._match(
 					at([T_Label(_2, "label"), T_Litsym(_3, name), ...rest3]) => {
 						rest2 = rest3;
-						Some(new Tuple2(_2, new Ident(_3, name)));
+						new Tuple2(_2, new Ident(_3, name));
 					},
-					_ => None
+					_ => null
 				);
 				
 				switch parseBlock(rest2) {
@@ -2285,27 +2286,27 @@ class Parser {
 						at([T_Label(_2, "by"), ...rest3]) => switch parseExpr(rest3) {
 							case Success(expr, rest4):
 								rest2 = rest4;
-								Some(new Tuple2(_2, expr));
+								new Tuple2(_2, expr);
 							case err: return fatalIfFailed(cast err);
 						},
-						_ => None
+						_ => null
 					);
 					final cond = rest2._match(
 						at([T_Label(_2, "while"), ...rest3]) => switch parseExpr(rest3) {
 							case Success(expr, rest4):
 								rest2 = rest4;
-								Some(new Tuple2(_2, expr));
+								new Tuple2(_2, expr);
 							case err: return fatalIfFailed(cast err);
 						},
-						_ => None
+						_ => null
 					);
 					
 					final label = rest2._match(
 						at([T_Label(_2, "label"), T_Litsym(_3, name), ...rest3]) => {
 							rest2 = rest3;
-							Some(new Tuple2(_2, new Ident(_3, name)));
+							new Tuple2(_2, new Ident(_3, name));
 						},
-						_ => None
+						_ => null
 					);
 					
 					switch parseBlock(rest2) {
@@ -2333,7 +2334,7 @@ class Parser {
 
 	/* EXPRESSIONS */
 
-	static function parseBasicExpr(tokens: List<Token>) {
+	static function parseBasicExpr(tokens: Tokens) {
 		return tokens._match(
 			at([_.asSoftName() => T_Name(_1, name), ...rest]) => Success(EName(_1, name), rest),
 			at([T_Litsym(_1, sym), ...rest]) => Success(ELitsym(_1, sym), rest),
@@ -2483,7 +2484,7 @@ class Parser {
 		return Fatal(tokens, Some(rest));
 	}
 
-	static function parseArrayContents(tokens: List<Token>) {
+	static function parseArrayContents(tokens: Tokens) {
 		final exprs = [];
 		var rest = tokens;
 		
@@ -2502,7 +2503,7 @@ class Parser {
 		}
 	}
 
-	static function parseTupleContents(tokens: List<Token>) {
+	static function parseTupleContents(tokens: Tokens) {
 		final exprs = [];
 		var rest = tokens;
 		
@@ -2521,7 +2522,7 @@ class Parser {
 		}
 	}
 
-	static function parseHashContents(tokens: List<Token>) {
+	static function parseHashContents(tokens: Tokens) {
 		final pairs = [];
 		var rest = tokens;
 		
@@ -2544,26 +2545,32 @@ class Parser {
 		}
 	}
 
-	static function parseStrSegs(segs: Array<StrSegment>) {
+	static function parseStrSegs(segs: List<StrSegment>) {
 		final parts: Array<StrPart> = [];
 		var buf = new Buffer();
 
-		for(seg in segs) switch seg {
-			case SStr(str): buf.addString(str);
-			case SChar(char): buf.addChar(char);
-			case SCode(tokens): switch parseFullExpr(tokens) {
-				case Success(expr, Nil):
-					if(buf.length != 0) {
-						parts.push(PStr(buf.toString()));
-						buf = new Buffer();
-					}
+		while(true) segs._match(
+			at([seg, ...rest]) => {
+				segs = rest;
+				switch seg {
+					case SStr(str): buf.addString(str);
+					case SChar(char): buf.addChar(char);
+					case SCode(tokens): switch parseFullExpr(tokens) {
+						case Success(expr, Nil):
+							if(buf.length != 0) {
+								parts.push(PStr(buf.toString()));
+								buf = new Buffer();
+							}
 
-					parts.push(PCode(expr));
-				
-				case Success(_, rest): return Fatal(tokens, Some(rest));
-				case err: return cast err;
-			}
-		}
+							parts.push(PCode(expr));
+						
+						case Success(_, rest): return Fatal(tokens, Some(rest));
+						case err: return cast err;
+					}
+				}
+			},
+			at([]) => break
+		);
 
 		if(buf.length != 0) {
 			parts.push(PStr(buf.toString()));
@@ -2573,7 +2580,7 @@ class Parser {
 	}
 
 
-	static function skipParen(tokens: List<Token>): List<Token> {
+	static function skipParen(tokens: Tokens): Tokens {
 		while(true) tokens._match(
 			at([T_LParen(_) | T_HashLParen(_), ...rest]) => tokens = skipParen(rest).tail(),
 			at([T_LBracket(_) | T_HashLBracket(_), ...rest]) => tokens = skipBracket(rest).tail(),
@@ -2584,7 +2591,7 @@ class Parser {
 		);
 	}
 
-	static function skipBracket(tokens: List<Token>): List<Token> {
+	static function skipBracket(tokens: Tokens): Tokens {
 		while(true) tokens._match(
 			at([T_LParen(_) | T_HashLParen(_), ...rest]) => tokens = skipParen(rest).tail(),
 			at([T_LBracket(_) | T_HashLBracket(_), ...rest]) => tokens = skipBracket(rest).tail(),
@@ -2595,7 +2602,7 @@ class Parser {
 		);
 	}
 
-	static function skipBrace(tokens: List<Token>): List<Token> {
+	static function skipBrace(tokens: Tokens): Tokens {
 		while(true) tokens._match(
 			at([T_LParen(_) | T_HashLParen(_), ...rest]) => tokens = skipParen(rest).tail(),
 			at([T_LBracket(_) | T_HashLBracket(_), ...rest]) => tokens = skipBracket(rest).tail(),
@@ -2607,7 +2614,7 @@ class Parser {
 	}
 
 
-	static function removeNewlines(tokens: List<Token>) {
+	static function removeNewlines(tokens: Tokens) {
 		while(true) tokens._match(
 			at([T_LParen(_) | T_HashLParen(_), ...rest]) => tokens = skipParen(rest),
 			at([T_LBracket(_) | T_HashLBracket(_), ...rest]) => tokens = skipBracket(rest),
@@ -2625,7 +2632,7 @@ class Parser {
 		return true;
 	}
 
-	static function parseParenContents(tokens: List<Token>) {
+	static function parseParenContents(tokens: Tokens) {
 		final exprs = [];
 		var rest = tokens;
 
@@ -2701,7 +2708,7 @@ class Parser {
 	}
 
 
-	static function parseMultiMsgLabels(tokens: List<Token>) {
+	static function parseMultiMsgLabels(tokens: Tokens) {
 		var rest = tokens;
 		final first = tokens._match(
 			at([T_Label(_1, label), ...rest2]) => switch parseFullExpr(rest2) {
@@ -2742,7 +2749,7 @@ class Parser {
 		}
 	}
 
-	static function finishExprMsg(tokens: List<Token>): ParseResult<{msg: Message<Expr>, end: Span}> return tokens._match(
+	static function finishExprMsg(tokens: Tokens): ParseResult<{msg: Message<Expr>, end: Span}> return tokens._match(
 		at([T_TypeName(_, _) | T_Wildcard(_), ..._]) => switch parseType(tokens) {
 			case Success(type, Cons(T_LSep(_), rest) | rest): rest._match(
 				at([T_Label(_, _) | T_Punned(_, _), ..._]) => switch parseMultiMsgLabels(rest) {
@@ -2788,6 +2795,10 @@ class Parser {
 				at([T_LBracket(begin), ...rest2]) => switch finishTypeMsg(rest2) {
 					case Success({msg: msg, end: end}, rest3):
 						{expr: ETypeMessage(type, begin, msg, end), rest: rest3};
+					case err: return fatalIfBad(tokens, cast err);
+				},
+				at([T_Minus(_), T_Int(_, _, _) | T_Hex(_, _) | T_Dec(_, _, _, _), ..._]) => switch parseExpr2(rest) {
+					case Success(expr, rest2): {expr: ELiteralCtor(type, expr), rest: rest2};
 					case err: return fatalIfBad(tokens, cast err);
 				},
 				at([
@@ -2848,7 +2859,7 @@ class Parser {
 		case err: cast err;
 	}
 
-	static function parseExpr2(tokens: List<Token>) return tokens._match(
+	static function parseExpr2(tokens: Tokens) return tokens._match(
 		at([T_Minus(_1), ...rest]) => parseExpr2Rest(_1, PNeg, rest),
 		at([T_PlusPlus(_1), ...rest]) => parseExpr2Rest(_1, PIncr, rest),
 		at([T_MinusMinus(_1), ...rest]) => parseExpr2Rest(_1, PDecr, rest),
@@ -2858,7 +2869,7 @@ class Parser {
 	);
 
 	
-	static function parseExpr3(tokens: List<Token>) return tokens._match(
+	static function parseExpr3(tokens: Tokens) return tokens._match(
 		at([T_Tag(_1, tag), ...rest]) => switch parseExpr3(rest) {
 			case Success(expr, rest2): Success(ETag(_1, tag, expr), rest2);
 			case err: fatalIfBad(rest, err);
@@ -2867,7 +2878,7 @@ class Parser {
 	);
 
 
-	static function parseExpr4CascadeContents(_1, level, tokens: List<Token>): ParseResult<Cascade<Expr>> {
+	static function parseExpr4CascadeContents(_1, level, tokens: Tokens): ParseResult<Cascade<Expr>> {
 		var rest = tokens;
 		
 		final kind: CascadeKind<Expr> = tokens._match(
@@ -2940,7 +2951,7 @@ class Parser {
 		}, rest);
 	}
 
-	static function parseExpr4TypeCascadeContents(_1, level, tokens: List<Token>): ParseResult<Cascade<Type>> {
+	static function parseExpr4TypeCascadeContents(_1, level, tokens: Tokens): ParseResult<Cascade<Type>> {
 		var rest = tokens;
 		
 		final kind: CascadeKind<Type> = tokens._match(
@@ -3302,7 +3313,7 @@ class Parser {
 	}
 
 
-	static function parseExpr13(tokens: List<Token>) return tokens._match(
+	static function parseExpr13(tokens: Tokens) return tokens._match(
 		at([T_DotDotDot(_1), ...rest]) => switch parseExpr12(rest) {
 			case Success(expr, rest2): Success(EPrefix(_1, PSpread, expr), rest2);
 			case err: cast err;
@@ -3311,7 +3322,7 @@ class Parser {
 	);
 
 
-	static function parseFullExpr(tokens: List<Token>) return switch parseExpr(tokens) {
+	static function parseFullExpr(tokens: Tokens) return switch parseExpr(tokens) {
 		case Success(expr = EType(type), rest): rest._match(
 			at([T_LSep(_), T_Cascade(_1, 1), ...rest2]) => {
 				final cascades = [switch parseTypeCascadeContents(_1, 1, rest2) {
@@ -3363,7 +3374,7 @@ class Parser {
 		case err: err;
 	}
 
-	static function parseExprCascadeContents(_1, level, tokens: List<Token>): ParseResult<Cascade<Expr>> {
+	static function parseExprCascadeContents(_1, level, tokens: Tokens): ParseResult<Cascade<Expr>> {
 		var rest = tokens;
 		
 		final kind: CascadeKind<Expr> = tokens._match(
@@ -3436,7 +3447,7 @@ class Parser {
 		}, rest);
 	}
 
-	static function parseTypeCascadeContents(_1, level, tokens: List<Token>): ParseResult<Cascade<Type>> {
+	static function parseTypeCascadeContents(_1, level, tokens: Tokens): ParseResult<Cascade<Type>> {
 		var rest = tokens;
 		
 		final kind: CascadeKind<Type> = tokens._match(
@@ -3533,7 +3544,7 @@ class Parser {
 
 	/* MISC */
 	
-	static function trimTokens(tokens: List<Token>) {
+	/*static function trimTokens(tokens: Tokens) {
 		final ogTokens = tokens;
 
 		while(true) tokens = tokens._match(
@@ -3572,7 +3583,7 @@ class Parser {
 			at([_, ...rest]) => rest,
 			at([]) => return ogTokens
 		);
-	}
+	}*/
 
 	
 	static inline function isAnySep(token: Token) return token.match(T_LSep(_) | T_CSep(_) | T_Comma(_));
