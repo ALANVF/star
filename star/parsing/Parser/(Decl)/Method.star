@@ -15,7 +15,7 @@ class Method of Decl, Generic {
 	}
 
 	my spec (Delims[Spec])
-	my return (Maybe[Type])
+	my ret (Maybe[Type])
 	my attrs (Attrs)
 	my body (Maybe[Stmt.Body])
 

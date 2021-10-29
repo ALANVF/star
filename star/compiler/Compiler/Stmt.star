@@ -4,7 +4,7 @@ kind Cond of Expr {
 	on [form: (Int) = 0] (Str) {
 		match this {
 			at This[varDecl: my d] => return d[:form]
-			else => return this[Super :form]
+			else => return this[Super[Expr] :form]
 		}
 	}
 }
@@ -79,7 +79,7 @@ kind Stmt {
 				-> [add: stmt[:form]]
 			}
 			
-			at This[case: my expr do: my stmt] {
+			at This[case: my expr stmt: my stmt] {
 				return "case \(expr[:form]): \(stmt[form: indent'])"
 			}
 			

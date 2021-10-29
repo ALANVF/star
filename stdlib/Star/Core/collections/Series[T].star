@@ -138,6 +138,11 @@ class Series[T] of Ordered, Iterable[T] {
 	}
 
 
+	;== Checking
+
+	operator `?` (Bool) => return buffer.length - offset > 0
+
+
 	;== Iterating
 
 	on [Iterator[T]] is inline {
@@ -165,10 +170,10 @@ class Series[T] of Ordered, Iterable[T] {
 		if this[isTail] || values.length > this.length {
 			return Maybe[none]
 		} else {
-			for my i from: 0 to: this.length - values.length {
+			for my i from: 0 to: this.length - values.length label: `outer` {
 				for my j from: 0 to: values.length {
 					if this[at: i + j] != values[at: j] {
-						next 2
+						next `outer`
 					}
 				}
 

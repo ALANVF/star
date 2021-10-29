@@ -8,6 +8,7 @@ class Category of Decl, Generic;[, Parametric] {
 	my path (Type)
 	my type (Maybe[Type])
 	my attrs (Attrs)
+	my body (Body)
 
 	on [displayName] (Str) is getter {
 		return "category"

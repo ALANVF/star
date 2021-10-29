@@ -1,4 +1,4 @@
-kind Attrs is flags {
+kind Attrs (Str) is flags {
 	has none
 	has friend => "friend"
 	has inline => "inline"
@@ -12,14 +12,14 @@ kind Attrs is flags {
 	has extern => "extern"
 	
 	on [form] (Str) {
-		return this[Array[This]][joinWith: " "]
+		return this[Array[Str]][joinWith: " "]
 	}
 	
 	on [formLeading] (Str) {
-		return this[Array[This]][collect: "\($.0) "][join]
+		return this[Array[Str]][collect: "\($.0) "][join]
 	}
 	
 	on [formTrailing] (Str) {
-		return this[Array[This]][collect: " \($.0)"][join]
+		return this[Array[Str]][collect: " \($.0)"][join]
 	}
 }

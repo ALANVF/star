@@ -70,7 +70,7 @@ class Lexer {
 		"macro" => Token[macro: $.0]
 	)
 
-	my input (SourceFile)
+	my source (SourceFile)
 	my reader (Reader)
 	my begin = Pos[new]
 	
@@ -1219,7 +1219,7 @@ class Lexer {
 
 category Lexer for Tokens is hidden {
 	on [retoken] {
-		match tokens {
+		match this {
 			at #[
 				(
 					|| Token[lParen]
@@ -1241,7 +1241,7 @@ category Lexer for Tokens is hidden {
 				Token[rParen] || Token[rBracket] || Token[rBrace]
 				...my rest
 			] {
-				tokens[removeAt: 0]
+				this[removeAt: 0]
 				rest[Lexer retoken]
 			}
 

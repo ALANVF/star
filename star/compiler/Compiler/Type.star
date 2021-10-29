@@ -16,7 +16,7 @@ kind Type {
 	has [longDouble]
 	
 	has [char]
-	has [chat8_t]
+	has [char8_t]
 	
 	has [unsigned: (Type)]
 	has [signed: (Type)]
@@ -58,6 +58,26 @@ kind Type {
 	has [pack: (Type)]
 	
 	has [expr: (Expr;[.Const])]
+
+	
+	on [fromType: type (Typer.Type) in: cmp (Compiler)] (This) is static {
+		match type {
+			at Typer.Type[depth: _ lookup: my path source: _] => throw "todo"
+			at Typer.Type[type: my base lookup: my lookup] => throw "todo"
+			at Typer.Type[decl: my decl] => return This[path: cmp[getFullPath: decl]]
+			at Typer.Type[decl: my decl params: my params ctx: my ctx] => throw "todo"
+			at Typer.Type[this: _] => This[path: TypePath[named: "$This"]]
+			at Typer.Type[blank] => throw "todo"
+			at Typer.Type[types: my types] => throw "todo"
+			at Typer.Type[type: Typer.Type[this: _] args: my args] {
+				return This[path: TypePath[named: "$This" of: args[collect: Type[fromType: $.0 in: cmp]]]]
+			}
+			at Typer.Type[type: my type' args: my args] => throw "todo"
+			at Typer.Type[typevar: my typevar] => throw "todo"
+			at Typer.Type[type: my type' unit: _] => return This[fromType: type' in: cmp]
+		}
+	}
+
 	
 	on [form] (Str) {
 		match this {
@@ -90,7 +110,7 @@ kind Type {
 			at This[lval: my t] => return t[form] + "&"
 			at This[rval: my t] => return t[form] + "&&"
 			at This[array: my t] => return t[form] + "[]"
-			at This[array: my t size: my s] => return t[form]+"[\(size[form])]"
+			at This[array: my t size: my s] => return t[form]+"[\(s[form])]"
 			
 			at This[return: my r params: my p] => return r[form]+"(\(p[Type form]))"
 			
@@ -118,7 +138,7 @@ kind Type {
 			
 			at This[pack: my t] => return t[form] + "..."
 			
-			at This[expr: my e] => return expr[form]
+			at This[expr: my e] => return e[form]
 		}
 	}
 }

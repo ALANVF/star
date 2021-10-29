@@ -131,7 +131,7 @@ kind Expr {
 					}
 				}
 				-> [add: #" "]
-				-> [add: body[:form]]
+				-> [add: block[:form]]
 			}
 			
 			at This[placement: Maybe[none] constraint: Maybe[none] new: my type hasTypeParens: my parens ctor: my ctor] {
@@ -193,7 +193,7 @@ kind Expr {
 			
 			at This[typeid: my expr] => return "typeid(" + expr[form] + ")"
 			
-			at This[raw: my code] => return raw[new]
+			at This[raw: my code] => return code[new]
 		}
 	}
 }

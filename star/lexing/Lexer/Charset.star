@@ -5,7 +5,7 @@ class Charset is hidden Lexer {
 	my size (Int) is hidden
 
 	init [new: size (Int)] {
-		bytes = Array[fill: size with: #u8 0]
+		bytes = Array[fill: size with: UInt8 0]
 		this.size = size
 	}
 
@@ -13,7 +13,7 @@ class Charset is hidden Lexer {
 		on [max] (Char)
 	}
 	init [new: chars (Chars)] {
-		this[This new: (chars[max][Int] >> 3) + 1]
+		#init_this This[new: (chars[max][Int] >> 3) + 1]
 
 		for my char in: chars {
 			bytes[at: char[Int] >> 3] = char[Charset UInt8]
@@ -53,6 +53,8 @@ class Charset is hidden Lexer {
 	}
 
 	on [remove: char (Char)] {
+		my i = char[Int] >> 3
+		
 		if i < size {
 			bytes[at: i] &= ~char[Charset UInt8]
 		}
@@ -101,6 +103,6 @@ class Charset is hidden Lexer {
 
 category Charset for Char is hidden {
 	on [UInt8] {
-		return #u8 1 << (#u8 7 - (this[UInt8] & #u8 7))
+		return UInt8 1 << (UInt8 7 - (this[UInt8] & UInt8 7))
 	}
 }

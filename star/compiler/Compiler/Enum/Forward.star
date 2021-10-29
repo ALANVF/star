@@ -2,7 +2,7 @@ class Forward of TypeDecl {
 	my base (Maybe[Type])
 	my isEnumClass = false
 	
-	on [form: indent (Int) = 0] (Str) {
+	on [form: (Int) = 0] (Str) {
 		my buf = ""
 		
 		match template at Maybe[the: my template'] {

@@ -1,4 +1,4 @@
-kind Suffix {
+kind Suffix (Str) {
 	has incr => "++"
 	has decr => "--"
 	has spread => "..."

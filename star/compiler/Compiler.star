@@ -85,7 +85,7 @@ class Compiler {
 		]]
 	]
 	
-	on [getFullPath: lookup (Typer.LookupType)] (TypePath) {
+	on [getFullPath: lookup (Typer.TypeLookup)] (TypePath) {
 		match lookup {
 			at Typer.File[dir: my unit (Typer.Unit)] {
 				my names = TypePath #[]
@@ -108,8 +108,8 @@ class Compiler {
 			at my type (Typer.TypeDecl) {
 				return this[getFullPath: type.lookup]
 				-> [add: #{
-					type.name.name
-					type.params[collect: $0[collect: Type[fromType: this, $.0]]]
+					type.name
+					type.params[collect: $0[collect: Type[fromType: $.0 in: this]]]
 				}]
 			}
 			

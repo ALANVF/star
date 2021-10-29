@@ -1,4 +1,4 @@
-alias MemberInit (VarInit)
+;alias MemberInit (VarInit)
 
 class Member {
 	my template = Maybe[Template][none]
@@ -7,7 +7,7 @@ class Member {
 	my path = Maybe[TypePath][none]
 	my name (Str)
 	my bits = Maybe[Expr][none]
-	my init = Init[none]
+	my init = VarInit[none]
 	
 	on [form: (Int) = 0] (Str) {
 		my buf = ""

@@ -10,7 +10,7 @@ kind Req of Stmt {
 			at This[compound: my expr requires: my type] => return "{ \(expr[:form]) } -> \(type[form]);"
 			at This[typename: my type] => return "typename \(type[form]);"
 			at This[requires: my req] => return req[:form]
-			else => return this[Super :form]
+			else => return this[Super[Stmt] :form]
 		}
 	}
 }

@@ -3,8 +3,8 @@ alias TypePath (Array[Tuple[Str, Maybe[Array[Type]]]]) {
 		return This #[#{name, Maybe[none]}]
 	}
 	
-	on [named: name (Str) of: params (Array[Type])] (This) is static is inline {
-		return This #[#{name, Maybe[the: params]}]
+	on [named: name (Str) of: args (Array[Type])] (This) is static is inline {
+		return This #[#{name, Maybe[the: args]}]
 	}
 	
 	on [form] (Str) {

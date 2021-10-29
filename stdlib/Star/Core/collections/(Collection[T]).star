@@ -14,6 +14,14 @@ protocol Collection[T] of Iterable[T] {
 
 	on [add: value (T)] (T)
 
+	on [maybeAdd: value (Maybe[T])] (Maybe[T]) {
+		match value at Maybe[the: my value'] {
+			this[add: value']
+		}
+
+		return value
+	}
+
 	type Iter of Iterable[T]
 	on [addAll: values (Iter)] (Iter) {
 		for my value in: values {
@@ -132,8 +140,8 @@ protocol Collection[T] of Iterable[T] {
 	;== Checking
 
 	on [contains: value (T)] (Bool) {
-		for my value in: this {
-			if value ?= value {
+		for my value' in: this {
+			if value ?= value' {
 				return true
 			}
 		}
@@ -358,4 +366,17 @@ category C for Collection[T] {
 	
 	on [removeWhere: func (Func[Bool, T]) times: (Int)] (C)
 	on [removeAllWhere: func (Func[Bool, T])] (C)
+
+
+	;== Collecting
+
+	on [collect: func (Func[U, T])] (C) {
+		my result = C[new]
+		
+		for my value in: this {
+			result[add: func[call: value]]
+		}
+
+		return result
+	}
 }

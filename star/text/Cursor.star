@@ -18,7 +18,7 @@ class Cursor {
 			at #"\r" {
 				line++
 				column = 0
-				lineWasCR ||= true
+				lastWasCR ||= true
 			}
 
 			at #"\n" {

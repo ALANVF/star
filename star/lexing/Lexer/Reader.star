@@ -18,7 +18,7 @@ class Reader of Series[Char] is hidden Lexer {
 	}
 
 	on [at: index (Int) peek: charset (Charset)] (Bool) {
-		return offset + index < length && charset[has: this[at: index]]
+		return offset + index < this.length && charset[has: this[at: index]]
 	}
 
 
@@ -27,7 +27,7 @@ class Reader of Series[Char] is hidden Lexer {
 	}
 
 	on [peekNot: str (Str)] (Bool) is inline {
-		return !this[peek: char]
+		return !this[peek: str]
 	}
 
 	on [peekNot: charset (Charset)] (Bool) {
@@ -35,7 +35,7 @@ class Reader of Series[Char] is hidden Lexer {
 	}
 
 	on [at: index (Int) peekNot: charset (Charset)] (Bool) {
-		return offset + index < length && !charset[has: this[at: index]]
+		return offset + index < this.length && !charset[has: this[at: index]]
 	}
 	
 
@@ -79,7 +79,7 @@ class Reader of Series[Char] is hidden Lexer {
 			}
 		}
 
-		return Maybe[None]
+		return Maybe[none]
 	}
 
 	on [next] (This) {

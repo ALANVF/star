@@ -61,12 +61,12 @@ category InPlace for Linked.List[T] {
 
 	on [reverse] {
 		if length > 1 {
-			my link = head.next
-			my last = tail.prev
+			my link = head.nextValue
+			my last = tail.prevValue
 			while last != link {
 				last.prev.next = tail
 				link[insertPrev: last]
-				last = tail.prev
+				last = tail.prevValue
 			}
 		}
 	}

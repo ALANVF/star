@@ -1,5 +1,5 @@
 category Expr for Str {
-	my escape_names is static is hidden = Set #[
+	my escape_names is static is hidden = Set[Str] #[
 		"alignas", "alignof", "and", "and_eq", "asm", "atomic_cancel", "atomic_commit"
 		"atomic_noexcept", "auto"
 		

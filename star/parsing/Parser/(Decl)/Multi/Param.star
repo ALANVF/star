@@ -43,3 +43,5 @@ kind Param {
 		}
 	}
 }
+
+alias Params = Array[Param]

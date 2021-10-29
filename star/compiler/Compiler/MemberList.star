@@ -14,7 +14,7 @@ class MemberList {
 				-> [add: bits[:form]]
 			}
 			
-			buf[add: init[:form]]
+			buf[add: init[form]]
 			
 			return buf
 		}

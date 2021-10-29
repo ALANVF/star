@@ -1,6 +1,6 @@
 use #[Int, Bool, Ordered, Comparable] from: Core
 
-type T if T != Void
+type T ;if T != Void
 class Ptr[T] of Ordered is native[repr: `ptr` elem: T] {
 	on [new] (This) is static {
 		return This[new: 0]
@@ -67,11 +67,11 @@ class Ptr[T] of Ordered is native[repr: `ptr` elem: T] {
 	}
 
 
-	on [Ptr[Void]] is native `cast_ptr_vptr`
+	;on [Ptr[Void]] is native `cast_ptr_vptr`
 	on [UInt64] is native `ptr_addr`
 }
 
-class Ptr[Void] of Comparable is native[repr: `voidptr`] {
+;[class Ptr[Void] of Comparable is native[repr: `voidptr`] {
 	operator `<` [other (Ptr[Void])] (Bool) {
 		return this[UInt64] < other[UInt64]
 	}
@@ -92,4 +92,4 @@ class Ptr[Void] of Comparable is native[repr: `voidptr`] {
 	type T if T != Void
 	on [Ptr[T]] is native `cast_vptr_ptr`
 	on [UInt64] is native `ptr_addr`
-}
+}]

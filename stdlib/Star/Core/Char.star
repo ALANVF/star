@@ -1,6 +1,6 @@
 use Native
 
-class Char of Ordered is native[repr: `int` bits: 8 signed: true] is strong {
+class Char of Ordered is native[repr: `int` bits: 8 signed: false] is strong {
 	;== Stepping
 	
 	;-- what to do about underflow/overflow...?

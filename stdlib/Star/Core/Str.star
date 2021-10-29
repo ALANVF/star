@@ -5,7 +5,7 @@ use Native
 ]
 
 class Str of Values[Char], Ordered is strong {
-	my buffer is hidden
+	my buffer (Ptr[Char]) is hidden
 	my length is getter
 	my capacity is hidden
 
@@ -32,7 +32,7 @@ class Str of Values[Char], Ordered is strong {
 	;== Creating
 
 	init [new: char (Char)] {
-		buffer = Ptr[new: 1]
+		buffer = Ptr[Char][new: 1]
 		-> [at: 0] = char
 
 		length = capacity = 1
@@ -41,7 +41,7 @@ class Str of Values[Char], Ordered is strong {
 	init [new: chars (Values[Char])] {
 		my numChars = chars.length
 
-		buffer = Ptr[new: numChars]
+		buffer = Ptr[Char][new: numChars]
 		length = capacity = numChars
 
 		for my i from: 0 upto: numChars {
@@ -50,7 +50,7 @@ class Str of Values[Char], Ordered is strong {
 	}
 
 	init [new: chars (Iterable[Char])] {
-		buffer = Ptr[new: 5]
+		buffer = Ptr[Char][new: 5]
 		length = 0
 		capacity = 5
 
@@ -183,6 +183,25 @@ class Str of Values[Char], Ordered is strong {
 
 		return value
 	}
+
+
+	on [maybeAdd: value (Maybe[Str])] (Maybe[Str]) {
+		match value at Maybe[the: my str] {
+			this[add: str]
+		}
+
+		return value
+	}
+
+	type T {on [Str]}
+	on [maybeAdd: value (Maybe[T])] (Maybe[T]) {
+		match value at Maybe[the: my value'] {
+			this[add: value']
+		}
+
+		return value
+	}
+
 	
 	on [addAll: str (Str)] (Str) {
 		return this[add: str]
@@ -343,6 +362,12 @@ class Str of Values[Char], Ordered is strong {
 		-> [add: this]
 		-> [add: char]
 	}
+
+
+	;== Converting
+
+	on [Int] => return Int[Power fromStr: this includesPrefix: false] ;@@ TODO: should allow hexdecimal as well?
+	on [Dec]
 }
 
 ;[

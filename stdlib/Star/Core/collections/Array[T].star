@@ -152,13 +152,74 @@ class Array[T] of Values[T] {
 
 		return result
 	}
+
+
+	;== Zipping
+
+	type U
+	on [zip: other (Array[U])] (Array[Tuple[T, U]]) {
+		if length != other.length {
+			throw "Zip error: arrays must be of the same length!"
+		}
+
+		my result = #[]
+
+		for my i from: 0 upto: length {
+			result[add: #{buffer[at: i], other[Unsafe at: i]}]
+		}
+
+		return result
+	}
+
+	; ...
+
+	type U
+	on [zip: other (Array[U]) all: func (Func[Bool, T, U])] (Bool) {
+		if length != other.length {
+			throw "Zip error: arrays must be of the same length!"
+		}
+
+		for my i from: 0 upto: length {
+			if !func[call: buffer[at: i], other[Unsafe at: i]] {
+				return false
+			}
+		}
+
+		return true
+	}
+
+	; ...
+
+
+	;== Joining
+
+	on [join] (Str) {
+		return ""
+		-> [addAll: this]
+	}
+
+	on [joinWith: sep (Str)] (Str) {
+		my result = ""
+
+		if length > 0 {
+			result[add: buffer[at: 0]]
+
+			for my i from: 1 upto: length {
+				result
+				-> [add: sep]
+				-> [add: buffer[at: i]]
+			}
+		}
+
+		return result
+	}
 	
 	
 	;== Converting
 	
 	type T' if Power.Castable[T, T']?
-	on [Array[T']] {
-		my result = Array[new: length]
+	on [This[T']] {
+		my result = This[T'][new: length]
 		
 		for my i from: 0 upto: length {
 			result[add: buffer[at: i][T']]

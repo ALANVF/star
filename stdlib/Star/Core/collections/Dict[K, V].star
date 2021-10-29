@@ -31,7 +31,7 @@ class DictIterator[K, V] of Iterator[K, V] is hidden {
 type K
 type V
 class Dict[K, V] of Mapped[K, V] is friend #[DictIterator[K], DictIterator[K, V]] {
-	class Pair[K, V] is hidden {
+	class Pair is hidden {
 		my key (K)
 		my value (V)
 	}

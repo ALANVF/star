@@ -20,7 +20,7 @@ category Power for Int {
 
 	on [
 		fromStr: str (Str)
-		withBase: base (Int)
+		withBase: base (Int) = 10
 		includesPrefix: (Bool) = true
 		usesUnifiedPrefix: (Bool) = false
 	] (Int) is static {

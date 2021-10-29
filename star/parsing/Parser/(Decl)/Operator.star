@@ -11,7 +11,7 @@ class Operator of Decl, Generic {
 
 	my symbol (Ident)
 	my spec (Maybe[Delims[Spec]])
-	my return (Maybe[Type])
+	my ret (Maybe[Type])
 	my attrs (Attrs)
 	my body (Maybe[Stmt.Body])
 

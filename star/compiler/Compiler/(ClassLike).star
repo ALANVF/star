@@ -17,7 +17,7 @@ protocol ClassLike of TypeDecl {
 		
 		match template at Maybe[the: my template'] {
 			buf
-			-> [add: template'[:form]]
+			-> [add: template'[form: indent]]
 			-> [add: #" "]
 		}
 		

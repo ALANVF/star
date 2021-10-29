@@ -1,6 +1,6 @@
 class Method of NamedMethod {
 	my params (Array[Param])
-	my return (Type)
+	my ret (Type)
 	my trailingRet = false
 	my hasVarargs = false
 	
