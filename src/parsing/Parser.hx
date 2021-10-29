@@ -2586,6 +2586,11 @@ class Parser {
 			at([T_LBracket(_) | T_HashLBracket(_), ...rest]) => tokens = skipBracket(rest).tail(),
 			at([T_LBrace(_) | T_HashLBrace(_), ...rest]) => tokens = skipBrace(rest).tail(),
 			at([T_RParen(_), ..._]) => return tokens,
+			at([_, T_LSep(_), T_Cascade(_, _), ...rest]) => tokens = rest,
+			at([_, T_LSep(_), ...rest]) => {
+				tokens.setTail(rest);
+				tokens = rest;
+			},
 			at([_, ...rest]) => tokens = rest,
 			at([]) => throw "Error!"
 		);
@@ -2616,7 +2621,17 @@ class Parser {
 
 	static function removeNewlines(tokens: Tokens) {
 		while(true) tokens._match(
-			at([T_LParen(_) | T_HashLParen(_), ...rest]) => tokens = skipParen(rest),
+			at([T_LParen(_) | T_HashLParen(_), ...rest]) => {
+				tokens = skipParen(rest);
+				tokens._match(
+					at([_, T_LSep(_), ...rest]) => {
+						tokens.setTail(rest);
+						tokens = rest;
+					},
+					at([_, ...rest]) => tokens = rest,
+					_ => throw "bad"
+				);
+			},
 			at([T_LBracket(_) | T_HashLBracket(_), ...rest]) => tokens = skipBracket(rest),
 			at([T_LBrace(_) | T_HashLBrace(_), ...rest]) => tokens = skipBrace(rest),
 			at([T_RParen(_), ..._]) => break,
@@ -2711,7 +2726,7 @@ class Parser {
 	static function parseMultiMsgLabels(tokens: Tokens) {
 		var rest = tokens;
 		final first = tokens._match(
-			at([T_Label(_1, label), ...rest2]) => switch parseFullExpr(rest2) {
+			at([T_Label(_1, label), T_LSep(_), ...rest2] | [T_Label(_1, label), ...rest2]) => switch parseFullExpr(rest2) {
 				case Success(expr, rest3):
 					rest = rest3;
 					Label.Named(_1, label, expr);
@@ -3080,32 +3095,32 @@ class Parser {
 
 	static function parseExpr6(tokens) return switch parseExpr5(tokens) {
 		case Success(left, rest):
-			while(true) rest._match(
-				at([T_Star(_1), ...rest2]) => switch parseExpr5(rest2) {
+			rest._match(
+				at([T_Star(_1), ...rest2]) => switch parseExpr6(rest2) {
 					case Success(right, rest3):
 						left = EInfix(left, _1, Times, right);
 						rest = rest3;
 					case err: return fatalIfBad(rest, err);
 				},
-				at([T_Div(_1), ...rest2]) => switch parseExpr5(rest2) {
+				at([T_Div(_1), ...rest2]) => switch parseExpr6(rest2) {
 					case Success(right, rest3):
 						left = EInfix(left, _1, Div, right);
 						rest = rest3;
 					case err: return fatalIfBad(rest, err);
 				},
-				at([T_DivDiv(_1), ...rest2]) => switch parseExpr5(rest2) {
+				at([T_DivDiv(_1), ...rest2]) => switch parseExpr6(rest2) {
 					case Success(right, rest3):
 						left = EInfix(left, _1, IntDiv, right);
 						rest = rest3;
 					case err: return fatalIfBad(rest, err);
 				},
-				at([T_Mod(_1), ...rest2]) => switch parseExpr5(rest2) {
+				at([T_Mod(_1), ...rest2]) => switch parseExpr6(rest2) {
 					case Success(right, rest3):
 						left = EInfix(left, _1, Mod, right);
 						rest = rest3;
 					case err: return fatalIfBad(rest, err);
 				},
-				_ => break
+				_ => {}
 			);
 
 			Success(left, rest);
@@ -3116,20 +3131,20 @@ class Parser {
 
 	static function parseExpr7(tokens) return switch parseExpr6(tokens) {
 		case Success(left, rest):
-			while(true) rest._match(
-				at([T_Plus(_1), ...rest2]) => switch parseExpr6(rest2) {
+			rest._match(
+				at([T_Plus(_1), ...rest2]) => switch parseExpr7(rest2) {
 					case Success(right, rest3):
 						left = EInfix(left, _1, Plus, right);
 						rest = rest3;
 					case err: return fatalIfBad(rest, err);
 				},
-				at([T_Minus(_1), ...rest2]) => switch parseExpr6(rest2) {
+				at([T_Minus(_1), ...rest2]) => switch parseExpr7(rest2) {
 					case Success(right, rest3):
 						left = EInfix(left, _1, Minus, right);
 						rest = rest3;
 					case err: return fatalIfBad(rest, err);
 				},
-				_ => break
+				_ => {}
 			);
 
 			Success(left, rest);
@@ -3140,38 +3155,38 @@ class Parser {
 
 	static function parseExpr8(tokens) return switch parseExpr7(tokens) {
 		case Success(left, rest):
-			while(true) rest._match(
-				at([T_And(_1), ...rest2]) => switch parseExpr7(rest2) {
+			rest._match(
+				at([T_And(_1), ...rest2]) => switch parseExpr8(rest2) {
 					case Success(right, rest3):
 						left = EInfix(left, _1, BitAnd, right);
 						rest = rest3;
 					case err: return fatalIfBad(rest, err);
 				},
-				at([T_Bar(_1), ...rest2]) => switch parseExpr7(rest2) {
+				at([T_Bar(_1), ...rest2]) => switch parseExpr8(rest2) {
 					case Success(right, rest3):
 						left = EInfix(left, _1, BitOr, right);
 						rest = rest3;
 					case err: return fatalIfBad(rest, err);
 				},
-				at([T_Caret(_1), ...rest2]) => switch parseExpr7(rest2) {
+				at([T_Caret(_1), ...rest2]) => switch parseExpr8(rest2) {
 					case Success(right, rest3):
 						left = EInfix(left, _1, BitXor, right);
 						rest = rest3;
 					case err: return fatalIfBad(rest, err);
 				},
-				at([T_LtLt(_1), ...rest2]) => switch parseExpr7(rest2) {
+				at([T_LtLt(_1), ...rest2]) => switch parseExpr8(rest2) {
 					case Success(right, rest3):
 						left = EInfix(left, _1, Shl, right);
 						rest = rest3;
 					case err: return fatalIfBad(rest, err);
 				},
-				at([T_GtGt(_1), ...rest2]) => switch parseExpr7(rest2) {
+				at([T_GtGt(_1), ...rest2]) => switch parseExpr8(rest2) {
 					case Success(right, rest3):
 						left = EInfix(left, _1, Shr, right);
 						rest = rest3;
 					case err: return fatalIfBad(rest, err);
 				},
-				_ => break
+				_ => {}
 			);
 
 			Success(left, rest);
@@ -3200,44 +3215,44 @@ class Parser {
 
 	static function parseExpr10(tokens) return switch parseExpr9(tokens) {
 		case Success(left, rest):
-			while(true) rest._match(
-				at([T_QuestionEq(_1), ...rest2]) => switch parseExpr9(rest2) {
+			rest._match(
+				at([T_QuestionEq(_1), ...rest2]) => switch parseExpr10(rest2) {
 					case Success(right, rest3):
 						left = EInfix(left, _1, Eq, right);
 						rest = rest3;
 					case err: return fatalIfBad(rest, err);
 				},
-				at([T_BangEq(_1), ...rest2]) => switch parseExpr9(rest2) {
+				at([T_BangEq(_1), ...rest2]) => switch parseExpr10(rest2) {
 					case Success(right, rest3):
 						left = EInfix(left, _1, Ne, right);
 						rest = rest3;
 					case err: return fatalIfBad(rest, err);
 				},
-				at([T_Gt(_1), ...rest2]) => switch parseExpr9(rest2) {
+				at([T_Gt(_1), ...rest2]) => switch parseExpr10(rest2) {
 					case Success(right, rest3):
 						left = EInfix(left, _1, Gt, right);
 						rest = rest3;
 					case err: return fatalIfBad(rest, err);
 				},
-				at([T_GtEq(_1), ...rest2]) => switch parseExpr9(rest2) {
+				at([T_GtEq(_1), ...rest2]) => switch parseExpr10(rest2) {
 					case Success(right, rest3):
 						left = EInfix(left, _1, Ge, right);
 						rest = rest3;
 					case err: return fatalIfBad(rest, err);
 				},
-				at([T_Lt(_1), ...rest2]) => switch parseExpr9(rest2) {
+				at([T_Lt(_1), ...rest2]) => switch parseExpr10(rest2) {
 					case Success(right, rest3):
 						left = EInfix(left, _1, Lt, right);
 						rest = rest3;
 					case err: return fatalIfBad(rest, err);
 				},
-				at([T_LtEq(_1), ...rest2]) => switch parseExpr9(rest2) {
+				at([T_LtEq(_1), ...rest2]) => switch parseExpr10(rest2) {
 					case Success(right, rest3):
 						left = EInfix(left, _1, Le, right);
 						rest = rest3;
 					case err: return fatalIfBad(rest, err);
 				},
-				_ => break
+				_ => {}
 			);
 
 			Success(left, rest);
@@ -3248,32 +3263,32 @@ class Parser {
 
 	static function parseExpr11(tokens) return switch parseExpr10(tokens) {
 		case Success(left, rest):
-			while(true) rest._match(
-				at([T_AndAnd(_1), ...rest2]) => switch parseExpr10(rest2) {
+			rest._match(
+				at([T_AndAnd(_1), ...rest2]) => switch parseExpr11(rest2) {
 					case Success(right, rest3):
 						left = EInfix(left, _1, And, right);
 						rest = rest3;
 					case err: return fatalIfBad(rest, err);
 				},
-				at([T_BarBar(_1), ...rest2]) => switch parseExpr10(rest2) {
+				at([T_BarBar(_1), ...rest2]) => switch parseExpr11(rest2) {
 					case Success(right, rest3):
 						left = EInfix(left, _1, Or, right);
 						rest = rest3;
 					case err: return fatalIfBad(rest, err);
 				},
-				at([T_CaretCaret(_1), ...rest2]) => switch parseExpr10(rest2) {
+				at([T_CaretCaret(_1), ...rest2]) => switch parseExpr11(rest2) {
 					case Success(right, rest3):
 						left = EInfix(left, _1, Xor, right);
 						rest = rest3;
 					case err: return fatalIfBad(rest, err);
 				},
-				at([T_BangBang(_1), ...rest2]) => switch parseExpr10(rest2) {
+				at([T_BangBang(_1), ...rest2]) => switch parseExpr11(rest2) {
 					case Success(right, rest3):
 						left = EInfix(left, _1, Nor, right);
 						rest = rest3;
 					case err: return fatalIfBad(rest, err);
 				},
-				_ => break
+				_ => {}
 			);
 
 			Success(left, rest);
