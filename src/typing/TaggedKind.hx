@@ -141,8 +141,6 @@ class TaggedKind extends Kind {
 	override function findMultiStatic(names: Array<String>, from: ITypeDecl, setter = false, cache: List<Type> = Nil): Array<MultiStaticKind> {
 		if(cache.contains(thisType)) return [];
 		
-		// TODO: account for leading member initialization labels
-
 		if(!setter) for(tcase in taggedCases) {
 			tcase._match(
 				at(mcase is MultiTaggedCase) => {
@@ -150,14 +148,14 @@ class TaggedKind extends Kind {
 						return [MSTaggedCase([], mcase)];
 					} else {
 						// BAD
-						if(!names.contains("_") && names.isUnique()) {
+						if(/*!names.contains("_") &&*/ names.isUnique()) {
 							final mems = instMembers(this);
 							final found = [];
 							var bad = false;
 
-							var i = 0;
-							while(i < names.length) {
-								final name = names[i];
+							var begin = 0;
+							while(begin < names.length) {
+								final name = names[begin];
 
 								mems.find(mem -> mem.name.name == name)._match(
 									at(mem!) => if(from.canSeeMember(mem)) {
@@ -172,10 +170,30 @@ class TaggedKind extends Kind {
 									}
 								);
 
-								i++;
+								begin++;
 							}
 
-							if(!bad && mcase.params.every2Strict(names.slice(i), (l, n) -> l.label.name == n)) {
+							var end = names.length - 1;
+							while(begin < end) {
+								final name = names[end];
+
+								mems.find(mem -> mem.name.name == name)._match(
+									at(mem!) => if(from.canSeeMember(mem)) {
+										found.push(mem);
+									} else {
+										bad = true;
+										break;
+									},
+
+									_ => {
+										break;
+									}
+								);
+
+								end--;
+							}
+
+							if(!bad && mcase.params.every2Strict(names.slice(begin, end + 1), (l, n) -> l.label.name == n)) {
 								return [MSTaggedCase(found, mcase)];
 							}
 						}

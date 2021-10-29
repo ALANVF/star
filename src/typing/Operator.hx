@@ -104,7 +104,7 @@ abstract class Operator extends AnyMethod {
 	static function fromAST(decl: ITypeDecl, ast: parsing.ast.decls.Operator) {
 		final oper: Operator = switch ast.spec {
 			case None:
-				final op: UnaryOperator.UnaryOp = switch ast.symbol {
+				final op: UnaryOp = switch ast.symbol {
 					case "++": Incr;
 					case "--": Decr;
 					case "-": Neg;
@@ -128,7 +128,7 @@ abstract class Operator extends AnyMethod {
 				UnaryOperator.fromAST(decl, op, ast);
 
 			case Some({of: {name: name, type: type}}):
-				final op: BinaryOperator.BinaryOp = switch ast.symbol {
+				final op: BinaryOp = switch ast.symbol {
 					case "+": Plus;
 					case "-": Minus;
 					case "*": Times;

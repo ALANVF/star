@@ -168,7 +168,7 @@ class File implements IErrors {
 		}
 
 		return path._match(
-			at([[span, name, args], ...rest]) => {
+			at([[span, name, args], ...rest]) => {args=args.map(a->a.simplify());
 				var finished = true;
 				final res: Option<Type> = decls.find(name).map(found -> found.filter(decl ->
 					!cache.contains(decl.thisType)
@@ -183,11 +183,13 @@ class File implements IErrors {
 								(if(imp.from == this) {
 									this.findType(path, Start, from, 0, List.of(imp));
 								} else {
-									imp.from.findType(path, Inside, from, 0, Nil);
+									//trace(imp.from, imp.types);
+									imp.from.findType(path, Inside, from, 0, List.of(this, imp));
 								})._match(
 									at(Some(found)) => {
 										if(imp.types.length == 0 || imp.types.contains(found)) {
-											res2 = Some(found);
+											//trace(found.fullName(), imp.types.map(t->t.fullName()), span.display());
+											res2 = found;
 											break;
 										}
 									},
@@ -196,8 +198,12 @@ class File implements IErrors {
 							}
 
 							res2._match(
-								at(r!) => r,
-								_ => if(search == Inside) None else unit.orElseDo(dir).findType(path, Outside, from, depth, cache)
+								at(r!) => Some(r),
+								_ => if(search == Inside) {
+									None;
+								} else {
+									unit.orElseDo(dir).findType(path, Outside, from, depth, cache);
+								}
 							);
 						}
 					},
@@ -209,6 +215,9 @@ class File implements IErrors {
 						}
 					},
 					at(Some([decl])) => switch [args, decl.params] {
+						case [[], []]:
+							finished = false;
+							Some(decl.thisType);
 						case [[], _]:
 							finished = false;
 							Some({t: decl.thisType.t, span: span}); // should probably curry parametrics but eh
@@ -229,7 +238,16 @@ class File implements IErrors {
 								None;
 							} else {
 								finished = false;
-								Some({t: TApplied(decl.thisType, args), span: span});
+								Some({t: TApplied(decl.thisType, args.map(arg -> arg.t._match(
+									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
+										at(Some(type)) => type,
+										at(None) => {
+											errors.push(Errors.invalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
+											arg;
+										}
+									),
+									_ => arg
+								))), span: span});
 							}
 					},
 					at(Some(decls)) => {
@@ -238,15 +256,33 @@ class File implements IErrors {
 							Some({t: TMulti(decls.map(t -> t.thisType)), span: span});
 						} else switch decls.filter(t -> t.params.length == args.length).map(t -> t.thisType) {
 							case []:
-								trace(path, span.display());
+								//trace(path, span.display());
 								errors.push(Errors.invalidTypeApply(span, "No matching candidates were found"));
 								None;
 							case [type]:
 								finished = false;
-								Some({t: TApplied(type, args), span: span});
+								Some({t: TApplied(type, args.map(arg -> arg.t._match(
+									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
+										at(Some(type)) => type,
+										at(None) => {
+											errors.push(Errors.invalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
+											arg;
+										}
+									),
+									_ => arg
+								))), span: span});
 							case types:
 								finished = false;
-								Some({t: TMulti(types), span: span});
+								Some({t: TApplied({t: TMulti(types), span: span}, args.map(arg -> arg.t._match(
+									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
+										at(Some(type)) => type,
+										at(None) => {
+											errors.push(Errors.invalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
+											arg;
+										}
+									),
+									_ => arg
+								))), span: span});
 						}
 					}
 				);
@@ -271,101 +307,6 @@ class File implements IErrors {
 		);
 	}
 
-	/*function findTypeOld(path: LookupPath, absolute = false, cache: List<{}> = Nil): Option<Type> {
-		if(absolute) {
-			if(cache.contains(this)) {
-				return None;
-			} else {
-				cache = cache.prepend(this);
-			}
-		}
-
-		return path._match(
-			at([[span, typeName, args], ...rest]) => {
-				final res: Option<Type> = switch (
-					decls.find(typeName)
-						.map(f -> f.filter(t -> !cache.contains(t.thisType) /*&& (args.length == 0 ? true : t.params.length == args.length)* /))
-						.flatMap(f -> f.length == 0 ? None : Some(f))
-				) {
-					case None:
-						var res2 = null;
-						if(absolute) {
-							for(imp in imported) imp.findTypeOld(path, true, cache.prepend(imp))._match(
-								at(Some(found)) => {
-									res2 = Some(found);
-									break;
-								},
-								_ => {}
-							);
-						}
-
-						res2._match(
-							at(r!) => r,
-							_ => return if(absolute) unit.orElse(dir).findTypeOld(path, true, cache) else None
-						);
-					
-					case Some([type]) if(cache.contains(type.thisType)):
-						return unit.orElse(dir).findTypeOld(path, true, cache.prepend(this));
-					
-					case Some([type]): switch [args, type.params] {
-						case [[], _]: Some({t: type.thisType.t, span: span}); // should probably curry parametrics but eh
-						case [_, []]:
-							// should this check for type aliases?
-							trace(absolute);
-							//if(absolute) {
-								var a=dir.findTypeOld(path, absolute, cache.prepend(this));
-								//trace(a.map(n->n.fullName()));
-								a;
-							/*} else {
-								errors.push(Errors.invalidTypeApply(span, "Attempt to apply arguments to a non-parametric type"));
-								None;
-							}* /
-						case [_, params]:
-							if(args.length > params.length) {
-								errors.push(Errors.invalidTypeApply(span, "Too many arguments"));
-								None;
-							} else if(args.length < params.length) {
-								errors.push(Errors.invalidTypeApply(span, "Not enough arguments"));
-								None;
-							} else {
-								Some({t: TApplied(type.thisType, args), span: span});
-							}
-					}
-					case Some(found):
-						if(args.length == 0) {
-							Some({t: TMulti(found.map(t -> t.thisType)), span: span});
-						} else switch found.filter(t -> t.params.length == args.length).map(g -> g.thisType) {
-							case []:
-								/*if(absolute) {
-									dir.findTypeOld(path, true, cache.prepend(this));
-								} else {
-									* /errors.push(Errors.invalidTypeApply(span, "No matching candidates were found"));
-									None;
-								//}
-							case [type]: Some({t: TApplied(type, args), span: span});
-							case types: Some({t: TMulti(types), span: span});
-						}
-				};
-
-				switch [rest, res] {
-					case [_, None]: if(absolute) unit.orElse(dir).findTypeOld(path, true, cache) else None;
-					case [Nil3, _]: res;
-					case [_, Some(type={t: TConcrete(decl)})]:
-						unit.doOrElse(u => {
-							type = new Type(TModular(type, u));
-							type.findTypeOld(path, false, cache);
-						}, {
-							type.findTypeOld(rest, false, cache);
-						});
-					/*case [_, Some({t: TModular(t, u)})]:
-						t.findTypeOld(rest, false, cache).orDo(u.findTypeOld(rest, false, cache.prepend(t)));* /
-					case [_, Some(type)]: Some({t: TLookup(type, rest, this), span: span});
-				}
-			},
-			_ => if(absolute) unit.orElse(dir).findTypeOld(path, false, cache).orDo(unit.orElse(dir).findTypeOld(path, true, cache)) else unit.flatMap(u -> u.findTypeOld(path, false, cache.prepend(this)))
-		);
-	}*/
-
 	function makeTypePath(path: TypePath) {
 		return path.toType(this);
 	}
@@ -386,10 +327,15 @@ class File implements IErrors {
 
 	function findCategory(cat: Type, forType: Type, from: ITypeDecl, cache: List<{}> = Nil): Array<Category> {
 		if(cache.contains(this)) return [];
-		
+		cache = cache.prepend(this);
+		//trace(cat, this.path);
+		for(cat2 in categories) {
+			cat2.path=cat2.path.simplify();
+			cat2.type=cat2.type.map(t->t.simplify());
+		}
 		return cat.t._match(
-			at(TModular(t, unit)) => {
-				function loop(unit_: Unit, cache: List<Unit>) {
+			at(TModular(t, unit), when(!cache.contains(unit))) => {
+				/*function loop(unit_: Unit, cache: List<Unit>) {
 					if(cache.contains(unit_)) return [];
 					cache = cache.prepend(unit_);
 					return unit_.files.flatMap(f -> f.categories)
@@ -403,15 +349,35 @@ class File implements IErrors {
 							at(u is Unit) => loop(u, cache),
 							_ => throw "bad"
 						));
-				}
+				}*/
 
-				final r = categories.concat(loop(unit, Nil));
+				//final r = categories.concat(loop(unit, Nil));
+				final files = [];
+				unit.gatherFiles(files);
+				files.remove(this);
+				final r = categories.concat(files.flatMap(f -> f.categories));
 				//trace(r.map(c->c.fullName()).join("\n")+"\n");
 				r;
 			},
-			_ => categories
-		).filter(c -> c.path.hasChildType(cat) && c.thisType.hasChildType(forType))._match(
-			at([]) => dir.findCategory(cat, forType, from, cache.prepend(this)),
+			_ => {
+				//trace(categories.map(c->c.fullName()));
+				categories;
+			}
+		).filter(c -> {
+			//c.path.hasChildType(cat) && c.thisType.simplify().hasChildType(forType)
+			if(c.path.simplify().hasChildType(cat)) {
+				if(c.thisType.simplify().hasChildType(forType)) {
+					//trace("+", c.fullName());
+					true;
+				} else {
+					//trace("-", c.thisType.simplify().hasChildType(forType), c.fullName());
+					false;
+				}
+			} else {
+				false;
+			}
+		})._match(
+			at([]) => unit.orElseDo(dir).findCategory(cat, forType, from, cache.prepend(this)),
 			at(found) => found
 		);
 	}

@@ -75,27 +75,6 @@ class Project extends Dir {
 		};
 	}
 
-	/*override function findTypeOld(path: LookupPath, absolute = false, cache: List<{}> = Nil): Option<Type> {
-		switch super.findTypeOld(path, absolute, cache) {
-			case t = Some(_): return t;
-			case None: if(absolute && useStdlib) STDLIB._match(
-				at(stdlib!, when(!cache.contains(this))) => {
-					cache = cache.prepend(this);
-
-					return STDLIB.findTypeOld(List3.of([null, "Star", []]), false, cache).value()
-						.findTypeOld(path, false, cache)
-						.orDo(
-							STDLIB.findTypeOld(List3.of([null, "Star", []], [null, "Core", []]), false, cache).value()
-								.findTypeOld(path, false, cache)
-						);
-				},
-				_ => return None
-			); else {
-				return None;
-			}
-		}
-	}*/
-
 	inline function pass1() {
 		Pass1.resolveProjectContents(this);
 	}

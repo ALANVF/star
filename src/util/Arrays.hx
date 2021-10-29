@@ -62,7 +62,7 @@ class Arrays {
 				return false;
 		return true;
 	}
-
+	
 	public static function every2Strict<T, U>(array1: Array<T>, array2: Array<U>, callback: (value1: T, value2: U) -> Bool) {
 		if(array1.length != array2.length) return false;
 		

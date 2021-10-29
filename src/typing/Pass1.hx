@@ -93,13 +93,40 @@ static function resolveFileContents(file: File) {
 				}
 
 				final imported = [];
-				for(type in types) switch from.findType((type : TypePath).toLookupPath(from), Start, null, 0, from == file ? Nil : List.of(file)) {
-					case Some(t):
-						resolveBasicType(from, t);
-						imported.push(t);
+				for(type in types) {
+					final lookup = (type : TypePath).toLookupPath(from);
 					
-					case None:
-						file.errors.push(Errors.invalidTypeLookup(type.span()));
+					//trace(lookup, lookup.span().display());
+					switch from.findType(lookup, Start, null, 0, from == file ? Nil : List.of(file)) {
+						case Some(t):
+							resolveBasicType(from, t);
+							
+							// TODO: fix. should import `A.B` as `B`, rec errors instead
+							if(!lookup.match(Cons3(_,_,_,Nil3))) {
+								final realFrom = {
+									function loop(ty: Type): ILookupType return ty.t._match(
+										at(TPath(_, _, source)) => source,
+										at(TLookup(base, _, _)) => base,
+										at(TConcrete(decl)) => decl.lookup,
+										at(TThis(source)) => source.lookup,
+										at(TBlank) => throw "bad",
+										at(TMulti(types)) => loop(types[0]),
+										at(TApplied(type, _)) => loop(type),
+										at(TTypeVar(typevar)) => typevar.lookup,
+										at(TModular(type, _)) => loop(type)
+									);
+
+									loop(t);
+								};
+								//trace(realFrom, t.fullName());
+								file.imported.push({from: realFrom, types: [t]});
+							} else {
+								imported.push(t);
+							}
+						
+						case None:
+							file.errors.push(Errors.invalidTypeLookup(type.span()));
+					}
 				}
 
 				file.imported.push({from: from, types: imported});

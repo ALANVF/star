@@ -28,10 +28,6 @@ abstract class AnyMethod implements IErrors {
 		return decl.findType(path, Start, from, depth, cache);
 	}
 
-	/*function findTypeOld(path: LookupPath, absolute = false, cache: List<{}> = Nil): Option<Type> {
-		return decl.findTypeOld(path, absolute, cache);
-	}*/
-
 	abstract function declName(): String;
 
 	abstract function methodName(): String;

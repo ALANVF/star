@@ -55,13 +55,10 @@ abstract class Namespace extends TypeDecl {
 				} else {
 					final ds: Option<Array<IFullTypeDecl>> = cast decls.find(typeName);
 					final tvs: Option<Array<IFullTypeDecl>> = cast typevars.find(typeName);
-
-					tvs.doOrElse(
-						_tvs => ds.doOrElse(
-							_ds => Some(_ds.concat(_tvs)),
-							tvs
-						),
-						ds
+					
+					tvs.orElseDo([]).concat(ds.orElseDo([]))._match(
+						at([]) => None,
+						at(ts) => Some(ts)
 					);
 				}).map(found -> found.filter(decl ->
 					!cache.contains(decl.thisType)
@@ -82,6 +79,9 @@ abstract class Namespace extends TypeDecl {
 						}
 					},
 					at(Some([type])) => switch [args, type.params] {
+						case [[], []]:
+							finished = false;
+							Some(type.thisType);
 						case [[], _]:
 							finished = false;
 							Some({t: type.thisType.t, span: span}); // should probably curry parametrics but eh
@@ -103,7 +103,16 @@ abstract class Namespace extends TypeDecl {
 								None;
 							} else {
 								finished = false;
-								Some({t: TApplied(type.thisType, args), span: span});
+								Some({t: TApplied(type.thisType, args.map(arg -> arg.t._match(
+									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
+										at(Some(type)) => type,
+										at(None) => {
+											errors.push(Errors.invalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
+											arg;
+										}
+									),
+									_ => arg
+								))), span: span});
 							}
 					},
 					at(Some(found)) => {
@@ -116,14 +125,32 @@ abstract class Namespace extends TypeDecl {
 								None;
 							case [type]:
 								finished = false;
-								Some({t: TApplied(type, args), span: span});
+								Some({t: TApplied(type, args.map(arg -> arg.t._match(
+									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
+										at(Some(type)) => type,
+										at(None) => {
+											errors.push(Errors.invalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
+											arg;
+										}
+									),
+									_ => arg
+								))), span: span});
 							case types:
 								finished = false;
-								Some({t: TMulti(types), span: span});
+								Some({t: TApplied({t: TMulti(types), span: span}, args.map(arg -> arg.t._match(
+									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
+										at(Some(type)) => type,
+										at(None) => {
+											errors.push(Errors.invalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
+											arg;
+										}
+									),
+									_ => arg
+								))), span: span});
 						}
 					}
 				);
-
+				
 				switch [rest, res] {
 					case [_, None]: /*if(search == Inside &&
 						lookup._match(
@@ -140,96 +167,6 @@ abstract class Namespace extends TypeDecl {
 			_ => throw "bad"
 		);
 	}
-
-	/*override function findTypeOld(path: LookupPath, absolute = false, cache: List<{}> = Nil): Option<Type> {
-		if(absolute) {
-			if(cache.contains(this)) {
-				return None;
-			} else {
-				cache = cache.prepend(this);
-			}
-		}
-		
-		return path._match(
-			at([[span, "This", []]], when(absolute)) => Some({t: TThis(this), span: span}),
-			at([[span, "This", args]], when(absolute)) => {
-				// errors prob shouldn't be attatched to *this* type decl, but eh
-				if(params.length == 0) {
-					errors.push(Errors.invalidTypeApply(span, "Attempt to apply arguments to a non-parametric type"));
-					None;
-				} else if(args.length > params.length) {
-					errors.push(Errors.invalidTypeApply(span, "Too many arguments"));
-					None;
-				} else if(args.length < params.length) {
-					errors.push(Errors.invalidTypeApply(span, "Not enough arguments"));
-					None;
-				} else {
-					Some({t: TApplied({t: TThis(this), span: span}, args), span: span});
-				}
-			},
-			at([[span, typeName, args], ...rest]) => {
-				final res: Option<Type> = switch (absolute ? {
-					final ts: Option<Array<IFullTypeDecl>> = cast decls.find(typeName);
-					final tvs: Option<Array<IFullTypeDecl>> = cast typevars.find(typeName);
-					tvs.doOrElse(
-						_tvs => ts.doOrElse(
-							_ts => Some(_ts.concat(_tvs)),
-							tvs
-						),
-						ts
-					);
-				} : cast decls.find(typeName)) {
-					case None: return if(absolute) lookup.findTypeOld(path, true, cache) else None;
-					case Some([type]) if(cache.contains(type)): return lookup.findTypeOld(path, true, cache.prepend(this.thisType));
-					case Some([type]): switch [args, type.params] {
-						case [[], _]: Some(type.thisType); // should probably curry parametrics but eh
-						case [_, []]:
-							// should this check for type aliases?
-							errors.push(Errors.invalidTypeApply(span, "Attempt to apply arguments to a non-parametric type"));
-							None;
-						case [_, params]:
-							if(args.length > params.length) {
-								errors.push(Errors.invalidTypeApply(span, "Too many arguments"));
-								None;
-							} else if(args.length < params.length) {
-								errors.push(Errors.invalidTypeApply(span, "Not enough arguments"));
-								None;
-							} else {
-								Some({t: TApplied(type.thisType, args), span: span});
-							}
-					}
-					case Some(found):
-						if(args.length == 0) {
-							Some({t: TMulti(found.map(t -> t.thisType)), span: span});
-						} else switch found.filter(t -> t.params.length == args.length).map(g -> g.thisType) {
-							case []:
-								errors.push(Errors.invalidTypeApply(span, "No matching candidates were found"));
-								None;
-							case [type]: Some({t: TApplied(type, args), span: span});
-							case types: Some({t: TMulti(types), span: span});
-						}
-				};
-
-				switch [rest, res] {
-					// is this really needed?
-					case [_, None]: if(absolute && rest == Nil3) lookup.findTypeOld(path, true, cache) else lookup._match(
-						at(file is File) => file.dir._match(
-							at(unit is Unit) => if(unit.primary.contains(file)) {
-								unit.findTypeOld(rest, false, cache.prepend(file));
-							} else {
-								throw "???";
-							},
-							_ => None
-						),
-						_ => None
-					);
-					case [Nil3, _]: res;
-					case [_, Some(type)]: Some({t: TLookup(type, rest, this), span: span});
-				}
-			},
-			_ => if(absolute) lookup.findTypeOld(path, true, cache) else None
-		);
-	}*/
 
 	override function hasErrors() {
 		return super.hasErrors()
@@ -253,18 +190,59 @@ abstract class Namespace extends TypeDecl {
 
 	override function hasParentDecl(decl: TypeDecl) {
 		return this == decl
-			|| parents.some(p -> p.hasParentDecl(decl))
+			|| parents.some(p -> p.hasParentDecl(decl) || p.t._match(
+				at(TConcrete(pd) | TApplied({t: TConcrete(pd)}, _)) =>
+					pd.refinements.some(r -> this.params.every2Strict(r.params, (p1, p2) -> p1.hasParentType(p2))),
+				_ => false
+			))
 			|| super.hasParentDecl(decl);
+	}
+
+	override function hasParentType(type: Type) {
+		return super.hasParentType(type)
+			|| parents.some(p -> p.hasParentType(type) || p.t._match(
+				at(TConcrete(pd)) => {
+					//trace(type.fullName(),p,pd,this);
+					pd.refinements.some(r -> this.params.every2Strict(r.params, (p1, p2) -> p1.hasParentType(p2)));
+				},
+				at(TApplied({t: TConcrete(pd)}, args)) => {
+					//trace(this.fullName(), pd.fullName(), type.fullName(),pd.thisType.acceptsArgs(args),this);
+					pd.refinements.some(r -> this.params.every2Strict(r.params, (p1, p2) -> p1.hasParentType(p2)));
+				},
+				_ => false
+			));
 	}
 
 
 	override function hasChildDecl(decl: TypeDecl) {
 		return this == decl
-			|| refinements.some(r -> r.hasChildDecl(decl)
+			|| refinements.some(r -> r == decl || r.hasChildDecl(decl)
 				|| (r.params.length != 0 && r.params.length == decl.params.length && {
 					r.params.every2(decl.params, (p1, p2) -> p1.hasChildType(p2));
 				}))
+			|| decl._match(
+				at(ns is Namespace) => {
+					//final l = this.fullName();
+					//final r = ns.fullName();
+					//if(!(l.containsAny(["Comparable", "Iterable"]) || r.containsAny(["Comparable", "Iterable"])))trace(l,r,ns.parents.map(p->p.fullName()));
+					ns.parents.some(p -> /*this.hasChildType(p)*/p.t._match(
+						at(TConcrete(pd) | TApplied({t: TConcrete(pd)}, _)) =>
+							pd.refinements.some(r -> this.params.every2Strict(r.params, (p1, p2) -> p1.hasChildType(p2))),
+						_ => false
+					));
+				},
+				at(da is DirectAlias) => this.hasChildType(da.type),
+				at(sa is StrongAlias) => {
+					!sa.noInherit && this.hasChildType(sa.type);
+				},
+				_ => false
+			)
 			|| super.hasChildDecl(decl);
+	}
+
+	override function hasChildType(type: Type) {
+		return super.hasChildType(type)
+			|| type.hasParentDecl(this);
 	}
 
 
@@ -276,6 +254,12 @@ abstract class Namespace extends TypeDecl {
 	override function canSeeMethod(method: AnyMethod) {
 		return super.canSeeMethod(method)
 			|| parents.some(p -> p.canSeeMethod(method));
+	}
+
+
+	override function instMembers(from: ITypeDecl) {
+		return staticMembers.filter(mem -> from.canSeeMember(mem))
+			.concat(super.instMembers(from));
 	}
 
 
@@ -298,6 +282,11 @@ abstract class Namespace extends TypeDecl {
 					return SSMethod(sm);
 				}
 			},
+			at(mm is MultiStaticMethod) => if(!getter) {
+				if(mm.params[0].label.name == name && mm.params.every(p -> p.value != null)) {
+					return SSMultiMethod(mm);
+				}
+			},
 			_ => {}
 		);
 		
@@ -308,7 +297,17 @@ abstract class Namespace extends TypeDecl {
 			);
 		}
 
-		return defaultSingleStatic(name, from, getter);
+		for(refinee in refinees) {
+			refinee.findSingleStatic(name, from, getter, cache)._match(
+				at(ss!) => return ss,
+				_ => {}
+			);
+		}
+
+		return cache._match(
+			at([] | [{t: TConcrete(_ is DirectAlias | _ is StrongAlias)} is Type, ..._]) => defaultSingleStatic(name, from, getter),
+			_ => null
+		);
 	}
 
 
@@ -327,37 +326,12 @@ abstract class Namespace extends TypeDecl {
 			throw "todo";
 		} else {
 			for(mth in staticMethods) mth._match(
-				at(mm is MultiStaticMethod) => if(from.canSeeMethod(mm)) {
-					if(mm.params.every2Strict(names, (l, n) -> l.label.name == n)) {
-						candidates.push(MSMethod(mm));
-					} else if(names.length < mm.params.length) {
-						var n = 0;
-						var p = 0;
-						var matchedOnce = false;
-						while(n < names.length && p < mm.params.length) {
-							mm.params[p]._match(
-								at({label: {name: label}, value: _}, when(label == names[n])) => {
-									n++;
-									p++;
-									if(!matchedOnce) matchedOnce = true;
-								},
-								
-								at({label: {name: _}, value: _!}) => {
-									p++;
-								},
-
-								_ => {
-									matchedOnce = false;
-									break;
-								}
-							);
-						}
-
-						if(matchedOnce) {
-							candidates.push(MSMethod(mm, true));
-						}
-					}
-				},
+				at(mm is MultiStaticMethod) => if(from.canSeeMethod(mm))
+					mm.params.matchesNames(names)._match(
+						at(Yes) => candidates.push(MSMethod(mm)),
+						at(Partial) => candidates.push(MSMethod(mm, true)),
+						at(No) => {}
+					),
 				_ => {}
 			);
 		}
@@ -385,6 +359,6 @@ abstract class Namespace extends TypeDecl {
 		return categories.filter(c -> c.type.isNone() && c.path.hasChildType(cat))._match(
 			at([]) => super.findThisCategory(cat, from, cache),
 			at(found) => found.concat(super.findThisCategory(cat, from, cache))
-		);
+		).concat(parents.flatMap(p -> p.findThisCategory(cat, from, cache.prepend(thisType))).unique());
 	}
 }

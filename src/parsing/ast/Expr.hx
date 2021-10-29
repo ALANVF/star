@@ -7,6 +7,7 @@ enum StrPart {
 	PCode(code: Expr);
 }
 
+@:using(parsing.ast.Expr)
 enum Expr {
 	EName(_: Span, name: String);
 	ELitsym(_: Span, name: String);
@@ -46,3 +47,40 @@ enum Expr {
 
 	EType(type: Type);
 }
+
+
+function mainSpan(self: Expr) return self._match(
+	at(EName(s, _) | ELitsym(s, _) | ETag(s, _, _)
+	| EInt(s, _, _)
+	| EDec(s, _, _, _)
+	| EChar(s, _)
+	| EStr(s, _)
+	| EBool(s, _)
+	| EThis(s)
+	| EWildcard(s)
+	| EAnonArg(s, _, _)
+	| EPrefix(s, _, _)
+	| ESuffix(_, s, _)
+	| EInfix(_, s, _, _)) => s,
+
+	at(EArray(b, _, e)
+	| EHash(b, _, e)
+	| ETuple(b, _, e)
+	| EFunc(b, _, _, _, e)
+	| EParen(b, _, e)
+	| EBlock({begin: b, end: e})
+	| ETypeMessage(_, b, _, e)
+	| EObjMessage(_, b, _, e)) => b.union(e),
+
+	at(ELiteralCtor(t, c)) => t.span().union(c.mainSpan()),
+
+	at(ETypeCascade(t, _)) => t.span(),
+	at(EObjCascade(o, _)) => o.mainSpan(),
+
+	at(ETypeMember(t, m)) => t.span().union(m.span),
+	at(EObjMember(o, m)) => o.mainSpan().union(m.span),
+
+	at(EVarDecl(s, n, _, _)) => s.union(n.span),
+
+	at(EType(t)) => t.span()
+);

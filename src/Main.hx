@@ -8,6 +8,7 @@ import text.SourceFile;
 	var buildDecls = true;
 	var isStdlib = false;
 	var pass1 = false;
+	var pass2 = false;
 	var callback: Null<(typing.Project) -> Void> = null;
 }
 
@@ -84,7 +85,9 @@ class Main {
 
 		if(opt.isStdlib) {
 			typing.Project.STDLIB = project;
-
+		}
+		
+		if(opt.pass2) {
 			final startPass2 = haxe.Timer.stamp();
 			typing.Pass2.resolveProject(project);
 			final stopPass2 = haxe.Timer.stamp();
@@ -99,13 +102,13 @@ class Main {
 					renderer.writer.cursor(MoveDown(1));
 					renderer.writer.write("\033[G");
 					renderer.writer.clearLine();
-					Sys.sleep(0.05);
+					Sys.sleep(0.15);
 				#end
 				renderer.render(err);
 				#if windows
 					renderer.writer.attr(RESET);
-					Sys.sleep(0.05);
-					renderer.writer.flush();
+					Sys.sleep(0.15);
+					//renderer.writer.flush();
 				#end
 
 				if(i == 25) throw "too many errors!";
@@ -133,7 +136,8 @@ class Main {
 
 		testProject("stdlib", {
 			isStdlib: true,
-			pass1: true
+			pass1: true,
+			pass2: true
 		});/*(project: typing.Project) -> {
 			project.findTypeOld(List2.of(["Star", []], ["Core", []], ["Array", []]), true).forEach(array -> {
 				trace(array.simpleName());
@@ -152,7 +156,7 @@ class Main {
 			});
 		}* /);*/
 		nl();
-		testProject("star", {pass1: true});
+		testProject("star", {pass1: true, pass2: true});
 		/*nl();
 		testProject("tests/self", true, (project: typing.Project) -> {
 			project.findTypeOld(List2.of(["Slot", []]), true).forEach(slot -> {

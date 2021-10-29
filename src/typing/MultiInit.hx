@@ -7,7 +7,7 @@ import typing.Traits;
 
 class MultiInit extends Init {
 	@ignore final typevars = new MultiMap<String, TypeVar>();
-	var params: Array<{label: Ident, name: Ident, type: Type, ?value: Expr}> = [];
+	var params: MultiParams = [];
 	var fuzzyName: String;
 	var isUnordered: Bool = true;
 
@@ -69,52 +69,8 @@ class MultiInit extends Init {
 
 
 	override function findType(path: LookupPath, search: Search, from: Null<ITypeDecl>, depth = 0, cache: List<{}> = Nil): Option<Type> {
-		return BaseMethod._findType(this, path, depth);
+		return BaseMethod._findType(this, path, from, depth);
 	}
-
-	/*override function findTypeOld(path: LookupPath, absolute = true, cache: List<{}> = Nil): Option<Type> {
-		return path._match(
-			at([[span, typeName, args], ...rest]) => {
-				final res: Option<Type> = switch typevars.find(typeName) {
-					case None: return decl.findTypeOld(path, true, cache);
-					case Some([type]): switch [args, type.params] {
-						case [[], _]: Some({t: type.thisType.t, span: span}); // should probably curry parametrics but eh
-						case [_, []]:
-							// should this check for type aliases?
-							errors.push(Errors.invalidTypeApply(span, "Attempt to apply arguments to a non-parametric type"));
-							None;
-						case [_, params]:
-							if(args.length > params.length) {
-								errors.push(Errors.invalidTypeApply(span, "Too many arguments"));
-								None;
-							} else if(args.length < params.length) {
-								errors.push(Errors.invalidTypeApply(span, "Not enough arguments"));
-								None;
-							} else {
-								Some({t: TApplied(type.thisType, args), span: span});
-							}
-					}
-					case Some(found):
-						if(args.length == 0) {
-							Some({t: TMulti(found.map(t -> t.thisType)), span: span});
-						} else switch found.filter(t -> t.params.length == args.length).map(g -> g.thisType) {
-							case []:
-								errors.push(Errors.invalidTypeApply(span, "No candidate matches the type arguments"));
-								None;
-							case [type]: Some({t: TApplied(type, args), span: span});
-							case types: Some({t: TMulti(types), span: span});
-						}
-				};
-
-				switch [rest, res] {
-					case [Nil3, _]: res;
-					case [_, Some(type)]: Some({t: TLookup(type, rest, this), span: span});
-					case [_, None]: res;
-				}
-			},
-			_ => if(absolute) decl.findTypeOld(path, true, cache) else None
-		);
-	}*/
 
 	function methodName() {
 		return fuzzyName.replaceAll(" ", "");

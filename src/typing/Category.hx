@@ -100,18 +100,18 @@ class Category implements IErrors {
 		return "category";
 	}
 
-	function fullName() {
-		return type.doOrElse(t => t.fullName(), lookup._match(
-			at(decl is TypeDecl) => decl.fullName(),
-			at(tvar is TypeVar) => tvar.fullName(),
+	function fullName(cache: List<Type> = Nil) {
+		return type.doOrElse(t => t.fullName(cache), lookup._match(
+			at(decl is TypeDecl) => decl.fullName(cache),
+			at(tvar is TypeVar) => tvar.fullName(cache),
 			_ => throw "???"
-		)) + "+" + path.fullName();
+		)) + "+" + path.fullName(cache);
 	}
 
 
 	function findType(path: LookupPath, search: Search, from: Null<ITypeDecl>, depth = 0, cache: List<{}> = Nil): Option<Type> {
 		if(cache.contains(this)) return None;
-		//cache = cache.prepend(thisType);
+		cache = cache.prepend(this);
 
 		if(search == Inside) return None;
 
@@ -135,10 +135,10 @@ class Category implements IErrors {
 					&& (tvar.params.length == 0 || tvar.params.length == args.length)
 				))._match(
 					at(None | Some([])) => lookup.findType(path, Outside, this, depth, cache).orDo(
-						this.thisType.findType(path, Start, this, depth, cache)
+						thisType.findType(path, Start, this, depth, cache)
 					),
 					at(Some(_), when(depth != 0)) => lookup.findType(path, Outside, this, depth - 1, cache).orDo(
-						this.thisType.findType(path, Start, this, depth - 1, cache)
+						thisType.findType(path, Start, this, depth - 1, cache)
 					),
 					at(Some([tvar])) => switch [args, tvar.params] {
 						case [[], _]:
@@ -189,66 +189,6 @@ class Category implements IErrors {
 			_ => throw "bad"
 		);
 	}
-
-	/*function findTypeOld(path: LookupPath, absolute = false, cache: List<{}> = Nil): Option<Type> {
-		if(cache.contains(this)) {
-			return None;
-		} else {
-			cache = cache.prepend(this);
-		}
-
-		return path._match(
-			at([[_, "This", []]], when(absolute)) => type.doOrElse(
-				t => Some(t),
-				lookup.findTypeOld(path, true, cache)
-			),
-			at([[span, "This", _]], when(absolute)) => {
-				// prob shouldn't be attatched to *this* category decl, but eh
-				errors.push(Errors.notYetImplemented(span));
-				None;
-			},
-			at([[span, typeName, args], ...rest]) => {
-				final res: Option<Type> = switch typevars.find(typeName) {
-					case None: return if(absolute) lookup.findTypeOld(path, true, cache) else None;
-					case Some([type]):
-						switch [args, type.params] {
-							case [[], _]: Some({t: type.thisType.t, span: span}); // should probably curry parametrics but eh
-							case [_, []]:
-								// should this check for type aliases?
-								errors.push(Errors.invalidTypeApply(span, "Attempt to apply arguments to a non-parametric type"));
-								None;
-							case [_, params]:
-								if(args.length > params.length) {
-									errors.push(Errors.invalidTypeApply(span, "Too many arguments"));
-									None;
-								} else if(args.length < params.length) {
-									errors.push(Errors.invalidTypeApply(span, "Not enough arguments"));
-									None;
-								} else {
-									Some({t: TApplied(type.thisType, args), span: span});
-								}
-							}
-					case Some(found):
-						if(args.length == 0) {
-							Some({t: TMulti(found.map(t -> t.thisType)), span: span});
-						} else switch found.filter(t -> t.params.length == args.length).map(g -> g.thisType) {
-							case []:
-								errors.push(Errors.invalidTypeApply(span, "No candidate matches the type arguments"));
-								None;
-							case [type]: Some({t: TApplied(type, args), span: span});
-							case types: Some({t: TMulti(types), span: span});
-						}
-				};
-
-				switch [rest, res] {
-					case [Nil3, _]: res;
-					case [_, Some(type)]: Some({t: TLookup(type, rest, this), span: span});
-					case [_, None]: res;
-				}
-			},
-			_ => if(absolute) lookup.findTypeOld(path, true, cache) else None
-		);
-	}*/
 
 	function makeTypePath(path: TypePath) {
 		return path.toType(this);
@@ -311,6 +251,12 @@ class Category implements IErrors {
 	}
 
 
+	function instMembers(from: ITypeDecl) {
+		return staticMembers.filter(mem -> from.canSeeMember(mem))
+			.concat(thisType.instMembers(from));
+	}
+
+
 	function findSingleStatic(name: String, from: ITypeDecl, getter = false, cache: List<Type> = Nil): Null<SingleStaticKind> {
 		//if(type.exists(t -> cache.contains(t)) || lookup._match(at(d is TypeDecl) => cache.contains(d.thisType), _ => false)) return null;
 
@@ -347,72 +293,22 @@ class Category implements IErrors {
 			throw "todo";
 		} else {
 			for(mth in staticMethods) mth._match(
-				at(mm is MultiStaticMethod) => {
-					if(mm.params.every2Strict(names, (l, n) -> l.label.name == n)) {
-						candidates.push(MSMethod(mm));
-					} else if(names.length < mm.params.length) {
-						var n = 0;
-						var p = 0;
-						var matchedOnce = false;
-						while(n < names.length && p < mm.params.length) {
-							mm.params[p]._match(
-								at({label: {name: label}, value: _}, when(label == names[n])) => {
-									n++;
-									p++;
-									if(!matchedOnce) matchedOnce = true;
-								},
-								
-								at({label: {name: _}, value: _!}) => {
-									p++;
-								},
-
-								_ => {
-									matchedOnce = false;
-									break;
-								}
-							);
-						}
-
-						if(matchedOnce) {
-							candidates.push(MSMethod(mm, true));
-						}
-					}
-				},
+				at(mm is MultiStaticMethod) => if(from.canSeeMethod(mm))
+					mm.params.matchesNames(names)._match(
+						at(Yes) => candidates.push(MSMethod(mm)),
+						at(Partial) => candidates.push(MSMethod(mm, true)),
+						at(No) => {}
+					),
 				_ => {}
 			);
 
 			for(init in inits) init._match(
-				at(mi is MultiInit) => if(from.canSeeMethod(mi)) {
-					if(mi.params.every2Strict(names, (l, n) -> l.label.name == n)) {
-						candidates.push(MSInit(mi));
-					} else if(names.length < mi.params.length) {
-						var n = 0;
-						var p = 0;
-						var matchedOnce = false;
-						while(n < names.length && p < mi.params.length) {
-							mi.params[p]._match(
-								at({label: {name: label}, value: _}, when(label == names[n])) => {
-									n++;
-									p++;
-									if(!matchedOnce) matchedOnce = true;
-								},
-								
-								at({label: {name: _}, value: _!}) => {
-									p++;
-								},
-
-								_ => {
-									matchedOnce = false;
-									break;
-								}
-							);
-						}
-
-						if(matchedOnce) {
-							candidates.push(MSInit(mi, true));
-						}
-					}
-				},
+				at(mi is MultiInit) => if(from.canSeeMethod(mi))
+					mi.params.matchesNames(names)._match(
+						at(Yes) => candidates.push(MSInit(mi)),
+						at(Partial) => candidates.push(MSInit(mi, true)),
+						at(No) => {}
+					),
 				_ => {}
 			);
 		}
@@ -436,6 +332,11 @@ class Category implements IErrors {
 					return SIMethod(sm);
 				}
 			},
+			at(mm is MultiMethod) => if(!getter) {
+				if(mm.params[0].label.name == name && mm.params.every(p -> p.value != null)) {
+					return SIMultiMethod(mm);
+				}
+			},
 			_ => {}
 		);
 
@@ -457,37 +358,12 @@ class Category implements IErrors {
 			throw "todo";
 		} else {
 			for(mth in methods) mth._match(
-				at(mm is MultiMethod) => {
-					if(mm.params.every2Strict(names, (l, n) -> (n == "=" && mm.isSetter) || l.label.name == n)) {
-						candidates.push(MIMethod(mm));
-					} else if(names.length < mm.params.length) {
-						var n = 0;
-						var p = 0;
-						var matchedOnce = false;
-						while(n < names.length && p < mm.params.length) {
-							mm.params[p]._match(
-								at({label: {name: label}, value: _}, when(label == names[n])) => {
-									n++;
-									p++;
-									if(!matchedOnce) matchedOnce = true;
-								},
-								
-								at({label: {name: _}, value: _!}) => {
-									p++;
-								},
-
-								_ => {
-									matchedOnce = false;
-									break;
-								}
-							);
-						}
-						
-						if(matchedOnce) {
-							candidates.push(MIMethod(mm, true));
-						}
-					}
-				},
+				at(mm is MultiMethod) => if(from.canSeeMethod(mm))
+					mm.params.matchesNames(names, mm.isSetter)._match(
+						at(Yes) => candidates.push(MIMethod(mm)),
+						at(Partial) => candidates.push(MIMethod(mm, true)),
+						at(No) => {}
+					),
 				_ => {}
 			);
 		}
@@ -496,21 +372,15 @@ class Category implements IErrors {
 	}
 
 
-	function findCast(target: Type, from: ITypeDecl, cache: List<Type> = Nil): Array<CastMethod> {
+	function findCast(target: Type, from: ITypeDecl, cache: List<Type> = Nil) {
 		//if(type.exists(t -> cache.contains(t)) || lookup._match(at(d is TypeDecl) => cache.contains(d.thisType), _ => false)) return null;
 
-		final candidates: Array<CastMethod> = [];
-
-		/*for(mem in members) {
-			if(mem.matchesSetter(name) && from.canSeeMember(mem)) {
-				return MIMember(mem);
-			}
-		}*/
+		final candidates: Array<CastKind> = [];
 
 		for(mth in methods) mth._match(
 			at(cm is CastMethod) => {
 				if(cm.type.hasChildType(target)) {
-					candidates.push(cm);
+					candidates.push(CMethod(cm));
 				}
 			},
 			_ => {}

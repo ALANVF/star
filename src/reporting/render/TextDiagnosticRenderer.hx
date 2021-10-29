@@ -220,7 +220,7 @@ class TextDiagnosticRenderer implements IDiagnosticRenderer {
 		buffer.newLine();
 		
 		// From now on all previous ones will be one longer than the ones later
-		final arrowBaseLine = buffer.cursorY;
+		var arrowBaseLine = buffer.cursorY;
 		var arrowBodyLength = 0;
 
 		// We only consider annotations with messages
@@ -238,7 +238,20 @@ class TextDiagnosticRenderer implements IDiagnosticRenderer {
 			arrowBodyLength += i;
 			
 			// Append the message
-			buffer.write(' ${annot.message}');
+			if(annot.message.contains("\n")) {
+				final msgLines = annot.message.split8("\n");
+				final oldX = buffer.cursorX;
+				buffer.write(' ${msgLines.shift()}');
+				for(j => msgLine in msgLines) {
+					buffer.cursorX = oldX;
+					buffer.cursorY++;
+					arrowBaseLine++;
+					buffer.write(' $msgLine');
+				}
+			} else {
+				buffer.write(' ${annot.message}');
+
+			}
 			if(annot.isPrimary || annot.isSecondary) buffer.resetColor();
 		}
 		

@@ -5,9 +5,10 @@ import typing.Traits;
 abstract class ClassLike extends Namespace {
 	final members: Array<Member> = [];
 	final methods: Array<Method> = [];
+	final operators: Array<Operator> = [];
 
 
-	override function instMembers(from: TypeDecl) {
+	override function instMembers(from: ITypeDecl) {
 		return members.filter(mem -> from.canSeeMember(mem))
 			.concat(parents.flatMap(p -> p.instMembers(from)))
 			.concat(super.instMembers(from));
@@ -33,29 +34,9 @@ abstract class ClassLike extends Namespace {
 					return SIMethod(sm);
 				}
 			},
-			_ => {}
-		);
-
-		if(params.length != 0) lookup.findType(List3.of([this.name.span, this.name.name, params]), Inside, this, 0, cast cache)._match(
-			at(Some({t: TApplied({t: TConcrete(decl)}, _) | TConcrete(decl)}), when(decl != this)) => {
-				if(params.every2(decl.params, (p1, p2) -> p1.hasChildType(p2))) {
-					decl.findSingleInst(name, from, getter, cache.prepend(thisType))._match(
-						at(si!) => return si,
-						_ => {}
-					);
-				}
-			},
-			at(Some({t: TMulti(types)})) => {
-				for(type in types) switch type.t {
-					case TApplied({t: TConcrete(decl)}, _) | TConcrete(decl): if(decl != this) {
-						if(params.every2(decl.params, (p1, p2) -> p1.hasChildType(p2))) {
-							decl.findSingleInst(name, from, getter, cache.prepend(thisType))._match(
-								at(si!) => return si,
-								_ => {}
-							);
-						}
-					}
-					default: throw "???";
+			at(mm is MultiMethod) => if(!getter) {
+				if(mm.params[0].label.name == name && mm.params.every(p -> p.value != null)) {
+					return SIMultiMethod(mm);
 				}
 			},
 			_ => {}
@@ -67,29 +48,18 @@ abstract class ClassLike extends Namespace {
 				_ => {}
 			);
 		}
-		
-		/*if(params.length != 0) {
-			lookup.findTypeOld(List3.of([this.name.span, this.name.name, params]), false, cast cache.prepend(thisType))._match(
-				at(Some({t: TConcrete(decl) | TApplied({t: TConcrete(decl)}, _)})) => {
-					decl.findSingleInst(name, from, getter, cache.prepend(thisType))._match(
-						at(kind!) => return kind,
-						_ => {}
-					);
-				},
-				at(Some({t: TMulti(types)})) => for(ty in types) ty.t._match(
-					at(TConcrete(decl) | TApplied({t: TConcrete(decl)}, _)) => {
-						decl.findSingleInst(name, from, getter, cache.prepend(thisType))._match(
-							at(kind!) => return kind,
-							_ => {}
-						);
-					},
-					_ => {}
-				),
+
+		for(refinee in refinees) {
+			refinee.findSingleInst(name, from, getter, cache)._match(
+				at(si!) => return si,
 				_ => {}
 			);
-		}*/
-
-		return defaultSingleInst(name, from, getter);
+		}
+		
+		return cache._match(
+			at([] | [{t: TConcrete(_ is DirectAlias | _ is StrongAlias)} is Type, ..._]) => defaultSingleInst(name, from, getter),
+			_ => null
+		);
 	}
 
 
@@ -117,27 +87,33 @@ abstract class ClassLike extends Namespace {
 				);
 
 				default: for(mth in methods) mth._match(
-					at(mm is MultiMethod) => if(mm.isSetter) {
-						if(mm.params.every2Strict(names, (l, n) -> (n == "=" && mm.isSetter) || l.label.name == n) && from.canSeeMethod(mm)) {
-							candidates.push(MIMethod(mm));
-						}
-					},
+					at(mm is MultiMethod) => if(mm.isSetter && from.canSeeMethod(mm))
+						mm.params.matchesNames(names, true)._match(
+							at(Yes) => candidates.push(MIMethod(mm)),
+							at(Partial) => candidates.push(MIMethod(mm, true)),
+							at(No) => {}
+						),
 					_ => {}
 				);
 			}
 		} else {
 			for(mth in methods) mth._match(
-				at(mm is MultiMethod) => {
-					if(mm.params.every2Strict(names, (l, n) -> (n == "=" && mm.isSetter) || l.label.name == n) && from.canSeeMethod(mm)) {
-						candidates.push(MIMethod(mm));
-					}
-				},
+				at(mm is MultiMethod) => if(from.canSeeMethod(mm))
+					mm.params.matchesNames(names, mm.isSetter)._match(
+						at(Yes) => candidates.push(MIMethod(mm)),
+						at(Partial) => candidates.push(MIMethod(mm, true)),
+						at(No) => {}
+					),
 				_ => {}
 			);
 		}
 
 		for(parent in parents) {
 			candidates.pushAll(parent.findMultiInst(names, from, setter, cache));
+		}
+
+		for(refinee in refinees) {
+			candidates.pushAll(refinee.findMultiInst(names, from, setter, cache));
 		}
 
 		return candidates;
@@ -147,12 +123,12 @@ abstract class ClassLike extends Namespace {
 	override function findCast(target: Type, from: ITypeDecl, cache: List<Type> = Nil) {
 		if(cache.contains(thisType)) return [];
 
-		final candidates = [];
+		final candidates: Array<CastKind> = [];
 
 		for(mth in methods) mth._match(
 			at(cm is CastMethod) => {
-				if(cm.type.hasChildType(target)) {
-					candidates.push(cm);
+				if(cm.type.hasChildType(target) && from.canSeeMethod(cm)) {
+					candidates.push(CMethod(cm));
 				}
 			},
 			_ => {}
@@ -162,6 +138,81 @@ abstract class ClassLike extends Namespace {
 			candidates.pushAll(parent.findCast(target, from, cache));
 		}
 
+		for(refinee in refinees) {
+			candidates.pushAll(refinee.findCast(target, from, cache));
+		}
+
 		return candidates;
+	}
+
+	
+	function defaultUnaryOp(op: UnaryOp, from: ITypeDecl): Null<UnaryOpKind> {
+		return null;
+	}
+
+	override function findUnaryOp(op: UnaryOp, from: ITypeDecl, cache: List<Type> = Nil): Null<UnaryOpKind> {
+		if(cache.contains(thisType)) return null;
+
+		for(oper in operators) oper._match(
+			at(unary is UnaryOperator) => {
+				if(unary.op == op && from.canSeeMethod(unary)) {
+					return UOMethod(unary);
+				}
+			},
+			_ => {}
+		);
+
+		for(parent in parents) {
+			parent.findUnaryOp(op, from, cache)._match(
+				at(uo!) => return uo,
+				_ => {}
+			);
+		}
+
+		for(refinee in refinees) {
+			refinee.findUnaryOp(op, from, cache)._match(
+				at(uo!) => return uo,
+				_ => {}
+			);
+		}
+
+		return cache._match(
+			at([] | [{t: TConcrete(_ is DirectAlias | _ is StrongAlias)}, ..._]) => defaultUnaryOp(op, from),
+			_ => null
+		);
+	}
+
+
+	function defaultBinaryOp(op: BinaryOp, from: ITypeDecl): Array<BinaryOpKind> {
+		return [];
+	}
+
+	override function findBinaryOp(op: BinaryOp, from: ITypeDecl, cache: List<Type> = Nil) {
+		final candidates: Array<BinaryOpKind> = [];
+
+		for(oper in operators) oper._match(
+			at(binary is BinaryOperator) => {
+				if(binary.op == op && from.canSeeMethod(binary)) {
+					candidates.push(BOMethod(binary));
+				}
+			},
+			_ => {}
+		);
+
+		for(parent in parents) {
+			candidates.pushAll(parent.findBinaryOp(op, from, cache));
+		}
+
+		for(refinee in refinees) {
+			candidates.pushAll(refinee.findBinaryOp(op, from, cache));
+		}
+
+		return candidates._match(
+			at([]) => cache._match(
+				at([] | [{t: TConcrete(_ is DirectAlias | _ is StrongAlias)}, ..._]) => defaultBinaryOp(op, from),
+				_ => candidates
+			),
+			_ => candidates
+		);
 	}
 }

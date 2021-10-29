@@ -1,0 +1,254 @@
+package typing;
+
+enum Where {
+	WEmptyMethod(m: EmptyMethod);
+	WMethod(m: AnyMethod);
+	WDecl(d: TypeDecl);
+	WCategory(c: Category);
+	WBlock;
+	WPattern;
+	WObjCascade(t: Null<Type>);
+	WTypeCascade;
+}
+
+@:publicFields @:structInit class Ctx {
+	var where: Where;
+	var outer: Null<Ctx> = null;
+	var thisType: Type;
+	var locals: Map<String, Local> = [];
+	var labels: Map<String, TStmt> = [];
+
+	var typeDecl(get, never): ITypeDecl; private inline function get_typeDecl(): ITypeDecl return where._match(
+		at(WDecl(decl)) => decl,
+		at(WCategory(cat)) => cat,
+		at(WEmptyMethod(m)) => m.decl,
+		at(WMethod(m)) => m.decl,
+		at(WObjCascade(_) | WBlock | WPattern) => outer._match(
+			at(ctx!) => ctx.typeDecl,
+			_ => throw "bad"
+		),
+		_ => {
+			function loop(type: Type) return type.t._match(
+				at(TConcrete(decl)) => decl,
+				at(TApplied({t: TConcrete(decl)}, _)) => decl,
+				at(TModular(ty, _)) => loop(ty),
+				at(TMulti(types) | TApplied({t: TMulti(types)}, _)) => Type.leastSpecific(types)._match(
+					at([]) => throw "bad",
+					at([ty]) => loop(ty),
+					at(tys) => throw "todo"
+				),
+				//case TApplied()
+				_ => throw "bad "+type
+			);
+
+			loop(thisType);
+		}
+	);
+
+	var thisLookup(get, never): ILookupType&IDecl; private inline function get_thisLookup(): ILookupType&IDecl return where._match(
+		at(WDecl(decl)) => decl,
+		at(WCategory(cat)) => cat,
+		at(WMethod(m)) => m,
+		at(WEmptyMethod(m)) => m.decl,
+		_ => outer._match(
+			at(ctx!) => ctx.thisLookup,
+			_ => throw "bad"
+		)
+	);
+
+	function innerDecl(decl: TypeDecl): Ctx {
+		return {
+			where: WDecl(decl),
+			outer: this,
+			thisType: decl.thisType
+		};
+	}
+
+	function innerCategory(cat: Category): Ctx {
+		return {
+			where: WCategory(cat),
+			outer: this,
+			thisType: cat.thisType
+		};
+	}
+
+	function innerEmptyMethod(method: EmptyMethod): Ctx {
+		return {
+			where: WEmptyMethod(method),
+			outer: this,
+			thisType: thisType
+		};
+	}
+
+	function innerMethod(method: AnyMethod): Ctx {
+		return {
+			where: WMethod(method),
+			outer: this,
+			thisType: thisType
+		};
+	}
+
+	function innerBlock(): Ctx {
+		return {
+			where: WBlock,
+			outer: this,
+			thisType: thisType
+		};
+	}
+
+	function innerPattern(): Ctx {
+		return {
+			where: WPattern,
+			outer: this,
+			thisType: thisType
+		};
+	}
+
+	function innerCascade(?t: Type): Ctx {
+		return {
+			where: WObjCascade(t),
+			outer: this,
+			thisType: t._or(thisType) // TODO: fix
+		};
+	}
+
+	function addError(diag: Diagnostic) {
+		switch where {
+			case WEmptyMethod(method): method.errors.push(diag);
+			case WMethod(method): method.errors.push(diag);
+			case WDecl(decl): decl.errors.push(diag);
+			case WCategory(cat): cat.errors.push(diag);
+			default: outer._match(
+				at(ctx!) => ctx.addError(diag),
+				_ => throw "bad"
+			);
+		}
+	}
+
+	function findLabel(label: String): Null<TStmt> {
+		return labels[label]._or(
+			outer._and(o => o.findLabel(label))
+		);
+	}
+
+	function findLocal(name: String, depth = 0): Null<Local> {
+		return locals[name]._match(
+			at(loc!, when(depth == 0)) => loc,
+			_ => where._match(
+				at(WObjCascade(t!)) => t.findSingleInst(name, outer.typeDecl, true)._match(
+					at(SIMember(mem), when(depth == 0)) => new LocalField(this, mem, mem.name.name, mem.type.toNull(), null),
+					_ => outer.findLocal(name, depth)
+				),
+				at(WObjCascade(_)) => outer.findLocal(name, depth),
+				at(WTypeCascade) => throw "todo",
+				at(WBlock) => outer.findLocal(name, depth),
+				at(WPattern) => {
+					// TODO
+					outer.findLocal(name, depth);
+				},
+				at(WDecl(_)) => throw ":thonk:",
+				at(WCategory(_)) => throw "bad",
+				at(WEmptyMethod((_ : BaseMethod) => mth) | WMethod(mth)) => {
+					final isStatic = !allowsThis();
+					Type.mostSpecificBy(mth.decl.instMembers(mth.decl).filter(mem ->
+						mem.name.name == name && (
+							!isStatic
+							|| (isStatic && mem.isStatic)
+							|| (isStatic && mem.lookup is Module)
+						)
+					).unique(), mem -> mem.type.value())._match(
+						at([]) => null,
+						at([mem]) => (locals[name] = new LocalField(
+							this,
+							mem,
+							mem.name.name,
+							mem.type.toNull(),
+							mem.value.map(v -> Pass2.typeExpr(this, v)).toNull()
+						)),
+						at(mems) => throw "todo"
+					);
+				}
+			)
+		);
+	}
+
+	function getType(path: TypePath): Null<Type> {
+		where._match(
+			at(WObjCascade(t!)) => t.findType(path.toLookupPath(thisLookup), Start, typeDecl, path.leadingCount())._match(
+				at(found = Some(_)) => found,
+				at(None) => return outer.getType(path)
+			),
+			at(WMethod(_) | WEmptyMethod(_) | WDecl(_) | WCategory(_)) =>
+				thisLookup.findType(path.toLookupPath(thisLookup), Start, typeDecl, path.leadingCount()),
+			_ => return outer.getType(path)
+		)._match(
+			at(Some(t)) => return t.t._match(
+				at(TApplied(t2, args)) => {
+					final thisLookup_ = thisLookup;
+					{
+						t: TApplied(t2, args.map(arg -> arg.t._match(
+							at(TPath(depth, lookup, source)) => thisLookup_.findType(lookup, Start, typeDecl, depth)._match(
+								at(Some(type)) => type,
+								at(None) => {
+									addError(Errors.invalidTypeLookup(lookup.span(), 'Unknown type `${arg.simpleName()}`'));
+									arg;
+								}
+							),
+							_ => arg
+						))),
+						span: t.span
+					};
+				},
+				_ => t
+			),
+			at(None) => outer._match(
+				at(ctx!) => return ctx.getType(path),
+				_ => {
+					addError(Errors.invalidTypeLookup(path.span(), 'Unknown type `${path.simpleName()}`'));
+					return null;
+				}
+			)
+		);
+	}
+
+	function allowsThis() {
+		return switch where {
+			case WDecl(d): !(d is Module);
+			case WCategory(c): true;// meh
+			case WEmptyMethod(m): !(m is StaticInit || m is StaticDeinit) && outer.allowsThis();
+			case WMethod(m): !(m is StaticMethod) && outer.allowsThis();
+			case WBlock | WPattern: outer.allowsThis();
+			case WObjCascade(_): true;
+			case WTypeCascade: outer.allowsThis();
+		};
+	}
+
+	function isPattern() {
+		return where.match(WPattern);
+	}
+
+	function description() {
+		return where._match(
+			at(WEmptyMethod(m)) => m.declName() + " for " + outer.description(),
+			at(WMethod(m)) => m.declName() + " ["+m.methodName()+"] for "+outer.description(),
+			at(WDecl(decl)) => decl.declName() + " " + decl.fullName(),
+			at(WCategory(_)) => throw "bad",
+			at(WBlock) => "{ ... } in " + {
+				final lookup = this.thisLookup;
+				lookup.declName() + " " + lookup._match(
+					at(mth is AnyMethod) =>"["+mth.methodName()+"] for "+mth.decl.declName()+" "+mth.decl.fullName(),
+					_ => (cast lookup : ITypeDecl).fullName()
+				);
+			},
+			at(WPattern) => "pattern ... in " + {
+				final lookup = this.thisLookup;
+				lookup.declName() + " " + lookup._match(
+					at(mth is AnyMethod) => "["+mth.methodName()+"] for "+mth.decl.declName()+" "+mth.decl.fullName(),
+					_ => (cast lookup : ITypeDecl).fullName()
+				);
+			},
+			at(WObjCascade(_)) => throw "todo",
+			at(WTypeCascade) => throw "todo"
+		);
+	}
+}

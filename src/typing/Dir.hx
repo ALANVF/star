@@ -181,7 +181,7 @@ abstract class Dir {
 	}
 
 	function findType(path: LookupPath, search: Search, from: Null<Traits.ITypeDecl>, depth = 0, cache: List<{}> = Nil): Option<Type> {
-		if(search!=Inside && cache.contains(this)) {
+		if(/*search!=Inside &&*/ cache.contains(this)) {
 			return None;
 		} else {
 			cache = cache.prepend(this);
@@ -215,10 +215,17 @@ abstract class Dir {
 					);
 				}
 			},
-			at([[_, name, args], ...rest]) => {
+			at([[s, name, args], ...rest]) => {
 				for(unit in units) if(!cache.contains(unit) && unit.name == name) {
+					//trace(s._and(ss=>ss.display()), name);
 					switch unit.findType(rest, Inside, from, 0, cache) {
-						case None:
+						case None: switch unit.primary.flatMap(p -> p.findType(path, Inside, from, 0, cache)) {
+							case None:
+							case Some(t) if(depth != 0):
+								cache = cache.prepend(t);
+								depth--;
+							case Some(t): return Some(t);
+						}
 						case Some(t) if(depth != 0):
 							cache = cache.prepend(t);
 							depth--;
@@ -232,34 +239,7 @@ abstract class Dir {
 		return None;
 	}
 
-	/*function findTypeOld(path: LookupPath, absolute = false, cache: List<{}> = Nil): Option<Type> {
-		if(absolute) {
-			if(cache.contains(this)) {
-				return None;
-			} else {
-				//if(cache.some(c -> c is File)) trace(name,path,cache==Nil?null:cache.head());
-				cache = cache.prepend(this);
-			}
-		}
-		
-		for(file in files) if(!cache.contains(file)) {
-			switch file.findTypeOld(path, false, cache) {
-				case t = Some(_): return t;
-				case None:
-			}
-		}
-
-		for(unit in units) {
-			switch unit.findTypeOld(path, false, cache) {
-				case t = Some(_): return t;
-				case None:
-			}
-		}
-
-		return None;
-	}*/
-
-
+	
 	function findCategory(cat: Type, forType: Type, from: ITypeDecl, cache: List<{}> = Nil): Array<Category> {
 		if(cache.contains(this)) return [];
 		

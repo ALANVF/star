@@ -111,4 +111,22 @@ class ValueKind extends Kind {
 
 		return super.findSingleStatic(name, from, getter, cache);
 	}
+
+
+	override function findCast(target: Type, from: ITypeDecl, cache: List<Type> = Nil): Array<CastKind> {
+		return super.findCast(target, from, cache).concat(repr._match(
+			at(Some(r), when(!isFlags && r.strictUnifyWithType(target) != null)) => [CUpcast(target)],
+			at(Some(r), when(isFlags)) => target._match(
+				at({t: TApplied(a, [p])}) => {
+					if(a.hasParentType(Pass2.STD_Array) && r.strictUnifyWithType(p) != null) {
+						[CUpcast(target)];
+					} else {
+						[];
+					}
+				},
+				_ => []
+			),
+			_ => []
+		));
+	}
 }

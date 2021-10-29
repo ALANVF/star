@@ -51,4 +51,8 @@ class Span {
 	/*function toString() {
 		return '{start: $start, end: $end}';
 	}*/
+
+	inline function union(other: Span) {
+		return Span.range(this, other);
+	}
 }

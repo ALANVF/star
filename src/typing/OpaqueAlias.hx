@@ -85,6 +85,11 @@ class OpaqueAlias extends Alias {
 					return SSMethod(sm);
 				}
 			},
+			at(mm is MultiStaticMethod) => if(!getter) {
+				if(mm.params[0].label.name == name && mm.params.every(p -> p.value != null)) {
+					return SSMultiMethod(mm);
+				}
+			},
 			_ => {}
 		);
 
@@ -101,13 +106,154 @@ class OpaqueAlias extends Alias {
 			throw "todo";
 		} else {
 			for(mth in staticMethods) mth._match(
-				at(mm is MultiStaticMethod) => {
-					if(mm.params.every2Strict(names, (l, n) -> l.label.name == n) && from.canSeeMethod(mm)) {
-						candidates.push(MSMethod(mm));
-					}
-				},
+				at(mm is MultiStaticMethod) => if(from.canSeeMethod(mm))
+					mm.params.matchesNames(names)._match(
+						at(Yes) => candidates.push(MSMethod(mm)),
+						at(Partial) => candidates.push(MSMethod(mm, true)),
+						at(No) => {}
+					),
 				_ => {}
 			);
+		}
+
+		return candidates;
+	}
+
+
+	override function findSingleInst(name: String, from: ITypeDecl, getter = false, cache: List<Type> = Nil): Null<SingleInstKind> {
+		if(cache.contains(thisType)) return null;
+
+		for(mth in methods) mth._match(
+			at(sm is SingleMethod) => {
+				if(sm.name.name == name && (!getter || sm.isGetter) && from.canSeeMethod(sm)) {
+					return SIMethod(sm);
+				}
+			},
+			at(mm is MultiMethod) => if(!getter) {
+				if(mm.params[0].label.name == name && mm.params.every(p -> p.value != null)) {
+					return SIMultiMethod(mm);
+				}
+			},
+			_ => {}
+		);
+		
+		for(refinee in refinees) {
+			refinee.findSingleInst(name, from, getter, cache)._match(
+				at(si!) => return si,
+				_ => {}
+			);
+		}
+		
+		return null;
+	}
+
+
+	override function findMultiInst(names: Array<String>, from: ITypeDecl, setter = false, cache: List<Type> = Nil) {
+		if(cache.contains(thisType)) return [];
+		
+		final candidates: Array<MultiInstKind> = [];
+
+		if(setter) {
+			switch names {
+				case [name]: for(mth in methods) mth._match(
+					at(mm is MultiMethod) => if(mm.isSetter) mm.params._match(
+						at([{label: {name: l}}], when(l == name && from.canSeeMethod(mm))) => {
+							candidates.push(MIMethod(mm));
+						},
+						_ => {}
+					),
+					_ => {}
+				);
+
+				default: for(mth in methods) mth._match(
+					at(mm is MultiMethod) => if(mm.isSetter && from.canSeeMethod(mm))
+						mm.params.matchesNames(names, true)._match(
+							at(Yes) => candidates.push(MIMethod(mm)),
+							at(Partial) => candidates.push(MIMethod(mm, true)),
+							at(No) => {}
+						),
+					_ => {}
+				);
+			}
+		} else {
+			for(mth in methods) mth._match(
+				at(mm is MultiMethod) => if(from.canSeeMethod(mm))
+					mm.params.matchesNames(names, mm.isSetter)._match(
+						at(Yes) => candidates.push(MIMethod(mm)),
+						at(Partial) => candidates.push(MIMethod(mm, true)),
+						at(No) => {}
+					),
+				_ => {}
+			);
+		}
+
+		for(refinee in refinees) {
+			candidates.pushAll(refinee.findMultiInst(names, from, setter, cache));
+		}
+
+		return candidates;
+	}
+
+
+	override function findCast(target: Type, from: ITypeDecl, cache: List<Type> = Nil) {
+		if(cache.contains(thisType)) return [];
+
+		final candidates: Array<CastKind> = [];
+
+		for(mth in methods) mth._match(
+			at(cm is CastMethod) => {
+				if(cm.type.hasChildType(target) && from.canSeeMethod(cm)) {
+					candidates.push(CMethod(cm));
+				}
+			},
+			_ => {}
+		);
+
+		for(refinee in refinees) {
+			candidates.pushAll(refinee.findCast(target, from, cache));
+		}
+		
+		return candidates;
+	}
+
+
+	override function findUnaryOp(op: UnaryOp, from: ITypeDecl, cache: List<Type> = Nil): Null<UnaryOpKind> {
+		if(cache.contains(thisType)) return null;
+
+		for(oper in operators) oper._match(
+			at(unary is UnaryOperator) => {
+				if(unary.op == op && from.canSeeMethod(unary)) {
+					return UOMethod(unary);
+				}
+			},
+			_ => {}
+		);
+
+		for(refinee in refinees) {
+			refinee.findUnaryOp(op, from, cache)._match(
+				at(uo!) => return uo,
+				_ => {}
+			);
+		}
+
+		return null;
+	}
+
+	
+	override function findBinaryOp(op: BinaryOp, from: ITypeDecl, cache: List<Type> = Nil) {
+		final candidates: Array<BinaryOpKind> = [];
+
+		for(oper in operators) oper._match(
+			at(binary is BinaryOperator) => {
+				if(binary.op == op && from.canSeeMethod(binary)) {
+					candidates.push(BOMethod(binary));
+				}
+			},
+			_ => {}
+		);
+
+		for(refinee in refinees) {
+			candidates.pushAll(refinee.findBinaryOp(op, from, cache));
 		}
 
 		return candidates;

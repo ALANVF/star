@@ -84,7 +84,7 @@ class TypeTools {
 	
 	static function fromType(_: std.Enum<Type>, cmp: Compiler, type: typing.Type) {
 		return switch type.t {
-			case TPath(path, _): throw "todo";//Type.fromTypePath(cmp, path);
+			case TPath(_, path, _): throw "todo";//Type.fromTypePath(cmp, path);
 			case TLookup(type, lookup, source): throw "todo";
 			case TConcrete(decl): TPath(TypePathTools.getFullPath(cmp, decl));
 			case TThis(_): TPath([{name: "$This", args: None}]);

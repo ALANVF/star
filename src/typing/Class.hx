@@ -6,7 +6,6 @@ import reporting.Diagnostic;
 
 class Class extends ClassLike {
 	final inits: Array<Init> = [];
-	final operators: Array<Operator> = [];
 	var defaultInit: Option<DefaultInit> = None;
 	var deinit: Option<Deinit> = None;
 	var native: Option<NativeKind> = None;
@@ -175,6 +174,11 @@ class Class extends ClassLike {
 						return SSInit(si);
 					}
 				},
+				at(mi is MultiInit) => {
+					if(mi.params[0].label.name == name && mi.params.every(p -> p.value != null)) {
+						return SSMultiInit(mi);
+					}
+				},
 				_ => {}
 			);
 		}
@@ -198,72 +202,22 @@ class Class extends ClassLike {
 			throw "todo";
 		} else {
 			for(mth in staticMethods) mth._match(
-				at(mm is MultiStaticMethod) => if(from.canSeeMethod(mm)) {
-					if(mm.params.every2Strict(names, (l, n) -> (n == "=" && mm.isSetter) || l.label.name == n)) {
-						candidates.push(MSMethod(mm));
-					} else if(names.length < mm.params.length) {
-						var n = 0;
-						var p = 0;
-						var matchedOnce = false;
-						while(n < names.length && p < mm.params.length) {
-							mm.params[p]._match(
-								at({label: {name: label}, value: _}, when(label == names[n])) => {
-									n++;
-									p++;
-									if(!matchedOnce) matchedOnce = true;
-								},
-								
-								at({label: {name: _}, value: _!}) => {
-									p++;
-								},
-
-								_ => {
-									matchedOnce = false;
-									break;
-								}
-							);
-						}
-
-						if(matchedOnce) {
-							candidates.push(MSMethod(mm, true));
-						}
-					}
-				},
+				at(mm is MultiStaticMethod) => if(from.canSeeMethod(mm))
+					mm.params.matchesNames(names)._match(
+						at(Yes) => candidates.push(MSMethod(mm)),
+						at(Partial) => candidates.push(MSMethod(mm, true)),
+						at(No) => {}
+					),
 				_ => {}
 			);
 
 			for(init in inits) init._match(
-				at(mi is MultiInit) => if(from.canSeeMethod(mi)) {
-					if(mi.params.every2Strict(names, (l, n) -> l.label.name == n)) {
-						candidates.push(MSInit(mi));
-					} else if(names.length < mi.params.length) {
-						var n = 0;
-						var p = 0;
-						var matchedOnce = false;
-						while(n < names.length && p < mi.params.length) {
-							mi.params[p]._match(
-								at({label: {name: label}, value: _}, when(label == names[n])) => {
-									n++;
-									p++;
-									if(!matchedOnce) matchedOnce = true;
-								},
-								
-								at({label: {name: _}, value: _!}) => {
-									p++;
-								},
-
-								_ => {
-									matchedOnce = false;
-									break;
-								}
-							);
-						}
-
-						if(matchedOnce) {
-							candidates.push(MSInit(mi, true));
-						}
-					}
-				},
+				at(mi is MultiInit) => if(from.canSeeMethod(mi))
+					mi.params.matchesNames(names)._match(
+						at(Yes) => candidates.push(MSInit(mi)),
+						at(Partial) => candidates.push(MSInit(mi, true)),
+						at(No) => {}
+					),
 				_ => {}
 			);
 
@@ -299,21 +253,6 @@ class Class extends ClassLike {
 		for(parent in parents) {
 			candidates.pushAll(parent.findMultiStatic(names, from, setter, cache));
 		}
-		
-		/*if(params.length != 0) {
-			lookup.findTypeOld(List3.of([this.name.span, this.name.name, params]), false, cast cache.prepend(thisType))._match(
-				at(Some({t: TConcrete(decl) | TApplied({t: TConcrete(decl)}, _)})) => {
-					candidates.pushAll(decl.findMultiStatic(names, from, setter, cache.prepend(thisType)));
-				},
-				at(Some({t: TMulti(types)})) => for(ty in types) ty.t._match(
-					at(TConcrete(decl) | TApplied({t: TConcrete(decl)}, _)) => {
-						candidates.pushAll(decl.findMultiStatic(names, from, setter, cache.prepend(thisType)));
-					},
-					_ => {}
-				),
-				_ => {}
-			);
-		}*/
 
 		for(refinee in refinees) {
 			candidates.pushAll(refinee.findMultiStatic(names, from, setter, cache));
@@ -328,6 +267,39 @@ class Class extends ClassLike {
 			return Pass2.STD_Value.findSingleInst(name, from, getter);
 		} else {
 			return null;
+		}
+	}
+
+	override function findCast(target: Type, from: ITypeDecl, cache: List<Type> = Nil): Array<CastKind> {
+		final res = super.findCast(target, from, cache);
+
+		native._match(
+			at(Some(nat)) => {
+				if(!nat.match(NPtr(_)) && target.isNative(nat)) {
+					res.push(CNative(target));
+				}
+			},
+			_ => {}
+		);
+
+		return res;
+	}
+
+
+	override function defaultUnaryOp(op: UnaryOp, from: ITypeDecl): Null<UnaryOpKind> {
+		if(!native.match(Some(NVoid))) {
+			return Pass2.STD_Value.findUnaryOp(op, from);
+		} else {
+			return null;
+		}
+	}
+
+
+	override function defaultBinaryOp(op: BinaryOp, from: ITypeDecl) {
+		if(!native.match(Some(NVoid))) {
+			return Pass2.STD_Value.findBinaryOp(op, from);
+		} else {
+			return [];
 		}
 	}
 }

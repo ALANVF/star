@@ -47,7 +47,19 @@ function reduceOverloadsBy<T>(overloads: Array<T>, by: (T) -> Type): Array<T> re
 				final ty = by(ov2);
 
 				switch [ty.t, type.t] {
-					case [TApplied(t1, p1), TApplied(t2, p2)]:
+					case [TApplied({t: TConcrete(d1)}, p1), TApplied({t: TConcrete(d2)}, p2)] if(p1.length == p2.length):
+						if(d1.name.name == d2.name.name && d1.lookup == d2.lookup && d1.declName() == d2.declName()) {
+							for(i => p in p1) {
+								if(!p.hasChildType(p2[i])) {
+									return true;
+								}
+							}
+							return false;
+						} else {
+							return true;
+						}
+
+					case [TApplied(t1, p1), TApplied(t2, p2)] if(p1.length == p2.length):
 						if(t1 != t2) {
 							return true;
 						} else {
@@ -101,66 +113,14 @@ function mostSpecificBy<T>(values: Array<T>, by: (T) -> Type): Array<T> return v
 		for(i in 1...values.length) {
 			final v = values[i];
 			
-			/*function loop(type1: Type, type2: Type): Bool {
-				trace(type1.fullName(), type2.fullName());
-
-				if(type1.hasChildType(type2)) return false;
-
-				switch [type1.t, type2.t] {
-					case [TThis(t1), _]: return loop(getThisType(t1), type2);
-					case [_, TThis(t2)]: return loop(type1, getThisType(t2));
-
-					case [TMulti(types), _]: switch mostSpecific(types) {
-						case []: throw "bad";
-						case [t1]: return loop(t1, type2);
-						case ts: throw "bruh";
-					}
-
-					case [_, TMulti(types)]: switch leastSpecific(types) {
-						case []: throw "bad";
-						case [t2]: return loop(type1, t2);
-						case ts: throw "bruh";
-					}
-
-					case [TApplied(t1, p1), TApplied(t2, p2)]:
-						if(loop(t1, t2)) {
-							return false;
-						} else {
-							return p1.every2(p2, (pa1, pa2) ->
-								pa1 == pa2 || !pa1.hasChildType(pa2)
-							);
-						}
-					
-					case [TConcrete(d1), TConcrete(d2)]:
-						if(d1.name.name != d2.name.name) {
-							return !d1.hasChildDecl(d2);
-						} else {
-							return d1.lookup == d2.lookup && d1.params.every2(d2.params, (p1, p2) ->
-								p1 == p2 || p1.hasParentType(p2)
-							);
-						}
-
-					default:
-						if(type1.t != type2.t) {
-							return !type1.hasChildType(type2);
-						} else {
-							return false;
-						}
-				}
-			}
-			// current <=> existing
-			if(res.some(v2 -> loop(by(v), by(v2)))) {
-				res.push(v);
-			}*/
-			
 			final res2 = res.filter(v2 -> {
-				final a = by(v);
-				final b = by(v2);
+				final parent = by(v);
+				final child = by(v2);
 				
-				!(a.hasParentType(b) && !a.hasChildType(b));
+				parent.hasParentType(child) && !parent.hasChildType(child);
 			});
 			if(res2.length != res.length) {
-				res=res2;
+				res = res2;
 				res.push(v);
 			}
 		}
@@ -184,10 +144,10 @@ function leastSpecificBy<T>(values: Array<T>, by: (T) -> Type): Array<T> return 
 			final v = values[i];
 			
 			final res2 = res.filter(v2 -> {
-				final a = by(v);
-				final b = by(v2);
+				final parent = by(v);
+				final child = by(v2);
 				
-				!(a.hasChildType(b) && !a.hasParentType(b));
+				parent.hasChildType(child) || !parent.hasParentType(child);
 			});
 			if(res2.length != res.length) {
 				res = res2;
@@ -264,33 +224,41 @@ class Type {
 		case TApplied(type, params): // Probably bad but eh
 			final name = type.simpleName();
 			(if(name.endsWith("]")) {
-				name.removeAfterLast("[");
+				name.removeAfter("[");
 			} else {
 				name;
 			}) + "[" + params.map(p -> p.simpleName()).join(", ") + "]";
 		case TModular(type, _): return type.simpleName();
 	}
 
-	function fullName(): String return switch t {
-		case TPath(depth, lookup, _):
-			"_.".repeat(depth)
-			+ lookup.mapArray((_, n, p) -> n + (p.length == 0 ? "" : '[${p.joinMap(", ", p -> p.fullName())}]')).join(".");
-		case TLookup(type, lookup, _):
-			type.fullName()
-			+ lookup.mapArray((_, n, p) -> '.$n' + (p.length == 0 ? "" : '[${p.joinMap(", ", p -> p.fullName())}]')).join("");
-		case TConcrete(decl): decl.fullName();
-		case TTypeVar(tvar): tvar.fullName();
-		case TThis(decl): 'This (${decl.fullName()})';
-		case TBlank: "_";
-		case TMulti(types): "(" + types.joinMap(" | ", ty -> ty.fullName()) + ")";
-		case TApplied(type, params): // Probably bad but eh
-			final name = type.fullName();
-			(if(name.endsWith("]")) {
-				name.removeAfterLast("[");
-			} else {
-				name;
-			}) + "[" + params.map(p -> p.fullName()).join(", ") + "]";
-		case TModular(type, _): return type.fullName();
+	function fullName(cache: List<Type> = Nil): String {
+		return if(cache.contains(this)) {
+			this.simpleName();
+		} else {
+			cache = cache.prepend(this);
+			switch t {
+				case TPath(depth, lookup, _):
+					"_.".repeat(depth)
+					+ lookup.mapArray((_, n, p) -> n + (p.length == 0 ? "" : '[${p.joinMap(", ", p -> p.fullName(cache))}]')).join(".");
+				case TLookup(type, lookup, _):
+					type.fullName()
+					+ lookup.mapArray((_, n, p) -> '.$n' + (p.length == 0 ? "" : '[${p.joinMap(", ", p -> p.fullName(cache))}]')).join("");
+				case TConcrete(decl): decl.fullName(cache);
+				case TTypeVar(tvar): tvar.fullName(cache);
+				case TThis(decl): 'This (${decl.fullName(cache)})';
+				case TBlank: "_";
+				case TMulti(types): "(" + types.joinMap(" | ", ty -> ty.fullName(cache)) + ")";
+				case TApplied(type, params): // Probably bad but eh
+					final name = type.fullName(cache);
+					//if(type.t.match(TMulti(_))) trace(name);
+					(if(name.endsWith("]")) {
+						name.removeAfter("[");
+					} else {
+						name;
+					}) + ":[" + params.map(p -> p.fullName(cache)).join(", ") + "]";
+				case TModular(type, _): return type.fullName(cache);
+			}
+		}
 	}
 
 
@@ -302,7 +270,11 @@ class Type {
 		}
 
 		return t._match(
-			at(TPath(depth, lookup, source)) => throw "NYI!",
+			at(TPath(_, l, _)) => {
+				//trace(l.span().display(), l.simpleName(), path.simpleName());
+				this.t=this.simplify().t;
+				this.findType(path, search, from, depth, cache);
+			},
 			at(TLookup(type, lookup, source)) => throw "NYI!",
 			at(TConcrete(decl)) => decl.findType(path, search, from, depth, cache),
 			at(TThis(source)) => source.findType(path, search, from, depth, cache),
@@ -324,42 +296,14 @@ class Type {
 			at(TTypeVar(typevar)) => throw "NYI!",
 			at(TModular(t, unit)) => unit.findType(path, Outside, from, depth, cache)._match(
 				at(res = Some(_)) => res,
-				at(None) => t.findType(path, search, from, depth, cache)
+				at(None) => t.findType(path, search, from, depth, cache.prepend(unit))
 			)
 		);
 	}
 
-	/*function findTypeOld(path: LookupPath, absolute = false, cache: List<{}> = Nil): Option<Type> {
-		if(cache.contains(this)) {
-			return None;
-		} else {
-			cache = cache.prepend(this);
-		}
-
-		return switch t {
-			case TPath(depth, lookup, source): throw "NYI!";
-			case TLookup(type, lookup, source): throw "NYI!";
-			case TConcrete(decl): decl.findTypeOld(path, absolute, cache);
-			case TThis(source):
-				if(absolute) {
-					source.findTypeOld(path, absolute, cache);
-				} else throw "NYI!";
-			case TBlank: None;
-			case TMulti(types): throw "NYI!";
-			case TApplied(type, params):
-				if(absolute) {
-					type.findTypeOld(path, absolute, cache);
-				} else throw "NYI!";
-			case TTypeVar(typevar): throw "NYI!";
-			case TModular(t, unit): switch unit.findTypeOld(path, false, cache) {
-				case res = Some(_): res;
-				case None: t.findTypeOld(path, absolute, cache);
-			}
-		}
-	}*/
-
-	function makeTypePath(path: TypePath) {
-		return path.toType(this);
+	function makeTypePath(path: TypePath):Type {
+		//return if(t.match(TPath(_, _, _))) throw "bad" else path.toType(this.simplify());
+		throw "bad";
 	}
 
 	@:keep private function __compare(other: Any) {
@@ -368,6 +312,8 @@ class Type {
 				case [TConcrete(decl1), TConcrete(decl2)]: decl1 == decl2;
 				case [TThis(src1), TThis(src2)]: src1 == src2;
 				case [TModular(t1, u1), TModular(t2, u2)]: u1 == u2 && t1 == t2;
+				case [TModular(t1, _), _]: t1 == type;
+				case [_, TModular(t2, _)]: this == t2;
 				case [TBlank, TBlank]: true;
 				case [_, _]: t.equals(type.t);
 			}) ? 0 : -1),
@@ -400,14 +346,30 @@ class Type {
 		return t._match(
 			at(TPath(_, _, _)) => throw "bad",
 			at(TLookup(type, lookup, source)) => throw "todo",
-			at(TConcrete(decl)) => decl.params.every2Strict(args, (p, a) -> p.hasChildType(a)),
+			at(TConcrete(decl)) => {
+				//trace(decl.name.name, decl.params.map(t->t.fullName()), args.map(t->t.fullName()));
+				decl.params.every2Strict(args, (p, a) -> {
+					p == a ? true : p.t._match(
+						at(TApplied({t: TMulti(types)}, ps)) => {
+							if(types.contains(this)) {
+								true;
+							} else {
+								p.hasChildType(a);
+							}
+						},
+						_ => p.hasChildType(a)
+					);
+				});
+			},
 			at(TThis(source)) => source._match(
 				at(decl is TypeDecl) => decl.params.every2Strict(args, (p, a) -> p.hasChildType(a)),
 				at(tvar is TypeVar) => tvar.params.every2Strict(args, (p, a) -> p.hasChildType(a)),
 				_ => throw "bad"
 			),
 			at(TBlank) => true,
-			at(TMulti(types)) => types.every(type -> type.acceptsArgs(args)),
+			at(TMulti(types)) => {
+				mostSpecific(types).every(type -> type.acceptsArgs(args));
+			},
 			at(TApplied(type, args2)) => throw "todo",
 			at(TTypeVar(tvar)) => tvar.params.every2Strict(args, (p, a) -> p.hasChildType(a)),
 			at(TModular(type, _)) => type.acceptsArgs(args)
@@ -417,29 +379,29 @@ class Type {
 
 	function hasParentDecl(decl: TypeDecl) {
 		return t._match(
-			at(TPath(depth, lookup, source)) => throw "todo",
+			at(TPath(depth, lookup, source)) => this.simplify().hasParentDecl(decl),
 			at(TLookup(type, lookup, source)) => throw "todo",
 			at(TConcrete(decl2)) => decl2.hasParentDecl(decl),
 			at(TThis(source)) => source.hasParentDecl(decl),
 			at(TBlank) => throw "bad",
 			at(TMulti(types)) => reduceOverloads(types).every(ty -> ty.hasParentDecl(decl)),
-			at(TApplied(type, params)) => {
-				//trace(type.fullName(), decl.fullName());
-				type.hasParentDecl(decl) || decl.params._match(
+			at(TApplied({t: TMulti(types)}, args)) => types.filter(ty -> ty.acceptsArgs(args)).some(ty -> ty.hasParentDecl(decl)),
+			at(TApplied(type, args)) => {
+				type.acceptsArgs(args) && (type.hasParentDecl(decl) || decl.params._match(
 					at([]) => false,
-					at(ps, when(params.length == ps.length)) => {
+					at(ps, when(args.length == ps.length)) => {
 						if(type.t == decl.thisType.t
 						|| type.t._match(
 							at(TThis(d1) | TConcrete(d1)) => (d1.lookup == decl.lookup && d1.name.name == decl.name.name),
 							_ => false
 						)) {
-							params.every2(ps, (p1, p2) -> p1.t == p2.t || p1.hasParentType(p2));
+							args.every2(ps, (p1, p2) -> p1.t == p2.t || p1.hasParentType(p2));
 						} else {
 							false;
 						}
 					},
 					_ => false
-				);
+				));
 			},
 			at(TTypeVar(typevar)) => typevar.hasParentDecl(decl),
 			at(TModular(type, unit)) => type.hasParentDecl(decl)
@@ -448,28 +410,29 @@ class Type {
 
 	function hasChildDecl(decl: TypeDecl) {
 		return t._match(
-			at(TPath(depth, lookup, source)) => throw "todo",
+			at(TPath(depth, lookup, source)) => this.simplify().hasChildDecl(decl),
 			at(TLookup(type, lookup, source)) => throw "todo",
 			at(TConcrete(decl2)) => decl2.hasChildDecl(decl),
 			at(TThis(source)) => source.hasChildDecl(decl),
 			at(TBlank) => throw "bad",
 			at(TMulti(types)) => reduceOverloads(types).every(ty -> ty.hasChildDecl(decl)),
-			at(TApplied(type, params)) => {
-				type.hasChildDecl(decl) || decl.params._match(
+			at(TApplied({t: TMulti(types)}, args)) => types.filter(ty -> ty.acceptsArgs(args)).some(ty -> ty.hasChildDecl(decl)),
+			at(TApplied(type, args)) => {
+				type.acceptsArgs(args) && (type.hasChildDecl(decl) || decl.params._match(
 					at([]) => false,
-					at(ps, when(params.length == ps.length)) => {
+					at(ps, when(args.length == ps.length)) => {
 						if(type.t == decl.thisType.t
 						|| type.t._match(
 							at(TThis(d1) | TConcrete(d1)) => (d1.lookup == decl.lookup && d1.name.name == decl.name.name),
 							_ => false
 						)) {
-							params.every2(ps, (p1, p2) -> p1.t == p2.t || p1.hasChildType(p2));
+							args.every2(ps, (p1, p2) -> p1.t == p2.t || p1.hasChildType(p2));
 						} else {
 							false;
 						}
 					},
 					_ => false
-				);
+				));
 			},
 			at(TTypeVar(typevar)) => typevar.hasChildDecl(decl),
 			at(TModular(type, unit)) => type.hasChildDecl(decl)
@@ -479,27 +442,31 @@ class Type {
 
 	function hasParentType(type: Type) {
 		return this.t == type.t || t._match(
-			at(TPath(depth, lookup, source)) => throw "todo",
+			at(TPath(depth, lookup, source)) => this.simplify().hasParentType(type),
 			at(TLookup(type2, lookup, source)) => throw "todo",
 			at(TConcrete(decl2)) => decl2.hasParentType(type),
 			at(TThis(source)) => source.hasParentType(type),
 			at(TBlank) => throw "bad",
 			at(TMulti(types)) => reduceOverloads(types).every(ty -> ty.hasParentType(type)),
-			at(TApplied(type2, params)) => {
-				type2.hasParentType(type) || type.t._match(
-					at(TApplied(ty, ps), when(params.length == ps.length)) => {
+			at(TApplied({t: TMulti(types)}, args)) => types.filter(ty -> ty.acceptsArgs(args)).some(ty -> ty.hasParentType(type)),
+			at(TApplied(type2, args)) => {
+				type2.acceptsArgs(args) && (type2.hasParentType(type) || type.t._match(
+					at(TApplied(ty, ps), when(args.length == ps.length && ty.acceptsArgs(ps))) => {
 						if(type2.t == ty.t
 						|| Util._match([type2.t, ty.t],
 							at([TThis(d1) | TConcrete(d1), TThis(d2) | TConcrete(d2)]) => (d1.lookup == d2.lookup && d1.name.name == d2.name.name),
 							_ => false
-						)) {
-							params.every2(ps, (p1, p2) -> p1 == p2 || p1.hasParentType(p2));
+						)
+						|| type2.hasParentType(ty)) {
+							args.every2(ps, (p1, p2) -> p1 == p2 || p1.hasParentType(p2));
 						} else {
 							false;
 						}
 					},
-					_ => false
-				);
+					at(TApplied(_, _)) => false,
+					_ => type2.acceptsArgs(args)
+					//_ => false
+				));
 			},
 			at(TTypeVar(typevar)) => typevar.hasParentType(type),
 			at(TModular(type2, unit)) => type2.hasParentType(type)
@@ -509,31 +476,34 @@ class Type {
 	function hasChildType(type: Type) {
 		//trace(this.fullName(),type.fullName());
 		return this.t == type.t || t._match(
-			at(TPath(depth, lookup, source)) => throw "todo",
+			at(TPath(depth, lookup, source)) => this.simplify().hasChildType(type),
 			at(TLookup(type2, lookup, source)) => throw "todo "+type2.fullName()+" "+lookup,
 			at(TConcrete(decl2)) => decl2.hasChildType(type),
 			at(TThis(source)) => source.hasChildType(type),
 			at(TBlank) => throw "bad",
-			at(TMulti(types)) => {
-				//trace(types.map(t->t.fullName()));
-				reduceOverloads(types).every(ty -> ty.hasChildType(type));
-			},
-			at(TApplied(type2, params)) => {
-				//trace(type2.fullName(), params.map(p->p.fullName()));
-				type2.hasChildType(type) || type.t._match(
-					at(TApplied(ty, ps), when(params.length == ps.length)) => {
+			at(TMulti(types)) => reduceOverloads(types).every(ty -> ty.hasChildType(type)),
+			at(TApplied({t: TMulti(types)}, args)) => types.filter(ty -> ty.acceptsArgs(args)).some(ty -> ty.hasChildType(type)),
+			at(TApplied(type2, args)) => {
+				//trace(type2.fullName(), args.map(p->p.fullName()));
+				type2.acceptsArgs(args) && (type2.hasChildType(type) || type.t._match(
+					at(TApplied(ty, ps), when(args.length == ps.length && ty.acceptsArgs(ps))) => {
 						if(type2.t == ty.t
-						|| Util._match([type2.t, ty.t],
+						/*|| Util._match([type2.t, ty.t],
 							at([TThis(d1) | TConcrete(d1), TThis(d2) | TConcrete(d2)]) => (d1.lookup == d2.lookup && d1.name.name == d2.name.name),
 							_ => false
-						)) {
-							params.every2(ps, (p1, p2) -> p1.t == p2.t || p1.hasChildType(p2));
+						)*/ || type2.hasChildType(ty)) {
+							args.every2(ps, (p1, p2) -> p1.t == p2.t || p1.hasChildType(p2));
 						} else {
 							false;
 						}
 					},
-					_ => false
-				);
+					at(TApplied(_, _)) => false,
+					_ => {
+						//trace(type.fullName(),args.map(a->a.fullName()));
+						type.acceptsArgs(args);
+					}
+					//_ => false
+				));
 			},
 			at(TTypeVar(typevar)) => typevar.hasChildType(type),
 			at(TModular(type2, unit)) => type2.hasChildType(type)
@@ -555,7 +525,61 @@ class Type {
 			at([TConcrete(d1), TConcrete(d2)]) => if(d1 == d2) this else null,
 			at([TModular(t1, _), _]) => t1.strictUnifyWithType(type),
 			at([_, TModular(t2, _)]) => this.strictUnifyWithType(t2),
+			at([TApplied(t1, a1), TApplied(t2, a2)], when(a1.length == a2.length)) => {
+				t1.strictUnifyWithType(t2)._and(t => {
+					{t: TApplied(t, [for(i => a1_ in a1) {
+						a1_.strictUnifyWithType(a2[i])._match(
+							at(a!) => a,
+							_ => return null
+						);
+					}])};
+				});
+			},
+			at([TMulti(types1), TMulti(types2)]) => {
+				if(types1.length == types2.length && types1.sorted((a, b) -> a.__compare(b)).every2(types2.sorted((a, b) -> a.__compare(b)), (t1, t2) -> t1.strictUnifyWithType(t2) != null)) {
+					this;
+				} else {
+					null;
+				}
+			},
+			at([TTypeVar(tv1), TTypeVar(tv2)]) => {
+				if(tv1.strictUnifyWithTypevar(tv2)) {
+					this;
+				} else {
+					null;
+				}
+			},
+			at([TThis(t1), TThis(t2)]) => {
+				if(t1 == t2) {
+					this;
+				} else {
+					null;
+				}
+			},
+			at([TThis(t1), TConcrete(d2)]) => {
+				if(t1 == d2) {
+					type;
+				} else {
+					null;
+				}
+			},
+			at([TConcrete(d1), TThis(t2)]) => {
+				if(d1 == t2) {
+					this;
+				} else {
+					null;
+				}
+			},
 			_ => null
+		);
+	}
+
+	function hasStrictChildType(type: Type) {
+		return this.t == type.t || Util._match([this.t, type.t],
+			at([TConcrete(d1), TConcrete(d2)]) => d1.hasChildDecl(d2),
+			at([TModular(t1, _), _]) => t1.hasStrictChildType(type),
+			at([_, TModular(t2, _)]) => this.hasStrictChildType(t2),
+			_ => false
 		);
 	}
 
@@ -567,8 +591,8 @@ class Type {
 			at(TConcrete(decl)) => decl.canSeeMember(member),
 			at(TThis(source)) => throw "todo",
 			at(TBlank) => throw "bad",
-			at(TMulti(types)) => throw "todo",
-			at(TApplied(type, params)) => type.canSeeMember(member),
+			at(TMulti(types)) => types.every(ty -> ty.canSeeMember(member)),
+			at(TApplied(type, args)) => type.canSeeMember(member),
 			at(TTypeVar(typevar)) => throw "todo",
 			at(TModular(type, unit)) => type.canSeeMember(member)
 		);
@@ -581,15 +605,15 @@ class Type {
 			at(TConcrete(decl)) => decl.canSeeMethod(method),
 			at(TThis(source)) => throw "todo",
 			at(TBlank) => throw "bad",
-			at(TMulti(types)) => throw "todo",
-			at(TApplied(type, params)) => type.canSeeMethod(method),
+			at(TMulti(types)) => types.every(ty -> ty.canSeeMethod(method)),
+			at(TApplied(type, args)) => type.canSeeMethod(method),
 			at(TTypeVar(typevar)) => throw "todo",
 			at(TModular(type, unit)) => type.canSeeMethod(method)
 		);
 	}
 
 
-	function instMembers(from: TypeDecl): Array<Member> {
+	function instMembers(from: ITypeDecl): Array<Member> {
 		return t._match(
 			at(TPath(depth, lookup, source)) => throw "todo",
 			at(TLookup(type, lookup, source)) => throw "todo",
@@ -599,7 +623,8 @@ class Type {
 					if(td == from) {
 						td.instMembers(from);
 					} else {
-						throw "???";
+						//throw "???";
+						td.instMembers(from);
 					}
 				},
 				_ => throw "todo"
@@ -608,7 +633,12 @@ class Type {
 			at(TMulti(types)) => {
 				leastSpecific(types).flatMap(type -> type.instMembers(from)).unique();
 			},
-			at(TApplied(type, params)) => {
+			at(TApplied({t: TMulti(types)}, args)) => {
+				leastSpecific(types.filter(type -> type.acceptsArgs(args)))
+					.flatMap(type -> type.instMembers(from))
+					.unique();
+			},
+			at(TApplied(type, args)) => {
 				type.instMembers(from);
 			},
 			at(TTypeVar(typevar)) => throw "todo",
@@ -627,7 +657,8 @@ class Type {
 					if(td == from) {
 						td.findSingleStatic(name, from, getter, cache);
 					} else {
-						throw "???";
+						//throw "???";
+						td.findSingleStatic(name, from, getter, cache);
 					}
 				},
 				_ => throw "todo"
@@ -641,10 +672,20 @@ class Type {
 					case kinds: throw "todo";
 				}
 			},
-			at(TApplied(type, params)) => {
+			at(TApplied({t: TMulti(types)}, args)) => {
+				leastSpecific(types.filter(type -> type.acceptsArgs(args)))
+					.filterMap(type -> type.findSingleStatic(name, from, getter, cache))
+					.unique()
+				._match(
+					at([]) => null,
+					at([kind]) => kind,
+					at(kinds) => throw "todo"
+				);
+			},
+			at(TApplied(type, args)) => {
 				type.findSingleStatic(name, from, getter, cache);
 			},
-			at(TTypeVar(typevar)) => throw "todo",
+			at(TTypeVar(typevar)) => typevar.findSingleStatic(name, from, getter, cache),
 			at(TModular(type, unit)) => type.findSingleStatic(name, from, getter, cache)
 		);
 	}
@@ -660,19 +701,27 @@ class Type {
 					if(td == from) {
 						td.findMultiStatic(names, from, setter, cache);
 					} else {
-						throw "???";
+						//throw "???";
+						td.findMultiStatic(names, from, setter, cache);
 					}
 				},
 				_ => throw "todo"
 			),
-			at(TBlank) => throw "bad",
+			at(TBlank) => throw "bad "+span._and(s=>s.display()),
 			at(TMulti(types)) => {
-				leastSpecific(types).flatMap(type -> type.findMultiStatic(names, from, setter, cache)).unique();
+				leastSpecific(types)
+					.flatMap(type -> type.findMultiStatic(names, from, setter, cache))
+					.unique();
 			},
-			at(TApplied(type, params)) => {
+			at(TApplied({t: TMulti(types)}, args)) => {
+				leastSpecific(types.filter(type -> type.acceptsArgs(args)))
+					.flatMap(type -> type.findMultiStatic(names, from, setter, cache))
+					.unique();
+			},
+			at(TApplied(type, args)) => {
 				type.findMultiStatic(names, from, setter, cache);
 			},
-			at(TTypeVar(typevar)) => throw "todo",
+			at(TTypeVar(typevar)) => typevar.findMultiStatic(names, from, setter, cache),
 			at(TModular(type, unit)) => type.findMultiStatic(names, from, setter, cache)
 		);
 	}
@@ -688,7 +737,8 @@ class Type {
 					if(td == from) {
 						td.findSingleInst(name, from, getter, cache);
 					} else {
-						throw "???";
+						//throw "???";
+						td.findSingleInst(name, from, getter, cache);
 					}
 				},
 				_ => throw "todo"
@@ -702,7 +752,17 @@ class Type {
 					case kinds: throw "todo";
 				}
 			},
-			at(TApplied(type, params)) => {
+			at(TApplied({t: TMulti(types)}, args)) => {
+				leastSpecific(types.filter(type -> type.acceptsArgs(args)))
+					.filterMap(type -> type.findSingleInst(name, from, getter, cache))
+					.unique()
+				._match(
+					at([]) => null,
+					at([kind]) => kind,
+					at(kinds) => throw "todo"
+				);
+			},
+			at(TApplied(type, args)) => {
 				type.findSingleInst(name, from, getter, cache);
 			},
 			at(TTypeVar(typevar)) => typevar.findSingleInst(name, from, getter, cache),
@@ -721,16 +781,25 @@ class Type {
 					if(td == from) {
 						td.findMultiInst(names, from, setter, cache);
 					} else {
-						throw "???";
+						//throw "???"+names+from.fullName()+" "+td.fullName();
+						td.findMultiInst(names, from, setter, cache);
 					}
 				},
 				_ => throw "todo"
 			),
 			at(TBlank) => throw "bad",
 			at(TMulti(types)) => {
-				leastSpecific(types).flatMap(type -> type.findMultiInst(names, from, setter, cache)).unique();
+				types
+					.flatMap(type -> type.findMultiInst(names, from, setter, cache))
+					.unique();
 			},
-			at(TApplied(type, params)) => {
+			at(TApplied({t: TMulti(types)}, args)) => {
+				types
+					.filter(type -> type.acceptsArgs(args))
+					.flatMap(type -> type.findMultiInst(names, from, setter, cache))
+					.unique();
+			},
+			at(TApplied(type, args)) => {
 				type.findMultiInst(names, from, setter, cache);
 			},
 			at(TTypeVar(typevar)) => typevar.findMultiInst(names, from, setter, cache),
@@ -739,28 +808,112 @@ class Type {
 	}
 
 	
-	function findCast(target: Type, from: ITypeDecl, cache: List<Type> = Nil): Array<CastMethod> {
+	function findCast(target: Type, from: ITypeDecl, cache: List<Type> = Nil): Array<CastKind> {
 		return t._match(
 			at(TPath(depth, lookup, source)) => throw "todo",
 			at(TLookup(type, lookup, source)) => throw "todo",
 			at(TConcrete(decl)) => decl.findCast(target, from, cache),
 			at(TThis(source)) => source._match(
 				at(td is TypeDecl) => {
-					if(td == from) {
+					if(td.thisType == from.thisType) {
 						td.findCast(target, from, cache);
 					} else {
-						throw "???";
+						//throw "???"+td.fullName()+" "+from.fullName()+" "+target.fullName();
+						td.findCast(target, from, cache);
 					}
 				},
 				_ => throw "todo"
 			),
 			at(TBlank) => throw "bad",
 			at(TMulti(types)) => leastSpecific(types).flatMap(t -> t.findCast(target, from, cache)),
-			at(TApplied(type, params)) => {
+			at(TApplied({t: TMulti(types)}, args)) => {
+				leastSpecific(types.filter(type -> type.acceptsArgs(args)))
+					.flatMap(type -> type.findCast(target, from, cache))
+					.unique();
+			},
+			at(TApplied(type, args)) => {
 				type.findCast(target, from, cache);
 			},
 			at(TTypeVar(typevar)) => typevar.findCast(target, from, cache),
 			at(TModular(type, unit)) => type.findCast(target, from, cache)
+		);
+	}
+
+
+	function findUnaryOp(op: UnaryOp, from: ITypeDecl, cache: List<Type> = Nil): Null<UnaryOpKind> {
+		return t._match(
+			at(TPath(depth, lookup, source)) => throw "todo "+lookup+" "+lookup.span().display()+" "+this.span._and(s=>s.display()),
+			at(TLookup(type, lookup, source)) => throw "todo",
+			at(TConcrete(decl)) => decl.findUnaryOp(op, from, cache),
+			at(TThis(source)) => source._match(
+				at(td is TypeDecl) => {
+					if(td == from) {
+						td.findUnaryOp(op, from, cache);
+					} else {
+						//throw "???";
+						td.findUnaryOp(op, from, cache);
+					}
+				},
+				_ => throw "todo"
+			),
+			at(TBlank) => throw "bad",
+			at(TMulti(types)) => {
+				final found = leastSpecific(types).filterMap(type -> type.findUnaryOp(op, from, cache)).unique();
+				switch found {
+					case []: null;
+					case [kind]: kind;
+					case kinds: throw "todo";
+				}
+			},
+			at(TApplied({t: TMulti(types)}, args)) => {
+				leastSpecific(types.filter(type -> type.acceptsArgs(args)))
+					.filterMap(type -> type.findUnaryOp(op, from, cache))
+					.unique()
+				._match(
+					at([]) => null,
+					at([kind]) => kind,
+					at(kinds) => throw "todo"
+				);
+			},
+			at(TApplied(type, args)) => {
+				type.findUnaryOp(op, from, cache);
+			},
+			at(TTypeVar(typevar)) => typevar.findUnaryOp(op, from, cache),
+			at(TModular(type, unit)) => type.findUnaryOp(op, from, cache)
+		);
+	}
+
+
+	function findBinaryOp(op: BinaryOp, from: ITypeDecl, cache: List<Type> = Nil): Array<BinaryOpKind> {
+		return t._match(
+			at(TPath(depth, lookup, source)) => throw "todo "+lookup+" "+lookup.span().display()+" "+this.span._and(s=>s.display()),
+			at(TLookup(type, lookup, source)) => throw "todo",
+			at(TConcrete(decl)) => decl.findBinaryOp(op, from, cache),
+			at(TThis(source)) => source._match(
+				at(td is TypeDecl) => {
+					if(td == from) {
+						td.findBinaryOp(op, from, cache);
+					} else {
+						//throw "???";
+						td.findBinaryOp(op, from, cache);
+					}
+				},
+				_ => throw "todo"
+			),
+			at(TBlank) => throw "bad",
+			at(TMulti(types)) => {
+				leastSpecific(types).flatMap(type -> type.findBinaryOp(op, from, cache)).unique();
+			},
+			at(TApplied({t: TMulti(types)}, args)) => {
+				leastSpecific(types.filter(type -> type.acceptsArgs(args)))
+					.flatMap(type -> type.findBinaryOp(op, from, cache))
+					.unique();
+			},
+			at(TApplied(type, args)) => {
+				type.findBinaryOp(op, from, cache);
+			},
+			at(TTypeVar(typevar)) => typevar.findBinaryOp(op, from, cache),
+			at(TModular(type, unit)) => type.findBinaryOp(op, from, cache)
 		);
 	}
 
@@ -782,7 +935,12 @@ class Type {
 			),
 			at(TBlank) => throw "bad",
 			at(TMulti(types)) => reduceOverloads(types).flatMap(t -> t.findCategory(cat, forType, from, cache)),
-			at(TApplied(type, params)) => {
+			at(TApplied({t: TMulti(types)}, args)) => {
+				reduceOverloads(types.filter(type -> type.acceptsArgs(args)))
+					.flatMap(type -> type.findCategory(cat, forType, from, cache))
+					.unique();
+			},
+			at(TApplied(type, args)) => {
 				type.findCategory(cat, forType, from, cache);
 			},
 			at(TTypeVar(typevar)) => typevar.findCategory(cat, forType, from, cache),
@@ -824,12 +982,11 @@ class Type {
 				at([type]) => type,
 				at(types2) => if(types2.length == types.length) this else {t: TMulti(types2), span: span}
 			),
-			at(TApplied({t: TMulti(types)}, params)) => mostSpecific(types.map(ty -> ty.getMostSpecific()))._match(
+			at(TApplied({t: TMulti(types)}, args)) => mostSpecific(types.filter(ty -> ty.acceptsArgs(args)).map(ty -> ty.getMostSpecific()))._match(
 				at([]) => throw "bad",
-				at([ty]) => {t: TApplied(ty, params), span: span},
-				at(types2) => if(types2.length == types.length) this else {t: TApplied({t: TMulti(types2)}, params), span: span}
+				at([ty]) => {t: TApplied(ty, args), span: span},
+				at(types2) => if(types2.length == types.length) this else {t: TApplied({t: TMulti(types2)}, args), span: span}
 			),
-			//types.filter(type -> type.hasChildType)
 			_ => this
 		);
 	}
@@ -841,12 +998,46 @@ class Type {
 				at([type]) => type,
 				at(types2) => if(types2.length == types.length) this else {t: TMulti(types2), span: span}
 			),
-			at(TApplied({t: TMulti(types)}, params)) => leastSpecific(types.map(ty -> ty.getLeastSpecific()))._match(
+			at(TApplied({t: TMulti(types)}, args)) => {
+				final args2 = args.map(a -> a.t._match(
+					at(TApplied({t: TMulti(types2)}, as)) => {
+						if(types.every2Strict(types2, (t1, t2) -> t1 == t2)) {
+							trace(types);
+							this;
+						} else {
+							a;
+						}
+					},
+					_ => a
+				));
+				leastSpecific(types.filter(ty -> ty.acceptsArgs(args2)).map(ty -> ty.getLeastSpecific()))._match(
+					at([]) => throw "bad",
+					at([ty]) => {t: TApplied(ty, args), span: span},
+					at(types2) => if(types2.length == types.length) this else {t: TApplied({t: TMulti(types2)}, args), span: span}
+				);
+			},
+			_ => this
+		);
+	}
+
+	function simplify(): Type {
+		return t._match(
+			at(TPath(depth, lookup, source)) => {
+				source.findType(lookup, Start, source._match(
+					at(m is AnyMethod) => m.decl,
+					at(m is EmptyMethod) => m.decl,
+					_ => cast source
+				), depth)._match(
+					at(Some(ty)) => {this.t=ty.t;ty;},
+					at(None) => throw 'error: type `${this.fullName()}` does not exist! ${lookup.span().display()}'
+				);
+			},
+			at(TApplied({t: TMulti(types)}, args)) => mostSpecific(types.filter(ty -> ty.acceptsArgs(args)))._match(
 				at([]) => throw "bad",
-				at([ty]) => {t: TApplied(ty, params), span: span},
-				at(types2) => if(types2.length == types.length) this else {t: TApplied({t: TMulti(types2)}, params), span: span}
+				at([ty]) => {t: TApplied(ty, args), span: span},
+				at(types2) => if(types2.length == types.length) this else {t: TApplied({t: TMulti(types2)}, args), span: span}
 			),
-			//types.filter(type -> type.hasChildType)
+			at(TApplied(ty, args)) => {t: TApplied(ty.simplify(), args.map(a -> a.simplify())), span: span},
 			_ => this
 		);
 	}

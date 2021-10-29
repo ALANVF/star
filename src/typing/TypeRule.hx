@@ -142,6 +142,43 @@ function hasParentDecl(self: TypeRule, decl: TypeDecl, tvar: TypeVar) return sel
 	_ => throw "todo "+self+" "+decl.fullName()+" "+tvar.fullName()
 );
 
+function hasChildDecl(self: TypeRule, decl: TypeDecl, tvar: TypeVar) {
+	return hasParentDecl(self, decl, tvar);
+}
+
+
+function hasParentType(self: TypeRule, type: Type, tvar: TypeVar) return self._match(
+	at(Eq(left, right)) => {
+		if(left == tvar.thisType) {
+			type.strictUnifyWithType(right) != null;
+		} else if(right == tvar.thisType) {
+			left.strictUnifyWithType(type) != null;
+		} else {
+			throw "todo";
+		}
+	},
+	at(Of(left, right)) => {
+		if(left == tvar.thisType) {
+			type.hasParentType(right);
+		} else if(right == tvar.thisType) {
+			left.hasParentType(type);
+		} else {
+			throw "todo";
+		}
+	},
+
+	at(All(conds)) => conds.every(cond -> hasParentType(cond, type, tvar)),
+	at(Any(conds)) => conds.some(cond -> hasParentType(cond, type, tvar)),
+
+	at(Not(rule)) => !hasParentType(rule, type, tvar),
+
+	_ => throw "todo "+self+" "+type.fullName()+" "+tvar.fullName()
+);
+
+function hasChildType(self: TypeRule, type: Type, tvar: TypeVar) {
+	return hasParentType(self, type, tvar);
+}
+
 
 @:publicFields
 class TypeRuleTools {

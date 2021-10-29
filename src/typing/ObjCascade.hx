@@ -1,5 +1,6 @@
 package typing;
 
+import typing.SingleInstKind;
 import typing.ObjMessage;
 import typing.Cascade.Step;
 
@@ -7,9 +8,25 @@ enum ObjCascadeKind {
 	Lazy(kind: Cascade.CascadeKind<TExpr>);
 	Member(mem: ObjMessage);
 	Message(msg: ObjMessage);
-	AssignMember(mem: ObjMessage, ?op: TExpr.AssignInfix, expr: TExpr);
-	AssignMessage(msg: ObjMessage, ?op: TExpr.AssignInfix, expr: TExpr); // should this have getter/setter versions of the method?
-	StepMember(mem: ObjMessage, step: Step);
+	AssignMember(
+		setMem: ObjMessage,
+		?op: {
+			getMem: ObjMessage,
+			op: TExpr.AssignInfix,
+			kinds: Array<BinaryOpKind>
+		},
+		expr: TExpr
+	);
+	AssignMessage(
+		setMsg: ObjMessage,
+		?op: {
+			getMsg: ObjMessage,
+			op: TExpr.AssignInfix,
+			kinds: Array<BinaryOpKind> 
+		},
+		expr: TExpr
+	);
+	StepMember(setMem: MultiInstKind, getMem: SingleInstKind, step: UnaryOpKind);
 	StepMessage(msg: ObjMessage, step: Step); // should this have getter/setter versions of the method?
 	Block(ctx: Pass2.Ctx, blk: TStmts);
 }

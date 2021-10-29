@@ -3,38 +3,6 @@ package typing;
 import reporting.Diagnostic;
 import parsing.ast.Ident;
 
-enum abstract BinaryOp(Int) {
-	var Plus;
-	var Minus;
-	var Times;
-	var Pow;
-	var Div;
-	var IntDiv;
-	var Mod;
-	var IsMod;
-	var BitAnd;
-	var BitOr;
-	var BitXor;
-	var Shl;
-	var Shr;
-	var Eq;
-	var Ne;
-	var Gt;
-	var Ge;
-	var Lt;
-	var Le;
-	var And;
-	var Or;
-	var Xor;
-	var Nor;
-
-	static final SYMBOLS = ["+", "-", "*", "**", "/", "//", "%", "%%", "&", "|", "^", "<<", ">>", "?=", "!=", ">", ">=", "<", "<=", "&&", "||", "^^", "!!"];
-
-	public inline function symbol() {
-		return SYMBOLS[this];
-	}
-}
-
 class BinaryOperator extends Operator {
 	@ignore final typevars = new MultiMap<String, TypeVar>();
 	final op: BinaryOp;
@@ -82,6 +50,6 @@ class BinaryOperator extends Operator {
 
 
 	override function findType(path: LookupPath, search: Search, from: Null<Traits.ITypeDecl>, depth = 0, cache: List<{}> = Nil): Option<Type> {
-		return BaseMethod._findType(this, path, depth);
+		return BaseMethod._findType(this, path, from, depth);
 	}
 }

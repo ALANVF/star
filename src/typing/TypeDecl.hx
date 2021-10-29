@@ -26,15 +26,18 @@ abstract class TypeDecl implements IErrors {
 	
 	abstract function declName(): String;
 
-	function fullName() {
+	function fullName(cache: List<Type> = Nil) {
+		cache = cache.prepend(thisType);
 		return switch params {
 			case []: Type.getFullPath(this).value();
-			default: Type.getFullPath(this).value() + "[" + params.joinMap(", ", p -> switch p.t {
-				//case TApplied({t: TConcrete(decl)}, _) if(decl.lookup == lookup && decl.name.name == name.name): Type.getFullPath(this).value()+"[...]";
-				//case TConcrete(decl) if(decl.lookup == lookup && decl.name.name == name.name): "...";
-				default: if(p.simpleName() == thisType.simpleName()) p.simpleName() else p.fullName();
-			}) + "]";
-		};
+			default: Type.getFullPath(this).value() + "[" + params.joinMap(", ", p ->
+				if(cache.contains(p)) {
+					"...";
+				} else {
+					p.fullName(cache);
+				}
+			) + "]";
+		}
 	}
 
 
@@ -84,6 +87,9 @@ abstract class TypeDecl implements IErrors {
 						}
 					},
 					at(Some([type])) => switch [args, type.params] {
+						case [[], []]:
+							finished = false;
+							Some(type.thisType);
 						case [[], _]:
 							finished = false;
 							Some({t: type.thisType.t, span: span}); // should probably curry parametrics but eh
@@ -105,7 +111,16 @@ abstract class TypeDecl implements IErrors {
 								None;
 							} else {
 								finished = false;
-								Some({t: TApplied(type.thisType, args), span: span});
+								Some({t: TApplied(type.thisType, args.map(arg -> arg.t._match(
+									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
+										at(Some(type)) => type,
+										at(None) => {
+											errors.push(Errors.invalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
+											arg;
+										}
+									),
+									_ => arg
+								))), span: span});
 							}
 					},
 					at(Some(found)) => {
@@ -118,10 +133,28 @@ abstract class TypeDecl implements IErrors {
 								None;
 							case [type]:
 								finished = false;
-								Some({t: TApplied(type, args), span: span});
+								Some({t: TApplied(type, args.map(arg -> arg.t._match(
+									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
+										at(Some(type)) => type,
+										at(None) => {
+											errors.push(Errors.invalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
+											arg;
+										}
+									),
+									_ => arg
+								))), span: span});
 							case types:
 								finished = false;
-								Some({t: TMulti(types), span: span});
+								Some({t: TApplied({t: TMulti(types), span: span}, args.map(arg -> arg.t._match(
+									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
+										at(Some(type)) => type,
+										at(None) => {
+											errors.push(Errors.invalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
+											arg;
+										}
+									),
+									_ => arg
+								))), span: span});
 						}
 					}
 				);
@@ -138,85 +171,6 @@ abstract class TypeDecl implements IErrors {
 		);
 	}
 	
-	/*function findTypeOld(path: LookupPath, absolute = false, cache: List<{}> = Nil): Option<Type> {
-		if(absolute) {
-			if(cache.contains(this)) {
-				return None;
-			} else {
-				cache = cache.prepend(this);
-			}
-		}
-
-		return path._match(
-			at([[span, "This", []]], when(absolute)) => Some({t: TThis(this), span: span}),
-			at([[span, "This", args]], when(absolute)) => {
-				// errors prob shouldn't be attatched to *this* type decl, but eh
-				if(params.length == 0) {
-					errors.push(Errors.invalidTypeApply(span, "Attempt to apply arguments to a non-parametric type"));
-					None;
-				} else if(args.length > params.length) {
-					errors.push(Errors.invalidTypeApply(span, "Too many arguments"));
-					None;
-				} else if(args.length < params.length) {
-					errors.push(Errors.invalidTypeApply(span, "Not enough arguments"));
-					None;
-				} else {
-					Some({t: TApplied({t: TThis(this), span: span}, args), span: span});
-				}
-			},
-			/*at([[span, typeName, args]], when(typeName == this.name.name && !cache.contains(this))) => {
-				return lookup.findTypeOld(path, false, cache);
-			},* /
-			at([[span, typeName, args], ...rest]) => {
-				final res: Option<Type> = switch typevars.find(typeName) {
-					case None: return if(absolute) lookup.findTypeOld(path, true, cache) else None;
-					case Some([type]) if(cache.contains(type)): return lookup.findTypeOld(path, true, cache.prepend(this.thisType));
-					case Some([type]): switch [args, type.params] {
-						case [[], _]: Some({t: type.thisType.t, span: span}); // should probably curry parametrics but eh
-						case [_, []]:
-							// should this check for type aliases?
-							errors.push(Errors.invalidTypeApply(span, "Attempt to apply arguments to a non-parametric type"));
-							None;
-						case [_, params]:
-							if(args.length > params.length) {
-								errors.push(Errors.invalidTypeApply(span, "Too many arguments"));
-								None;
-							} else if(args.length < params.length) {
-								errors.push(Errors.invalidTypeApply(span, "Not enough arguments"));
-								None;
-							} else {
-								Some({t: TApplied(type.thisType, args), span: span});
-							}
-					}
-					case Some(found):
-						if(args.length == 0) {
-							Some({t: TMulti(found.map(t -> t.thisType)), span: span});
-						} else switch found.filter(t -> t.params.length == args.length).map(g -> g.thisType) {
-							case []:
-								errors.push(Errors.invalidTypeApply(span, "No candidate matches the type arguments"));
-								None;
-							case [type]: Some({t: TApplied(type, args), span: span});
-							case types: Some({t: TMulti(types), span: span});
-						}
-				};
-
-				switch [rest, res] {
-					case [_, None]: if(absolute) lookup.findTypeOld(path, true, cache) else None;
-					case [Nil3, _]: res;
-					case [_, Some({t: TConcrete(decl)})]:
-						decl.findTypeOld(rest, false, Nil);
-					/*case [_, Some({t: TModular(t, u)})]:
-						switch t.findTypeOld(rest, false, Nil) {
-							case r = Some(_): r;
-							case None: u.findTypeOld(rest, false, List.of(t));
-						}* /
-					case [_, Some(type)]: Some({t: TLookup(type, rest, this), span: span});
-				}
-			},
-			_ => if(absolute) lookup.findTypeOld(path, true, cache) else None
-		);
-	}*/
-
 	function makeTypePath(path: TypePath) {
 		return path.toType(this);
 	}
@@ -242,19 +196,18 @@ abstract class TypeDecl implements IErrors {
 					if(this != decl
 					&& name.name == decl.name.name
 					&& lookup == decl.lookup
-					&& params.every2(decl.params, (p1, p2) -> p1.hasChildType(p2))
+					&& params.every2Strict(decl.params, (p1, p2) -> p1.hasChildType(p2))
 					&& !decl.refinements.contains(this)) {
-						//trace(this.fullName(),decl.fullName(),decl.refinements.contains(this), decl.refinees.contains(this));
 						this.refinements.push(decl);
 						decl.refinees.push(this);
 					}
 				},
-				at(Some({t: TMulti(types)})) => for(ty in types) ty.t._match(
+				at(Some({t: TApplied({t: TMulti(types)}, _)})) => for(ty in types) ty.t._match(
 					at(TConcrete(decl) | TApplied({t: TConcrete(decl)}, _)) => {
 						if(this != decl
 						&& name.name == decl.name.name
 						&& lookup == decl.lookup
-						&& params.every2(decl.params, (p1, p2) -> p1.hasChildType(p2))
+						&& params.every2Strict(decl.params, (p1, p2) -> p1.hasChildType(p2))
 						&& !decl.refinements.contains(this)) {
 							this.refinements.push(decl);
 							decl.refinees.push(this);
@@ -271,15 +224,14 @@ abstract class TypeDecl implements IErrors {
 	function hasParentDecl(decl: TypeDecl) {
 		return this == decl
 			|| (decl == Pass2.STD_Value && !this.isNative(NVoid))
-			|| refinees.contains(decl)
-			|| refinees.some(r -> r.hasParentDecl(decl));
+			|| refinees.some(r -> r == decl || r.hasParentDecl(decl));
 	}
 
 	function hasChildDecl(decl: TypeDecl) {
 		return this == decl
 			//|| (this == Pass2.STD_Value && decl != Pass2.STD_Void)
-			|| refinements.contains(decl)
-			|| refinements.some(r -> r.hasChildDecl(decl));
+			|| refinements.some(r -> r == decl || r.hasChildDecl(decl))
+			|| refinees.some(r -> r == decl);
 			//|| decl.hasParentDecl(this);
 	}
 
@@ -360,7 +312,7 @@ abstract class TypeDecl implements IErrors {
 	}
 
 
-	function instMembers(from: TypeDecl): Array<Member> {
+	function instMembers(from: ITypeDecl): Array<Member> {
 		return refinees.flatMap(r -> r.instMembers(from));
 	}
 
@@ -387,7 +339,17 @@ abstract class TypeDecl implements IErrors {
 	}
 
 
-	function findCast(target: Type, from: ITypeDecl, cache: List<Type> = Nil): Array<CastMethod> {
+	function findCast(target: Type, from: ITypeDecl, cache: List<Type> = Nil): Array<CastKind> {
+		return [];
+	}
+
+
+	function findUnaryOp(op: UnaryOp, from: ITypeDecl, cache: List<Type> = Nil): Null<UnaryOpKind> {
+		return null;
+	}
+
+
+	function findBinaryOp(op: BinaryOp, from: ITypeDecl, cache: List<Type> = Nil): Array<BinaryOpKind> {
 		return [];
 	}
 
@@ -398,21 +360,6 @@ abstract class TypeDecl implements IErrors {
 
 	function findThisCategory(cat: Type, from: ITypeDecl, cache: List<{}> = Nil): Array<Category> {
 		var res = lookup.findCategory(cat, thisType, from, cache.prepend(thisType));
-
-		/*if(params.length != 0) {
-			lookup.findTypeOld(List3.of([this.name.span, this.name.name, params]), false, cache.prepend(thisType))._match(
-				at(Some({t: TConcrete(decl) | TApplied({t: TConcrete(decl)}, _)})) => {
-					res.pushAll(decl.findThisCategory(cat, from, cache.prepend(thisType)));
-				},
-				at(Some({t: TMulti(types)})) => for(ty in types) ty.t._match(
-					at(TConcrete(decl) | TApplied({t: TConcrete(decl)}, _)) => {
-						res.pushAll(decl.findThisCategory(cat, from, cache.prepend(thisType)));
-					},
-					_ => {}
-				),
-				_ => {}
-			);
-		}*/
 
 		return res;
 	}

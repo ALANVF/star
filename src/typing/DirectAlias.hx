@@ -97,7 +97,7 @@ class DirectAlias extends Alias {
 	}
 
 
-	override function instMembers(from: TypeDecl) {
+	override function instMembers(from: ITypeDecl) {
 		return type.instMembers(from);
 	}
 
@@ -134,5 +134,19 @@ class DirectAlias extends Alias {
 		if(cache.contains(thisType)) return [];
 		
 		return type.findCast(target, from, cache.prepend(thisType));
+	}
+
+
+	override function findUnaryOp(op: UnaryOp, from: ITypeDecl, cache: List<Type> = Nil) {
+		if(cache.contains(thisType)) return null;
+
+		return type.findUnaryOp(op, from, cache.prepend(thisType));
+	}
+
+
+	override function findBinaryOp(op: BinaryOp, from: ITypeDecl, cache: List<Type> = Nil) {
+		if(cache.contains(thisType)) return [];
+
+		return type.findBinaryOp(op, from, cache.prepend(thisType));
 	}
 }

@@ -3,7 +3,6 @@ package typing;
 import typing.Traits;
 
 abstract class Kind extends ClassLike {
-	final operators: Array<Operator> = [];
 	var deinit: Option<Deinit> = None;
 	var isFlags: Bool = false;
 	var isStrong: Bool = false;
@@ -39,5 +38,17 @@ abstract class Kind extends ClassLike {
 
 	inline function declName() {
 		return "kind";
+	}
+
+
+	// TODO: add multi-kind stuff
+	override function defaultUnaryOp(op: UnaryOp, from: ITypeDecl): Null<UnaryOpKind> {
+		return Pass2.STD_Value.findUnaryOp(op, from);
+	}
+
+
+	// TODO: add multi-kind stuff
+	override function defaultBinaryOp(op: BinaryOp, from: ITypeDecl): Array<BinaryOpKind> {
+		return Pass2.STD_Value.findBinaryOp(op, from);
 	}
 }
