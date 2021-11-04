@@ -8,7 +8,7 @@ typedef TypeSeg = parsing.ast.Type.TypeSeg;
 @:using(typing.TypePath.TypePathTools)
 typedef TypePath = parsing.ast.Type;
 
-function rec(segs: List<TypeSeg>, lookup: ILookupType) return segs._match(
+function rec(segs: List<TypeSeg>, lookup: ITypeLookup) return segs._match(
 	at([]) => Nil3,
 	at([Name(span, name), ...rest]) => Cons3(span, name, [], rec(rest, lookup)),
 	at([NameParams(span, name, params), ...rest]) => Cons3(
@@ -21,12 +21,12 @@ function rec(segs: List<TypeSeg>, lookup: ILookupType) return segs._match(
 
 @:publicFields
 class TypePathTools {
-	static function toLookupPath(self: TypePath, lookup: ILookupType): LookupPath return switch self {
+	static function toLookupPath(self: TypePath, lookup: ITypeLookup): LookupPath return switch self {
 		case TSegs(_, Nil) | TBlank(_) | TBlankParams(_, _): throw "error!";
 		case TSegs(_, segs): rec(segs, lookup);
 	}
 
-	static function toType(self: TypePath, lookup: ILookupType): Type {
+	static function toType(self: TypePath, lookup: ITypeLookup): Type {
 		return switch self {
 			case TBlank(span): {t: TBlank, span: span};
 			case TBlankParams(span, {of: params}):

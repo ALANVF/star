@@ -1,5 +1,9 @@
 package typing;
 
+import typing.Traits;
+import reporting.Diagnostic;
+import typing.Pass2;
+
 enum Where {
 	WEmptyMethod(m: EmptyMethod);
 	WMethod(m: AnyMethod);
@@ -9,6 +13,7 @@ enum Where {
 	WPattern;
 	WObjCascade(t: Null<Type>);
 	WTypeCascade;
+	WTypevars(typevars: TypeVarCtx);
 }
 
 @:publicFields @:structInit class Ctx {
@@ -18,12 +23,12 @@ enum Where {
 	var locals: Map<String, Local> = [];
 	var labels: Map<String, TStmt> = [];
 
-	var typeDecl(get, never): ITypeDecl; private inline function get_typeDecl(): ITypeDecl return where._match(
+	var typeDecl(get, never): AnyTypeDecl; private inline function get_typeDecl(): AnyTypeDecl return where._match(
 		at(WDecl(decl)) => decl,
 		at(WCategory(cat)) => cat,
 		at(WEmptyMethod(m)) => m.decl,
 		at(WMethod(m)) => m.decl,
-		at(WObjCascade(_) | WBlock | WPattern) => outer._match(
+		at(WObjCascade(_) | WBlock | WPattern | WTypevars(_)) => outer._match(
 			at(ctx!) => ctx.typeDecl,
 			_ => throw "bad"
 		),
@@ -45,7 +50,7 @@ enum Where {
 		}
 	);
 
-	var thisLookup(get, never): ILookupType&IDecl; private inline function get_thisLookup(): ILookupType&IDecl return where._match(
+	var thisLookup(get, never): ITypeLookupDecl; private inline function get_thisLookup(): ITypeLookupDecl return where._match(
 		at(WDecl(decl)) => decl,
 		at(WCategory(cat)) => cat,
 		at(WMethod(m)) => m,
@@ -111,6 +116,15 @@ enum Where {
 			thisType: t._or(thisType) // TODO: fix
 		};
 	}
+	
+	function innerTypevars(typevars: TypeVarCtx): Ctx {
+		return {
+			where: WTypevars(typevars),
+			outer: this,
+			thisType: thisType
+		};
+	}
+
 
 	function addError(diag: Diagnostic) {
 		switch where {
@@ -135,7 +149,7 @@ enum Where {
 		return locals[name]._match(
 			at(loc!, when(depth == 0)) => loc,
 			_ => where._match(
-				at(WObjCascade(t!)) => t.findSingleInst(name, outer.typeDecl, true)._match(
+				at(WObjCascade(t!)) => t.findSingleInst(this, name, outer.typeDecl, true)._match(
 					at(SIMember(mem), when(depth == 0)) => new LocalField(this, mem, mem.name.name, mem.type.toNull(), null),
 					_ => outer.findLocal(name, depth)
 				),
@@ -167,7 +181,8 @@ enum Where {
 						)),
 						at(mems) => throw "todo"
 					);
-				}
+				},
+				at(WTypevars(_)) => outer.findLocal(name, depth)
 			)
 		);
 	}
@@ -175,21 +190,21 @@ enum Where {
 	function getType(path: TypePath): Null<Type> {
 		where._match(
 			at(WObjCascade(t!)) => t.findType(path.toLookupPath(thisLookup), Start, typeDecl, path.leadingCount())._match(
-				at(found = Some(_)) => found,
-				at(None) => return outer.getType(path)
+				at(found!) => found,
+				_ => return outer.getType(path)
 			),
 			at(WMethod(_) | WEmptyMethod(_) | WDecl(_) | WCategory(_)) =>
 				thisLookup.findType(path.toLookupPath(thisLookup), Start, typeDecl, path.leadingCount()),
 			_ => return outer.getType(path)
 		)._match(
-			at(Some(t)) => return t.t._match(
+			at(t!) => return t.t._match(
 				at(TApplied(t2, args)) => {
 					final thisLookup_ = thisLookup;
 					{
 						t: TApplied(t2, args.map(arg -> arg.t._match(
 							at(TPath(depth, lookup, source)) => thisLookup_.findType(lookup, Start, typeDecl, depth)._match(
-								at(Some(type)) => type,
-								at(None) => {
+								at(type!) => type,
+								_ => {
 									addError(Errors.invalidTypeLookup(lookup.span(), 'Unknown type `${arg.simpleName()}`'));
 									arg;
 								}
@@ -201,13 +216,27 @@ enum Where {
 				},
 				_ => t
 			),
-			at(None) => outer._match(
+			_ => outer._match(
 				at(ctx!) => return ctx.getType(path),
 				_ => {
 					addError(Errors.invalidTypeLookup(path.span(), 'Unknown type `${path.simpleName()}`'));
 					return null;
 				}
 			)
+		);
+	}
+
+	/*on [findTypevar: typevar (TypeVar)] (Maybe[Type]) {
+		match this at This[typevars: my typevars] {
+			return typevars[maybeAt: typevar]
+		} else {
+			return Maybe[none]
+		}
+	}*/
+	function findTypevar(typevar: TypeVar): Null<Type> {
+		return where._match(
+			at(WTypevars(typevars)) => typevars[typevar],
+			_ => null
 		);
 	}
 
@@ -220,6 +249,7 @@ enum Where {
 			case WBlock | WPattern: outer.allowsThis();
 			case WObjCascade(_): true;
 			case WTypeCascade: outer.allowsThis();
+			case WTypevars(_): outer.allowsThis();
 		};
 	}
 
@@ -234,21 +264,22 @@ enum Where {
 			at(WDecl(decl)) => decl.declName() + " " + decl.fullName(),
 			at(WCategory(_)) => throw "bad",
 			at(WBlock) => "{ ... } in " + {
-				final lookup = this.thisLookup;
+				final lookup = cast(this.thisLookup, IDecl);
 				lookup.declName() + " " + lookup._match(
 					at(mth is AnyMethod) =>"["+mth.methodName()+"] for "+mth.decl.declName()+" "+mth.decl.fullName(),
-					_ => (cast lookup : ITypeDecl).fullName()
+					_ => cast(lookup, AnyTypeDecl).fullName()
 				);
 			},
 			at(WPattern) => "pattern ... in " + {
-				final lookup = this.thisLookup;
+				final lookup = cast(this.thisLookup, IDecl);
 				lookup.declName() + " " + lookup._match(
 					at(mth is AnyMethod) => "["+mth.methodName()+"] for "+mth.decl.declName()+" "+mth.decl.fullName(),
-					_ => (cast lookup : ITypeDecl).fullName()
+					_ => cast(lookup, AnyTypeDecl).fullName()
 				);
 			},
 			at(WObjCascade(_)) => throw "todo",
-			at(WTypeCascade) => throw "todo"
+			at(WTypeCascade) => throw "todo",
+			at(WTypevars(_)) => outer.description()
 		);
 	}
 }

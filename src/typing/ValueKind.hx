@@ -45,11 +45,11 @@ class ValueKind extends Kind {
 			case IsSealed(None): kind.sealed = Some(None);
 			case IsSealed(Some(outsideOf)): kind.sealed = Some(Some(kind.makeTypePath(outsideOf)));
 
-			case IsFlags: kind.isFlags = true;
+			case IsFlags: kind._isFlags = true;
 
-			case IsStrong: kind.isStrong = true;
+			case IsStrong: kind._isStrong = true;
 
-			case IsUncounted: kind.isUncounted = true;
+			case IsUncounted: kind._isUncounted = true;
 		}
 
 		for(decl in ast.body.of) switch decl {
@@ -100,7 +100,9 @@ class ValueKind extends Kind {
 	}
 
 
-	override function findSingleStatic(name: String, from: ITypeDecl, getter = false, cache: List<Type> = Nil): Null<SingleStaticKind> {
+	// Method lookup
+
+	override function findSingleStatic(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {
 		if(cache.contains(thisType)) return null;
 		
 		for(vcase in valueCases) {
@@ -109,14 +111,14 @@ class ValueKind extends Kind {
 			}
 		}
 
-		return super.findSingleStatic(name, from, getter, cache);
+		return super.findSingleStatic(ctx, name, from, getter, cache);
 	}
 
 
-	override function findCast(target: Type, from: ITypeDecl, cache: List<Type> = Nil): Array<CastKind> {
-		return super.findCast(target, from, cache).concat(repr._match(
-			at(Some(r), when(!isFlags && r.strictUnifyWithType(target) != null)) => [CUpcast(target)],
-			at(Some(r), when(isFlags)) => target._match(
+	override function findCast(ctx: Ctx, target: Type, from: AnyTypeDecl, cache: TypeCache = Nil): Array<CastKind> {
+		return super.findCast(ctx, target, from, cache).concat(repr._match(
+			at(Some(r), when(!_isFlags && r.strictUnifyWithType(target) != null)) => [CUpcast(target)],
+			at(Some(r), when(_isFlags)) => target._match(
 				at({t: TApplied(a, [p])}) => {
 					if(a.hasParentType(Pass2.STD_Array) && r.strictUnifyWithType(p) != null) {
 						[CUpcast(target)];

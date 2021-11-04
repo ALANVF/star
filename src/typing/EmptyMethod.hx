@@ -9,7 +9,7 @@ import typing.Traits;
 @:autoBuild(util.Auto.build())
 abstract class EmptyMethod implements IErrors {
 	final errors: Array<Diagnostic> = [];
-	final decl: ITypeDecl;
+	final decl: AnyTypeDecl;
 	final span: Span;
 	final body: Array<Stmt>;
 

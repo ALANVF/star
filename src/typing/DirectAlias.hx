@@ -5,7 +5,7 @@ import typing.Traits;
 class DirectAlias extends Alias {
 	var type: Type;
 
-	static function fromAST(lookup: ILookupType, ast: parsing.ast.decls.Alias) {
+	static function fromAST(lookup: ITypeLookup, ast: parsing.ast.decls.Alias) {
 		final alias = new DirectAlias({
 			lookup: lookup,
 			span: ast.span,
@@ -43,28 +43,16 @@ class DirectAlias extends Alias {
 	}
 
 
-	override function findType(path: LookupPath, search: Search, from: Null<ITypeDecl>, depth = 0, cache: List<{}> = Nil): Option<Type> {
+	override function findType(path: LookupPath, search: Search, from: Null<AnyTypeDecl>, depth = 0, cache: Cache = Nil): Null<Type> {
 		if(search == Inside) {
-			return type.findType(path, Inside, from, depth, cache.prepend(thisType));
+			return type.findType(path, Inside, from, depth, cache + thisType);
 		} else {
 			return super.findType(path, search, from, depth, cache);
 		}
 	}
 
 
-	/*override function unifyWithType(type2: Type) {
-		return type.unifyWithType(type);
-	}*/
-
-	override function strictUnifyWithType(type2: Type) {
-		return type.strictUnifyWithType(type);
-	}
-
-
-	override function isNative(kind: NativeKind) {
-		return type.isNative(kind);
-	}
-
+	// Type checking
 
 	override function hasParentDecl(decl: TypeDecl) {
 		return super.hasParentDecl(decl)
@@ -88,6 +76,34 @@ class DirectAlias extends Alias {
 	}
 
 
+	// Unification
+
+	override function strictUnifyWithType(type2: Type) {
+		return type.strictUnifyWithType(type);
+	}
+
+
+	// Attributes
+
+	override function isNative(kind: NativeKind) {
+		return type.isNative(kind);
+	}
+
+	override function isFlags() {
+		return type.isFlags();
+	}
+	
+	override function isStrong() {
+		return type.isStrong();
+	}
+
+	override function isUncounted() {
+		return type.isUncounted();
+	}
+
+
+	// Privacy
+
 	override function canSeeMember(member: Member) {
 		return type.canSeeMember(member);
 	}
@@ -96,57 +112,66 @@ class DirectAlias extends Alias {
 		return type.canSeeMethod(method);
 	}
 
+	
+	// Effects tracking
 
-	override function instMembers(from: ITypeDecl) {
+	// TODO
+
+
+	// Members
+
+	override function instMembers(from: AnyTypeDecl) {
 		return type.instMembers(from);
 	}
 
 
-	override function findSingleStatic(name: String, from: ITypeDecl, getter = false, cache: List<Type> = Nil) {
+	// Method lookup
+
+	override function findSingleStatic(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false, cache: TypeCache = Nil) {
 		if(cache.contains(thisType)) return null;
 		
-		return type.findSingleStatic(name, from, getter, cache.prepend(thisType));
+		return type.findSingleStatic(ctx, name, from, getter, cache + thisType);
 	}
 
 
-	override function findMultiStatic(names: Array<String>, from: ITypeDecl, setter = false, cache: List<Type> = Nil) {
+	override function findMultiStatic(ctx: Ctx, names: Array<String>, from: AnyTypeDecl, setter = false, cache: TypeCache = Nil) {
 		if(cache.contains(thisType)) return [];
 		
-		return type.findMultiStatic(names, from, setter, cache.prepend(thisType));
+		return type.findMultiStatic(ctx, names, from, setter, cache + thisType);
 	}
 
 
-	override function findSingleInst(name: String, from: ITypeDecl, getter = false, cache: List<Type> = Nil) {
+	override function findSingleInst(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false, cache: TypeCache = Nil) {
 		if(cache.contains(thisType)) return null;
 		
-		return type.findSingleInst(name, from, getter, cache.prepend(thisType));
+		return type.findSingleInst(ctx, name, from, getter, cache + thisType);
 	}
 
 
-	override function findMultiInst(names: Array<String>, from: ITypeDecl, setter = false, cache: List<Type> = Nil) {
+	override function findMultiInst(ctx: Ctx, names: Array<String>, from: AnyTypeDecl, setter = false, cache: TypeCache = Nil) {
 		if(cache.contains(thisType)) return [];
 		
-		return type.findMultiInst(names, from, setter, cache.prepend(thisType));
+		return type.findMultiInst(ctx, names, from, setter, cache + thisType);
 	}
 
 
-	override function findCast(target: Type, from: ITypeDecl, cache: List<Type> = Nil) {
+	override function findCast(ctx: Ctx, target: Type, from: AnyTypeDecl, cache: TypeCache = Nil) {
 		if(cache.contains(thisType)) return [];
 		
-		return type.findCast(target, from, cache.prepend(thisType));
+		return type.findCast(ctx, target, from, cache + thisType);
 	}
 
 
-	override function findUnaryOp(op: UnaryOp, from: ITypeDecl, cache: List<Type> = Nil) {
+	override function findUnaryOp(ctx: Ctx, op: UnaryOp, from: AnyTypeDecl, cache: TypeCache = Nil) {
 		if(cache.contains(thisType)) return null;
 
-		return type.findUnaryOp(op, from, cache.prepend(thisType));
+		return type.findUnaryOp(ctx, op, from, cache + thisType);
 	}
 
 
-	override function findBinaryOp(op: BinaryOp, from: ITypeDecl, cache: List<Type> = Nil) {
+	override function findBinaryOp(ctx: Ctx, op: BinaryOp, from: AnyTypeDecl, cache: TypeCache = Nil) {
 		if(cache.contains(thisType)) return [];
 
-		return type.findBinaryOp(op, from, cache.prepend(thisType));
+		return type.findBinaryOp(ctx, op, from, cache + thisType);
 	}
 }

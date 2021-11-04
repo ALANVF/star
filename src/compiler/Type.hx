@@ -87,6 +87,7 @@ class TypeTools {
 			case TPath(_, path, _): throw "todo";//Type.fromTypePath(cmp, path);
 			case TLookup(type, lookup, source): throw "todo";
 			case TConcrete(decl): TPath(TypePathTools.getFullPath(cmp, decl));
+			case TInstance(decl, params, ctx): throw "todo";
 			case TThis(_): TPath([{name: "$This", args: None}]);
 			case TBlank: throw "todo";
 			case TMulti(types): throw "todo";

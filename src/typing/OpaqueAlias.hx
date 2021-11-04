@@ -76,7 +76,7 @@ class OpaqueAlias extends Alias {
 	}
 
 
-	override function findSingleStatic(name: String, from: ITypeDecl, getter = false, cache: List<Type> = Nil): Null<SingleStaticKind> {
+	override function findSingleStatic(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {
 		if(cache.contains(thisType)) return null;
 		
 		for(mth in staticMethods) mth._match(
@@ -97,7 +97,7 @@ class OpaqueAlias extends Alias {
 	}
 
 
-	override function findMultiStatic(names: Array<String>, from: ITypeDecl, setter = false, cache: List<Type> = Nil) {
+	override function findMultiStatic(ctx: Ctx, names: Array<String>, from: AnyTypeDecl, setter = false, cache: TypeCache = Nil) {
 		if(cache.contains(thisType)) return [];
 		
 		final candidates: Array<MultiStaticKind> = [];
@@ -120,7 +120,7 @@ class OpaqueAlias extends Alias {
 	}
 
 
-	override function findSingleInst(name: String, from: ITypeDecl, getter = false, cache: List<Type> = Nil): Null<SingleInstKind> {
+	override function findSingleInst(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false, cache: TypeCache = Nil): Null<SingleInstKind> {
 		if(cache.contains(thisType)) return null;
 
 		for(mth in methods) mth._match(
@@ -138,7 +138,7 @@ class OpaqueAlias extends Alias {
 		);
 		
 		for(refinee in refinees) {
-			refinee.findSingleInst(name, from, getter, cache)._match(
+			refinee.findSingleInst(ctx, name, from, getter, cache)._match(
 				at(si!) => return si,
 				_ => {}
 			);
@@ -148,7 +148,7 @@ class OpaqueAlias extends Alias {
 	}
 
 
-	override function findMultiInst(names: Array<String>, from: ITypeDecl, setter = false, cache: List<Type> = Nil) {
+	override function findMultiInst(ctx: Ctx, names: Array<String>, from: AnyTypeDecl, setter = false, cache: TypeCache = Nil) {
 		if(cache.contains(thisType)) return [];
 		
 		final candidates: Array<MultiInstKind> = [];
@@ -188,14 +188,14 @@ class OpaqueAlias extends Alias {
 		}
 
 		for(refinee in refinees) {
-			candidates.pushAll(refinee.findMultiInst(names, from, setter, cache));
+			candidates.pushAll(refinee.findMultiInst(ctx, names, from, setter, cache));
 		}
 
 		return candidates;
 	}
 
 
-	override function findCast(target: Type, from: ITypeDecl, cache: List<Type> = Nil) {
+	override function findCast(ctx: Ctx, target: Type, from: AnyTypeDecl, cache: TypeCache = Nil) {
 		if(cache.contains(thisType)) return [];
 
 		final candidates: Array<CastKind> = [];
@@ -210,14 +210,14 @@ class OpaqueAlias extends Alias {
 		);
 
 		for(refinee in refinees) {
-			candidates.pushAll(refinee.findCast(target, from, cache));
+			candidates.pushAll(refinee.findCast(ctx, target, from, cache));
 		}
 		
 		return candidates;
 	}
 
 
-	override function findUnaryOp(op: UnaryOp, from: ITypeDecl, cache: List<Type> = Nil): Null<UnaryOpKind> {
+	override function findUnaryOp(ctx: Ctx, op: UnaryOp, from: AnyTypeDecl, cache: TypeCache = Nil): Null<UnaryOpKind> {
 		if(cache.contains(thisType)) return null;
 
 		for(oper in operators) oper._match(
@@ -230,7 +230,7 @@ class OpaqueAlias extends Alias {
 		);
 
 		for(refinee in refinees) {
-			refinee.findUnaryOp(op, from, cache)._match(
+			refinee.findUnaryOp(ctx, op, from, cache)._match(
 				at(uo!) => return uo,
 				_ => {}
 			);
@@ -240,7 +240,7 @@ class OpaqueAlias extends Alias {
 	}
 
 	
-	override function findBinaryOp(op: BinaryOp, from: ITypeDecl, cache: List<Type> = Nil) {
+	override function findBinaryOp(ctx: Ctx, op: BinaryOp, from: AnyTypeDecl, cache: TypeCache = Nil) {
 		final candidates: Array<BinaryOpKind> = [];
 
 		for(oper in operators) oper._match(
@@ -253,7 +253,7 @@ class OpaqueAlias extends Alias {
 		);
 
 		for(refinee in refinees) {
-			candidates.pushAll(refinee.findBinaryOp(op, from, cache));
+			candidates.pushAll(refinee.findBinaryOp(ctx, op, from, cache));
 		}
 
 		return candidates;

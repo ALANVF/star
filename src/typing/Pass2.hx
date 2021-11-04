@@ -31,14 +31,6 @@ import parsing.ast.Block as UBlock;
  */
 
 
-@:publicFields abstract class Local {
-	var ctx: Ctx;
-	var span: Span;
-	var name: String;
-	var type: Null<Type>;
-	var expr: Null<TExpr>;
-}
-
 class LocalVar extends Local {
 	var def: TExpr;
 	var defPaths:
@@ -107,25 +99,25 @@ var STD_Iterator: Type;
 function initSTD(std: Project) {
 	final t: Type = {t: TBlank};
 	
-	STD_Value = switch std.findType(List3.of([null, "Star", []], [null, "Value", []]), Inside, null).value().t {
-		case TConcrete(decl) | TModular({t: TConcrete(decl)}, _): decl;
-		default: throw "internal error: Star.Value should be a concrete type!";
-	};
-	STD_Void = switch std.findType(List3.of([null, "Star", []], [null, "Void", []]), Inside, null).value().t {
-		case TConcrete(decl) | TModular({t: TConcrete(decl)}, _): decl;
-		default: throw "internal error: Star.Value should be a concrete type!";
-	};
-	STD_Int = std.findType(List3.of([null, "Star", []], [null, "Core", []], [null, "Int", []]), Inside, null).value();
-	STD_Dec = std.findType(List3.of([null, "Star", []], [null, "Core", []], [null, "Dec", []]), Inside, null).value();
-	STD_Char = std.findType(List3.of([null, "Star", []], [null, "Core", []], [null, "Char", []]), Inside, null).value();
-	STD_Bool = std.findType(List3.of([null, "Star", []], [null, "Core", []], [null, "Bool", []]), Inside, null).value();
-	STD_Str = std.findType(List3.of([null, "Star", []], [null, "Core", []], [null, "Str", []]), Inside, null).value();
-	STD_Array = std.findType(List3.of([null, "Star", []], [null, "Core", []], [null, "Array", []]), Inside, null).value();
-	STD_Dict = std.findType(List3.of([null, "Star", []], [null, "Core", []], [null, "Dict", []]), Inside, null).value();
-	STD_Tuple = std.findType(List3.of([null, "Star", []], [null, "Core", []], [null, "Tuple", []]), Inside, null).value();
-	STD_Func = std.findType(List3.of([null, "Star", []], [null, "Core", []], [null, "Func", []]), Inside, null).value();
-	STD_Iterable = std.findType(List3.of([null, "Star", []], [null, "Core", []], [null, "Iterable", []]), Inside, null).value();
-	STD_Iterator = std.findType(List3.of([null, "Star", []], [null, "Core", []], [null, "Iterator", []]), Inside, null).value();
+	STD_Value = std.findType(List3.of([null, "Star", []], [null, "Value", []]), Inside, null)._match(
+		at({t: TConcrete(decl) | TModular({t: TConcrete(decl)}, _)}) => decl,
+		_ => throw "internal error: Star.Value should be a concrete type!"
+	);
+	STD_Void = std.findType(List3.of([null, "Star", []], [null, "Void", []]), Inside, null)._match(
+		at({t: TConcrete(decl) | TModular({t: TConcrete(decl)}, _)}) => decl,
+		_ => throw "internal error: Star.Value should be a concrete type!"
+	);
+	STD_Int = std.findType(List3.of([null, "Star", []], [null, "Core", []], [null, "Int", []]), Inside, null).nonNull();
+	STD_Dec = std.findType(List3.of([null, "Star", []], [null, "Core", []], [null, "Dec", []]), Inside, null).nonNull();
+	STD_Char = std.findType(List3.of([null, "Star", []], [null, "Core", []], [null, "Char", []]), Inside, null).nonNull();
+	STD_Bool = std.findType(List3.of([null, "Star", []], [null, "Core", []], [null, "Bool", []]), Inside, null).nonNull();
+	STD_Str = std.findType(List3.of([null, "Star", []], [null, "Core", []], [null, "Str", []]), Inside, null).nonNull();
+	STD_Array = std.findType(List3.of([null, "Star", []], [null, "Core", []], [null, "Array", []]), Inside, null).nonNull();
+	STD_Dict = std.findType(List3.of([null, "Star", []], [null, "Core", []], [null, "Dict", []]), Inside, null).nonNull();
+	STD_Tuple = std.findType(List3.of([null, "Star", []], [null, "Core", []], [null, "Tuple", []]), Inside, null).nonNull();
+	STD_Func = std.findType(List3.of([null, "Star", []], [null, "Core", []], [null, "Func", []]), Inside, null).nonNull();
+	STD_Iterable = std.findType(List3.of([null, "Star", []], [null, "Core", []], [null, "Iterable", []]), Inside, null).nonNull();
+	STD_Iterator = std.findType(List3.of([null, "Star", []], [null, "Core", []], [null, "Iterator", []]), Inside, null).nonNull();
 }
 
 
@@ -594,7 +586,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 			final t = ctx.getType(type)._or(return invalidExpr());
 			msg._match(
 				at(Single(None, span, name)) => {
-					t.findSingleStatic(name, ctx.typeDecl)._match(
+					t.findSingleStatic(ctx, name, ctx.typeDecl)._match(
 						at(kind!) => {
 							e: ETypeMessage(t, Single(kind)),
 							t: kind._match(
@@ -625,7 +617,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 				at(Multi(None, labels)) => {
 					detuple2(@var names, @var args, getNamesArgs(ctx, labels));
 					
-					t.findMultiStatic(names, ctx.typeDecl)._match(
+					t.findMultiStatic(ctx, names, ctx.typeDecl)._match(
 						at([]) => {
 							ctx.addError(Errors.unknownMethod(ctx, true, t, names, labels[0].span()));
 							invalidExpr();
@@ -679,10 +671,10 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 					var categories = t.t._match(
 						at(TThis(td is TypeDecl)) => td.thisType,
 						_ => t
-					).findThisCategory(tcat, ctx.typeDecl).unique();
+					).findThisCategory(ctx, tcat, ctx.typeDecl).unique();
 					categories._match(
 						at([]) => throw 'error: type `${t.fullName()}` does not have the category `${tcat.fullName()}`!',
-						at([found]) => found.findMultiStatic(names, ctx.typeDecl)._match(
+						at([found]) => found.findMultiStatic(ctx, names, ctx.typeDecl)._match(
 							at([]) => throw 'error: type `${t.fullName()}` does not respond to method `[${names.joinMap(" ", n -> '$n:')}]` in category `${tcat.fullName()}`! ${begin.display()}',
 							at(kinds) => {
 								e: ETypeMessage(t, Multi(kinds, names, args)),
@@ -692,13 +684,13 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 						at(found) => Type.mostSpecificBy(
 							Type.reduceOverloadsBy(
 								found
-									.map(f -> {cat: f, mth: f.findMultiStatic(names, ctx.typeDecl)})
+									.map(f -> {cat: f, mth: f.findMultiStatic(ctx, names, ctx.typeDecl)})
 									.filter(l -> l.mth.length != 0),
 								f -> f.cat.thisType.getMostSpecific()
 							),
 							f -> f.mth[0]._match(
 								at(MSMethod((_ : AnyMethod) => m, _) | MSInit(m, _)) => m.decl.thisType.getMostSpecific(),
-								at(MSMember(m)) => (cast m.lookup : Traits.ITypeDecl).thisType.getMostSpecific(),
+								at(MSMember(m)) => cast(m.lookup, AnyTypeDecl).thisType.getMostSpecific(),
 								_ => throw "bad"
 							)
 						)._match(
@@ -720,7 +712,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 		
 		at(ETypeMember(type, {name: name, span: s})) => {
 			final t = ctx.getType(type)._or(return invalidExpr());
-			t.findSingleStatic(name, ctx.typeDecl, true)._match(
+			t.findSingleStatic(ctx, name, ctx.typeDecl, true)._match(
 				at(kind!) => {
 					e: ETypeMember(t, kind),
 					t: kind._match(
@@ -757,7 +749,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 						t.t._match(
 							at(TThis(td is TypeDecl)) => td.thisType,
 							_ => t
-						).findSingleInst(name, ctx.typeDecl)._match(
+						).findSingleInst(ctx, name, ctx.typeDecl)._match(
 							at(kind!) => {
 								e: EObjMessage(tobj, Single(kind)),
 								t: kind._match(
@@ -799,10 +791,10 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 								_ => {}
 							);*/
 							//trace(tparent.t);
-							tparent.findSingleInst(name, ctx.typeDecl)._match(
+							tparent.findSingleInst(ctx, name, ctx.typeDecl)._match(
 								at(kind!) => {
 									e: EObjMessage(tobj, Super(tparent, Single(kind))),
-									t: kind._match(
+									t: (kind._match(
 										at(SIMethod({ret: Some(ret)})) => ret.t._match(
 											at(TThis(source), when(source.hasChildType(t))) => t.t._match(
 												at(TConcrete(decl)) => { t: TThis(decl) },
@@ -816,7 +808,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 										),
 										at(SIMember(mem)) => mem.type.toNull(), // TODO: solve in ctx
 										_ => null
-									)
+									) : Null<Type>)._and(ret => ret.getFrom(t))
 								},
 								_ => throw 'error: value of type `${t.fullName()}` does not have a supertype `${tparent.fullName()}` that responds to method `[$name]`! ${cat.span().display()}'
 							);
@@ -841,18 +833,18 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 						var categories = t.t._match(
 							at(TThis(td is TypeDecl)) => td.thisType,
 							_ => t
-						).findThisCategory(tcat, ctx.typeDecl).concat(
-							tcat.findCategory(tcat, t, ctx.typeDecl)
+						).findThisCategory(ctx, tcat, ctx.typeDecl).concat(
+							tcat.findCategory(ctx, tcat, t, ctx.typeDecl)
 						).unique();
 						categories._match(
 							at([]) => {
 								ctx.addError(Errors.unknownCategory(ctx, false, t, tcat, cat.span()));
 								invalidExpr();
 							}, //throw 'error: value of type `${t.fullName()}` does not have the category `${tcat.fullName()}`! ${cat.span().display()}',
-							at([found]) => found.findSingleInst(name, ctx.typeDecl)._match(
+							at([found]) => found.findSingleInst(ctx, name, ctx.typeDecl)._match(
 								at(kind!) => {
 									e: EObjMessage(tobj, Single(kind)),
-									t: kind._match(
+									t: (kind._match(
 										at(SIMethod({ret: Some(ret)})) => ret.t._match(
 											at(TThis(source), when(source.hasChildType(t))) => t.t._match(
 												at(TConcrete(decl)) => { t: TThis(decl) },
@@ -866,15 +858,15 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 										),
 										at(SIMember(mem)) => mem.type.toNull(), // TODO: solve in ctx
 										_ => null
-									)
+									) : Null<Type>)._and(ret => ret.getFrom(t))
 								},
 								_ => throw 'error: value of type `${t.fullName()}` does not respond to method `[$name]` in category `${tcat.fullName()}`! ${begin.display()}'
 							),
-							at(found) => found.filterMap(f -> f.findSingleInst(name, ctx.typeDecl))._match(
+							at(found) => found.filterMap(f -> f.findSingleInst(ctx, name, ctx.typeDecl))._match(
 								at([]) => throw 'error: value of type `${t.fullName()}` does not respond to method `[$name]` in any categories of: `${found.map(f -> f.fullName()).join(", ")}`!',
 								at([kind!]) => {
 									e: EObjMessage(tobj, Single(kind)),
-									t: kind._match(
+									t: (kind._match(
 										at(SIMethod({ret: Some(ret)})) => ret.t._match(
 											at(TThis(source), when(source.hasChildType(t))) => t.t._match(
 												at(TConcrete(decl)) => { t: TThis(decl) },
@@ -888,7 +880,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 										),
 										at(SIMember(mem)) => mem.type.toNull(), // TODO: solve in ctx
 										_ => null
-									)
+									) : Null<Type>)._and(ret => ret.getFrom(t))
 								},
 								at(kinds) => throw "todo"
 							)
@@ -901,7 +893,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 						t.t._match(
 							at(TThis(td is TypeDecl)) => td.thisType,
 							_ => t
-						).findMultiInst(names, ctx.typeDecl)._match(
+						).findMultiInst(ctx, names, ctx.typeDecl)._match(
 							at([]) => {
 								ctx.addError(Errors.unknownMethod(ctx, false, t, names, labels[0].span()));
 								invalidExpr();
@@ -922,7 +914,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 											_ => ret
 										),
 										_ => null
-									) : Null<Type>)
+									) : Null<Type>)._and(ret => ret.getFrom(t))
 								)._match(
 									at([]) => null,
 									at([ret]) => ret,
@@ -937,7 +929,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 						if(tparent.hasChildType(t)) {
 							detuple2(@var names, @var args, getNamesArgs(ctx, labels));
 
-							tparent.findMultiInst(names, ctx.typeDecl)._match(
+							tparent.findMultiInst(ctx, names, ctx.typeDecl)._match(
 								at([]) => throw 'error: value of type `${t.fullName()}` does not have a supertype `${tparent.fullName()}` that responds to method `[${names.joinMap(" ", n -> '$n:')}]`! ${begin.display()}',
 								at(kinds) => {
 									e: EObjMessage(tobj, Super(tparent, Multi(kinds, names, args))),
@@ -964,15 +956,15 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 						);
 						detuple2(@var names, @var args, getNamesArgs(ctx, labels));
 
-						var categories = t.findThisCategory(tcat, ctx.typeDecl).concat(
-							tcat.findCategory(tcat, t, ctx.typeDecl)
+						var categories = t.findThisCategory(ctx, tcat, ctx.typeDecl).concat(
+							tcat.findCategory(ctx, tcat, t, ctx.typeDecl)
 						).unique().filter(c -> t.hasParentType(c.thisType) && c.thisType.hasChildType(t)); // BUG: hasParentType has false positives?!?!!??!?!?!!?!?! probably related to refinements
 						categories._match(
 							at([]) => {
 								ctx.addError(Errors.unknownCategory(ctx, false, t, tcat, cat.span()));
 								invalidExpr();
 							},
-							at([found]) => found.findMultiInst(names, ctx.typeDecl)._match(
+							at([found]) => found.findMultiInst(ctx, names, ctx.typeDecl)._match(
 								at([]) => throw 'error: value of type `${t.fullName()}` does not respond to method `[${names.joinMap(" ", n -> '$n:')}]` in category `${tcat.fullName()}`! ${begin.display()}',
 								at(kinds) => {
 									e: EObjMessage(tobj, Multi(kinds, names, args)),
@@ -982,13 +974,13 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 							_ => Type.mostSpecificBy(
 								Type.reduceOverloadsBy(
 									categories
-										.map(f -> {cat: f, mth: f.findMultiInst(names, ctx.typeDecl)})
+										.map(f -> {cat: f, mth: f.findMultiInst(ctx, names, ctx.typeDecl)})
 										.filter(l -> l.mth.length != 0),
 									f -> f.cat.thisType.getMostSpecific()
 								),
 								f -> f.mth[0]._match(
 									at(MIMethod(m, _)) => m.decl.thisType.getMostSpecific(),
-									at(MIMember(m)) => (cast m.lookup : Traits.ITypeDecl).thisType.getMostSpecific(),
+									at(MIMember(m)) => cast(m.lookup, AnyTypeDecl).thisType.getMostSpecific(),
 									at(MIFromTypevar(tv, _, _, _)) => tv.thisType.getMostSpecific()
 								)
 							)._match(
@@ -1011,7 +1003,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 
 					at(Cast(None, type)) => {
 						final target = ctx.getType(type)._or(return invalidExpr()).getLeastSpecific();
-						t.findCast(target, ctx.typeDecl)._match(
+						t.findCast(ctx, target, ctx.typeDecl)._match(
 							at([]) => {
 								//throw 'error: value of type `${t.fullName()}` cannot be cast to type `${target.fullName()}`! ${begin.display()}';
 								ctx.addError(Errors.unknownCast(ctx, t, target, begin.union(end)));
@@ -1028,7 +1020,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 
 						if(tparent.hasChildType(t)) {
 							final target = ctx.getType(type)._or(return invalidExpr()).getLeastSpecific();
-							tparent.findCast(target, ctx.typeDecl)._match(
+							tparent.findCast(ctx, target, ctx.typeDecl)._match(
 								at([]) => {
 									throw 'error: value of type `${t.fullName()}` does not have a supertype `${tparent.fullName()}` that can be cast to type `${target.fullName()}`! ${begin.display()}';
 								},
@@ -1059,12 +1051,12 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 						var categories = t.t._match(
 							at(TThis(td is TypeDecl)) => td.thisType,
 							_ => t
-						).findThisCategory(tcat, ctx.typeDecl).concat(
-							tcat.findCategory(tcat, t, ctx.typeDecl)
+						).findThisCategory(ctx, tcat, ctx.typeDecl).concat(
+							tcat.findCategory(ctx, tcat, t, ctx.typeDecl)
 						).unique();
 						categories._match(
 							at([]) => throw 'error: value of type `${t.fullName()}` does not have the category `${tcat.fullName()}`! ${cat.span().display()}',
-							at([found]) => found.findCast(target, ctx.typeDecl)._match(
+							at([found]) => found.findCast(ctx, target, ctx.typeDecl)._match(
 								at([]) => {
 									throw 'error: value of type `${t.fullName()}` cannot be cast to type `${target.fullName()}` in category `${found.fullName()}`! ${begin.display()}';
 								},
@@ -1074,7 +1066,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 								}
 							),
 							at(found) => found
-								.filterMap(f -> f.findCast(target, ctx.typeDecl))
+								.filterMap(f -> f.findCast(ctx, target, ctx.typeDecl))
 								.filter(c -> c.length != 0)
 							._match(
 								at([]) => throw 'error: value of type `${t.fullName()}` cannot be cast to type `${target.fullName()}` in any categories of: `${found.map(f -> f.fullName()).join(", ")}`! ${begin.display()}',
@@ -1111,15 +1103,15 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 		at(EObjMember(obj, {span: s, name: name})) => {
 			final tobj = typeExpr(ctx, obj);
 			tobj.t._match(
-				at(t!) => t.findSingleInst(name, ctx.typeDecl, true)._match(
+				at(t!) => t.findSingleInst(ctx, name, ctx.typeDecl, true)._match(
 					at(kind!) => {
 						e: EObjMember(tobj, kind),
-						t: switch kind {
-							case SIMethod(m): m.ret.value();
-							case SIMultiMethod(m): m.ret.value();
-							case SIMember(m): m.type.toNull();
-							case SIFromTypevar(_, _, _, _): null;
-						}
+						t: kind._match(
+							at(SIMethod(m)) => m.ret.value(),
+							at(SIMultiMethod(m)) => m.ret.value(),
+							at(SIMember(m)) => m.type.toNull(),
+							at(SIFromTypevar(_, _, _, _)) => null
+						)._and(ty => ty.getFrom(t))
 					},
 					_ => {
 						ctx.addError(Errors.unknownGetter(ctx, false, t, name, s));
@@ -1148,7 +1140,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 						}
 					);
 					
-					t.findUnaryOp(op2, ctx.typeDecl)._match(
+					t.findUnaryOp(ctx, op2, ctx.typeDecl)._match(
 						at(kind!) => {
 							e: EPrefix(kind, rhs),
 							t: kind._match(
@@ -1183,7 +1175,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 						}
 					);
 					
-					t.findUnaryOp(op2, ctx.typeDecl)._match(
+					t.findUnaryOp(ctx, op2, ctx.typeDecl)._match(
 						at(kind!) => {
 							e: ESuffix(lhs, kind),
 							t: kind._match(
@@ -1259,7 +1251,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 										tvalue.t._and(rt => {
 											rt = rt.simplify();
 											lvar.type._andOr(lt => {
-												lt = lt.simplify();
+												lt = lt.simplify().getFrom(ctx.thisType);
 												lt.strictUnifyWithType(rt)._match(
 													at(t!) => {
 														//trace(t);
@@ -1323,7 +1315,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 
 			tleft.t._match(
 				at(t!, when(!ctx.isPattern())) => {
-					var found = t.findBinaryOp(op2, ctx.typeDecl);
+					var found = t.findBinaryOp(ctx, op2, ctx.typeDecl);
 					tright.t._match(
 						at(rt!) => {
 							found = found.filter(k -> k._match(
@@ -1354,7 +1346,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 										_ => ret
 									),
 									_ => null // TODO
-								) : Null<Type>)
+								) : Null<Type>)._and(ret => ret.getFrom(t))
 							).unique()._match(
 								at([]) => null,
 								at([ret]) => ret,
@@ -1478,13 +1470,13 @@ static function typeObjCascade(ctx: Ctx, type: Null<Type>, cascade: UCascade<UEx
 		depth: cascade.depth,
 		kind: type._match(
 			at(t!) => switch cascade.kind {
-				case Member({name: name}): t.findSingleInst(name, ctx.typeDecl, true)._match(
+				case Member({name: name}): t.findSingleInst(ctx, name, ctx.typeDecl, true)._match(
 					at(kind!) => Member(Single(kind)),
 					_ => throw 'error: value of type `${t.fullName()}` does not have member/getter `$name`!'
 				);
 
 				case Message(msg): Message(msg._match(
-					at(Single(None, _, name)) => t.findSingleInst(name, ctx.typeDecl)._match(
+					at(Single(None, _, name)) => t.findSingleInst(ctx, name, ctx.typeDecl)._match(
 						at(kind!) => Single(kind),
 						_ => throw 'error: value of type ${t.fullName()} does not respond to method `[$name]`!'
 					),
@@ -1506,14 +1498,14 @@ static function typeObjCascade(ctx: Ctx, type: Null<Type>, cascade: UCascade<UEx
 						var categories = t.t._match(
 							at(TThis(td is TypeDecl)) => td.thisType,
 							_ => t
-						).findThisCategory(tcat, ctx.typeDecl).unique();
+						).findThisCategory(ctx, tcat, ctx.typeDecl).unique();
 						categories._match(
 							at([]) => throw 'error: value of type `${t.fullName()}` does not have the category `${tcat.fullName()}`! ${cat.span().display()}',
-							at([found]) => found.findSingleInst(name, ctx.typeDecl)._match(
+							at([found]) => found.findSingleInst(ctx, name, ctx.typeDecl)._match(
 								at(kind!) => Single(kind),
 								_ => throw 'error: value of type `${t.fullName()}` does not respond to method `[$name]` in category `${tcat.fullName()}`!'
 							),
-							at(found) => found.filterMap(f -> f.findSingleInst(name, ctx.typeDecl))._match(
+							at(found) => found.filterMap(f -> f.findSingleInst(ctx, name, ctx.typeDecl))._match(
 								at([]) => throw 'error: value of type `${t.fullName()}` does not respond to method `[$name]` in any categories of: `${found.map(f -> f.fullName()).join(", ")}`!',
 								at([kind!]) => Single(kind),
 								at(kinds) => throw "todo"
@@ -1523,7 +1515,7 @@ static function typeObjCascade(ctx: Ctx, type: Null<Type>, cascade: UCascade<UEx
 
 					at(Multi(None, labels)) => {
 						detuple2(@var names, @var args, getNamesArgs(ctx, labels));
-						t.findMultiInst(names, ctx.typeDecl)._match(
+						t.findMultiInst(ctx, names, ctx.typeDecl)._match(
 							at([]) => {
 								ctx.addError(Errors.unknownMethod(ctx, false, t, names, labels[0].span()));
 								return null;
@@ -1550,16 +1542,16 @@ static function typeObjCascade(ctx: Ctx, type: Null<Type>, cascade: UCascade<UEx
 						var categories = t.t._match(
 							at(TThis(td is TypeDecl)) => td.thisType,
 							_ => t
-						).findThisCategory(tcat, ctx.typeDecl).unique();
+						).findThisCategory(ctx, tcat, ctx.typeDecl).unique();
 						categories._match(
 							at([]) => throw 'error: value of type `${t.fullName()}` does not have the category `${tcat.fullName()}`! ${cat.span().display()}',
-							at([found]) => found.findMultiInst(names, ctx.typeDecl)._match(
+							at([found]) => found.findMultiInst(ctx, names, ctx.typeDecl)._match(
 								at([]) => throw 'error: value of type `${t.fullName()}` does not respond to method `[${names.joinMap(" ", n -> '$n:')}]` in category `${tcat.fullName()}`! ${cat.span().display()}',
 								at(kinds) => Multi(kinds, names, args)
 							),
 							at(found) => Type.mostSpecificBy(
 								found
-									.map(f -> {cat: f, mth: f.findMultiInst(names, ctx.typeDecl)})
+									.map(f -> {cat: f, mth: f.findMultiInst(ctx, names, ctx.typeDecl)})
 									.filter(l -> l.mth.length != 0),
 								f -> f.cat.type.value()
 							)._match(
@@ -1576,7 +1568,7 @@ static function typeObjCascade(ctx: Ctx, type: Null<Type>, cascade: UCascade<UEx
 
 					at(Cast(None, ty)) => {
 						final target = ctx.getType(ty)._or(return null);
-						t.findCast(target, ctx.typeDecl)._match(
+						t.findCast(ctx, target, ctx.typeDecl)._match(
 							at([]) => throw 'error: value of type ${t.fullName()} cannot be cast to type `${target.fullName()}`!',
 							at(casts) => Cast(target, casts)
 						);
@@ -1585,7 +1577,7 @@ static function typeObjCascade(ctx: Ctx, type: Null<Type>, cascade: UCascade<UEx
 				));
 
 
-				case AssignMember({name: name}, _, None, rhs): t.findMultiInst([name], ctx.typeDecl, true)._match(
+				case AssignMember({name: name}, _, None, rhs): t.findMultiInst(ctx, [name], ctx.typeDecl, true)._match(
 					at(kinds!) => Member(Multi(kinds, [name], [typeExpr(ctx, rhs)])),
 					_ => throw 'error: value of type `${t.fullName()}` does not have member/setter `$name`!'
 				);
@@ -1596,7 +1588,7 @@ static function typeObjCascade(ctx: Ctx, type: Null<Type>, cascade: UCascade<UEx
 					at(Multi(None, labels)) => {
 						detuple2(@var names, @var args, getNamesArgs(ctx, labels));
 						names = names.concat(["="]);
-						t.findMultiInst(names, ctx.typeDecl)._match(
+						t.findMultiInst(ctx, names, ctx.typeDecl)._match(
 							at([]) => throw 'error: value of type ${t.fullName()} does not respond to method `[${names.joinMap(" ", n -> '$n:')}]`!',
 							at(kinds) => AssignMessage(Multi(kinds, names, args), null, typeExpr(ctx, rhs))
 						);
@@ -1608,9 +1600,9 @@ static function typeObjCascade(ctx: Ctx, type: Null<Type>, cascade: UCascade<UEx
 
 
 				case StepMember({name: name}, span, step):
-					t.findMultiInst([name], ctx.typeDecl, true)._match(
+					t.findMultiInst(ctx, [name], ctx.typeDecl, true)._match(
 						at([]) => throw "bad",
-						at([setKind]) => t.findSingleInst(name, ctx.typeDecl, true)._match(
+						at([setKind]) => t.findSingleInst(ctx, name, ctx.typeDecl, true)._match(
 							at(getKind!) => {
 								final memt = getKind._match(
 									at(SIMethod((_ : Method) => m) | SIMultiMethod(m)) => m.ret._match(
@@ -1624,7 +1616,7 @@ static function typeObjCascade(ctx: Ctx, type: Null<Type>, cascade: UCascade<UEx
 									_ => throw "todo"
 								);
 								final op: UnaryOp = step._match(at(Incr) => Incr, at(Decr) => Decr);
-								memt.findUnaryOp(op, ctx.typeDecl)._match(
+								memt.findUnaryOp(ctx, op, ctx.typeDecl)._match(
 									at(opKind!) => StepMember(setKind, getKind, opKind),
 									_ => {
 										ctx.addError(Errors.unknownMethod(ctx, memt, op, span));

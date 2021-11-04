@@ -90,6 +90,23 @@ class StrongAlias extends Alias {
 	}
 
 
+	override function isNative(kind: NativeKind) {
+		return !noInherit && type.isNative(kind);
+	}
+
+	override function isFlags() {
+		return !noInherit && type.isFlags();
+	}
+	
+	override function isStrong() {
+		return !noInherit && type.isStrong();
+	}
+
+	override function isUncounted() {
+		return !noInherit && type.isUncounted();
+	}
+
+
 	override function hasParentDecl(decl: TypeDecl) {
 		return super.hasParentDecl(decl)
 			|| (!noInherit && type.hasParentDecl(decl));
@@ -123,13 +140,13 @@ class StrongAlias extends Alias {
 	}
 
 
-	override function instMembers(from: ITypeDecl) {
+	override function instMembers(from: AnyTypeDecl) {
 		return staticMembers.concat(members).filter(mem -> from.canSeeMember(mem))
 			.concat(noInherit ? [] : type.instMembers(from));
 	}
 
 
-	override function findSingleStatic(name: String, from: ITypeDecl, getter = false, cache: List<Type> = Nil): Null<SingleStaticKind> {
+	override function findSingleStatic(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {
 		if(cache.contains(thisType)) return null;
 		
 		for(mem in staticMembers) {
@@ -152,7 +169,7 @@ class StrongAlias extends Alias {
 			_ => {}
 		);
 		
-		if(!noInherit) type.findSingleStatic(name, from, getter, cache.prepend(thisType))._match(
+		if(!noInherit) type.findSingleStatic(ctx, name, from, getter, cache + thisType)._match(
 			at(ss!) => return ss,
 			_ => {}
 		);
@@ -161,7 +178,7 @@ class StrongAlias extends Alias {
 	}
 
 
-	override function findMultiStatic(names: Array<String>, from: ITypeDecl, setter = false, cache: List<Type> = Nil) {
+	override function findMultiStatic(ctx: Ctx, names: Array<String>, from: AnyTypeDecl, setter = false, cache: TypeCache = Nil) {
 		if(cache.contains(thisType)) return [];
 		
 		final candidates: Array<MultiStaticKind> = [];
@@ -187,14 +204,14 @@ class StrongAlias extends Alias {
 		}
 
 		if(!noInherit) {
-			candidates.pushAll(type.findMultiStatic(names, from, setter, cache.prepend(thisType)));
+			candidates.pushAll(type.findMultiStatic(ctx, names, from, setter, cache + thisType));
 		}
 
 		return candidates;
 	}
 
 
-	override function findSingleInst(name: String, from: ITypeDecl, getter = false, cache: List<Type> = Nil): Null<SingleInstKind> {
+	override function findSingleInst(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false, cache: TypeCache = Nil): Null<SingleInstKind> {
 		if(cache.contains(thisType)) return null;
 
 		for(mem in members) {
@@ -218,17 +235,17 @@ class StrongAlias extends Alias {
 		);
 
 		for(refinee in refinees) {
-			refinee.findSingleInst(name, from, getter, cache)._match(
+			refinee.findSingleInst(ctx, name, from, getter, cache)._match(
 				at(si!) => return si,
 				_ => {}
 			);
 		}
 		
-		return noInherit ? null : type.findSingleInst(name, from, getter, cache.prepend(thisType));
+		return noInherit ? null : type.findSingleInst(ctx, name, from, getter, cache + thisType);
 	}
 
 
-	override function findMultiInst(names: Array<String>, from: ITypeDecl, setter = false, cache: List<Type> = Nil) {
+	override function findMultiInst(ctx: Ctx, names: Array<String>, from: AnyTypeDecl, setter = false, cache: TypeCache = Nil) {
 		if(cache.contains(thisType)) return [];
 		
 		final candidates: Array<MultiInstKind> = [];
@@ -274,18 +291,18 @@ class StrongAlias extends Alias {
 		}
 
 		for(refinee in refinees) {
-			candidates.pushAll(refinee.findMultiInst(names, from, setter, cache));
+			candidates.pushAll(refinee.findMultiInst(ctx, names, from, setter, cache));
 		}
 
 		if(!noInherit) {
-			candidates.pushAll(type.findMultiInst(names, from, setter, cache.prepend(thisType)));
+			candidates.pushAll(type.findMultiInst(ctx, names, from, setter, cache + thisType));
 		}
 
 		return candidates;
 	}
 
 
-	override function findCast(target: Type, from: ITypeDecl, cache: List<Type> = Nil) {
+	override function findCast(ctx: Ctx, target: Type, from: AnyTypeDecl, cache: TypeCache = Nil) {
 		if(cache.contains(thisType)) return [];
 
 		final candidates: Array<CastKind> = [];
@@ -300,7 +317,7 @@ class StrongAlias extends Alias {
 		);
 
 		for(refinee in refinees) {
-			candidates.pushAll(refinee.findCast(target, from, cache));
+			candidates.pushAll(refinee.findCast(ctx, target, from, cache));
 		}
 
 		if(!noInherit) {
@@ -308,14 +325,14 @@ class StrongAlias extends Alias {
 				candidates.push(CUpcast(target));
 			}
 
-			candidates.pushAll(type.findCast(target, from, cache.prepend(thisType)));
+			candidates.pushAll(type.findCast(ctx, target, from, cache + thisType));
 		}
 
 		return candidates;
 	}
 
 
-	override function findUnaryOp(op: UnaryOp, from: ITypeDecl, cache: List<Type> = Nil): Null<UnaryOpKind> {
+	override function findUnaryOp(ctx: Ctx, op: UnaryOp, from: AnyTypeDecl, cache: TypeCache = Nil): Null<UnaryOpKind> {
 		if(cache.contains(thisType)) return null;
 
 		for(oper in operators) oper._match(
@@ -328,14 +345,14 @@ class StrongAlias extends Alias {
 		);
 
 		for(refinee in refinees) {
-			refinee.findUnaryOp(op, from, cache)._match(
+			refinee.findUnaryOp(ctx, op, from, cache)._match(
 				at(uo!) => return uo,
 				_ => {}
 			);
 		}
 
 		if(!noInherit) {
-			type.findUnaryOp(op, from, cache.prepend(thisType))._match(
+			type.findUnaryOp(ctx, op, from, cache + thisType)._match(
 				at(uo!) => return uo,
 				_ => {}
 			);
@@ -345,7 +362,7 @@ class StrongAlias extends Alias {
 	}
 
 
-	override function findBinaryOp(op: BinaryOp, from: ITypeDecl, cache: List<Type> = Nil) {
+	override function findBinaryOp(ctx: Ctx, op: BinaryOp, from: AnyTypeDecl, cache: TypeCache = Nil) {
 		final candidates: Array<BinaryOpKind> = [];
 
 		for(oper in operators) oper._match(
@@ -358,22 +375,22 @@ class StrongAlias extends Alias {
 		);
 
 		for(refinee in refinees) {
-			candidates.pushAll(refinee.findBinaryOp(op, from, cache));
+			candidates.pushAll(refinee.findBinaryOp(ctx, op, from, cache));
 		}
 
 		if(!noInherit) {
-			candidates.pushAll(type.findBinaryOp(op, from, cache.prepend(thisType)));
+			candidates.pushAll(type.findBinaryOp(ctx, op, from, cache + thisType));
 		}
 
 		return candidates;
 	}
 
 
-	override function findThisCategory(cat: Type, from: ITypeDecl, cache: List<{}> = Nil): Array<Category> {
-		var res = lookup.findCategory(cat, thisType, from, cache.prepend(thisType));
+	override function findThisCategory(ctx: Ctx, cat: Type, from: AnyTypeDecl, cache: Cache = Nil): Array<Category> {
+		var res = lookup.findCategory(ctx, cat, thisType, from, cache + thisType);
 
 		if(res.length == 0 && !noInherit) {
-			return lookup.findCategory(cat, type, from, cache.prepend(thisType).prepend(type));
+			return lookup.findCategory(ctx, cat, type, from, cache + thisType + type);
 		} else {
 			return res;
 		}

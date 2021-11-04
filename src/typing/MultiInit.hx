@@ -11,7 +11,7 @@ class MultiInit extends Init {
 	var fuzzyName: String;
 	var isUnordered: Bool = true;
 
-	static function fromAST(decl: ITypeDecl, ast: parsing.ast.decls.Init): MultiInit {
+	static function fromAST(decl: AnyTypeDecl, ast: parsing.ast.decls.Init): MultiInit {
 		final init = new MultiInit({
 			decl: decl,
 			span: ast.span,
@@ -68,7 +68,7 @@ class MultiInit extends Init {
 	}
 
 
-	override function findType(path: LookupPath, search: Search, from: Null<ITypeDecl>, depth = 0, cache: List<{}> = Nil): Option<Type> {
+	override function findType(path: LookupPath, search: Search, from: Null<AnyTypeDecl>, depth = 0, cache: Cache = Nil): Null<Type> {
 		return BaseMethod._findType(this, path, from, depth);
 	}
 

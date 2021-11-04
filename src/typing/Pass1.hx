@@ -58,26 +58,27 @@ static function resolveFileContents(file: File) {
 						continue;
 				}
 
-				for(type in types) switch file.findType((type : TypePath).toLookupPath(file), Start, null, 0, Nil) {
-					case Some(t):
+				for(type in types) file.findType((type : TypePath).toLookupPath(file), Start, null, 0, Nil)._match(
+					at(t!) => {
 						resolveBasicType(file, t);
 						file.imported.push({from: t, types: []});
-					
-					case None:
-						file.errors.push(Errors.invalidTypeLookup(type.span()));
-				}
+					},
+					_ =>
+						file.errors.push(Errors.invalidTypeLookup(type.span()))
+				);
 
 			case {from: Some(UType(_, type))}:
-				var from: ILookupType;
-				switch file.findType((type : TypePath).toLookupPath(file), Start, null, 0, Nil) {
-					case Some(t):
+				var from: ITypeLookup;
+				file.findType((type : TypePath).toLookupPath(file), Start, null, 0, Nil)._match(
+					at(t!) => {
 						resolveBasicType(file, t);
 						from = t;
-					
-					case None:
+					},
+					_ => {
 						file.errors.push(Errors.invalidTypeLookup(type.span()));
 						continue;
-				}
+					}
+				);
 
 				var types: Array<TypePath>;
 				switch imp.spec {
@@ -97,17 +98,17 @@ static function resolveFileContents(file: File) {
 					final lookup = (type : TypePath).toLookupPath(from);
 					
 					//trace(lookup, lookup.span().display());
-					switch from.findType(lookup, Start, null, 0, from == file ? Nil : List.of(file)) {
-						case Some(t):
+					from.findType(lookup, Start, null, 0, from == file ? Nil : List.of(file))._match(
+						at(t!) => {
 							resolveBasicType(from, t);
 							
 							// TODO: fix. should import `A.B` as `B`, rec errors instead
 							if(!lookup.match(Cons3(_,_,_,Nil3))) {
 								final realFrom = {
-									function loop(ty: Type): ILookupType return ty.t._match(
+									function loop(ty: Type): ITypeLookup return ty.t._match(
 										at(TPath(_, _, source)) => source,
 										at(TLookup(base, _, _)) => base,
-										at(TConcrete(decl)) => decl.lookup,
+										at(TConcrete(decl) | TInstance(decl, _, _)) => decl.lookup,
 										at(TThis(source)) => source.lookup,
 										at(TBlank) => throw "bad",
 										at(TMulti(types)) => loop(types[0]),
@@ -123,10 +124,10 @@ static function resolveFileContents(file: File) {
 							} else {
 								imported.push(t);
 							}
-						
-						case None:
-							file.errors.push(Errors.invalidTypeLookup(type.span()));
-					}
+						},
+						_ =>
+							file.errors.push(Errors.invalidTypeLookup(type.span()))
+					);
 				}
 
 				file.imported.push({from: from, types: imported});
@@ -142,19 +143,19 @@ static function resolveFileContents(file: File) {
 }
 
 
-static function resolveBasicType(source: ILookupType, type: Type, cache: List<{}> = Nil) {
+static function resolveBasicType(source: ITypeLookup, type: Type, cache: Cache = Nil) {
 	type.t._match(
 		at(TPath(depth, path, src)) => {
 			source.findType(path, Start, null, depth, cache)._match(
-				at(Some(ty)) => {
+				at(ty!) => {
 					type.t = ty.t;
 				},
-				at(None) => {
+				_ => {
 					if(source != src) src.findType(path, Start, null, depth, cache)._match(
-						at(Some(ty)) => {
+						at(ty!) => {
 							type.t = ty.t;
 						},
-						at(None) => src._match(
+						_ => src._match(
 							at(e is IErrors) => {
 								e.errors.push(Errors.invalidTypeLookup(
 									type.span.nonNull(),
@@ -179,7 +180,7 @@ static function resolveBasicType(source: ILookupType, type: Type, cache: List<{}
 				}
 			);
 
-			path.forEach((_, _, ps) -> if(ps.length != 0) {
+			inline path.forEach((_, _, ps) -> if(ps.length != 0) {
 				for(p in ps) {
 					resolveBasicType(source, p);
 				}
@@ -191,22 +192,22 @@ static function resolveBasicType(source: ILookupType, type: Type, cache: List<{}
 
 			base.t._match(
 				at(TConcrete(c) /*| TModular(_, _)*/) => {
-					cache = cache.prepend(base);
-					switch c.findType(path, Inside, null, 0, Nil) {
-						case Some(found):
+					cache += base;
+					c.findType(path, Inside, null, 0, Nil)._match(
+						at(found!) => {
 							type.t = found.t;
-						
-						case None: if(source != src) {
+						},
+						_ => if(source != src) {
 							/*src._match(
 								at(e is IErrors) => e.errors.pop(),
 								_ => {}
 							);*/
 
-							switch source.findType(path, Start, null, 0, cache.prepend(source)) {
-								case Some(found):
+							source.findType(path, Start, null, 0, cache + source)._match(
+								at(found!) => {
 									type.t = found.t;
-								
-								case None: source._match(
+								},
+								_ => source._match(
 									at(e is IErrors) => {
 										e.errors.push(Errors.invalidTypeLookup(
 											type.span.nonNull(),
@@ -214,8 +215,8 @@ static function resolveBasicType(source: ILookupType, type: Type, cache: List<{}
 										));
 									},
 									_ => throw "I don't know where this error came from!"
-								);
-							}
+								)
+							);
 						} else source._match(
 							at(e is IErrors) => {
 								e.errors.push(Errors.invalidTypeLookup(
@@ -224,8 +225,8 @@ static function resolveBasicType(source: ILookupType, type: Type, cache: List<{}
 								));
 							},
 							_ => throw "I don't know where this error came from!"
-						);
-					}
+						)
+					);
 				},
 				_ => {}
 			);
@@ -351,7 +352,7 @@ static function resolveTypeVar(typevar: TypeVar) {
 }
 
 
-static function resolveTypeRule(lookup: ILookupType, rule: TypeRule) rule._match(
+static function resolveTypeRule(lookup: ITypeLookup, rule: TypeRule) rule._match(
 	at(Negate(t) | Exists(t)) => resolveBasicType(lookup, t),
 	at(Eq(l, r) | Of(l, r) | Lt(l, r) | Le(l, r)) => {
 		resolveBasicType(lookup, l);

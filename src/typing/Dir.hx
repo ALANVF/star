@@ -25,7 +25,7 @@ function toName(name: String) {
 
 @:build(util.Auto.build())
 @:autoBuild(util.Auto.build())
-abstract class Dir {
+abstract class Dir implements ITypeLookup {
 	final name: String;
 	final path: String;
 	final units: Array<Unit> = [];
@@ -180,24 +180,23 @@ abstract class Dir {
 		return path.toType(this);
 	}
 
-	function findType(path: LookupPath, search: Search, from: Null<Traits.ITypeDecl>, depth = 0, cache: List<{}> = Nil): Option<Type> {
+	function findType(path: LookupPath, search: Search, from: Null<AnyTypeDecl>, depth = 0, cache: Cache = Nil): Null<Type> {
 		if(/*search!=Inside &&*/ cache.contains(this)) {
-			return None;
+			return null;
 		} else {
-			cache = cache.prepend(this);
+			cache += this;
 		}
 		
 		for(file in files) if(!cache.contains(file)) {
 			//if(path.simpleName().contains("Tail"))trace(from._and(f => f.name.name), path.simpleName(), file.path);
-			switch file.findType(path, Inside, from, 0, cache) {
-				case None:
-				case Some(t) if(depth != 0):
-					cache = cache.prepend(t);
+			file.findType(path, Inside, from, 0, cache)._match(
+				at(null) => {},
+				at(t!!, when(depth != 0)) => {
+					cache += t;
 					depth--;
-				case Some(t):
-					//if(path.simpleName().contains("Tail")) trace(path.span().display());
-					return Some(t);
-			}
+				},
+				at(t!!) => return t
+			);
 		}
 
 		path._match(
@@ -205,55 +204,59 @@ abstract class Dir {
 				for(unit in units) if(!cache.contains(unit) && unit.name == name) {
 					unit.primary._match(
 						at(None) => {},
-						at(Some(p)) => switch p.findType(path, Inside, from, 0, cache.prepend(unit)) {
-							case None:
-							case Some(t) if(depth != 0):
-								cache = cache.prepend(t);
+						at(Some(p)) => p.findType(path, Inside, from, 0, cache + unit)._match(
+							at(null) => {},
+							at(t!!, when(depth != 0)) => {
+								cache += t;
 								depth--;
-							case Some(t): return Some({t: TModular(t, unit), span: span});
-						}
+							},
+							at(t!!) => return {t: TModular(t, unit), span: span}
+						)
 					);
 				}
 			},
 			at([[s, name, args], ...rest]) => {
 				for(unit in units) if(!cache.contains(unit) && unit.name == name) {
 					//trace(s._and(ss=>ss.display()), name);
-					switch unit.findType(rest, Inside, from, 0, cache) {
-						case None: switch unit.primary.flatMap(p -> p.findType(path, Inside, from, 0, cache)) {
-							case None:
-							case Some(t) if(depth != 0):
-								cache = cache.prepend(t);
+					unit.findType(rest, Inside, from, 0, cache)._match(
+						at(null) => unit.primary.toNull()._and(p => p.findType(path, Inside, from, 0, cache))._match(
+							at(null) => {},
+							at(t!!, when(depth != 0)) => {
+								cache += t;
 								depth--;
-							case Some(t): return Some(t);
-						}
-						case Some(t) if(depth != 0):
-							cache = cache.prepend(t);
+							},
+							at(t!!) => return t
+						),
+						at(t!!, when(depth != 0)) => {
+							cache += t;
 							depth--;
-						case Some(t): return Some(t);
-					}
+						},
+						at(t!!) => return t
+					);
 				}
 			},
 			_ => throw "bad"
 		);
 
-		return None;
+		return null;
 	}
 
 	
-	function findCategory(cat: Type, forType: Type, from: ITypeDecl, cache: List<{}> = Nil): Array<Category> {
+	function findCategory(ctx: Ctx, cat: Type, forType: Type, from: AnyTypeDecl, cache: Cache = Nil): Array<Category> {
 		if(cache.contains(this)) return [];
+		cache += this;
 		
 		final candidates = [];
 
 		for(file in files) {
-			switch file.findCategory(cat, forType, from, cache.prepend(this)) {
+			switch file.findCategory(ctx, cat, forType, from, cache) {
 				case []:
 				case found: candidates.pushAll(found);
 			}
 		}
 
 		for(unit in units) {
-			switch unit.findCategory(cat, forType, from, cache.prepend(this)) {
+			switch unit.findCategory(ctx, cat, forType, from, cache) {
 				case []:
 				case found: candidates.pushAll(found);
 			}

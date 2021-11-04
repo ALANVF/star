@@ -43,36 +43,39 @@ class Project extends Dir {
 		return files;
 	}
 
-	override function findType(path: LookupPath, search: Search, from: Null<Traits.ITypeDecl>, depth = 0, cache: List<{}> = Nil): Option<Type> {
+	override function findType(path: LookupPath, search: Search, from: Null<AnyTypeDecl>, depth = 0, cache: Cache = Nil): Null<Type> {
 		//if(search != Inside && cache.contains(this)) return None;
 
 		/*switch main {
 			case None:
-			case Some(m): if(!cache.contains(m)) switch m.findType(path, Inside, from, 0, cache.prepend(this)) {
+			case Some(m): if(!cache.contains(m)) switch m.findType(path, Inside, from, 0, cache + this) {
 				case None:
 				case Some(t) if(depth != 0):
-					cache = cache.prepend(t);
+					cache += t;
 					depth--;
 				case Some(t): return Some(t);
 			}
 		}*/
 		
-		return switch super.findType(path, search, from, depth, cache) {
-			case Some(t): Some(t);
-			case None if(search != Inside && useStdlib): STDLIB._match(
-				at(stdlib!, when(!cache.contains(this))) => {
-					cache = cache.prepend(this);
-					
-					final span = path.span();
-					
-					stdlib.findType(List3.of([span, "Star", []], ...path), Inside, from, 0, Nil).orDo(
-						stdlib.findType(List3.of([span, "Star", []], [span, "Core", []], ...path), Inside, from, 0, Nil)
-					);
-				},
-				_ => None
-			);
-			case None: None;
-		};
+		return super.findType(path, search, from, depth, cache)._match(
+			at(t!) => t,
+			_ => if(search != Inside && useStdlib) {
+				STDLIB._match(
+					at(stdlib!, when(!cache.contains(this))) => {
+						cache += this;
+						
+						final span = path.span();
+						
+						stdlib.findType(List3.of([span, "Star", []], ...path), Inside, from, 0, Nil)._or(
+							stdlib.findType(List3.of([span, "Star", []], [span, "Core", []], ...path), Inside, from, 0, Nil)
+						);
+					},
+					_ => null
+				);
+			} else {
+				null;
+			}
+		);
 	}
 
 	inline function pass1() {

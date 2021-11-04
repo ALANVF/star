@@ -9,8 +9,8 @@ class Class extends ClassLike {
 	var defaultInit: Option<DefaultInit> = None;
 	var deinit: Option<Deinit> = None;
 	var native: Option<NativeKind> = None;
-	var isStrong: Bool = false;
-	var isUncounted: Bool = false;
+	var _isStrong: Bool = false;
+	var _isUncounted: Bool = false;
 
 	static function fromAST(lookup, ast: parsing.ast.decls.Class) {
 		final cls = new Class({
@@ -79,9 +79,9 @@ class Class extends ClassLike {
 			}
 			case IsNative(_, _, _): cls.errors.push(Errors.invalidAttribute(cls, cls.name.name, "native", span));
 
-			case IsStrong: cls.isStrong = true;
+			case IsStrong: cls._isStrong = true;
 
-			case IsUncounted: cls.isUncounted = true;
+			case IsUncounted: cls._isUncounted = true;
 		}
 
 		for(decl in ast.body.of) switch decl {
@@ -138,13 +138,21 @@ class Class extends ClassLike {
 		return result;
 	}
 
-	inline function declName() {
+	function declName() {
 		return "class";
 	}
 
 
 	override function isNative(kind: NativeKind) {
 		return native.exists(nat -> nat.matches(kind));
+	}
+
+	override function isStrong() {
+		return _isStrong || super.isStrong();
+	}
+	
+	override function isUncounted() {
+		return _isUncounted || super.isUncounted();
 	}
 
 
@@ -156,15 +164,15 @@ class Class extends ClassLike {
 	}
 
 
-	override function defaultSingleStatic(name: String, from: ITypeDecl, getter = false) {
+	override function defaultSingleStatic(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false) {
 		if(!native.match(Some(NVoid | NBool))) {
-			return Pass2.STD_Value.findSingleStatic(name, from, getter);
+			return Pass2.STD_Value.findSingleStatic(ctx, name, from, getter);
 		} else {
 			return null;
 		}
 	}
 
-	override function findSingleStatic(name: String, from: ITypeDecl, getter = false, cache: List<Type> = Nil): Null<SingleStaticKind> {
+	override function findSingleStatic(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {
 		if(cache.contains(thisType)) return null;
 		
 		if(!getter) {
@@ -183,11 +191,11 @@ class Class extends ClassLike {
 			);
 		}
 
-		return super.findSingleStatic(name, from, getter, cache);
+		return super.findSingleStatic(ctx, name, from, getter, cache);
 	}
 
 
-	override function findMultiStatic(names: Array<String>, from: ITypeDecl, setter = false, cache: List<Type> = Nil) {
+	override function findMultiStatic(ctx: Ctx, names: Array<String>, from: AnyTypeDecl, setter = false, cache: TypeCache = Nil) {
 		if(cache.contains(thisType)) return [];
 		
 		final candidates: Array<MultiStaticKind> = [];
@@ -251,27 +259,27 @@ class Class extends ClassLike {
 		}
 
 		for(parent in parents) {
-			candidates.pushAll(parent.findMultiStatic(names, from, setter, cache));
+			candidates.pushAll(parent.findMultiStatic(ctx, names, from, setter, cache));
 		}
 
 		for(refinee in refinees) {
-			candidates.pushAll(refinee.findMultiStatic(names, from, setter, cache));
+			candidates.pushAll(refinee.findMultiStatic(ctx, names, from, setter, cache));
 		}
 
 		return candidates;
 	}
 
 
-	override function defaultSingleInst(name: String, from: ITypeDecl, getter = false) {
+	override function defaultSingleInst(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false) {
 		if(!native.match(Some(NVoid)) && !getter) {
-			return Pass2.STD_Value.findSingleInst(name, from, getter);
+			return Pass2.STD_Value.findSingleInst(ctx, name, from, getter);
 		} else {
 			return null;
 		}
 	}
 
-	override function findCast(target: Type, from: ITypeDecl, cache: List<Type> = Nil): Array<CastKind> {
-		final res = super.findCast(target, from, cache);
+	override function findCast(ctx: Ctx, target: Type, from: AnyTypeDecl, cache: TypeCache = Nil): Array<CastKind> {
+		final res = super.findCast(ctx, target, from, cache);
 
 		native._match(
 			at(Some(nat)) => {
@@ -286,18 +294,18 @@ class Class extends ClassLike {
 	}
 
 
-	override function defaultUnaryOp(op: UnaryOp, from: ITypeDecl): Null<UnaryOpKind> {
+	override function defaultUnaryOp(ctx: Ctx, op: UnaryOp, from: AnyTypeDecl): Null<UnaryOpKind> {
 		if(!native.match(Some(NVoid))) {
-			return Pass2.STD_Value.findUnaryOp(op, from);
+			return Pass2.STD_Value.findUnaryOp(ctx, op, from);
 		} else {
 			return null;
 		}
 	}
 
 
-	override function defaultBinaryOp(op: BinaryOp, from: ITypeDecl) {
+	override function defaultBinaryOp(ctx: Ctx, op: BinaryOp, from: AnyTypeDecl) {
 		if(!native.match(Some(NVoid))) {
-			return Pass2.STD_Value.findBinaryOp(op, from);
+			return Pass2.STD_Value.findBinaryOp(ctx, op, from);
 		} else {
 			return [];
 		}

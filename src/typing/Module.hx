@@ -79,7 +79,7 @@ class Module extends Namespace {
 		return module;
 	}
 
-	inline function declName() {
+	function declName() {
 		return "module";
 	}
 }

@@ -50,7 +50,7 @@ enum Stmt {
 		body: TStmts
 	);
 	SForRange(
-		?lvar: TExpr,
+		?lvar: TExpr, // why is this nullable lol
 		start: Tuple2<LoopStart, TExpr>,
 		stop: Tuple2<LoopStop, TExpr>,
 		?by: TExpr,

@@ -55,6 +55,7 @@ class ListHelper {
 			func(head);
 			tail.forEach(func);
 	}*/
+	
 	static inline function forEach<T>(list: List<T>, func: (T) -> Void) {
 		while(true) switch list {
 			case Nil: break;

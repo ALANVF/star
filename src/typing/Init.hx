@@ -8,7 +8,7 @@ abstract class Init extends AnyMethod {
 		case Multi(_): MultiInit.fromAST(decl, ast);
 	}
 	
-	inline function declName() {
+	function declName() {
 		return "initializer";
 	}
 }

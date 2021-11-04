@@ -11,7 +11,7 @@ class MultiMethod extends Method {
 	var fuzzyName: String;
 	var isUnordered: Bool = false;
 
-	static function fromAST(decl: ITypeDecl, ast: parsing.ast.decls.Method) {
+	static function fromAST(decl: AnyTypeDecl, ast: parsing.ast.decls.Method) {
 		final method = new MultiMethod({
 			decl: decl,
 			span: ast.span,
@@ -79,7 +79,7 @@ class MultiMethod extends Method {
 	}
 
 
-	override function findType(path: LookupPath, search: Search, from: Null<ITypeDecl>, depth = 0, cache: List<{}> = Nil): Option<Type> {
+	override function findType(path: LookupPath, search: Search, from: Null<AnyTypeDecl>, depth = 0, cache: Cache = Nil): Null<Type> {
 		return BaseMethod._findType(this, path, from, depth);
 	}
 

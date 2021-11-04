@@ -1,15 +1,21 @@
 import hx.strings.Char;
+
+using Util;
+
 import util.Option;
 import util.List;
 import util.List2;
 import util.List3;
 import util.MultiMap;
+import util.ImmutableMap;
+import util.ImmutableEnumMap;
+import util.ImmutableSet;
+import util.ImmutableEnumSet;
 import util.Either;
 import util.Tuple2;
 import util.Tuple3;
 import util.errors.*;
 
-using Util;
 using util.Maps;
 using util.ERegs;
 using util.Arrays;

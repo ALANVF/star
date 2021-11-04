@@ -12,18 +12,19 @@ class Unit extends Dir {
 		super.gatherFiles(gather);
 	}
 
-	override function findType(path: LookupPath, search: Search, from: Null<ITypeDecl>, depth = 0, cache: List<{}> = Nil): Option<Type> {
-		if(cache.contains(this)) return None;
+	override function findType(path: LookupPath, search: Search, from: Null<AnyTypeDecl>, depth = 0, cache: Cache = Nil): Null<Type> {
+		if(cache.contains(this)) return null;
 		
 		switch primary {
 			case None:
-			case Some(p): if(!cache.contains(p)) switch p.findType(path, Inside, from, 0, cache.prepend(this)) {
-				case None: cache = cache.prepend(p);
-				case Some(t) if(depth != 0):
-					cache = cache.prepend(t);
+			case Some(p): if(!cache.contains(p)) p.findType(path, Inside, from, 0, cache + this)._match(
+				at(null) => cache += p,
+				at(t!!, when(depth != 0)) => {
+					cache += t;
 					depth--;
-				case Some(t): return Some(t);
-			}
+				},
+				at(t!!) => return t
+			);
 		}
 
 		/*for(file in files) if(!cache.contains(file)) {
@@ -31,7 +32,7 @@ class Unit extends Dir {
 			switch file.findType(path, Inside, from, 0, cache) {
 				case None:
 				case Some(t) if(depth != 0):
-					cache = cache.prepend(t);
+					cache += t;
 					depth--;
 				case Some(t):
 					//if(path.simpleName().contains("Head")) trace(path.span().display(), t);
@@ -41,34 +42,35 @@ class Unit extends Dir {
 
 		final res = super.findType(path, search, from, depth, cache);
 		//if(path.simpleName() == "LinkIterator")trace(this.path, primary.exists(p -> p == cache.head()), res);
-		if(res.isSome()) return res;
+		if(res != null) return res;
 		return if(search == Inside) {
-			None;
+			null;
 		} else {
-			var a = outer.findType(path, Outside, from, depth, cache.prepend(this));
+			var a = outer.findType(path, Outside, from, depth, cache + this);
 			//trace(path.simpleName(), path.span().display());
 			a;
 		}
 	}
 
 
-	override function findCategory(cat: Type, forType: Type, from: ITypeDecl, cache: List<{}> = Nil): Array<Category> {
+	override function findCategory(ctx: Ctx, cat: Type, forType: Type, from: AnyTypeDecl, cache: Cache = Nil): Array<Category> {
 		if(cache.contains(this)) return [];
+		cache += this;
 		
 		final candidates = switch primary {
 			case None: [];
-			case Some(p): p.findCategory(cat, forType, from, cache.prepend(this));
+			case Some(p): p.findCategory(ctx, cat, forType, from, cache);
 		};
 
 		for(file in files) {
-			switch file.findCategory(cat, forType, from, cache.prepend(this)) {
+			switch file.findCategory(ctx, cat, forType, from, cache) {
 				case []:
 				case found: candidates.pushAll(found);
 			}
 		}
 
 		for(unit in units) {
-			switch unit.findCategory(cat, forType, from, cache.prepend(this)) {
+			switch unit.findCategory(ctx, cat, forType, from, cache) {
 				case []:
 				case found: candidates.pushAll(found);
 			}

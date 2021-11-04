@@ -9,7 +9,7 @@ class Deinit extends EmptyMethod {
 		});
 	}
 
-	inline function declName() {
+	function declName() {
 		return "deinitializer";
 	}
 }

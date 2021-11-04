@@ -8,7 +8,7 @@ class TaggedKind extends Kind {
 	final taggedCases: Array<TaggedCase> = [];
 	var defaultInit: Option<DefaultInit> = None;
 
-	static function fromAST(lookup: ILookupType, ast: parsing.ast.decls.Kind) {
+	static function fromAST(lookup: ITypeLookup, ast: parsing.ast.decls.Kind) {
 		final kind = new TaggedKind({
 			lookup: lookup,
 			span: ast.span,
@@ -62,11 +62,11 @@ class TaggedKind extends Kind {
 			case IsSealed(None): kind.sealed = Some(None);
 			case IsSealed(Some(outsideOf)): kind.sealed = Some(Some(kind.makeTypePath(outsideOf)));
 
-			case IsFlags: kind.isFlags = true;
+			case IsFlags: kind._isFlags = true;
 
-			case IsStrong: kind.isStrong = true;
+			case IsStrong: kind._isStrong = true;
 
-			case IsUncounted: kind.isUncounted = true;
+			case IsUncounted: kind._isUncounted = true;
 		}
 
 		for(decl in ast.body.of) switch decl {
@@ -119,7 +119,10 @@ class TaggedKind extends Kind {
 		return result;
 	}
 
-	override function findSingleStatic(name: String, from: ITypeDecl, getter = false, cache: List<Type> = Nil): Null<SingleStaticKind> {
+
+	// Method lookup
+
+	override function findSingleStatic(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {
 		if(cache.contains(thisType)) return null;
 		
 		if(!getter) for(tcase in taggedCases) {
@@ -134,11 +137,11 @@ class TaggedKind extends Kind {
 			);
 		}
 
-		return super.findSingleStatic(name, from, getter, cache);
+		return super.findSingleStatic(ctx, name, from, getter, cache);
 	}
 
 	
-	override function findMultiStatic(names: Array<String>, from: ITypeDecl, setter = false, cache: List<Type> = Nil): Array<MultiStaticKind> {
+	override function findMultiStatic(ctx: Ctx, names: Array<String>, from: AnyTypeDecl, setter = false, cache: TypeCache = Nil): Array<MultiStaticKind> {
 		if(cache.contains(thisType)) return [];
 		
 		if(!setter) for(tcase in taggedCases) {
@@ -213,6 +216,6 @@ class TaggedKind extends Kind {
 			);
 		}
 		
-		return super.findMultiStatic(names, from, setter, cache);
+		return super.findMultiStatic(ctx, names, from, setter, cache);
 	}
 }

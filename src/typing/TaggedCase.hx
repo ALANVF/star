@@ -10,14 +10,15 @@ import typing.Traits;
 
 @:build(util.Auto.build())
 @:autoBuild(util.Auto.build())
-abstract class TaggedCase implements IErrors {
+abstract class TaggedCase implements IDecl {
 	final errors: Array<Diagnostic> = [];
-	final decl: ITaggedCases;
+	//final decl: ITaggedCases;
+	final decl: AnyTypeDecl;
 	final span: Span;
 	final assoc: Option<Message<parsing.ast.Type>>;
 	final init: Option<Array<Stmt>> = None;
 
-	static function fromAST(decl, ast: parsing.ast.decls.Case): TaggedCase {
+	static function fromAST<T: AnyTypeDecl, ITaggedCases>(decl: T, ast: parsing.ast.decls.Case): TaggedCase {
 		switch ast.kind {
 			case Tagged({of: Single(name)}, assoc):
 				return new SingleTaggedCase({
@@ -55,7 +56,7 @@ abstract class TaggedCase implements IErrors {
 		}
 	}
 
-	inline function declName() {
+	function declName() {
 		return "tagged case";
 	}
 

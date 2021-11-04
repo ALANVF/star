@@ -13,48 +13,43 @@ abstract class Namespace extends TypeDecl {
 	final categories: Array<Category> = [];
 
 
-	override function isNative(kind: NativeKind) {
-		return parents.some(p -> p.isNative(kind));
-	}
-
-
 	inline function addTypeDecl(decl: TypeDecl) {
 		decls.add(decl.name.name, decl);
 	}
 
-	override function findType(path: LookupPath, search: Search, from: Null<ITypeDecl>, depth = 0, cache: List<{}> = Nil): Option<Type> {
+	override function findType(path: LookupPath, search: Search, from: Null<AnyTypeDecl>, depth = 0, cache: Cache = Nil): Null<Type> {
 		//if(cache.contains(this)) return None;
-		//cache = cache.prepend(thisType);
+		//cache += thisType;
 
 		if(from == null) from = this;
 
 		return path._match(
 			at([[span, "This", args]], when(search != Inside && depth == 0)) => {
 				if(args.length == 0) {
-					Some({t: TThis(this), span: span});
+					{t: TThis(this), span: span};
 				} else {
 					// errors prob shouldn't be attatched to *this* type decl, but eh
 					if(params.length == 0) {
 						errors.push(Errors.invalidTypeApply(span, "Attempt to apply arguments to a non-parametric type"));
-						None;
+						null;
 					} else if(args.length > params.length) {
 						errors.push(Errors.invalidTypeApply(span, "Too many arguments"));
-						None;
+						null;
 					} else if(args.length < params.length) {
 						errors.push(Errors.invalidTypeApply(span, "Not enough arguments"));
-						None;
+						null;
 					} else {
-						Some({t: TApplied({t: TThis(this), span: span}, args), span: span});
+						{t: TApplied({t: TThis(this), span: span}, args), span: span};
 					}
 				}
 			},
 			at([[span, typeName, args], ...rest]) => {
 				var finished = true;
-				final res: Option<Type> = (if(search == Inside || typevars.size == 0) {
+				final res: Null<Type> = (if(search == Inside || typevars.size == 0) {
 					cast decls.find(typeName);
 				} else {
-					final ds: Option<Array<IFullTypeDecl>> = cast decls.find(typeName);
-					final tvs: Option<Array<IFullTypeDecl>> = cast typevars.find(typeName);
+					final ds: Option<Array<AnyFullTypeDecl>> = cast decls.find(typeName);
+					final tvs: Option<Array<AnyFullTypeDecl>> = cast typevars.find(typeName);
 					
 					tvs.orElseDo([]).concat(ds.orElseDo([]))._match(
 						at([]) => None,
@@ -70,10 +65,10 @@ abstract class Namespace extends TypeDecl {
 						|| decl.params.length == args.length
 					)
 				))._match(
-					at(None | Some([])) => if(search == Inside) None else lookup.findType(path, Outside, from, depth, cache),
+					at(None | Some([])) => if(search == Inside) null else lookup.findType(path, Outside, from, depth, cache),
 					at(Some(_), when(depth != 0)) => {
 						if(search == Inside) {
-							None;
+							null;
 						} else {
 							lookup.findType(path, Outside, from, depth - 1, cache);
 						}
@@ -81,15 +76,15 @@ abstract class Namespace extends TypeDecl {
 					at(Some([type])) => switch [args, type.params] {
 						case [[], []]:
 							finished = false;
-							Some(type.thisType);
+							type.thisType;
 						case [[], _]:
 							finished = false;
-							Some({t: type.thisType.t, span: span}); // should probably curry parametrics but eh
+							{t: type.thisType.t, span: span}; // should probably curry parametrics but eh
 						case [_, []]:
 							// should this check for type aliases?
 							if(search == Inside) {
 								errors.push(Errors.invalidTypeApply(span, "Attempt to apply arguments to a non-parametric type"));
-								None;
+								null;
 							} else {
 								// error...?
 								lookup.findType(path, Outside, from, depth, cache);
@@ -97,72 +92,67 @@ abstract class Namespace extends TypeDecl {
 						case [_, params]:
 							if(args.length > params.length) {
 								errors.push(Errors.invalidTypeApply(span, "Too many arguments"));
-								None;
+								null;
 							} else if(args.length < params.length) {
 								errors.push(Errors.invalidTypeApply(span, "Not enough arguments"));
-								None;
+								null;
 							} else {
 								finished = false;
-								Some({t: TApplied(type.thisType, args.map(arg -> arg.t._match(
+								{t: TApplied(type.thisType, args.map(arg -> arg.t._match(
 									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
-										at(Some(type)) => type,
-										at(None) => {
+										at(type!) => type,
+										_ => {
 											errors.push(Errors.invalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
 											arg;
 										}
 									),
 									_ => arg
-								))), span: span});
+								))), span: span};
 							}
 					},
 					at(Some(found)) => {
 						if(args.length == 0) {
 							finished = false;
-							Some({t: TMulti(found.map(t -> t.thisType)), span: span});
+							{t: TMulti(found.map(t -> t.thisType)), span: span};
 						} else switch found.filter(t -> t.params.length == args.length).map(t -> t.thisType) {
 							case []:
 								errors.push(Errors.invalidTypeApply(span, "No candidate matches the type arguments"));
-								None;
+								null;
 							case [type]:
 								finished = false;
-								Some({t: TApplied(type, args.map(arg -> arg.t._match(
+								{t: TApplied(type, args.map(arg -> arg.t._match(
 									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
-										at(Some(type)) => type,
-										at(None) => {
+										at(type!) => type,
+										_ => {
 											errors.push(Errors.invalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
 											arg;
 										}
 									),
 									_ => arg
-								))), span: span});
+								))), span: span};
 							case types:
 								finished = false;
-								Some({t: TApplied({t: TMulti(types), span: span}, args.map(arg -> arg.t._match(
+								{t: TApplied({t: TMulti(types), span: span}, args.map(arg -> arg.t._match(
 									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
-										at(Some(type)) => type,
-										at(None) => {
+										at(type!) => type,
+										_ => {
 											errors.push(Errors.invalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
 											arg;
 										}
 									),
 									_ => arg
-								))), span: span});
+								))), span: span};
 						}
 					}
 				);
 				
-				switch [rest, res] {
-					case [_, None]: /*if(search == Inside &&
-						lookup._match(
-							at(f is File) => !f.unit.exists(u -> u.primary.contains(f)),
-							_ => true
-						)
-					)*/lookup.findType(path, Outside, from, depth, cache);
-					case [_, _] if(finished): res;
-					case [Nil3, _]: res;
-					case [_, Some({t: TConcrete(decl)})]: decl.findType(rest, Inside, from, 0, cache);
-					case [_, Some(type)]: Some({t: TLookup(type, rest, this), span: span});
-				}
+				Util._match([rest, res],
+					at([_, null]) => lookup.findType(path, Outside, from, depth, cache),
+					at([_, _], when(finished)) => res,
+					at([Nil3, _]) => res,
+					at([_, {t: TConcrete(decl)}]) => decl.findType(rest, Inside, from, 0, cache),
+					at([_, type!!]) => {t: TLookup(type, rest, this), span: span}
+				);
 			},
 			_ => throw "bad"
 		);
@@ -187,6 +177,8 @@ abstract class Namespace extends TypeDecl {
 		return result;
 	}
 
+
+	// Type checking
 
 	override function hasParentDecl(decl: TypeDecl) {
 		return this == decl
@@ -246,6 +238,15 @@ abstract class Namespace extends TypeDecl {
 	}
 
 
+	// Attributes
+
+	override function isNative(kind: NativeKind) {
+		return parents.some(p -> p.isNative(kind));
+	}
+
+
+	// Privacy
+
 	override function canSeeMember(member: Member) {
 		return super.canSeeMember(member)
 			|| parents.some(p -> p.canSeeMember(member));
@@ -257,17 +258,21 @@ abstract class Namespace extends TypeDecl {
 	}
 
 
-	override function instMembers(from: ITypeDecl) {
+	// Members
+
+	override function instMembers(from: AnyTypeDecl) {
 		return staticMembers.filter(mem -> from.canSeeMember(mem))
 			.concat(super.instMembers(from));
 	}
 
 
-	function defaultSingleStatic(name: String, from: ITypeDecl, getter = false): Null<SingleStaticKind> {
+	// Method lookup
+
+	function defaultSingleStatic(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false): Null<SingleStaticKind> {
 		return null;
 	}
 
-	override function findSingleStatic(name: String, from: ITypeDecl, getter = false, cache: List<Type> = Nil): Null<SingleStaticKind> {
+	override function findSingleStatic(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {
 		if(cache.contains(thisType)) return null;
 		
 		for(mem in staticMembers) {
@@ -291,27 +296,27 @@ abstract class Namespace extends TypeDecl {
 		);
 		
 		for(parent in parents) {
-			parent.findSingleStatic(name, from, getter, cache)._match(
+			parent.findSingleStatic(ctx, name, from, getter, cache)._match(
 				at(ss!) => return ss,
 				_ => {}
 			);
 		}
 
 		for(refinee in refinees) {
-			refinee.findSingleStatic(name, from, getter, cache)._match(
+			refinee.findSingleStatic(ctx, name, from, getter, cache)._match(
 				at(ss!) => return ss,
 				_ => {}
 			);
 		}
 
-		return cache._match(
-			at([] | [{t: TConcrete(_ is DirectAlias | _ is StrongAlias)} is Type, ..._]) => defaultSingleStatic(name, from, getter),
+		return cache.list._match(
+			at([] | [{t: TConcrete(_ is DirectAlias | _ is StrongAlias)} is Type, ..._]) => defaultSingleStatic(ctx, name, from, getter),
 			_ => null
 		);
 	}
 
 
-	override function findMultiStatic(names: Array<String>, from: ITypeDecl, setter = false, cache: List<Type> = Nil) {
+	override function findMultiStatic(ctx: Ctx, names: Array<String>, from: AnyTypeDecl, setter = false, cache: TypeCache = Nil) {
 		if(cache.contains(thisType)) return [];
 		
 		final candidates: Array<MultiStaticKind> = [];
@@ -337,28 +342,30 @@ abstract class Namespace extends TypeDecl {
 		}
 
 		for(parent in parents) {
-			candidates.pushAll(parent.findMultiStatic(names, from, setter, cache));
+			candidates.pushAll(parent.findMultiStatic(ctx, names, from, setter, cache));
 		}
 
 		for(refinee in refinees) {
-			candidates.pushAll(refinee.findMultiStatic(names, from, setter, cache));
+			candidates.pushAll(refinee.findMultiStatic(ctx, names, from, setter, cache));
 		}
 
 		return candidates;
 	}
 
 
-	override function findCategory(cat: Type, forType: Type, from: ITypeDecl, cache: List<{}> = Nil): Array<Category> {
+	// Categories
+
+	override function findCategory(ctx: Ctx, cat: Type, forType: Type, from: AnyTypeDecl, cache: Cache = Nil): Array<Category> {
 		return categories.filter(c -> c.thisType.hasChildType(forType) && c.path.hasChildType(cat))._match(
-			at([]) => super.findCategory(cat, forType, from, cache),
-			at(found) => found.concat(super.findCategory(cat, forType, from, cache))
+			at([]) => super.findCategory(ctx, cat, forType, from, cache),
+			at(found) => found.concat(super.findCategory(ctx, cat, forType, from, cache))
 		);
 	}
 	
-	override function findThisCategory(cat: Type, from: ITypeDecl, cache: List<{}> = Nil): Array<Category> {
+	override function findThisCategory(ctx: Ctx, cat: Type, from: AnyTypeDecl, cache: Cache = Nil): Array<Category> {
 		return categories.filter(c -> c.type.isNone() && c.path.hasChildType(cat))._match(
-			at([]) => super.findThisCategory(cat, from, cache),
-			at(found) => found.concat(super.findThisCategory(cat, from, cache))
-		).concat(parents.flatMap(p -> p.findThisCategory(cat, from, cache.prepend(thisType))).unique());
+			at([]) => super.findThisCategory(ctx, cat, from, cache),
+			at(found) => found.concat(super.findThisCategory(ctx, cat, from, cache))
+		).concat(parents.flatMap(p -> p.findThisCategory(ctx, cat, from, cache + thisType)).unique());
 	}
 }

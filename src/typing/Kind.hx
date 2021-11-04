@@ -4,11 +4,11 @@ import typing.Traits;
 
 abstract class Kind extends ClassLike {
 	var deinit: Option<Deinit> = None;
-	var isFlags: Bool = false;
-	var isStrong: Bool = false;
-	var isUncounted: Bool = false;
+	var _isFlags: Bool = false;
+	var _isStrong: Bool = false;
+	var _isUncounted: Bool = false;
 
-	static function fromAST(decl: ILookupType, ast: parsing.ast.decls.Kind): Kind {
+	static function fromAST(decl: ITypeLookup, ast: parsing.ast.decls.Kind): Kind {
 		final cases = ast.body.of.filterMap(d -> switch d {
 			case DCase(c): c;
 			default: null;
@@ -36,19 +36,36 @@ abstract class Kind extends ClassLike {
 		return result;
 	}
 
-	inline function declName() {
+	function declName() {
 		return "kind";
 	}
 
 
+	// Attributes
+
+	override function isFlags() {
+		return _isFlags || super.isFlags();
+	}
+
+	override function isStrong() {
+		return _isStrong || super.isStrong();
+	}
+
+	override function isUncounted() {
+		return _isUncounted || super.isUncounted();
+	}
+
+
+	// Method lookup
+
 	// TODO: add multi-kind stuff
-	override function defaultUnaryOp(op: UnaryOp, from: ITypeDecl): Null<UnaryOpKind> {
-		return Pass2.STD_Value.findUnaryOp(op, from);
+	override function defaultUnaryOp(ctx: Ctx, op: UnaryOp, from: AnyTypeDecl): Null<UnaryOpKind> {
+		return Pass2.STD_Value.findUnaryOp(ctx, op, from);
 	}
 
 
 	// TODO: add multi-kind stuff
-	override function defaultBinaryOp(op: BinaryOp, from: ITypeDecl): Array<BinaryOpKind> {
-		return Pass2.STD_Value.findBinaryOp(op, from);
+	override function defaultBinaryOp(ctx: Ctx, op: BinaryOp, from: AnyTypeDecl): Array<BinaryOpKind> {
+		return Pass2.STD_Value.findBinaryOp(ctx, op, from);
 	}
 }

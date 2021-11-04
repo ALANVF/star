@@ -26,7 +26,7 @@ class Errors {
 		});
 	}*/
 	
-	static inline function duplicateAttribute<T: IDecl>(decl: T, name, attr, attrSpan) {
+	static inline function duplicateAttribute<T: VDecl>(decl: T, name, attr, attrSpan) {
 		return new Diagnostic({
 			severity: Severity.ERROR,
 			message: "Duplicate attribute",
@@ -45,7 +45,7 @@ class Errors {
 		});
 	}
 
-	static inline function invalidAttribute<T: IDecl>(decl: T, name, attr, attrSpan) {
+	static inline function invalidAttribute<T: VDecl>(decl: T, name, attr, attrSpan) {
 		return new Diagnostic({
 			severity: Severity.ERROR,
 			message: "Invalid attribute",
@@ -65,8 +65,8 @@ class Errors {
 	}
 
 
-	static overload extern inline function duplicateDecl<T: IDecl>(decl: T, name, decl2) return duplicateDecl_IDecl(decl, name, decl2);
-	private static inline function duplicateDecl_IDecl<T: IDecl>(decl: T, name, decl2: parsing.ast.decls.Decl) {
+	static overload extern inline function duplicateDecl<T: VDecl>(decl: T, name, decl2) return duplicateDecl_IDecl(decl, name, decl2);
+	private static inline function duplicateDecl_IDecl<T: VDecl>(decl: T, name, decl2: parsing.ast.decls.Decl) {
 		return new Diagnostic({
 			severity: Severity.ERROR,
 			message: "Duplicate declaration",
@@ -100,8 +100,8 @@ class Errors {
 		});
 	}
 
-	static overload extern inline function unexpectedDecl<T: IDecl>(decl: T, name, decl2) return unexpectedDecl_IDecl(decl, name, decl2);
-	private static inline function unexpectedDecl_IDecl<T: IDecl>(decl: T, name, decl2: parsing.ast.decls.Decl) {
+	static overload extern inline function unexpectedDecl<T: VDecl>(decl: T, name, decl2) return unexpectedDecl_IDecl(decl, name, decl2);
+	private static inline function unexpectedDecl_IDecl<T: VDecl>(decl: T, name, decl2: parsing.ast.decls.Decl) {
 		return new Diagnostic({
 			severity: Severity.ERROR,
 			message: "Unexpected declaration",
@@ -135,8 +135,8 @@ class Errors {
 		});
 	}
 	
-	static overload extern inline function invalidDecl<T: IDecl>(decl: T, name, decl2) return invalidDecl_IDecl(decl, name, decl2);
-	private static inline function invalidDecl_IDecl<T: IDecl>(decl: T, name, decl2: parsing.ast.decls.Decl) {
+	static overload extern inline function invalidDecl<T: VDecl>(decl: T, name, decl2) return invalidDecl_IDecl(decl, name, decl2);
+	private static inline function invalidDecl_IDecl<T: VDecl>(decl: T, name, decl2: parsing.ast.decls.Decl) {
 		return new Diagnostic({
 			severity: Severity.ERROR,
 			message: "Invalid declaration",
@@ -247,7 +247,7 @@ class Errors {
 	}
 
 
-	static function unknownFieldOrVar(ctx: Pass2.Ctx, name, span) {
+	static function unknownFieldOrVar(ctx: Ctx, name, span) {
 		final lookup = ctx.thisLookup;
 		return new Diagnostic({
 			severity: Severity.ERROR,
@@ -267,7 +267,7 @@ class Errors {
 		});
 	}
 
-	static function shadowedLocalVar(ctx: Pass2.Ctx, name, origSpan, dupSpan) {
+	static function shadowedLocalVar(ctx: Ctx, name, origSpan, dupSpan) {
 		final lookup = ctx.thisLookup;
 		return new Diagnostic({
 			severity: Severity.WARNING,
@@ -292,7 +292,7 @@ class Errors {
 		});
 	}
 
-	static function localVarTypeMismatch(ctx: Pass2.Ctx, name, wantedType: Type, gotType: Type, declSpan, hereSpan) {
+	static function localVarTypeMismatch(ctx: Ctx, name, wantedType: Type, gotType: Type, declSpan, hereSpan) {
 		final lookup = ctx.thisLookup;
 		return new Diagnostic({
 			severity: Severity.ERROR,
@@ -318,19 +318,19 @@ class Errors {
 	}
 	
 
-	static extern inline overload function unknownMethod(ctx: Pass2.Ctx, isStatic: Bool, type: Type, name: String, span, ?categories: Array<Category>)
+	static extern inline overload function unknownMethod(ctx: Ctx, isStatic: Bool, type: Type, name: String, span, ?categories: Array<Category>)
 		return _unknownMethod(ctx, isStatic, type, '[$name]', span, categories);
 
-	static extern inline overload function unknownMethod(ctx: Pass2.Ctx, isStatic: Bool, type: Type, names: Array<String>, span, ?categories: Array<Category>)
+	static extern inline overload function unknownMethod(ctx: Ctx, isStatic: Bool, type: Type, names: Array<String>, span, ?categories: Array<Category>)
 		return _unknownMethod(ctx, isStatic, type, "["+names.joinMap(" ", n -> '$n:')+"]", span, categories);
 
-	static extern inline overload function unknownMethod(ctx: Pass2.Ctx, type: Type, op: UnaryOp, span)
+	static extern inline overload function unknownMethod(ctx: Ctx, type: Type, op: UnaryOp, span)
 		return _unknownMethod(ctx, false, type, '[`${op.symbol()}`]', span);
 
-	static extern inline overload function unknownMethod(ctx: Pass2.Ctx, type: Type, op: BinaryOp, span)
+	static extern inline overload function unknownMethod(ctx: Ctx, type: Type, op: BinaryOp, span)
 		return _unknownMethod(ctx, false, type, '[`${op.symbol()}`:]', span);
 
-	private static function _unknownMethod(ctx: Pass2.Ctx, isStatic: Bool, type: Type, methodName, span, ?categories: Array<Category>) {
+	private static function _unknownMethod(ctx: Ctx, isStatic: Bool, type: Type, methodName, span, ?categories: Array<Category>) {
 		final lookup = ctx.thisLookup;
 		return new Diagnostic({
 			severity: Severity.ERROR,
@@ -361,7 +361,7 @@ class Errors {
 		});
 	}
 
-	static function unknownCast(ctx: Pass2.Ctx, type: Type, target: Type, span) {
+	static function unknownCast(ctx: Ctx, type: Type, target: Type, span) {
 		final lookup = ctx.thisLookup;
 		return new Diagnostic({
 			severity: Severity.ERROR,
@@ -382,7 +382,7 @@ class Errors {
 	}
 
 
-	static function unknownGetter(ctx: Pass2.Ctx, isStatic: Bool, type: Type, name, span) {
+	static function unknownGetter(ctx: Ctx, isStatic: Bool, type: Type, name, span) {
 		final lookup = ctx.thisLookup;
 		return new Diagnostic({
 			severity: Severity.ERROR,
@@ -403,7 +403,7 @@ class Errors {
 	}
 
 
-	static function unknownCategory(ctx: Pass2.Ctx, isStatic: Bool, type: Type, cat: Type, span) {
+	static function unknownCategory(ctx: Ctx, isStatic: Bool, type: Type, cat: Type, span) {
 		final lookup = ctx.thisLookup;
 		return new Diagnostic({
 			severity: Severity.ERROR,
@@ -424,7 +424,7 @@ class Errors {
 	}
 
 
-	static function thisNotAllowed(ctx: Pass2.Ctx, span) {
+	static function thisNotAllowed(ctx: Ctx, span) {
 		final lookup = ctx.thisLookup;
 		return new Diagnostic({
 			severity: Severity.ERROR,
@@ -445,7 +445,7 @@ class Errors {
 	}
 
 
-	static function expectedLogicalValue(ctx: Pass2.Ctx, gotType: Type, span) {
+	static function expectedLogicalValue(ctx: Ctx, gotType: Type, span) {
 		final lookup = ctx.thisLookup;
 		return new Diagnostic({
 			severity: Severity.ERROR,

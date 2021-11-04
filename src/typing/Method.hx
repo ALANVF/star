@@ -14,7 +14,7 @@ abstract class Method extends AnyMethod {
 		case Cast(_): CastMethod.fromAST(decl, ast);
 	}
 
-	inline function declName() {
+	function declName() {
 		return "method";
 	}
 }

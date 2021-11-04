@@ -9,7 +9,7 @@ class DefaultInit extends EmptyMethod {
 		});
 	}
 
-	inline function declName() {
+	function declName() {
 		return "default initializer";
 	}
 }

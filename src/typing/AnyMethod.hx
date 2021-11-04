@@ -8,9 +8,9 @@ import typing.Traits;
 
 @:build(util.Auto.build())
 @:autoBuild(util.Auto.build())
-abstract class AnyMethod implements IErrors {
+abstract class AnyMethod implements ITypeLookupDecl {
 	final errors: Array<Diagnostic> = [];
-	final decl: ITypeDecl;
+	final decl: AnyTypeDecl;
 	final span: Span;
 	var hidden: Option<Option<Type>> = None;
 	var noInherit: Bool = false;
@@ -24,11 +24,9 @@ abstract class AnyMethod implements IErrors {
 		return path.toType(this);
 	}
 
-	function findType(path: LookupPath, search: Search, from: Null<ITypeDecl>, depth = 0, cache: List<{}> = Nil): Option<Type> {
+	function findType(path: LookupPath, search: Search, from: Null<AnyTypeDecl>, depth = 0, cache: Cache = Nil): Null<Type> {
 		return decl.findType(path, Start, from, depth, cache);
 	}
-
-	abstract function declName(): String;
 
 	abstract function methodName(): String;
 
@@ -41,7 +39,7 @@ abstract class AnyMethod implements IErrors {
 	}
 
 
-	function findCategory(cat: Type, forType: Type, from: ITypeDecl, cache: List<{}> = Nil): Array<Category> {
-		return decl.findCategory(cat, forType, from, cache);
+	function findCategory(ctx: Ctx, cat: Type, forType: Type, from: AnyTypeDecl, cache: Cache = Nil): Array<Category> {
+		return decl.findCategory(ctx, cat, forType, from, cache);
 	}
 }

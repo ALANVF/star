@@ -10,7 +10,7 @@ import typing.Traits;
 @:build(util.Auto.build())
 class Member implements IErrors {
 	final errors: Array<Diagnostic> = [];
-	final lookup: ILookupType;
+	final lookup: ITypeLookup;
 	final span: Span;
 	final name: Ident;
 	var type: Option<Type>;
@@ -153,7 +153,7 @@ class Member implements IErrors {
 		return member;
 	}
 
-	inline function declName() {
+	function declName() {
 		return "member";
 	}
 

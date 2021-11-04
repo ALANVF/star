@@ -8,18 +8,18 @@ abstract class ClassLike extends Namespace {
 	final operators: Array<Operator> = [];
 
 
-	override function instMembers(from: ITypeDecl) {
+	override function instMembers(from: AnyTypeDecl) {
 		return members.filter(mem -> from.canSeeMember(mem))
 			.concat(parents.flatMap(p -> p.instMembers(from)))
 			.concat(super.instMembers(from));
 	}
 
 
-	function defaultSingleInst(name: String, from: ITypeDecl, getter = false): Null<SingleInstKind> {
+	function defaultSingleInst(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false): Null<SingleInstKind> {
 		return null;
 	}
 
-	override function findSingleInst(name: String, from: ITypeDecl, getter = false, cache: List<Type> = Nil): Null<SingleInstKind> {
+	override function findSingleInst(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false, cache: TypeCache = Nil): Null<SingleInstKind> {
 		if(cache.contains(thisType)) return null;
 
 		for(mem in members) {
@@ -43,27 +43,27 @@ abstract class ClassLike extends Namespace {
 		);
 		
 		for(parent in parents) {
-			parent.findSingleInst(name, from, getter, cache)._match(
+			parent.findSingleInst(ctx, name, from, getter, cache)._match(
 				at(si!) => return si,
 				_ => {}
 			);
 		}
 
 		for(refinee in refinees) {
-			refinee.findSingleInst(name, from, getter, cache)._match(
+			refinee.findSingleInst(ctx, name, from, getter, cache)._match(
 				at(si!) => return si,
 				_ => {}
 			);
 		}
 		
-		return cache._match(
-			at([] | [{t: TConcrete(_ is DirectAlias | _ is StrongAlias)} is Type, ..._]) => defaultSingleInst(name, from, getter),
+		return cache.list._match(
+			at([] | [{t: TConcrete(_ is DirectAlias | _ is StrongAlias)} is Type, ..._]) => defaultSingleInst(ctx, name, from, getter),
 			_ => null
 		);
 	}
 
 
-	override function findMultiInst(names: Array<String>, from: ITypeDecl, setter = false, cache: List<Type> = Nil) {
+	override function findMultiInst(ctx: Ctx, names: Array<String>, from: AnyTypeDecl, setter = false, cache: TypeCache = Nil) {
 		if(cache.contains(thisType)) return [];
 		
 		final candidates: Array<MultiInstKind> = [];
@@ -109,18 +109,18 @@ abstract class ClassLike extends Namespace {
 		}
 
 		for(parent in parents) {
-			candidates.pushAll(parent.findMultiInst(names, from, setter, cache));
+			candidates.pushAll(parent.findMultiInst(ctx, names, from, setter, cache));
 		}
 
 		for(refinee in refinees) {
-			candidates.pushAll(refinee.findMultiInst(names, from, setter, cache));
+			candidates.pushAll(refinee.findMultiInst(ctx, names, from, setter, cache));
 		}
 
 		return candidates;
 	}
 
 
-	override function findCast(target: Type, from: ITypeDecl, cache: List<Type> = Nil) {
+	override function findCast(ctx: Ctx, target: Type, from: AnyTypeDecl, cache: TypeCache = Nil) {
 		if(cache.contains(thisType)) return [];
 
 		final candidates: Array<CastKind> = [];
@@ -135,22 +135,22 @@ abstract class ClassLike extends Namespace {
 		);
 
 		for(parent in parents) {
-			candidates.pushAll(parent.findCast(target, from, cache));
+			candidates.pushAll(parent.findCast(ctx, target, from, cache));
 		}
 
 		for(refinee in refinees) {
-			candidates.pushAll(refinee.findCast(target, from, cache));
+			candidates.pushAll(refinee.findCast(ctx, target, from, cache));
 		}
 
 		return candidates;
 	}
 
 	
-	function defaultUnaryOp(op: UnaryOp, from: ITypeDecl): Null<UnaryOpKind> {
+	function defaultUnaryOp(ctx: Ctx, op: UnaryOp, from: AnyTypeDecl): Null<UnaryOpKind> {
 		return null;
 	}
 
-	override function findUnaryOp(op: UnaryOp, from: ITypeDecl, cache: List<Type> = Nil): Null<UnaryOpKind> {
+	override function findUnaryOp(ctx: Ctx, op: UnaryOp, from: AnyTypeDecl, cache: TypeCache = Nil): Null<UnaryOpKind> {
 		if(cache.contains(thisType)) return null;
 
 		for(oper in operators) oper._match(
@@ -163,31 +163,31 @@ abstract class ClassLike extends Namespace {
 		);
 
 		for(parent in parents) {
-			parent.findUnaryOp(op, from, cache)._match(
+			parent.findUnaryOp(ctx, op, from, cache)._match(
 				at(uo!) => return uo,
 				_ => {}
 			);
 		}
 
 		for(refinee in refinees) {
-			refinee.findUnaryOp(op, from, cache)._match(
+			refinee.findUnaryOp(ctx, op, from, cache)._match(
 				at(uo!) => return uo,
 				_ => {}
 			);
 		}
 
-		return cache._match(
-			at([] | [{t: TConcrete(_ is DirectAlias | _ is StrongAlias)}, ..._]) => defaultUnaryOp(op, from),
+		return cache.list._match(
+			at([] | [{t: TConcrete(_ is DirectAlias | _ is StrongAlias)}, ..._]) => defaultUnaryOp(ctx, op, from),
 			_ => null
 		);
 	}
 
 
-	function defaultBinaryOp(op: BinaryOp, from: ITypeDecl): Array<BinaryOpKind> {
+	function defaultBinaryOp(ctx: Ctx, op: BinaryOp, from: AnyTypeDecl): Array<BinaryOpKind> {
 		return [];
 	}
 
-	override function findBinaryOp(op: BinaryOp, from: ITypeDecl, cache: List<Type> = Nil) {
+	override function findBinaryOp(ctx: Ctx, op: BinaryOp, from: AnyTypeDecl, cache: TypeCache = Nil) {
 		final candidates: Array<BinaryOpKind> = [];
 
 		for(oper in operators) oper._match(
@@ -200,16 +200,16 @@ abstract class ClassLike extends Namespace {
 		);
 
 		for(parent in parents) {
-			candidates.pushAll(parent.findBinaryOp(op, from, cache));
+			candidates.pushAll(parent.findBinaryOp(ctx, op, from, cache));
 		}
 
 		for(refinee in refinees) {
-			candidates.pushAll(refinee.findBinaryOp(op, from, cache));
+			candidates.pushAll(refinee.findBinaryOp(ctx, op, from, cache));
 		}
 
 		return candidates._match(
-			at([]) => cache._match(
-				at([] | [{t: TConcrete(_ is DirectAlias | _ is StrongAlias)}, ..._]) => defaultBinaryOp(op, from),
+			at([]) => cache.list._match(
+				at([] | [{t: TConcrete(_ is DirectAlias | _ is StrongAlias)}, ..._]) => defaultBinaryOp(ctx, op, from),
 				_ => candidates
 			),
 			_ => candidates

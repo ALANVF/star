@@ -49,7 +49,7 @@ class BinaryOperator extends Operator {
 	}
 
 
-	override function findType(path: LookupPath, search: Search, from: Null<Traits.ITypeDecl>, depth = 0, cache: List<{}> = Nil): Option<Type> {
+	override function findType(path: LookupPath, search: Search, from: Null<AnyTypeDecl>, depth = 0, cache: Cache = Nil): Null<Type> {
 		return BaseMethod._findType(this, path, from, depth);
 	}
 }

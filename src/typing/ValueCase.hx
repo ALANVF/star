@@ -10,7 +10,7 @@ import typing.Traits;
 @:build(util.Auto.build())
 class ValueCase implements IErrors {
 	final errors: Array<Diagnostic> = [];
-	final decl: IValueCases;
+	final decl: AnyTypeDecl;
 	final span: Span;
 	final name: Ident;
 	var value: Option<Expr>;
@@ -52,7 +52,7 @@ class ValueCase implements IErrors {
 		}
 	}
 
-	inline function declName() {
+	function declName() {
 		return "value case";
 	}
 

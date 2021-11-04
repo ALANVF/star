@@ -6,12 +6,8 @@ import reporting.Diagnostic;
 import typing.Traits;
 
 @:build(util.Auto.build())
-class Category implements IErrors {
-	final errors: Array<Diagnostic> = [];
+class Category extends AnyTypeDecl {
 	@ignore final typevars = new MultiMap<String, TypeVar>();
-	final lookup: ILookupType;
-	final span: Span;
-	final name: Ident;
 	var path: Type;
 	var type: Option<Type>;
 	final staticMembers: Array<Member> = [];
@@ -22,9 +18,7 @@ class Category implements IErrors {
 	var hidden: Option<Option<Type>> = None;
 	final friends: Array<Type> = [];
 
-	@ignore var thisType: Type;
-
-	static function fromAST(lookup: ILookupType, ast: parsing.ast.decls.Category) {
+	static function fromAST(lookup: ITypeLookup, ast: parsing.ast.decls.Category) {
 		final category = new Category({
 			lookup: lookup,
 			span: ast.span,
@@ -40,7 +34,7 @@ class Category implements IErrors {
 
 		category.thisType = switch category.type {
 			case Some(t): t;
-			case None: (cast lookup : ITypeDecl).thisType;
+			case None: (cast lookup : AnyTypeDecl).thisType;
 		};
 
 		for(typevar in ast.generics.mapArray(a -> TypeVar.fromAST(category, a))) {
@@ -96,11 +90,11 @@ class Category implements IErrors {
 		return result;
 	}
 
-	inline function declName() {
+	function declName() {
 		return "category";
 	}
 
-	function fullName(cache: List<Type> = Nil) {
+	function fullName(cache: TypeCache = Nil) {
 		return type.doOrElse(t => t.fullName(cache), lookup._match(
 			at(decl is TypeDecl) => decl.fullName(cache),
 			at(tvar is TypeVar) => tvar.fullName(cache),
@@ -109,82 +103,82 @@ class Category implements IErrors {
 	}
 
 
-	function findType(path: LookupPath, search: Search, from: Null<ITypeDecl>, depth = 0, cache: List<{}> = Nil): Option<Type> {
-		if(cache.contains(this)) return None;
-		cache = cache.prepend(this);
+	override function findType(path: LookupPath, search: Search, from: Null<AnyTypeDecl>, depth = 0, cache: Cache = Nil): Null<Type> {
+		if(cache.contains(this)) return null;
+		cache += this;
 
-		if(search == Inside) return None;
+		if(search == Inside) return null;
 
 		return path._match(
 			at([[span, "This", args]], when(depth == 0)) => {
 				if(args.length == 0) {
 					type.doOrElse(
-						t => Some(t),
+						t => t,
 						lookup.findType(path, Start, from, 0, cache)
 					);
 				} else {
 					// prob shouldn't be attatched to *this* category decl, but eh
 					errors.push(Errors.notYetImplemented(span));
-					None;
+					null;
 				}
 			},
 			at([[span, typeName, args], ...rest]) => {
 				var finished = true;
-				final res: Option<Type> = typevars.find(typeName).map(found -> found.filter(tvar ->
+				final res: Null<Type> = typevars.find(typeName).map(found -> found.filter(tvar ->
 					!cache.contains(tvar.thisType)
 					&& (tvar.params.length == 0 || tvar.params.length == args.length)
 				))._match(
-					at(None | Some([])) => lookup.findType(path, Outside, this, depth, cache).orDo(
+					at(None | Some([])) => lookup.findType(path, Outside, this, depth, cache)._or(
 						thisType.findType(path, Start, this, depth, cache)
 					),
-					at(Some(_), when(depth != 0)) => lookup.findType(path, Outside, this, depth - 1, cache).orDo(
+					at(Some(_), when(depth != 0)) => lookup.findType(path, Outside, this, depth - 1, cache)._or(
 						thisType.findType(path, Start, this, depth - 1, cache)
 					),
 					at(Some([tvar])) => switch [args, tvar.params] {
 						case [[], _]:
 							finished = false;
-							Some({t: tvar.thisType.t, span: span}); // should probably curry parametrics but eh
+							{t: tvar.thisType.t, span: span}; // should probably curry parametrics but eh
 						case [_, []]:
 							// should this check for type aliases?
 							// error...?
-							None;
+							null;
 						case [_, params]:
 							if(args.length > params.length) {
 								errors.push(Errors.invalidTypeApply(span, "Too many arguments"));
-								None;
+								null;
 							} else if(args.length < params.length) {
 								errors.push(Errors.invalidTypeApply(span, "Not enough arguments"));
-								None;
+								null;
 							} else {
 								finished = false;
-								Some({t: TApplied(tvar.thisType, args), span: span});
+								{t: TApplied(tvar.thisType, args), span: span};
 							}
 					},
 					at(Some(found)) => {
 						if(args.length == 0) {
 							finished = false;
-							Some({t: TMulti(found.map(t -> t.thisType)), span: span});
+							{t: TMulti(found.map(t -> t.thisType)), span: span};
 						} else switch found.map(t -> t.thisType) {
 							case []:
 								errors.push(Errors.invalidTypeApply(span, "No candidate matches the type arguments"));
-								None;
+								null;
 							case [tvar]:
 								finished = false;
-								Some({t: TApplied(tvar, args), span: span});
+								{t: TApplied(tvar, args), span: span};
 							case tvars:
 								finished = false;
-								Some({t: TMulti(tvars), span: span});
+								{t: TMulti(tvars), span: span};
 						}
 					}
 				);
 
-				switch [rest, res] {
-					case [_, None]: lookup.findType(path, Outside, from, depth, cache);
-					case [_, _] if(finished): res;
-					case [Nil3, _]: res;
-					case [_, Some({t: TConcrete(decl)})]: decl.findType(rest, Outside, from, 0, cache);
-					case [_, Some(type)]: Some({t: TLookup(type, rest, this), span: span});
-				}
+				Util._match([rest, res],
+					at([_, null]) => lookup.findType(path, Outside, from, depth, cache),
+					at([_, _], when(finished)) => res,
+					at([Nil3, _]) => res,
+					at([_, {t: TConcrete(decl)}]) => decl.findType(rest, Outside, from, 0, cache),
+					at([_, type!!]) => {t: TLookup(type, rest, this), span: span}
+				);
 			},
 			_ => throw "bad"
 		);
@@ -194,6 +188,8 @@ class Category implements IErrors {
 		return path.toType(this);
 	}
 
+
+	// Type checking
 
 	function hasParentDecl(decl: TypeDecl) {
 		return switch type {
@@ -240,6 +236,70 @@ class Category implements IErrors {
 	}
 
 
+	function hasStrictChildType(type2: Type): Bool {
+		throw "NYI!";
+	}
+
+
+	function hasRefinementDecl(decl: TypeDecl): Bool {
+		throw "NYI!";
+	}
+
+	function hasRefinementType(type: Type): Bool {
+		throw "NYI!";
+	}
+
+
+	// Unification
+
+	function strictUnifyWithType(type: Type): Null<Type> {
+		throw "NYI!";
+	}
+
+
+	// Generics
+
+	function acceptsArgs(args: Array<Type>): Bool {
+		throw "NYI!";
+	}
+
+	function applyArgs(args: Array<Type>): Null<Type> {
+		throw "NYI!";
+	}
+
+
+	// Attributes
+
+	function isNative(kind: NativeKind): Bool {
+		throw "NYI!";
+	}
+
+	function isFlags(): Bool {
+		throw "NYI!";
+	}
+
+	function isStrong(): Bool {
+		throw "NYI!";
+	}
+
+	function isUncounted(): Bool {
+		throw "NYI!";
+	}
+
+
+	// Effects tracking
+
+	function trackEffectsIn(ctx: Ctx): Null<Effects> {
+		throw "NYI!";
+	}
+
+	function applyArgsTrackEffects(args: Array<Type>, ctx: Ctx): Null<Tuple2<Type, Effects>> {
+		throw "NYI!";
+	}
+
+
+	// Privacy
+
 	function canSeeMember(member: Member) {
 		return member.lookup == this
 			|| thisType.canSeeMember(member);
@@ -250,14 +310,18 @@ class Category implements IErrors {
 			|| thisType.canSeeMethod(method);
 	}
 
+	
+	// Members
 
-	function instMembers(from: ITypeDecl) {
+	function instMembers(from: AnyTypeDecl) {
 		return staticMembers.filter(mem -> from.canSeeMember(mem))
 			.concat(thisType.instMembers(from));
 	}
 
 
-	function findSingleStatic(name: String, from: ITypeDecl, getter = false, cache: List<Type> = Nil): Null<SingleStaticKind> {
+	// Method lookup
+
+	function findSingleStatic(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {
 		//if(type.exists(t -> cache.contains(t)) || lookup._match(at(d is TypeDecl) => cache.contains(d.thisType), _ => false)) return null;
 
 		for(mem in staticMembers) {
@@ -278,7 +342,7 @@ class Category implements IErrors {
 		return null;
 	}
 
-	function findMultiStatic(names: Array<String>, from: ITypeDecl, setter = false, cache: List<Type> = Nil): Array<MultiStaticKind> {
+	function findMultiStatic(ctx: Ctx, names: Array<String>, from: AnyTypeDecl, setter = false, cache: TypeCache = Nil): Array<MultiStaticKind> {
 		//if(type.exists(t -> cache.contains(t)) || lookup._match(at(d is TypeDecl) => cache.contains(d.thisType), _ => false)) return null;
 
 		final candidates: Array<MultiStaticKind> = [];
@@ -317,7 +381,7 @@ class Category implements IErrors {
 	}
 
 
-	function findSingleInst(name: String, from: ITypeDecl, getter = false, cache: List<Type> = Nil): Null<SingleInstKind> {
+	function findSingleInst(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false, cache: TypeCache = Nil): Null<SingleInstKind> {
 		//if(type.exists(t -> cache.contains(t)) || lookup._match(at(d is TypeDecl) => cache.contains(d.thisType), _ => false)) return null;
 
 		/*for(mem in members) {
@@ -343,7 +407,7 @@ class Category implements IErrors {
 		return null;
 	}
 
-	function findMultiInst(names: Array<String>, from: ITypeDecl, setter = false, cache: List<Type> = Nil): Array<MultiInstKind> {
+	function findMultiInst(ctx: Ctx, names: Array<String>, from: AnyTypeDecl, setter = false, cache: TypeCache = Nil): Array<MultiInstKind> {
 		//if(type.exists(t -> cache.contains(t)) || lookup._match(at(d is TypeDecl) => cache.contains(d.thisType), _ => false)) return null;
 
 		final candidates: Array<MultiInstKind> = [];
@@ -372,7 +436,7 @@ class Category implements IErrors {
 	}
 
 
-	function findCast(target: Type, from: ITypeDecl, cache: List<Type> = Nil) {
+	function findCast(ctx: Ctx, target: Type, from: AnyTypeDecl, cache: TypeCache = Nil) {
 		//if(type.exists(t -> cache.contains(t)) || lookup._match(at(d is TypeDecl) => cache.contains(d.thisType), _ => false)) return null;
 
 		final candidates: Array<CastKind> = [];
@@ -390,8 +454,20 @@ class Category implements IErrors {
 	}
 
 
-	function findCategory(cat: Type, forType: Type, from: ITypeDecl, cache: List<{}> = Nil): Array<Category> {
-		final found = lookup.findCategory(cat, forType, from, cache);
+	function findUnaryOp(ctx: Ctx, op: UnaryOp, from: AnyTypeDecl, cache: TypeCache = Nil): Null<UnaryOpKind> {
+		return null;
+	}
+
+
+	function findBinaryOp(ctx: Ctx, op: BinaryOp, from: AnyTypeDecl, cache: TypeCache = Nil): Array<BinaryOpKind> {
+		return [];
+	}
+
+
+	// Categories
+
+	function findCategory(ctx: Ctx, cat: Type, forType: Type, from: AnyTypeDecl, cache: Cache = Nil): Array<Category> {
+		final found = lookup.findCategory(ctx, cat, forType, from, cache);
 		
 		if(thisType.hasChildType(forType) && path.hasChildType(cat)) {
 			return found.concat([this]);

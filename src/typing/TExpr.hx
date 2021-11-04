@@ -16,7 +16,7 @@ enum StrPart {
 }
 
 enum Expr {
-	EName(name: String, loc: Pass2.Local);
+	EName(name: String, loc: Local);
 
 	ETag(tag: String, expr: TExpr);
 
@@ -57,7 +57,7 @@ enum Expr {
 	EVarDecl(name: String, ?type: Type, ?value: TExpr);
 
 	// Assignment
-	ESetName(name: String, loc: Pass2.Local, value: TExpr);
+	ESetName(name: String, loc: Local, value: TExpr);
 
 	// From tags
 	EInitThis(type: Type, msg: TypeMessage);

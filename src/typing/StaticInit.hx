@@ -13,7 +13,7 @@ class StaticInit extends EmptyMethod {
 		});
 	}
 
-	inline function declName() {
+	function declName() {
 		return "static initializer";
 	}
 }

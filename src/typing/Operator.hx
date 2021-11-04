@@ -5,7 +5,7 @@ import reporting.Diagnostic;
 import text.Span;
 import typing.Traits;
 
-private inline function notOverloadable(decl: ITypeDecl, ast: parsing.ast.decls.Operator, yet = false) {
+private inline function notOverloadable(decl: AnyTypeDecl, ast: parsing.ast.decls.Operator, yet = false) {
 	return new Diagnostic({
 		message: "Invalid operator overload",
 		info: [
@@ -20,14 +20,14 @@ private inline function notOverloadable(decl: ITypeDecl, ast: parsing.ast.decls.
 			}),
 			Spanned({
 				span: decl.span,
-				message: 'For ${decl.declName()} `${decl.name.name}`',
+				message: 'For ${decl.declName()} `${decl.fullName()}`',
 				isSecondary: true
 			})
 		]
 	});
 }
 
-private inline function needsParameter(decl: ITypeDecl, ast: parsing.ast.decls.Operator) {
+private inline function needsParameter(decl: AnyTypeDecl, ast: parsing.ast.decls.Operator) {
 	return new Diagnostic({
 		severity: Severity.ERROR,
 		message: "Invalid operator overload",
@@ -43,14 +43,14 @@ private inline function needsParameter(decl: ITypeDecl, ast: parsing.ast.decls.O
 			}),
 			Spanned({
 				span: decl.span,
-				message: 'For ${decl.declName()} `${decl.name.name}`',
+				message: 'For ${decl.declName()} `${decl.fullName()}`',
 				isSecondary: true
 			})
 		]
 	});
 }
 
-private inline function excludeParameter(decl: ITypeDecl, ast: parsing.ast.decls.Operator) {
+private inline function excludeParameter(decl: AnyTypeDecl, ast: parsing.ast.decls.Operator) {
 	return new Diagnostic({
 		severity: Severity.ERROR,
 		message: "Invalid operator overload",
@@ -66,14 +66,14 @@ private inline function excludeParameter(decl: ITypeDecl, ast: parsing.ast.decls
 			}),
 			Spanned({
 				span: decl.span,
-				message: 'For ${decl.declName()} `${decl.name.name}`',
+				message: 'For ${decl.declName()} `${decl.fullName()}`',
 				isSecondary: true
 			})
 		]
 	});
 }
 
-private inline function unknownOp(decl: ITypeDecl, ast: parsing.ast.decls.Operator) {
+private inline function unknownOp(decl: AnyTypeDecl, ast: parsing.ast.decls.Operator) {
 	return new Diagnostic({
 		message: "Invalid operator overload",
 		info: [
@@ -88,7 +88,7 @@ private inline function unknownOp(decl: ITypeDecl, ast: parsing.ast.decls.Operat
 			}),
 			Spanned({
 				span: decl.span,
-				message: 'For ${decl.declName()} `${decl.name.name}`',
+				message: 'For ${decl.declName()} `${decl.fullName()}`',
 				isSecondary: true
 			})
 		]
@@ -101,7 +101,7 @@ abstract class Operator extends AnyMethod {
 	var isInline: Bool = false;
 	var isMacro: Bool = false;
 
-	static function fromAST(decl: ITypeDecl, ast: parsing.ast.decls.Operator) {
+	static function fromAST(decl: AnyTypeDecl, ast: parsing.ast.decls.Operator) {
 		final oper: Operator = switch ast.spec {
 			case None:
 				final op: UnaryOp = switch ast.symbol {
@@ -189,7 +189,7 @@ abstract class Operator extends AnyMethod {
 		return Some(oper);
 	}
 
-	inline function declName() {
+	function declName() {
 		return "operator overload";
 	}
 

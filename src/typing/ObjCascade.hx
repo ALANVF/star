@@ -28,13 +28,13 @@ enum ObjCascadeKind {
 	);
 	StepMember(setMem: MultiInstKind, getMem: SingleInstKind, step: UnaryOpKind);
 	StepMessage(msg: ObjMessage, step: Step); // should this have getter/setter versions of the method?
-	Block(ctx: Pass2.Ctx, blk: TStmts);
+	Block(ctx: Ctx, blk: TStmts);
 }
 
 @:structInit
 @:publicFields
 class ObjCascade {
-	var ctx: Pass2.Ctx;
+	var ctx: Ctx;
 	var t: Null<Type> = null;
 	final depth: Int;
 	final kind: ObjCascadeKind;

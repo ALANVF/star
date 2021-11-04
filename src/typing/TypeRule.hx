@@ -17,7 +17,7 @@ enum TypeRule {
 }
 
 @:noUsing
-inline function recEq(lookup: ILookupType, l1, chain) return switch chain {
+inline function recEq(lookup: ITypeLookup, l1, chain) return switch chain {
 	case Nil2: Nil;
 	case Cons2(_, r, Nil2): Cons(Eq(l1, lookup.makeTypePath(r)), Nil);
 	case Cons2(_, l2, tl):
@@ -26,7 +26,7 @@ inline function recEq(lookup: ILookupType, l1, chain) return switch chain {
 }
 
 @:noUsing
-inline function recOf(lookup: ILookupType, l1, chain) return switch chain {
+inline function recOf(lookup: ITypeLookup, l1, chain) return switch chain {
 	case Nil2: Nil;
 	case Cons2(_, r, Nil2): Cons(Of(l1, lookup.makeTypePath(r)), Nil);
 	case Cons2(_, l2, tl):
@@ -35,7 +35,7 @@ inline function recOf(lookup: ILookupType, l1, chain) return switch chain {
 }
 
 @:noUsing
-inline function recCmp(lookup: ILookupType, l, chain) return switch chain {
+inline function recCmp(lookup: ITypeLookup, l, chain) return switch chain {
 	case Nil3: Nil;
 	case Cons3(_, op, r, tl):
 		final r_ = lookup.makeTypePath(r);
@@ -48,7 +48,7 @@ inline function recCmp(lookup: ILookupType, l, chain) return switch chain {
 }
 
 @:noUsing
-function _fromAST(lookup: ILookupType, parserRule: parsing.ast.decls.GenericRule) return switch parserRule {
+function _fromAST(lookup: ITypeLookup, parserRule: parsing.ast.decls.GenericRule) return switch parserRule {
 	case Negate(_, t): Negate(lookup.makeTypePath(t));
 	case Exists(t, _): Exists(lookup.makeTypePath(t));
 	
@@ -182,7 +182,7 @@ function hasChildType(self: TypeRule, type: Type, tvar: TypeVar) {
 
 @:publicFields
 class TypeRuleTools {
-	static inline function fromAST(_: Enum<TypeRule>, lookup: ILookupType, parserRule: parsing.ast.decls.GenericRule) {
+	static inline function fromAST(_: Enum<TypeRule>, lookup: ITypeLookup, parserRule: parsing.ast.decls.GenericRule) {
 		return _fromAST(lookup, parserRule);
 	}
 }

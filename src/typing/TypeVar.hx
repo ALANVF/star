@@ -2,7 +2,6 @@ package typing;
 
 import reporting.Diagnostic;
 import text.Span;
-import parsing.ast.Ident;
 import typing.Traits;
 
 using typing.TypeRule.TypeRuleTools;
@@ -10,12 +9,8 @@ using typing.TypeRule.TypeRuleTools;
 // Dear god what have I gotten myself into
 
 @:build(util.Auto.build({keepInit: true}))
-class TypeVar implements IErrors {
-	final errors: Array<Diagnostic> = [];
-	final lookup: ILookupType & ITypeVars;
-	final span: Span;
-	final name: Ident;
-	var params: Array<Type>;
+class TypeVar extends AnyFullTypeDecl {
+	//final lookup: ILookupType & ITypeVars;
 	var parents: Array<Type>;
 	var rule: Option<TypeRule>;
 	var defaultInit: Option<DefaultInit> = None;
@@ -32,23 +27,22 @@ class TypeVar implements IErrors {
 	final valueCases: Array<ValueCase> = [];
 	final categories: Array<Category> = [];
 	var native: Option<NativeKind> = None;
-	var isFlags: Bool = false;
-	var isStrong: Bool = false;
-	var isUncounted: Bool = false;
-	@ignore var thisType: Type;
-
+	var _isFlags: Bool = false;
+	var _isStrong: Bool = false;
+	var _isUncounted: Bool = false;
+	
 	function new() {
 		thisType = new Type(TTypeVar(this));
 	}
 
-	static function fromAST(lookup: ILookupType & ITypeVars, ast: parsing.ast.decls.GenericParam): TypeVar {
+	static function fromAST(lookup: ITypeLookup, ast: parsing.ast.decls.GenericParam): TypeVar {
 		final typevar = new TypeVar({
 			lookup: lookup,
 			span: ast.span,
 			name: ast.name,
 			params: null,  // hack for partial initialization
 			parents: null, // hack for partial initialization
-			rule: ast.rule.map(r -> TypeRule.fromAST(lookup, r.rule))
+			rule: ast.rule.map(r -> TypeRule.fromAST(cast lookup, r.rule))
 		});
 
 		typevar.params = ast.params.doOrElse(p => p.of.map(x -> typevar.makeTypePath(x)), []);
@@ -87,11 +81,11 @@ class TypeVar implements IErrors {
 			}
 			case IsNative(_, _, _): typevar.errors.push(Errors.invalidAttribute(typevar, typevar.name.name, "native", span));
 			
-			case IsFlags: typevar.isFlags = true;
+			case IsFlags: typevar._isFlags = true;
 			
-			case IsStrong: typevar.isStrong = true;
+			case IsStrong: typevar._isStrong = true;
 
-			case IsUncounted: typevar.isUncounted = true;
+			case IsUncounted: typevar._isUncounted = true;
 		}
 
 		if(ast.body.isSome()) {
@@ -124,12 +118,12 @@ class TypeVar implements IErrors {
 		return typevar;
 	}
 
-	inline function declName() {
+	function declName() {
 		return "type variable";
 	}
 
-	function fullName(cache: List<Type> = Nil) {
-		cache = cache.prepend(thisType);
+	function fullName(cache: TypeCache = Nil) {
+		cache += thisType;
 
 		var res = switch params {
 			case []: name.name;
@@ -146,52 +140,34 @@ class TypeVar implements IErrors {
 	}
 
 
-	function isNative(kind: NativeKind) {
-		if(native.exists(nat -> nat.matches(kind))) return true;
-
-		if(parents.some(p -> p.isNative(kind))) return true;
-
-		rule._match(
-			at(Some(cond)) => {
-				if(cond.isNative(kind, this)) {
-					return true;
-				}
-			},
-			_ => {}
-		);
-
-		return false;
-	}
-
-
-	function findType(path: LookupPath, search: Search, from: Null<ITypeDecl>, depth = 0, cache: List<{}> = Nil): Option<Type> {
+	override function findType(path: LookupPath, search: Search, from: Null<AnyTypeDecl>, depth = 0, cache: Cache = Nil): Null<Type> {
 		//if(cache.contains(thisType)) return None;
-		//cache = cache.prepend(thisType);
+		//cache += thisType;
 
 		return path._match(
 			at([[span, "This", args]], when(search != Inside && depth == 0)) => {
 				if(args.length == 0) {
-					Some({t: TThis(this), span: span});
+					{t: TThis(this), span: span};
 				} else {
 					// errors prob shouldn't be attatched to *this* type decl, but eh
 					if(params.length == 0) {
 						errors.push(Errors.invalidTypeApply(span, "Attempt to apply arguments to a non-parametric type"));
-						None;
+						null;
 					} else if(args.length > params.length) {
 						errors.push(Errors.invalidTypeApply(span, "Too many arguments"));
-						None;
+						null;
 					} else if(args.length < params.length) {
 						errors.push(Errors.invalidTypeApply(span, "Not enough arguments"));
-						None;
+						null;
 					} else {
-						Some({t: TApplied({t: TThis(this), span: span}, args), span: span});
+						{t: TApplied({t: TThis(this), span: span}, args), span: span};
 					}
 				}
 			},
 			at([[span, typeName, args]], when(typeName == this.name.name)) => {
 				lookup.findType(path, Start, null, 0, cache==Nil?Nil:cache.tail());
 			},
-			_ => if(search == Inside) None else lookup.findType(path, search, from, depth, cache)
+			_ => if(search == Inside) null else lookup.findType(path, search, from, depth, cache)
 		);
 	}
 
@@ -229,6 +205,8 @@ class TypeVar implements IErrors {
 	}
 
 
+	// Type checking
+
 	function hasParentDecl(decl: TypeDecl): Bool {
 		if(params.length != 0) throw "todo";
 
@@ -259,9 +237,9 @@ class TypeVar implements IErrors {
 		|| valueCases.length != 0
 		|| categories.length != 0
 		//|| native != None
-		|| isFlags
-		|| isStrong
-		|| isUncounted
+		|| _isFlags
+		|| _isStrong
+		|| _isUncounted
 		) {
 			throw "todo "+this.span.display();
 		}
@@ -308,9 +286,9 @@ class TypeVar implements IErrors {
 		|| valueCases.length != 0
 		|| categories.length != 0
 		//|| native != None
-		|| isFlags
-		|| isStrong
-		|| isUncounted
+		|| _isFlags
+		|| _isStrong
+		|| _isUncounted
 		) {
 			throw "todo "+this.span.display();
 		}
@@ -365,9 +343,9 @@ class TypeVar implements IErrors {
 		|| valueCases.length != 0
 		|| categories.length != 0
 		//|| native != None
-		|| isFlags
-		|| isStrong
-		|| isUncounted
+		|| _isFlags
+		|| _isStrong
+		|| _isUncounted
 		) {
 			throw "todo "+this.name.span.display();
 		}
@@ -390,6 +368,7 @@ class TypeVar implements IErrors {
 			case TPath(_, _, _): throw "bad";
 			case TLookup(_, _, _): throw "todo";
 			case TConcrete(decl): this.hasParentDecl(decl);
+			case TInstance(decl, params, tctx): this.hasParentDecl(decl); // TODO
 			case TThis(source): throw "todo";
 			case TBlank: true;
 			case TMulti(types): types.some(t -> this.hasParentType(t)); // should this mutate to help with type inference?
@@ -424,9 +403,9 @@ class TypeVar implements IErrors {
 		&& valueCases.length == 0
 		&& categories.length == 0
 		//&& native == None
-		&& !isFlags
-		&& !isStrong
-		&& !isUncounted) {
+		&& !_isFlags
+		&& !_isStrong
+		&& !_isUncounted) {
 			//trace(parents.map(p -> type.hasParentType(p)&&p.hasChildType(type)),this.fullName(),type.fullName());
 			return true;
 		}
@@ -443,6 +422,26 @@ class TypeVar implements IErrors {
 		throw "todo "+name.span.display();
 	}
 
+
+	function hasStrictChildType(type: Type) {
+		return type == thisType; // TODO
+	}
+
+
+	function hasRefinementDecl(decl: TypeDecl) {
+		return false; // TODO
+	}
+
+	function hasRefinementType(type: Type) {
+		return false; // TODO
+	}
+
+
+	// Unification
+
+	function strictUnifyWithType(type: Type): Null<Type> {
+		return type == thisType ? type : null; // TODO
+	}
 
 	function strictUnifyWithTypevar(tvar: TypeVar): Bool {
 		return this == tvar || (
@@ -465,6 +464,95 @@ class TypeVar implements IErrors {
 	}
 
 
+	// Generics
+
+	function acceptsArgs(args: Array<Type>): Bool {
+		throw "NYI!";
+	}
+
+	function applyArgs(args: Array<Type>): Null<Type> {
+		throw "NYI!";
+	}
+
+
+	// Attributes
+
+	function isNative(kind: NativeKind) {
+		if(native.exists(nat -> nat.matches(kind))) return true;
+
+		if(parents.some(p -> p.isNative(kind))) return true;
+
+		rule._match(
+			at(Some(cond)) => {
+				if(cond.isNative(kind, this)) {
+					return true;
+				}
+			},
+			_ => {}
+		);
+
+		return false;
+	}
+
+	function isFlags() {
+		if(_isFlags) return true;
+
+		if(parents.some(p -> p.isFlags())) return true;
+
+		/*
+		rule._match(
+			at(Some(cond)) => if(cond.isFlags()) return true,
+			_ => {}
+		);
+		*/
+
+		return false;
+	}
+
+	function isStrong() {
+		if(_isStrong) return true;
+
+		if(parents.some(p -> p.isStrong())) return true;
+
+		/*
+		rule._match(
+			at(Some(cond)) => if(cond.isStrong()) return true,
+			_ => {}
+		);
+		*/
+
+		return false;
+	}
+
+	function isUncounted() {
+		if(_isUncounted) return true;
+
+		if(parents.some(p -> p.isUncounted())) return true;
+
+		/*
+		rule._match(
+			at(Some(cond)) => if(cond.isUncounted()) return true,
+			_ => {}
+		);
+		*/
+
+		return false;
+	}
+
+
+	// Effects tracking
+
+	function trackEffectsIn(ctx: Ctx): Null<Effects> {
+		throw "NYI!";
+	}
+
+	function applyArgsTrackEffects(args: Array<Type>, ctx: Ctx): Null<Tuple2<Type, Effects>> {
+		throw "NYI!";
+	}
+
+
+	// Privacy
+
 	function canSeeMember(member: Member) {
 		return true; // TODO
 	}
@@ -474,7 +562,9 @@ class TypeVar implements IErrors {
 	}
 
 
-	function instMembers(from: ITypeDecl) {
+	// Members
+
+	function instMembers(from: AnyTypeDecl) {
 		// TODO: account for type rule effects
 		return members.filter(mem -> from.canSeeMember(mem))
 			.concat(staticMembers.filter(mem -> from.canSeeMember(mem)))
@@ -482,7 +572,9 @@ class TypeVar implements IErrors {
 	}
 
 
-	function findSingleStatic(name: String, from: ITypeDecl, getter = false, cache: List<Type> = Nil): Null<SingleStaticKind> {
+	// Method lookup
+	
+	function findSingleStatic(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {
 		for(mem in staticMembers) {
 			if(mem.matchesGetter(name) && from.canSeeMember(mem)) {
 				return SSFromTypevar(this, name, getter, SSMember(mem));
@@ -522,7 +614,7 @@ class TypeVar implements IErrors {
 		}
 
 		for(parent in parents) {
-			parent.findSingleStatic(name, from, getter)._match(
+			parent.findSingleStatic(ctx, name, from, getter)._match(
 				at(ss!) => return SSFromTypevar(this, name, getter, ss),
 				_ => {}
 			);
@@ -533,7 +625,7 @@ class TypeVar implements IErrors {
 		return null;
 	}
 
-	function findMultiStatic(names: Array<String>, from: ITypeDecl, setter = false, cache: List<Type> = Nil) {
+	function findMultiStatic(ctx: Ctx, names: Array<String>, from: AnyTypeDecl, setter = false, cache: TypeCache = Nil) {
 		if(cache.contains(thisType)) return [];
 		
 		final candidates: Array<MultiStaticKind> = [];
@@ -689,14 +781,14 @@ class TypeVar implements IErrors {
 		}
 
 		for(parent in parents) {
-			candidates.pushAll(parent.findMultiStatic(names, from, setter, cache));
+			candidates.pushAll(parent.findMultiStatic(ctx, names, from, setter, cache));
 		}
 
 		return candidates;
 	}
 
 
-	function findSingleInst(name: String, from: ITypeDecl, getter = false, cache: List<Type> = Nil): Null<SingleInstKind> {
+	function findSingleInst(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false, cache: TypeCache = Nil): Null<SingleInstKind> {
 		for(mem in members) {
 			if(mem.matchesGetter(name) && from.canSeeMember(mem)) {
 				return SIFromTypevar(this, name, getter, SIMember(mem));
@@ -718,7 +810,7 @@ class TypeVar implements IErrors {
 		);
 
 		for(parent in parents) {
-			parent.findSingleInst(name, from, getter)._match(
+			parent.findSingleInst(ctx, name, from, getter)._match(
 				at(si!) => return SIFromTypevar(this, name, getter, si),
 				_ => {}
 			);
@@ -730,7 +822,7 @@ class TypeVar implements IErrors {
 	}
 
 
-	function findMultiInst(names: Array<String>, from: ITypeDecl, setter = false, cache: List<Type> = Nil) {
+	function findMultiInst(ctx: Ctx, names: Array<String>, from: AnyTypeDecl, setter = false, cache: TypeCache = Nil) {
 		if(cache.contains(thisType)) return [];
 		
 		final candidates: Array<MultiInstKind> = [];
@@ -776,14 +868,14 @@ class TypeVar implements IErrors {
 		}
 
 		for(parent in parents) {
-			candidates.pushAll(parent.findMultiInst(names, from, setter, cache));
+			candidates.pushAll(parent.findMultiInst(ctx, names, from, setter, cache));
 		}
 
 		return candidates;
 	}
 
 
-	function findCast(target: Type, from: ITypeDecl, cache: List<Type> = Nil) {
+	function findCast(ctx: Ctx, target: Type, from: AnyTypeDecl, cache: TypeCache = Nil) {
 		if(cache.contains(thisType)) return [];
 
 		final candidates: Array<CastKind> = [];
@@ -798,14 +890,14 @@ class TypeVar implements IErrors {
 		);
 
 		for(parent in parents) {
-			candidates.pushAll(parent.findCast(target, from, cache));
+			candidates.pushAll(parent.findCast(ctx, target, from, cache));
 		}
 
 		return candidates;
 	}
 
 
-	function findUnaryOp(op: UnaryOp, from: ITypeDecl, cache: List<Type> = Nil): Null<UnaryOpKind> {
+	function findUnaryOp(ctx: Ctx, op: UnaryOp, from: AnyTypeDecl, cache: TypeCache = Nil): Null<UnaryOpKind> {
 		if(cache.contains(thisType)) return null;
 		
 		for(oper in operators) oper._match(
@@ -816,7 +908,7 @@ class TypeVar implements IErrors {
 		);
 
 		for(parent in parents) {
-			parent.findUnaryOp(op, from, cache)._match(
+			parent.findUnaryOp(ctx, op, from, cache)._match(
 				at(uo!) => return UOFromTypevar(this, op, uo),
 				_ => {}
 			);
@@ -826,7 +918,7 @@ class TypeVar implements IErrors {
 	}
 
 
-	function findBinaryOp(op: BinaryOp, from: ITypeDecl, cache: List<Type> = Nil) {
+	function findBinaryOp(ctx: Ctx, op: BinaryOp, from: AnyTypeDecl, cache: TypeCache = Nil) {
 		final candidates: Array<BinaryOpKind> = [];
 
 		for(oper in operators) oper._match(
@@ -839,33 +931,35 @@ class TypeVar implements IErrors {
 		);
 
 		for(parent in parents) {
-			for(k in parent.findBinaryOp(op, from, cache)) {
+			for(k in parent.findBinaryOp(ctx, op, from, cache)) {
 				candidates.push(BOFromTypevar(this, op, k));
 			}
 		}
 
 		return candidates._match(
-			at([], when(cache.match(Nil | Cons({t: TConcrete(_ is DirectAlias => true)}, _)))) => Pass2.STD_Value.findBinaryOp(op, from),
+			at([], when(cache.match(Nil | Cons({t: TConcrete(_ is DirectAlias => true)}, _)))) => Pass2.STD_Value.findBinaryOp(ctx, op, from),
 			_ => candidates
 		);
 	}
 
 	
-	function findCategory(cat: Type, forType: Type, from: ITypeDecl, cache: List<{}> = Nil): Array<Category> {
+	// Categories
+
+	function findCategory(ctx: Ctx, cat: Type, forType: Type, from: AnyTypeDecl, cache: Cache = Nil): Array<Category> {
 		return if(forType == thisType) {
-			findThisCategory(cat, from, cache);
+			findThisCategory(ctx, cat, from, cache);
 		} else {
-			lookup.findCategory(cat, forType, from, cache);
+			lookup.findCategory(ctx, cat, forType, from, cache);
 		}
 	}
 
-	function findThisCategory(cat: Type, from: ITypeDecl, cache: List<{}> = Nil): Array<Category> {
+	override function findThisCategory(ctx: Ctx, cat: Type, from: AnyTypeDecl, cache: Cache = Nil): Array<Category> {
 		return switch parents {
-			case []: lookup.findCategory(cat, thisType, from, cache);
-			case [p]: p.findCategory(cat, p, from, cache).concat(lookup.findCategory(cat, thisType, from, cache));
+			case []: lookup.findCategory(ctx, cat, thisType, from, cache);
+			case [p]: p.findCategory(ctx, cat, p, from, cache).concat(lookup.findCategory(ctx, cat, thisType, from, cache));
 			default:
 				throw "todo";
-				//lookup.findCategory(cat, forType, from, cache);
+				//lookup.findCategory(ctx, cat, forType, from, cache);
 		}
 	}
 }

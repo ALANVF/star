@@ -97,8 +97,8 @@ class Protocol extends ClassLike {
 		return result;
 	}
 
-	inline function declName() {
-		return "class";
+	function declName() {
+		return "protocol";
 	}
 
 	
@@ -123,15 +123,15 @@ class Protocol extends ClassLike {
 	}
 
 
-	override function defaultSingleStatic(name: String, from: ITypeDecl, getter = false) {
+	override function defaultSingleStatic(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false) {
 		if(this != Pass2.STD_Value && !getter) {
-			return Pass2.STD_Value.findSingleStatic(name, from, getter);
+			return Pass2.STD_Value.findSingleStatic(ctx, name, from, getter);
 		} else {
 			return null;
 		}
 	}
 
-	override function findSingleStatic(name: String, from: ITypeDecl, getter = false, cache: List<Type> = Nil): Null<SingleStaticKind> {
+	override function findSingleStatic(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {
 		if(cache.contains(thisType)) return null;
 		
 		if(!getter) {
@@ -150,11 +150,11 @@ class Protocol extends ClassLike {
 			);
 		}
 
-		return super.findSingleStatic(name, from, getter, cache);
+		return super.findSingleStatic(ctx, name, from, getter, cache);
 	}
 
 
-	override function findMultiStatic(names: Array<String>, from: ITypeDecl, setter = false, cache: List<Type> = Nil) {
+	override function findMultiStatic(ctx: Ctx, names: Array<String>, from: AnyTypeDecl, setter = false, cache: TypeCache = Nil) {
 		if(cache.contains(thisType)) return [];
 		
 		final candidates: Array<MultiStaticKind> = [];
@@ -217,38 +217,38 @@ class Protocol extends ClassLike {
 		}
 
 		for(parent in parents) {
-			candidates.pushAll(parent.findMultiStatic(names, from, setter, cache));
+			candidates.pushAll(parent.findMultiStatic(ctx, names, from, setter, cache));
 		}
 
 		for(refinee in refinees) {
-			candidates.pushAll(refinee.findMultiStatic(names, from, setter, cache));
+			candidates.pushAll(refinee.findMultiStatic(ctx, names, from, setter, cache));
 		}
 
 		return candidates;
 	}
 
 
-	override function defaultSingleInst(name: String, from: ITypeDecl, getter = false) {
+	override function defaultSingleInst(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false) {
 		if(this != Pass2.STD_Value && !getter) {
-			return Pass2.STD_Value.findSingleInst(name, from, getter);
+			return Pass2.STD_Value.findSingleInst(ctx, name, from, getter);
 		} else {
 			return null;
 		}
 	}
 
 
-	override function defaultUnaryOp(op: UnaryOp, from: ITypeDecl): Null<UnaryOpKind> {
+	override function defaultUnaryOp(ctx: Ctx, op: UnaryOp, from: AnyTypeDecl): Null<UnaryOpKind> {
 		if(this != Pass2.STD_Value) {
-			return Pass2.STD_Value.findUnaryOp(op, from);
+			return Pass2.STD_Value.findUnaryOp(ctx, op, from);
 		} else {
 			return null;
 		}
 	}
 
 
-	override function defaultBinaryOp(op: BinaryOp, from: ITypeDecl) {
+	override function defaultBinaryOp(ctx: Ctx, op: BinaryOp, from: AnyTypeDecl) {
 		if(this != Pass2.STD_Value) {
-			return Pass2.STD_Value.findBinaryOp(op, from);
+			return Pass2.STD_Value.findBinaryOp(ctx, op, from);
 		} else {
 			return [];
 		}

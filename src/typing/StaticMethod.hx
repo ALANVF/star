@@ -12,11 +12,11 @@ abstract class StaticMethod extends AnyMethod {
 		case Single(_): Some(SingleStaticMethod.fromAST(decl, ast));
 		case Multi(_): Some(MultiStaticMethod.fromAST(decl, ast));
 		case Cast(_):
-			decl.errors.push(Errors.unexpectedDecl(decl, decl.name.name, DMethod(ast)));
+			decl.errors.push(Errors.unexpectedDecl(decl, decl.fullName(), DMethod(ast)));
 			None;
 	}
 
-	inline function declName() {
+	function declName() {
 		return "static method";
 	}
 }
