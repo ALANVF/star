@@ -124,7 +124,7 @@ class Util {
 	*/
 	
 	static macro function _match<T>(value: ExprOf<T>, cases: Array<Expr>): Expr {
-		var defaultExpr = None;
+		var defaultExpr = null;
 		var caseExprs: Array<Case> = [];
 		
 		for(_case in cases) {
@@ -151,7 +151,7 @@ class Util {
 					expr: macro throw "error!"
 				});
 
-				case macro _ => $expr: defaultExpr = Some(expr);
+				case macro _ => $expr: defaultExpr = expr;
 
 				default: Context.error("error!", _case.pos);
 			};
@@ -199,7 +199,7 @@ class Util {
 				}
 			}
 		}
-		// @:this expr metadata seems cool
+		
 		for(_case in caseExprs) {
 			if(_case.values.length > 1) Context.error("wtf", _case.values[0].pos);
 			
@@ -429,7 +429,7 @@ class Util {
 		}
 
 		return {
-			expr: ESwitch(value, caseExprs, defaultExpr.toNull()),
+			expr: ESwitch(value, caseExprs, defaultExpr),
 			pos: Context.currentPos()
 		};
 	}
@@ -551,7 +551,7 @@ class Util {
 	}
 #end
 
-	private static function _pretty(value: Any, indent: Int, tab: String, nested: List<Any>): String {
+	/*private static function _pretty(value: Any, indent: Int, tab: String, nested: List<Any>): String {
 		final thisLevel = tab.repeat(indent);
 		final nextLevel = tab.repeat(indent + 1);
 		
@@ -690,7 +690,7 @@ class Util {
 	@:noUsing
 	static inline function pretty(value: Any, tab = "  "): String {
 		return _pretty(value, 0, tab, Cons(value, Nil));
-	}
+	}*/
 
 	static inline function parseInt(str: String) {
 		return nonNull(Std.parseInt(str));

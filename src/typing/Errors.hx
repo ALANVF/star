@@ -7,7 +7,7 @@ import typing.Traits;
 
 @:publicFields
 class Errors {
-	/*static inline function invalidDeclType(decl, declSpan, name, typeSpan) {
+	/*static function invalidDeclType(decl, declSpan, name, typeSpan) {
 		return new Diagnostic({
 			severity: Severity.ERROR,
 			message: "Invalid type",
@@ -26,7 +26,7 @@ class Errors {
 		});
 	}*/
 	
-	static inline function duplicateAttribute<T: VDecl>(decl: T, name, attr, attrSpan) {
+	static function duplicateAttribute<T: VDecl>(decl: T, name, attr, attrSpan) {
 		return new Diagnostic({
 			severity: Severity.ERROR,
 			message: "Duplicate attribute",
@@ -45,7 +45,7 @@ class Errors {
 		});
 	}
 
-	static inline function invalidAttribute<T: VDecl>(decl: T, name, attr, attrSpan) {
+	static function invalidAttribute<T: VDecl>(decl: T, name, attr, attrSpan) {
 		return new Diagnostic({
 			severity: Severity.ERROR,
 			message: "Invalid attribute",
@@ -66,7 +66,7 @@ class Errors {
 
 
 	static overload extern inline function duplicateDecl<T: VDecl>(decl: T, name, decl2) return duplicateDecl_IDecl(decl, name, decl2);
-	private static inline function duplicateDecl_IDecl<T: VDecl>(decl: T, name, decl2: parsing.ast.decls.Decl) {
+	private static function duplicateDecl_IDecl<T: VDecl>(decl: T, name, decl2: parsing.ast.decls.Decl) {
 		return new Diagnostic({
 			severity: Severity.ERROR,
 			message: "Duplicate declaration",
@@ -86,7 +86,7 @@ class Errors {
 	}
 
 	static overload extern inline function duplicateDecl(decl: File, decl2) return duplicateDecl_File(decl2);
-	private static inline function duplicateDecl_File(decl: parsing.ast.decls.Decl) {
+	private static function duplicateDecl_File(decl: parsing.ast.decls.Decl) {
 		return new Diagnostic({
 			severity: Severity.ERROR,
 			message: "Duplicate declaration",
@@ -101,7 +101,7 @@ class Errors {
 	}
 
 	static overload extern inline function unexpectedDecl<T: VDecl>(decl: T, name, decl2) return unexpectedDecl_IDecl(decl, name, decl2);
-	private static inline function unexpectedDecl_IDecl<T: VDecl>(decl: T, name, decl2: parsing.ast.decls.Decl) {
+	private static function unexpectedDecl_IDecl<T: VDecl>(decl: T, name, decl2: parsing.ast.decls.Decl) {
 		return new Diagnostic({
 			severity: Severity.ERROR,
 			message: "Unexpected declaration",
@@ -121,7 +121,7 @@ class Errors {
 	}
 
 	static overload extern inline function unexpectedDecl(decl: File, decl2) return unexpectedDecl_File(decl2);
-	private static inline function unexpectedDecl_File(decl2: parsing.ast.decls.Decl) {
+	private static function unexpectedDecl_File(decl2: parsing.ast.decls.Decl) {
 		return new Diagnostic({
 			severity: Severity.ERROR,
 			message: "Unexpected declaration",
@@ -136,7 +136,7 @@ class Errors {
 	}
 	
 	static overload extern inline function invalidDecl<T: VDecl>(decl: T, name, decl2) return invalidDecl_IDecl(decl, name, decl2);
-	private static inline function invalidDecl_IDecl<T: VDecl>(decl: T, name, decl2: parsing.ast.decls.Decl) {
+	private static function invalidDecl_IDecl<T: VDecl>(decl: T, name, decl2: parsing.ast.decls.Decl) {
 		return new Diagnostic({
 			severity: Severity.ERROR,
 			message: "Invalid declaration",
@@ -156,7 +156,7 @@ class Errors {
 	}
 
 	static overload extern inline function invalidDecl(decl: File, decl2) return invalidDecl_File(decl2);
-	private static inline function invalidDecl_File(decl2: parsing.ast.decls.Decl) {
+	private static function invalidDecl_File(decl2: parsing.ast.decls.Decl) {
 		return new Diagnostic({
 			severity: Severity.ERROR,
 			message: "Invalid declaration",
@@ -170,7 +170,7 @@ class Errors {
 		});
 	}
 
-	static inline function invalidTypeLookup(
+	static function invalidTypeLookup(
 		span: Span,
 		why = "Invalid type lookup"
 	) {
@@ -187,7 +187,7 @@ class Errors {
 		});
 	}
 	
-	static inline function invalidTypeApply(
+	static function invalidTypeApply(
 		span: Span,
 		why = "Invalid type application"
 	) {
@@ -204,7 +204,7 @@ class Errors {
 		});
 	}
 	
-	static inline function notYetImplemented(
+	static function notYetImplemented(
 		span: Span,
 		why = "This feature has not been implemented yet"
 	) {

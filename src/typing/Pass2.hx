@@ -1433,7 +1433,7 @@ static function getNamesArgs(ctx: Ctx, labels: Array<parsing.ast.Message.Label>)
 	final names = new Array<String>();
 	final args = new Array<TExpr>();
 
-	for(i => l in labels) switch l {
+	labels._for(i => l, switch l {
 		case Named(_, n, e):
 			names[i] = n;
 			args[i] = typeExpr(ctx, e);
@@ -1445,7 +1445,7 @@ static function getNamesArgs(ctx: Ctx, labels: Array<parsing.ast.Message.Label>)
 		case Anon(e):
 			names[i] = "_";
 			args[i] = typeExpr(ctx, e);
-	}
+	});
 
 	return new Tuple2(names, args);
 }

@@ -23,7 +23,7 @@ enum Where {
 	var locals: Map<String, Local> = [];
 	var labels: Map<String, TStmt> = [];
 
-	var typeDecl(get, never): AnyTypeDecl; private inline function get_typeDecl(): AnyTypeDecl return where._match(
+	var typeDecl(get, never): AnyTypeDecl; private function get_typeDecl(): AnyTypeDecl return where._match(
 		at(WDecl(decl)) => decl,
 		at(WCategory(cat)) => cat,
 		at(WEmptyMethod(m)) => m.decl,
@@ -50,7 +50,7 @@ enum Where {
 		}
 	);
 
-	var thisLookup(get, never): ITypeLookupDecl; private inline function get_thisLookup(): ITypeLookupDecl return where._match(
+	var thisLookup(get, never): ITypeLookupDecl; private function get_thisLookup(): ITypeLookupDecl return where._match(
 		at(WDecl(decl)) => decl,
 		at(WCategory(cat)) => cat,
 		at(WMethod(m)) => m,
