@@ -949,7 +949,9 @@ class TypeVar extends AnyFullTypeDecl {
 		);
 
 		if(_isFlags) {
-			candidates.pushAll(STD_MultiKind.findBinaryOp(ctx, op, from, cache));
+			for(k in STD_MultiKind.findBinaryOp(ctx, op, from, cache)) {
+				candidates.push(BOFromTypevar(this, op, k));
+			}
 		}
 
 		for(parent in parents) {
