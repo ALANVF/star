@@ -295,7 +295,7 @@ kind List[T] of Iterable[T] {
 		while true {
 			match list at This[head: my head tail: my tail] {
 				match func[call: head, i++] at Maybe[the: my value] {
-					result = result[prepend: head]
+					result = result[prepend: value]
 				}
 				
 				list = tail
@@ -327,7 +327,7 @@ kind List[T] of Iterable[T] {
 		while true {
 			match list at This[head: my head tail: my tail] {
 				match func[call: head, i++] at Maybe[the: my value] {
-					result = result[prepend: head]
+					result = result[prepend: value]
 					list = tail
 				} else {
 					break

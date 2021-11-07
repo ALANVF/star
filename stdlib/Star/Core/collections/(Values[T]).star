@@ -317,3 +317,28 @@ protocol Values[T] of Positional[T] {
 
 	on [Iterator[T]] is inline => return ValuesIterator[new: this]
 }
+
+
+type T
+category Unsafe for Values[T] {
+	;== Accessing
+	
+	on [at: index (Int)] (T) is inline {
+		return buffer[at: index]
+	}
+
+	on [at: index (Int) set: value (T)] is setter is inline {
+		buffer[at: index] = value
+	}
+	
+	
+	;== Removing elements
+	
+	on [removeAt: index (Int)] (T) {
+		my value = buffer[at: index]
+
+		this[after: index moveBy: -1]
+		
+		return value
+	}
+}

@@ -11,4 +11,8 @@ kind Set[T] {
 	on [remove: value (T)] (This)
 
 	; ...
+
+	operator `+` [other (This)] (This)
+
+	; ...
 }

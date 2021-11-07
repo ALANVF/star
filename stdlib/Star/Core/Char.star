@@ -79,6 +79,13 @@ class Char of Ordered is native[repr: `int` bits: 8 signed: false] is strong {
 	operator `<` [char (This)] (Bool) is native `u8_lt`
 	operator `<=` [char (This)] (Bool) is native `u8_le`
 
+	operator `?=` [int (Int)] (Bool) is inline => return this[Int] ?= int
+	operator `!=` [int (Int)] (Bool) is inline => return this[Int] != int
+	operator `>` [int (Int)] (Bool) is inline => return this[Int] > int
+	operator `>=` [int (Int)] (Bool) is inline => return this[Int] >= int
+	operator `<` [int (Int)] (Bool) is inline => return this[Int] < int
+	operator `<=` [int (Int)] (Bool) is inline => return this[Int] <= int
+
 	
 	;== Converting
 

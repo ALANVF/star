@@ -27,7 +27,7 @@ class Charset is hidden Lexer {
 	on [has: char (Char)] (Bool) {
 		my i = char[Int] >> 3
 
-		return i < size && char[Charset UInt8] & bytes[at: i] != 0
+		return i < size && char[Charset UInt8] & bytes[at: i] != UInt8 0
 	}
 
 	on [add: char (Char)] {

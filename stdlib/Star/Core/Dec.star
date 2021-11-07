@@ -21,7 +21,7 @@ class Dec of Num is native[repr: `dec` bits: 64] is strong {
 
 	on [rootOf: root (Num)] (This) {
 		my x = this / root
-		my m = root - 1
+		my m = [root - 1 Dec]
 
 		while true {
 			my x' = (m * x + this / x ** m) / root
@@ -98,20 +98,20 @@ class Dec of Num is native[repr: `dec` bits: 64] is strong {
 	operator `?` (Bool) is native `d64_truthy`
 	operator `-` (This) is native `d64_neg`
 	
-	operator `+` [other (This)] (This) is native `d64_add`
-	operator `-` [other (This)] (This) is native `d64_sub`
-	operator `*` [other (This)] (This) is native `d64_mult`
-	operator `**` [other (This)] (This) is native `d64_pow`
-	operator `/` [other (This)] (This) is native `d64_div`
-	operator `//` [other (This)] (Int) is native `d64_idiv`
-	operator `%` [other (This)] (This) is native `d64_mod`
-	operator `%%` [other (This)] (Bool) is native `d64_mod0`
-	operator `?=` [other (This)] (Bool) is native `d64_eq`
-	operator `!=` [other (This)] (Bool) is native `d64_ne`
-	operator `>` [other (This)] (Bool) is native `d64_gt`
-	operator `>=` [other (This)] (Bool) is native `d64_ge`
-	operator `<` [other (This)] (Bool) is native `d64_lt`
-	operator `<=` [other (This)] (Bool) is native `d64_le`
+	operator `+` [other (Num)] (This) is native `d64_add`
+	operator `-` [other (Num)] (This) is native `d64_sub`
+	operator `*` [other (Num)] (This) is native `d64_mult`
+	operator `**` [other (Num)] (This) is native `d64_pow`
+	operator `/` [other (Num)] (This) is native `d64_div`
+	operator `//` [other (Num)] (Int) is native `d64_idiv`
+	operator `%` [other (Num)] (This) is native `d64_mod`
+	operator `%%` [other (Num)] (Bool) is native `d64_mod0`
+	operator `?=` [other (Num)] (Bool) is native `d64_eq`
+	operator `!=` [other (Num)] (Bool) is native `d64_ne`
+	operator `>` [other (Num)] (Bool) is native `d64_gt`
+	operator `>=` [other (Num)] (Bool) is native `d64_ge`
+	operator `<` [other (Num)] (Bool) is native `d64_lt`
+	operator `<=` [other (Num)] (Bool) is native `d64_le`
 
 
 	;== Converting

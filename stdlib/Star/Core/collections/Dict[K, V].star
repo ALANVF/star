@@ -281,3 +281,12 @@ class Dict[K, V] of Mapped[K, V] is friend #[DictIterator[K], DictIterator[K, V]
 	on [Iterator[K]] is inline => return DictIterator[K][keys: this.keys]
 	on [Iterator[K, V]] is inline => return DictIterator[K, V][pairs: this[pairs]]
 }
+
+
+type K
+type V
+category Unsafe for Dict[K, V] {
+	on [atNew: key (K) set: value (V)] is setter {
+		pairs[add: Pair #{key, value}]
+	}
+}

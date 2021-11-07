@@ -513,7 +513,7 @@ module Parser {
 		}
 		
 		match This[parseGenericRule: rest] {
-			at Result[success: my rule, _] if leadingOp? && leadingOp.value != #asm #kind_id rule => return Result[fatal: tokens, Maybe[the: rest - 1]]
+			at Result[success: my rule, _] if leadingOp? && leadingOp.value != #asm #kind_id rule => return Result[fatal: tokens, Maybe[the: rest[previous]]]
 			at Result[success: my rule, #[Token[rParen: my end], ...my rest']] => return Result[success: Generic.Rule[:begin paren: rule :end], rest']
 			at Result[success: _, my rest'] => return Result[fatal: tokens, Maybe[the: rest']]
 			at my fail => return fail[fatalIfBad: tokens]
