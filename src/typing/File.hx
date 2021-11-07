@@ -217,7 +217,7 @@ class File implements ITypeLookup implements IErrors {
 					at(Some([decl])) => switch [args, decl.params] {
 						case [[], []]:
 							finished = false;
-							decl.thisType;
+							{t: decl.thisType.t, span: span};
 						case [[], _]:
 							finished = false;
 							{t: decl.thisType.t, span: span}; // should probably curry parametrics but eh
@@ -333,6 +333,10 @@ class File implements ITypeLookup implements IErrors {
 			cat2.path=cat2.path.simplify();
 			cat2.type=cat2.type.map(t->t.simplify());
 		}
+		/*if(categories.length!=0) {
+			Sys.print("\n");
+			trace("=== "+forType.fullName()+" === " + cat.span._and(s=>s.display()));
+		}*/
 		return cat.t._match(
 			at(TModular(t, unit), when(!cache.contains(unit))) => {
 				/*function loop(unit_: Unit, cache: List<Unit>) {
@@ -365,19 +369,19 @@ class File implements ITypeLookup implements IErrors {
 			}
 		).filter(c -> {
 			//c.path.hasChildType(cat) && c.thisType.simplify().hasChildType(forType)
-			if(c.path.simplify().hasChildType(cat)) {
-				if(c.thisType.simplify().hasChildType(forType)) {
+			if(cat.hasParentType(c.path)) {
+				if(forType.hasParentType(c.thisType)) {
 					//trace("+", c.fullName());
 					true;
 				} else {
-					//trace("-", c.thisType.simplify().hasChildType(forType), c.fullName());
+					//trace("-", forType.hasParentType(c.thisType), c.fullName());
 					false;
 				}
 			} else {
 				false;
 			}
 		})._match(
-			at([]) => unit.orElseDo(dir).findCategory(ctx, cat, forType, from, cache),
+			at([]) => dir.findCategory(ctx, cat, forType, from, cache),
 			at(found) => found
 		);
 	}

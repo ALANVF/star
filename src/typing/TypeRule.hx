@@ -147,7 +147,7 @@ function hasChildDecl(self: TypeRule, decl: TypeDecl, tvar: TypeVar) {
 }
 
 
-function hasParentType(self: TypeRule, type: Type, tvar: TypeVar) return self._match(
+function evalWithType(self: TypeRule, type: Type, tvar: TypeVar) return self._match(
 	at(Eq(left, right)) => {
 		if(left == tvar.thisType) {
 			type.strictUnifyWithType(right) != null;
@@ -167,17 +167,52 @@ function hasParentType(self: TypeRule, type: Type, tvar: TypeVar) return self._m
 		}
 	},
 
-	at(All(conds)) => conds.every(cond -> hasParentType(cond, type, tvar)),
-	at(Any(conds)) => conds.some(cond -> hasParentType(cond, type, tvar)),
+	at(All(conds)) => conds.every(cond -> evalWithType(cond, type, tvar)),
+	at(Any(conds)) => conds.some(cond -> evalWithType(cond, type, tvar)),
 
-	at(Not(rule)) => !hasParentType(rule, type, tvar),
+	at(Not(rule)) => !evalWithType(rule, type, tvar),
 
 	_ => throw "todo "+self+" "+type.fullName()+" "+tvar.fullName()
 );
 
-function hasChildType(self: TypeRule, type: Type, tvar: TypeVar) {
-	return hasParentType(self, type, tvar);
-}
+
+function findBinaryOp(self: TypeRule, tvar: TypeVar,
+ctx: Ctx, op: BinaryOp, from: AnyTypeDecl, cache: TypeCache = Nil): Array<BinaryOpKind> return self._match(
+	at(Eq(left, right)) => {
+		if(left == tvar.thisType) {
+			right.findBinaryOp(ctx, op, from, cache);
+		} else if(right == tvar.thisType) {
+			left.findBinaryOp(ctx, op, from, cache);
+		} else {
+			throw "todo";
+		}
+	},
+	at(Of(left, right)) => {
+		if(left == tvar.thisType) {
+			right.findBinaryOp(ctx, op, from, cache);
+		} else if(right == tvar.thisType) {
+			left.findBinaryOp(ctx, op, from, cache);
+		} else {
+			throw "todo";
+		}
+	},
+
+	at(All(conds)) => {
+		var found = [];
+		for(cond in conds.toArray()) {
+			cond.findBinaryOp(tvar, ctx, op, from, cache)._match(
+				at([]) => return [],
+				at(kinds) => found = found.concat(kinds)
+			);
+		}
+		found.unique();
+	},
+	at(Any(conds)) => conds.toArray().flatMap(cond -> cond.findBinaryOp(tvar, ctx, op, from, cache)).unique(),
+
+	at(Not(rule)) => [], // TODO
+
+	_ => throw "todo "+self+" "+op.symbol()+" "+tvar.fullName()
+);
 
 
 @:publicFields

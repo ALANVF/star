@@ -176,7 +176,7 @@ enum Where {
 							this,
 							mem,
 							mem.name.name,
-							mem.type.toNull(),
+							mem.type.toNull()._and(t => t.getIn(this)),
 							mem.value.map(v -> Pass2.typeExpr(this, v)).toNull()
 						)),
 						at(mems) => throw "todo"
@@ -211,7 +211,7 @@ enum Where {
 							),
 							_ => arg
 						))),
-						span: t.span
+						span: t.span._or(t2.span)
 					};
 				},
 				_ => t
@@ -236,7 +236,7 @@ enum Where {
 	function findTypevar(typevar: TypeVar): Null<Type> {
 		return where._match(
 			at(WTypevars(typevars)) => typevars[typevar],
-			_ => null
+			_ => outer._and(o => o.findTypevar(typevar))
 		);
 	}
 

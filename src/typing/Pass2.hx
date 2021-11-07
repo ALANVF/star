@@ -83,6 +83,7 @@ class LocalField extends Local {
 
 
 var STD_Value: TypeDecl;
+var STD_MultiKind: TypeDecl;
 var STD_Void: TypeDecl;
 var STD_Int: Type;
 var STD_Dec: Type;
@@ -102,6 +103,10 @@ function initSTD(std: Project) {
 	STD_Value = std.findType(List3.of([null, "Star", []], [null, "Value", []]), Inside, null)._match(
 		at({t: TConcrete(decl) | TModular({t: TConcrete(decl)}, _)}) => decl,
 		_ => throw "internal error: Star.Value should be a concrete type!"
+	);
+	STD_MultiKind = std.findType(List3.of([null, "Star", []], [null, "MultiKind", []]), Inside, null)._match(
+		at({t: TConcrete(decl) | TModular({t: TConcrete(decl)}, _)}) => decl,
+		_ => throw "internal error: Star.MultiKind should be a concrete type!"
 	);
 	STD_Void = std.findType(List3.of([null, "Star", []], [null, "Void", []]), Inside, null)._match(
 		at({t: TConcrete(decl) | TModular({t: TConcrete(decl)}, _)}) => decl,
@@ -752,7 +757,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 						).findSingleInst(ctx, name, ctx.typeDecl)._match(
 							at(kind!) => {
 								e: EObjMessage(tobj, Single(kind)),
-								t: kind._match(
+								t: (kind._match(
 									at(SIMethod({ret: Some(ret)})) => ret.t._match(
 										at(TThis(source), when(source.hasChildType(t))) => t.t._match(
 											at(TConcrete(decl)) => { t: TThis(decl) },
@@ -766,7 +771,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 									),
 									at(SIMember(mem)) => mem.type.toNull(), // TODO: solve in ctx
 									_ => null
-								)
+								) : Null<Type>)._and(ret => ret.getFrom(t))
 							},
 							_ => {
 								ctx.addError(Errors.unknownMethod(ctx, false, t, name, span));
@@ -942,12 +947,12 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 					},
 					at(Multi(Some(cat), labels)) => {
 						final tcat: Type = ctx.getType(cat)._or(return invalidExpr())._match(
-							at({t: TThis(source)}) => source._match(
-								at(td is TypeDecl) => { t: TConcrete(td) },
-								at(tv is TypeVar) => { t: TTypeVar(tv) },
+							at({t: TThis(source), span: s}) => source._match(
+								at(td is TypeDecl) => { t: TConcrete(td), span: s },
+								at(tv is TypeVar) => { t: TTypeVar(tv), span: s },
 								at(c is Category) => c.type.orElseDo(c.lookup._match(
-									at(td is TypeDecl) => { t: TConcrete(td) },
-									at(tv is TypeVar) => { t: TTypeVar(tv) },
+									at(td is TypeDecl) => { t: TConcrete(td), span: s },
+									at(tv is TypeVar) => { t: TTypeVar(tv), span: s },
 									_ => throw "bad"
 								)),
 								_ => throw "bad"
@@ -958,7 +963,14 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 
 						var categories = t.findThisCategory(ctx, tcat, ctx.typeDecl).concat(
 							tcat.findCategory(ctx, tcat, t, ctx.typeDecl)
-						).unique().filter(c -> t.hasParentType(c.thisType) && c.thisType.hasChildType(t)); // BUG: hasParentType has false positives?!?!!??!?!?!!?!?! probably related to refinements
+						).unique().filter(c -> {
+							if(t.hasParentType(c.thisType) && c.thisType.hasChildType(t)) {
+								true;
+							} else {
+								//trace(t.fullName(), c.fullName(), t.hasParentType(c.thisType), c.thisType.hasChildType(t));
+								t.hasParentType(c.thisType);
+							}
+						}); // BUG: hasParentType has false positives?!?!!??!?!?!!?!?! probably related to refinements
 						categories._match(
 							at([]) => {
 								ctx.addError(Errors.unknownCategory(ctx, false, t, tcat, cat.span()));
@@ -1103,21 +1115,24 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 		at(EObjMember(obj, {span: s, name: name})) => {
 			final tobj = typeExpr(ctx, obj);
 			tobj.t._match(
-				at(t!) => t.findSingleInst(ctx, name, ctx.typeDecl, true)._match(
-					at(kind!) => {
-						e: EObjMember(tobj, kind),
-						t: kind._match(
-							at(SIMethod(m)) => m.ret.value(),
-							at(SIMultiMethod(m)) => m.ret.value(),
-							at(SIMember(m)) => m.type.toNull(),
-							at(SIFromTypevar(_, _, _, _)) => null
-						)._and(ty => ty.getFrom(t))
-					},
-					_ => {
-						ctx.addError(Errors.unknownGetter(ctx, false, t, name, s));
-						invalidExpr();
-					}
-				),
+				at(t!) => {
+					t = t.getIn(ctx);
+					t.findSingleInst(ctx, name, ctx.typeDecl, true)._match(
+						at(kind!) => {
+							e: EObjMember(tobj, kind),
+							t: kind._match(
+								at(SIMethod(m)) => m.ret.value(),
+								at(SIMultiMethod(m)) => m.ret.value(),
+								at(SIMember(m)) => m.type.toNull(),
+								at(SIFromTypevar(_, _, _, _)) => null
+							)._and(ret => ret.getFrom(t).getIn(ctx))
+						},
+						_ => {
+							ctx.addError(Errors.unknownGetter(ctx, false, t, name, s));
+							invalidExpr();
+						}
+					);
+				},
 				_ => { e: EObjLazyMember(tobj, name) }
 			);
 		},
@@ -1127,6 +1142,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 			final rhs = typeExpr(ctx, right);
 			rhs.t._match(
 				at(t!) => {
+					t = t.getIn(ctx);
 					final op2: UnaryOp = op._match(
 						at(PIncr) => Incr,
 						at(PDecr) => Decr,
@@ -1143,11 +1159,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 					t.findUnaryOp(ctx, op2, ctx.typeDecl)._match(
 						at(kind!) => {
 							e: EPrefix(kind, rhs),
-							t: kind._match(
-								at(UOMethod(mth) | UOFromTypevar(_, _, UOMethod(mth))) =>
-									mth.ret.value().simplify(),
-								_ => throw "todo"
-							)
+							t: kind.digForMethod().ret.value().simplify().getFrom(t).getIn(ctx)
 						},
 						_ => if(ctx.isPattern()) {
 							{ e: ELazyPrefix(op, rhs) };
@@ -1178,11 +1190,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 					t.findUnaryOp(ctx, op2, ctx.typeDecl)._match(
 						at(kind!) => {
 							e: ESuffix(lhs, kind),
-							t: kind._match(
-								at(UOMethod(mth) | UOFromTypevar(_, _, UOMethod(mth))) =>
-									mth.ret.value().simplify(),
-								_ => throw "todo"
-							)
+							t: kind.digForMethod().ret.value().simplify()
 						},
 						_ => if(ctx.isPattern()) {
 							{ e: ELazySuffix(lhs, op) };
@@ -1314,20 +1322,29 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 			final op2 = BinaryOp.fromInfix(op);
 
 			tleft.t._match(
-				at(t!, when(!ctx.isPattern())) => {
-					var found = t.findBinaryOp(ctx, op2, ctx.typeDecl);
-					tright.t._match(
-						at(rt!) => {
-							found = found.filter(k -> k._match(
-								at(BOMethod(m) | BOFromTypevar(_, _, BOMethod(m))) => m.paramType.hasChildType(rt), // TODO: change to use hasStrictChildType when it's finished
-								_ => false
-							));
+				at(lt!, when(!ctx.isPattern())) => {
+					lt = lt.getIn(ctx);
+					var found = lt.findBinaryOp(ctx, op2, ctx.typeDecl);
+					final oldFound = found;
+					final rt = tright.t._match(
+						at(rt0!) => {
+							rt0 = rt0.getIn(ctx);
+							found = found.filter(k -> k.digForMethod()
+								.paramType.getIn(ctx).getFrom(lt).hasChildType(rt0) // TODO: change to use hasStrictChildType when it's finished
+							);
+							found = Type.reduceOverloadsBy(found, k -> k.digForMethod()
+								.paramType.getIn(ctx).getFrom(lt) // TODO: change to use hasStrictChildType when it's finished
+							);
+							rt0;
 						},
-						_ => {}
+						_ => null
 					);
 					found._match(
 						at([]) => {
-							ctx.addError(Errors.unknownMethod(ctx, t, op2, span));
+							(oldFound.some(k -> k.match(BOMethod(_) | BOFromTypevar(_, _, BOMethod(_)))) ? rt : null)._match(
+								at(rt0!) => ctx.addError(Errors.unknownMethod(ctx, lt, rt0, op2, span)),
+								_ => ctx.addError(Errors.unknownMethod(ctx, lt, op2, span))
+							);
 							invalidExpr();
 						},
 						at(kinds) => {
@@ -1335,18 +1352,18 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 							t: kinds.filterMap(kind ->
 								(kind._match(
 									at(BOMethod({ret: Some(ret)}) | BOFromTypevar(_, _, BOMethod({ret: Some(ret)}))) => ret.t._match(
-										at(TThis(source), when(source.hasChildType(t))) => t.t._match(
+										at(TThis(source), when(source.hasChildType(lt))) => lt.t._match(
 											at(TConcrete(decl)) => { t: TThis(decl) },
 											at(TThis(source2)) => { t: TThis(source2) },
-											at(TApplied({t: TConcrete(decl)}, args)) => t,
-											at(TTypeVar(_)) => throw "todo (?) "+t.span._and(s=>s.display()),
-											_ => t
+											at(TApplied({t: TConcrete(decl)}, args)) => lt,
+											//at(TTypeVar(_)) => throw "todo (?) "+lt.span._and(s=>s.display()),
+											_ => lt
 										),
 										at(TApplied(_, _) | TTypeVar(_)) => null, // TODO
 										_ => ret
 									),
 									_ => null // TODO
-								) : Null<Type>)._and(ret => ret.getFrom(t))
+								) : Null<Type>)._and(ret => ret.getFrom(lt))
 							).unique()._match(
 								at([]) => null,
 								at([ret]) => ret,
@@ -1728,7 +1745,7 @@ static function typeStmt(ctx: Ctx, stmt: UStmt): TStmt {
 					typeBlock(forCtx.innerBlock(), block)
 				);
 
-			case SForRange(_, lvar, _, startK, startE, _, stopK, stopE, step, cond, label, block):
+			case SForRange(span, lvar, _, startK, startE, _, stopK, stopE, step, cond, label, block):
 				final forCtx = ctx.innerBlock();
 				final tlvar: Null<TExpr> = lvar._match(
 					at(EWildcard(_)) => null,
@@ -1750,7 +1767,7 @@ static function typeStmt(ctx: Ctx, stmt: UStmt): TStmt {
 					at([t!!, null]) => { tstop.t = t; t; },
 					at([t1!!, t2!!]) => t1.strictUnifyWithType(t2)._match(
 						at(t!) => t,
-						_ => throw 'error: loop bounds of types `${t1.fullName()}` and `${t2.fullName()}` are not compatible!'
+						_ => throw 'error: loop bounds of types `${t1.fullName()}` and `${t2.fullName()}` are not compatible! ${span.display()}'
 					)
 				);
 

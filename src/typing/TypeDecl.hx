@@ -75,7 +75,7 @@ abstract class TypeDecl extends AnyFullTypeDecl {
 					at(Some([type])) => switch [args, type.params] {
 						case [[], []]:
 							finished = false;
-							type.thisType;
+							{t: type.thisType.t, span: span};
 						case [[], _]:
 							finished = false;
 							{t: type.thisType.t, span: span}; // should probably curry parametrics but eh
@@ -262,8 +262,17 @@ abstract class TypeDecl extends AnyFullTypeDecl {
 
 	// Generics
 
+	// BUG: WHY DOES THIS NOT WORK CORRECTLY WITH SUBTYPING WTF
 	function acceptsArgs(args: Array<Type>): Bool {
-		throw "NYI!";
+		if(args.length != params.length) return false;
+
+		for(i in 0...args.length) {
+			if(!args[i].hasParentType(params[i])) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	function applyArgs(args: Array<Type>): Null<Type> {
@@ -412,7 +421,11 @@ abstract class TypeDecl extends AnyFullTypeDecl {
 	}
 
 	override function findThisCategory(ctx: Ctx, cat: Type, from: AnyTypeDecl, cache: Cache = Nil): Array<Category> {
-		var res = lookup.findCategory(ctx, cat, thisType, from, cache + thisType);
+		cache += thisType;
+
+		var res = lookup.findCategory(ctx, cat, thisType, from, cache);
+
+		for(ref in refinees) res = res.concat(ref.findThisCategory(ctx, cat, from, cache));
 
 		return res;
 	}

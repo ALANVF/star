@@ -290,9 +290,13 @@ class Class extends ClassLike {
 			_ => {}
 		);
 
-		return res;
+		return if(target.hasParentDecl(this)) {
+			res.concat([CDowncast(target)]);
+		} else {
+			res;
+		}
 	}
-
+	
 
 	override function defaultUnaryOp(ctx: Ctx, op: UnaryOp, from: AnyTypeDecl): Null<UnaryOpKind> {
 		if(!native.match(Some(NVoid))) {

@@ -131,4 +131,15 @@ class ValueKind extends Kind {
 			_ => []
 		));
 	}
+
+
+	override function findBinaryOp(ctx: Ctx, op: BinaryOp, from: AnyTypeDecl, cache: TypeCache = Nil) {
+		final res = super.findBinaryOp(ctx, op, from, cache);
+
+		if(_isFlags) {
+			return res.concat(Pass2.STD_MultiKind.findBinaryOp(ctx, op, from, cache));
+		} else {
+			return res;
+		}
+	}
 }

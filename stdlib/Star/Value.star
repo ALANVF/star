@@ -13,3 +13,11 @@ protocol Value {
 
 	on [Core.Str] is native `cast_value_str`
 }
+
+protocol MultiKind {
+	operator `?` (Core.Bool) is native `multikind_truthy`
+
+	operator `&` [other (This)] (Core.Bool) is native `multikind_has`
+	operator `|` [other (This)] (This) is native `multikind_include`
+	operator `^` [other (This)] (This) is native `multikind_exclude`
+}

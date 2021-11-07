@@ -76,7 +76,7 @@ abstract class Namespace extends TypeDecl {
 					at(Some([type])) => switch [args, type.params] {
 						case [[], []]:
 							finished = false;
-							type.thisType;
+							{t: type.thisType.t, span: span};
 						case [[], _]:
 							finished = false;
 							{t: type.thisType.t, span: span}; // should probably curry parametrics but eh
@@ -192,7 +192,7 @@ abstract class Namespace extends TypeDecl {
 
 	override function hasParentType(type: Type) {
 		return super.hasParentType(type)
-			|| parents.some(p -> p.hasParentType(type) || p.t._match(
+			|| parents.some(p -> p.hasParentType(type) || type.t._match(
 				at(TConcrete(pd)) => {
 					//trace(type.fullName(),p,pd,this);
 					pd.refinements.some(r -> this.params.every2Strict(r.params, (p1, p2) -> p1.hasParentType(p2)));

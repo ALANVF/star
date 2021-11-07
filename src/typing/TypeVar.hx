@@ -1,5 +1,6 @@
 package typing;
 
+import typing.Pass2.STD_MultiKind;
 import reporting.Diagnostic;
 import text.Span;
 import typing.Traits;
@@ -227,21 +228,25 @@ class TypeVar extends AnyFullTypeDecl {
 		|| deinit != None
 		|| inits.length != 0
 		|| members.length != 0
-		|| methods.length != 0
+		//|| methods.length != 0
 		//|| operators.length != 0
 		|| staticDeinit != None
 		|| staticInit != None
 		|| staticMembers.length != 0
 		|| staticMethods.length != 0
-		|| taggedCases.length != 0
+		//|| taggedCases.length != 0
 		|| valueCases.length != 0
 		|| categories.length != 0
 		//|| native != None
-		|| _isFlags
+		//|| _isFlags
 		|| _isStrong
 		|| _isUncounted
 		) {
-			throw "todo "+this.span.display();
+			throw "todo "+decl+" "+this.span.display();
+		}
+
+		if(_isFlags && !decl.isFlags()) {
+			return false;
 		}
 
 		native._match(
@@ -277,7 +282,7 @@ class TypeVar extends AnyFullTypeDecl {
 		|| inits.length != 0
 		|| members.length != 0
 		|| methods.length != 0
-		|| operators.length != 0
+		//|| operators.length != 0
 		|| staticDeinit != None
 		|| staticInit != None
 		|| staticMembers.length != 0
@@ -291,6 +296,10 @@ class TypeVar extends AnyFullTypeDecl {
 		|| _isUncounted
 		) {
 			throw "todo "+this.span.display();
+		}
+
+		for(op in operators) {
+			// TODO
 		}
 
 		native._match(
@@ -322,7 +331,7 @@ class TypeVar extends AnyFullTypeDecl {
 
 		rule._match(
 			at(Some(cond)) => {
-				if(!cond.hasChildType(tvar.thisType, this)) {
+				if(!cond.evalWithType(tvar.thisType, this)) {
 					return false;
 				}
 			},
@@ -365,7 +374,7 @@ class TypeVar extends AnyFullTypeDecl {
 
 	function hasParentType(type: Type): Bool {
 		return switch type.t {
-			case TPath(_, _, _): throw "bad";
+			case TPath(_, _, _): this.hasParentType(type.simplify());
 			case TLookup(_, _, _): throw "todo";
 			case TConcrete(decl): this.hasParentDecl(decl);
 			case TInstance(decl, params, tctx): this.hasParentDecl(decl); // TODO
@@ -388,6 +397,15 @@ class TypeVar extends AnyFullTypeDecl {
 		if(!parents.every(p -> type.hasParentType(p))) {
 			return false;
 		}
+
+		rule._match(
+			at(Some(cond)) => {
+				if(!cond.evalWithType(type, this)) {
+					return false;
+				}
+			},
+			_ => {}
+		);
 
 		if(defaultInit == None
 		&& deinit == None
@@ -930,11 +948,22 @@ class TypeVar extends AnyFullTypeDecl {
 			_ => {}
 		);
 
+		if(_isFlags) {
+			candidates.pushAll(STD_MultiKind.findBinaryOp(ctx, op, from, cache));
+		}
+
 		for(parent in parents) {
 			for(k in parent.findBinaryOp(ctx, op, from, cache)) {
 				candidates.push(BOFromTypevar(this, op, k));
 			}
 		}
+
+		rule._match(
+			at(Some(cond)) => {
+				candidates.pushAll(cond.findBinaryOp(this, ctx, op, from, cache));
+			},
+			_ => {}
+		);
 
 		return candidates._match(
 			at([], when(cache.match(Nil | Cons({t: TConcrete(_ is DirectAlias => true)}, _)))) => Pass2.STD_Value.findBinaryOp(ctx, op, from),

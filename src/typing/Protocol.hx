@@ -114,8 +114,7 @@ class Protocol extends ClassLike {
 
 
 	override function hasParentType(type: Type) {
-		//trace(this.fullName(),type.fullName());
-		return type == Pass2.STD_Value.thisType || super.hasParentType(type);
+		return (Pass2.STD_Value != null && type == Pass2.STD_Value.thisType) || super.hasParentType(type);
 	}
 
 	override function hasChildType(type: Type) {
@@ -233,6 +232,19 @@ class Protocol extends ClassLike {
 			return Pass2.STD_Value.findSingleInst(ctx, name, from, getter);
 		} else {
 			return null;
+		}
+	}
+
+
+	override function findCast(ctx: Ctx, target: Type, from: AnyTypeDecl, cache: TypeCache = Nil) {
+		if(cache.contains(thisType)) return [];
+		
+		final candidates = super.findCast(ctx, target, from, cache);
+
+		return if(target.hasParentDecl(this)) {
+			candidates.concat([CDowncast(target)]);
+		} else {
+			candidates;
 		}
 	}
 
