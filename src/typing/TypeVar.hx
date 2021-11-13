@@ -33,7 +33,7 @@ class TypeVar extends AnyFullTypeDecl {
 	var _isUncounted: Bool = false;
 	
 	function new() {
-		thisType = new Type(TTypeVar(this));
+		thisType = new Type(TTypeVar(this), null);
 	}
 
 	static function fromAST(lookup: ITypeLookup, ast: parsing.ast.decls.GenericParam): TypeVar {

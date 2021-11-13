@@ -83,6 +83,26 @@ class DirectAlias extends Alias {
 	}
 
 
+	// Generics
+
+	override function acceptsArgs(args: Array<Type>): Bool {
+		if(params.length == 0) {
+			return type.acceptsArgs(args);
+		} else {
+			return super.acceptsArgs(args);
+		}
+	}
+
+	override function applyArgs(args: Array<Type>): Null<Type> {
+		if(params.length == 0) {
+			return type.applyArgs(args);
+		} else {
+			// TODO
+			return super.applyArgs(args);
+		}
+	}
+
+
 	// Attributes
 
 	override function isNative(kind: NativeKind) {

@@ -98,7 +98,7 @@ var STD_Iterable: Type;
 var STD_Iterator: Type;
 
 function initSTD(std: Project) {
-	final t: Type = {t: TBlank};
+	final t: Type = {t: TBlank, span: null};
 	
 	STD_Value = std.findType(List3.of([null, "Star", []], [null, "Value", []]), Inside, null)._match(
 		at({t: TConcrete(decl) | TModular({t: TConcrete(decl)}, _)}) => decl,
@@ -130,6 +130,27 @@ function initSTD(std: Project) {
 // dummy comment to fix formatting in vscode
 
 
+static function buildDirRefinements(dir: Dir) {
+	for(file in dir.files) buildFileRefinements(file);
+	for(unit in dir.units) buildUnitRefinements(unit);
+}
+
+static function buildProjectRefinements(proj: Project) {
+	buildDirRefinements(proj);
+	proj.main.forEach(m -> buildFileRefinements(m));
+}
+
+
+static function buildUnitRefinements(unit: Unit) {
+	unit.primary.forEach(p -> buildFileRefinements(p));
+	buildDirRefinements(unit);
+}
+
+static function buildFileRefinements(file: File) {
+	for(decl in file.decls) decl.buildRefinements();
+}
+
+
 static function resolveDir(dir: Dir) {
 	for(f in dir.files) resolveFile(f);
 	for(u in dir.units) resolveUnit(u);
@@ -137,6 +158,7 @@ static function resolveDir(dir: Dir) {
 
 
 static function resolveProject(proj: Project) {
+	buildProjectRefinements(proj);
 	resolveDir(proj);
 	proj.main.forEach(m -> resolveFile(m));
 }
@@ -160,10 +182,11 @@ static function resolveFile(file: File) {
 }
 
 static function resolveDecl(ctx: Ctx, decl: TypeDecl) {
-	decl.buildRefinements();
+	//decl.buildRefinements();
 	
 	decl._match(
 		at(ns is Namespace) => {
+			for(decl2 in ns.decls) decl2.buildRefinements();
 			for(decl2 in ns.decls) resolveDecl(ctx.innerDecl(decl2), decl2);
 			for(cat in ns.categories) resolveCategory(ctx.innerCategory(cat), cat);
 		},
@@ -527,13 +550,13 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 			case PStr(str): TExpr.StrPart.PStr(str);
 		})), t: STD_Str },
 		at(EBool(_, bool)) => { e: EBool(bool), t: STD_Bool },
-		at(EArray(_, values, _)) => {
+		at(EArray(_begin, values, _)) => {
 			final tvalues = typeExprs(ctx, values);
 			{
 				e: EArray(tvalues),
 				t: tvalues.filterMap(te -> te.t)._match(
 					at([]) => STD_Array,
-					at([t]) => {t: TApplied(STD_Array, [t])},
+					at([t]) => {t: TApplied(STD_Array, [t]), span: _begin},
 					at(ts) => {
 						final et = ts.reduce((t1, t2) -> t1.strictUnifyWithType(t2)._match(
 							at(t!) => t,
@@ -542,26 +565,26 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 								throw "todo";
 							}
 						));
-						{t: TApplied(STD_Array, [et])};
+						{t: TApplied(STD_Array, [et]), span: _begin};
 					}
 				)
 			};
 		},
 		at(EHash(_, pairs, _)) => { e: EHash(pairs.map(p -> new Tuple2(typeExpr(ctx, p.k), typeExpr(ctx, p.v)))) },
-		at(ETuple(_, values, _)) => {
+		at(ETuple(_begin, values, _)) => {
 			final tvalues = typeExprs(ctx, values);
 			final ttypes = tvalues.filterMap(tv -> tv.t);
 			{
 				e: ETuple(tvalues),
 				t: if(ttypes.length == tvalues.length) {
-					{t: TApplied(STD_Tuple, ttypes)};
+					{t: TApplied(STD_Tuple, ttypes), span: _begin};
 				} else {
 					null;
 				}
 			};
 		},
 		at(EThis(span)) => {
-			if(ctx.allowsThis()) { e: EThis, t: ctx.thisType};
+			if(ctx.allowsThis()) { e: EThis, t: {t: ctx.thisType.t, span: span} };
 			else {
 				ctx.addError(Errors.thisNotAllowed(ctx, span));
 				invalidExpr();
@@ -598,8 +621,8 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 								at(SSInit(_) | SSTaggedCase(_) | SSTaggedCaseAlias(_) | SSValueCase(_)) => t,
 								at(SSMethod({ret: Some(ret)})) => ret.t._match(
 									at(TThis(source), when(source.hasChildType(t))) => t.t._match(
-										at(TConcrete(decl)) => { t: TThis(decl) },
-										at(TThis(source2)) => { t: TThis(source2) },
+										at(TConcrete(decl)) => { t: TThis(decl), span: ret.span },
+										at(TThis(source2)) => { t: TThis(source2), span: ret.span },
 										at(TApplied({t: TConcrete(decl)}, args)) => t,
 										at(TTypeVar(_)) => throw "todo (?) "+t.span._and(s=>s.display()),
 										_ => t
@@ -636,8 +659,8 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 									(kind._match(
 										at(MSMethod({ret: Some(ret)})) => ret.t._match(
 											at(TThis(source), when(source.hasChildType(t))) => t.t._match(
-												at(TConcrete(decl)) => { t: TThis(decl) },
-												at(TThis(source2)) => { t: TThis(source2) },
+												at(TConcrete(decl)) => { t: TThis(decl), span: ret.span },
+												at(TThis(source2)) => { t: TThis(source2), span: ret.span },
 												at(TApplied({t: TConcrete(decl)}, args)) => t,
 												at(TTypeVar(_)) => throw "todo (?) "+t.span._and(s=>s.display()),
 												_ => t
@@ -651,7 +674,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 								)._match(
 									at([]) => null,
 									at([ret]) => ret,
-									at(rets) => {t: TMulti(rets)}
+									at(rets) => {t: TMulti(rets), span: null}
 								);
 							}
 						}
@@ -659,12 +682,12 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 				},
 				at(Multi(Some(cat), labels)) => {
 					final tcat: Type = ctx.getType(cat)._or(return invalidExpr())._match(
-						at({t: TThis(source)}) => source._match(
-							at(td is TypeDecl) => { t: TConcrete(td) },
-							at(tv is TypeVar) => { t: TTypeVar(tv) },
+						at({t: TThis(source), span: span}) => source._match(
+							at(td is TypeDecl) => { t: TConcrete(td), span: span },
+							at(tv is TypeVar) => { t: TTypeVar(tv), span: span },
 							at(c is Category) => c.type.orElseDo(c.lookup._match(
-								at(td is TypeDecl) => { t: TConcrete(td) },
-								at(tv is TypeVar) => { t: TTypeVar(tv) },
+								at(td is TypeDecl) => { t: TConcrete(td), span: span },
+								at(tv is TypeVar) => { t: TTypeVar(tv), span: span },
 								_ => throw "bad"
 							)),
 							_ => throw "bad"
@@ -674,7 +697,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 					detuple2(@var names, @var args, getNamesArgs(ctx, labels));
 
 					var categories = t.t._match(
-						at(TThis(td is TypeDecl)) => td.thisType,
+						at(TThis(td is TypeDecl)) => ({t: td.thisType.t, span: t.span} : Type),
 						_ => t
 					).findThisCategory(ctx, tcat, ctx.typeDecl).unique();
 					categories._match(
@@ -723,8 +746,8 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 					t: kind._match(
 						at(SSMethod({ret: Some(ret)})) => ret.t._match(
 							at(TThis(source), when(source.hasChildType(t))) => t.t._match(
-								at(TConcrete(decl)) => { t: TThis(decl) },
-								at(TThis(source2)) => { t: TThis(source2) },
+								at(TConcrete(decl)) => { t: TThis(decl), span: ret.span },
+								at(TThis(source2)) => { t: TThis(source2), span: ret.span },
 								at(TApplied({t: TConcrete(decl)}, args)) => t,
 								at(TTypeVar(_)) => throw "todo (?) "+t.span._and(s=>s.display()),
 								_ => t
@@ -760,8 +783,8 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 								t: (kind._match(
 									at(SIMethod({ret: Some(ret)})) => ret.t._match(
 										at(TThis(source), when(source.hasChildType(t))) => t.t._match(
-											at(TConcrete(decl)) => { t: TThis(decl) },
-											at(TThis(source2)) => { t: TThis(source2) },
+											at(TConcrete(decl)) => { t: TThis(decl), span: ret.span },
+											at(TThis(source2)) => { t: TThis(source2), span: ret.span },
 											at(TApplied({t: TConcrete(decl)}, args)) => t,
 											at(TTypeVar(_)) => throw "todo (?) "+t.span._and(s=>s.display()),
 											_ => t
@@ -802,8 +825,8 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 									t: (kind._match(
 										at(SIMethod({ret: Some(ret)})) => ret.t._match(
 											at(TThis(source), when(source.hasChildType(t))) => t.t._match(
-												at(TConcrete(decl)) => { t: TThis(decl) },
-												at(TThis(source2)) => { t: TThis(source2) },
+												at(TConcrete(decl)) => { t: TThis(decl), span: ret.span },
+												at(TThis(source2)) => { t: TThis(source2), span: ret.span },
 												at(TApplied({t: TConcrete(decl)}, args)) => t,
 												at(TTypeVar(_)) => throw "todo (?) "+t.span._and(s=>s.display()),
 												_ => t
@@ -823,12 +846,12 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 					},
 					at(Single(Some(cat), _, name)) => {
 						final tcat: Type = ctx.getType(cat)._or(return invalidExpr())._match(
-							at({t: TThis(source)}) => source._match(
-								at(td is TypeDecl) => { t: TConcrete(td) },
-								at(tv is TypeVar) => { t: TTypeVar(tv) },
+							at({t: TThis(source), span: span}) => source._match(
+								at(td is TypeDecl) => { t: TConcrete(td), span: span },
+								at(tv is TypeVar) => { t: TTypeVar(tv), span: span },
 								at(c is Category) => c.type.orElseDo(c.lookup._match(
-									at(td is TypeDecl) => { t: TConcrete(td) },
-									at(tv is TypeVar) => { t: TTypeVar(tv) },
+									at(td is TypeDecl) => { t: TConcrete(td), span: span },
+									at(tv is TypeVar) => { t: TTypeVar(tv), span: span },
 									_ => throw "bad"
 								)),
 								_ => throw "bad"
@@ -836,7 +859,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 							at(c) => c
 						);
 						var categories = t.t._match(
-							at(TThis(td is TypeDecl)) => td.thisType,
+							at(TThis(td is TypeDecl)) => ({t: td.thisType.t, span: t.span} : Type),
 							_ => t
 						).findThisCategory(ctx, tcat, ctx.typeDecl).concat(
 							tcat.findCategory(ctx, tcat, t, ctx.typeDecl)
@@ -852,8 +875,8 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 									t: (kind._match(
 										at(SIMethod({ret: Some(ret)})) => ret.t._match(
 											at(TThis(source), when(source.hasChildType(t))) => t.t._match(
-												at(TConcrete(decl)) => { t: TThis(decl) },
-												at(TThis(source2)) => { t: TThis(source2) },
+												at(TConcrete(decl)) => { t: TThis(decl), span: ret.span },
+												at(TThis(source2)) => { t: TThis(source2), span: ret.span },
 												at(TApplied({t: TConcrete(decl)}, args)) => t,
 												at(TTypeVar(_)) => throw "todo (?) "+t.span._and(s=>s.display()),
 												_ => t
@@ -874,8 +897,8 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 									t: (kind._match(
 										at(SIMethod({ret: Some(ret)})) => ret.t._match(
 											at(TThis(source), when(source.hasChildType(t))) => t.t._match(
-												at(TConcrete(decl)) => { t: TThis(decl) },
-												at(TThis(source2)) => { t: TThis(source2) },
+												at(TConcrete(decl)) => { t: TThis(decl), span: ret.span },
+												at(TThis(source2)) => { t: TThis(source2), span: ret.span },
 												at(TApplied({t: TConcrete(decl)}, args)) => t,
 												at(TTypeVar(_)) => throw "todo (?) "+t.span._and(s=>s.display()),
 												_ => t
@@ -896,7 +919,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 						detuple2(@var names, @var args, getNamesArgs(ctx, labels));
 
 						t.t._match(
-							at(TThis(td is TypeDecl)) => td.thisType,
+							at(TThis(td is TypeDecl)) => ({t: td.thisType.t, span: t.span} : Type),
 							_ => t
 						).findMultiInst(ctx, names, ctx.typeDecl)._match(
 							at([]) => {
@@ -909,8 +932,8 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 									(kind._match(
 										at(MIMethod({ret: Some(ret)})) => ret.t._match(
 											at(TThis(source), when(source.hasChildType(t))) => t.t._match(
-												at(TConcrete(decl)) => { t: TThis(decl) },
-												at(TThis(source2)) => { t: TThis(source2) },
+												at(TConcrete(decl)) => { t: TThis(decl), span: ret.span },
+												at(TThis(source2)) => { t: TThis(source2), span: ret.span },
 												at(TApplied({t: TConcrete(decl)}, args)) => t,
 												at(TTypeVar(_)) => throw "todo (?) "+t.span._and(s=>s.display()),
 												_ => t
@@ -923,7 +946,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 								)._match(
 									at([]) => null,
 									at([ret]) => ret,
-									at(rets) => {t: TMulti(rets)}
+									at(rets) => {t: TMulti(rets), span: null}
 								)
 							}
 						);
@@ -1048,12 +1071,12 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 					at(Cast(Some(cat), type)) => {
 						final target = ctx.getType(type)._or(return invalidExpr()).getLeastSpecific();
 						final tcat: Type = ctx.getType(cat)._or(return invalidExpr())._match(
-							at({t: TThis(source)}) => source._match(
-								at(td is TypeDecl) => { t: TConcrete(td) },
-								at(tv is TypeVar) => { t: TTypeVar(tv) },
+							at({t: TThis(source), span: span}) => source._match(
+								at(td is TypeDecl) => { t: TConcrete(td), span: span },
+								at(tv is TypeVar) => { t: TTypeVar(tv), span: span },
 								at(c is Category) => c.type.orElseDo(c.lookup._match(
-									at(td is TypeDecl) => { t: TConcrete(td) },
-									at(tv is TypeVar) => { t: TTypeVar(tv) },
+									at(td is TypeDecl) => { t: TConcrete(td), span: span },
+									at(tv is TypeVar) => { t: TTypeVar(tv), span: span },
 									_ => throw "bad"
 								)),
 								_ => throw "bad"
@@ -1353,8 +1376,8 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 								(kind._match(
 									at(BOMethod({ret: Some(ret)}) | BOFromTypevar(_, _, BOMethod({ret: Some(ret)}))) => ret.t._match(
 										at(TThis(source), when(source.hasChildType(lt))) => lt.t._match(
-											at(TConcrete(decl)) => { t: TThis(decl) },
-											at(TThis(source2)) => { t: TThis(source2) },
+											at(TConcrete(decl)) => { t: TThis(decl), span: ret.span },
+											at(TThis(source2)) => { t: TThis(source2), span: ret.span },
 											at(TApplied({t: TConcrete(decl)}, args)) => lt,
 											//at(TTypeVar(_)) => throw "todo (?) "+lt.span._and(s=>s.display()),
 											_ => lt
@@ -1367,7 +1390,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 							).unique()._match(
 								at([]) => null,
 								at([ret]) => ret,
-								at(rets) => {t: TMulti(rets)}
+								at(rets) => {t: TMulti(rets), span: null}
 							)
 						}
 					);
@@ -1379,9 +1402,11 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 		// ...
 		
 		at(EVarDecl(_, {name: name, span: span}, type, Some(EObjCascade(obj, cascades)))) => {
-			ctx.findLocal(name)._and(local => if(!(ctx.isPattern() && local.ctx.isPattern() && ctx == local.ctx)) {
-				ctx.addError(Errors.shadowedLocalVar(ctx, name, local.span, span));
-			});
+			ctx.findLocal(name)._and(local =>
+				if(!(local is LocalField || (ctx.isPattern() && local.ctx.isPattern() && ctx == local.ctx))) {
+					ctx.addError(Errors.shadowedLocalVar(ctx, name, local.span, span));
+				}
+			);
 			
 			final tobj = typeExpr(ctx, obj);
 			final t = {
@@ -1412,9 +1437,11 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 		},
 
 		at(EVarDecl(_, {name: name, span: span}, type, expr)) => {
-			ctx.findLocal(name)._and(local => if(!(ctx.isPattern() && local.ctx.isPattern() && ctx == local.ctx)) {
-				ctx.addError(Errors.shadowedLocalVar(ctx, name, local.span, span));
-			});
+			ctx.findLocal(name)._and(local =>
+				if(!(local is LocalField || (ctx.isPattern() && local.ctx.isPattern() && ctx == local.ctx))) {
+					ctx.addError(Errors.shadowedLocalVar(ctx, name, local.span, span));
+				}
+			);
 			final t = type.toNull()._and(ty => ctx.getType(ty)._or(return invalidExpr()));
 			final te: TExpr = { e: EVarDecl(name, t, expr.toNull()._and(e => typeExpr(ctx, e))) };
 			ctx.locals[name] = new LocalVar(ctx, span, te);
@@ -1450,19 +1477,26 @@ static function getNamesArgs(ctx: Ctx, labels: Array<parsing.ast.Message.Label>)
 	final names = new Array<String>();
 	final args = new Array<TExpr>();
 
-	labels._for(i => l, switch l {
-		case Named(_, n, e):
-			names[i] = n;
-			args[i] = typeExpr(ctx, e);
+	for(l in labels) l._match(
+		at(Named(_, n, e)) => {
+			names.push(n);
+			args.push(typeExpr(ctx, e));
+		},
 
-		case Punned(s, n):
-			names[i] = n;
-			args[i] = typeExpr(ctx, EName(s, n));
+		at(Punned(s, n = "this")) => {
+			names.push(n);
+			args.push(typeExpr(ctx, ctx.findLocal("this") != null ? EName(s, n) : EThis(s)));
+		},
+		at(Punned(s, n)) => {
+			names.push(n);
+			args.push(typeExpr(ctx, EName(s, n)));
+		},
 		
-		case Anon(e):
-			names[i] = "_";
-			args[i] = typeExpr(ctx, e);
-	});
+		at(Anon(e)) => {
+			names.push("_");
+			args.push(typeExpr(ctx, e));
+		}
+	);
 
 	return new Tuple2(names, args);
 }
@@ -1499,12 +1533,12 @@ static function typeObjCascade(ctx: Ctx, type: Null<Type>, cascade: UCascade<UEx
 					),
 					at(Single(Some(cat), _, name)) => {
 						final tcat: Type = ctx.getType(cat)._or(return null)._match(
-							at({t: TThis(source)}) => source._match(
-								at(td is TypeDecl) => { t: TConcrete(td) },
-								at(tv is TypeVar) => { t: TTypeVar(tv) },
+							at({t: TThis(source), span: span}) => source._match(
+								at(td is TypeDecl) => { t: TConcrete(td), span: span },
+								at(tv is TypeVar) => { t: TTypeVar(tv), span: span },
 								at(c is Category) => c.type.orElseDo(c.lookup._match(
-									at(td is TypeDecl) => { t: TConcrete(td) },
-									at(tv is TypeVar) => { t: TTypeVar(tv) },
+									at(td is TypeDecl) => { t: TConcrete(td), span: span },
+									at(tv is TypeVar) => { t: TTypeVar(tv), span: span },
 									_ => throw "bad"
 								)),
 								_ => throw "bad"
@@ -1513,7 +1547,7 @@ static function typeObjCascade(ctx: Ctx, type: Null<Type>, cascade: UCascade<UEx
 						);
 						
 						var categories = t.t._match(
-							at(TThis(td is TypeDecl)) => td.thisType,
+							at(TThis(td is TypeDecl)) => ({t: td.thisType.t, span: t.span} : Type),
 							_ => t
 						).findThisCategory(ctx, tcat, ctx.typeDecl).unique();
 						categories._match(
@@ -1542,12 +1576,12 @@ static function typeObjCascade(ctx: Ctx, type: Null<Type>, cascade: UCascade<UEx
 					},
 					at(Multi(Some(cat), labels)) => {
 						final tcat: Type = ctx.getType(cat)._or(return null)._match(
-							at({t: TThis(source)}) => source._match(
-								at(td is TypeDecl) => { t: TConcrete(td) },
-								at(tv is TypeVar) => { t: TTypeVar(tv) },
+							at({t: TThis(source), span: span}) => source._match(
+								at(td is TypeDecl) => { t: TConcrete(td), span: span },
+								at(tv is TypeVar) => { t: TTypeVar(tv), span: span },
 								at(c is Category) => c.type.orElseDo(c.lookup._match(
-									at(td is TypeDecl) => { t: TConcrete(td) },
-									at(tv is TypeVar) => { t: TTypeVar(tv) },
+									at(td is TypeDecl) => { t: TConcrete(td), span: span },
+									at(tv is TypeVar) => { t: TTypeVar(tv), span: span },
 									_ => throw "bad"
 								)),
 								_ => throw "bad"

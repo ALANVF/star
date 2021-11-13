@@ -122,7 +122,7 @@ class Category extends AnyTypeDecl {
 					null;
 				}
 			},
-			at([[span, typeName, args], ...rest]) => {
+			at([[span, typeName, args], ...rest]) => {//args=args.map(a->a.simplify());
 				var finished = true;
 				final res: Null<Type> = typevars.find(typeName).map(found -> found.filter(tvar ->
 					!cache.contains(tvar.thisType)
@@ -151,7 +151,16 @@ class Category extends AnyTypeDecl {
 								null;
 							} else {
 								finished = false;
-								{t: TApplied(tvar.thisType, args), span: span};
+								{t: TApplied(tvar.thisType, args.map(arg -> arg.t._match(
+									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
+										at(type!) => type,
+										_ => {
+											errors.push(Errors.invalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
+											arg;
+										}
+									),
+									_ => arg
+								))), span: span};
 							}
 					},
 					at(Some(found)) => {
@@ -164,7 +173,16 @@ class Category extends AnyTypeDecl {
 								null;
 							case [tvar]:
 								finished = false;
-								{t: TApplied(tvar, args), span: span};
+								{t: TApplied(tvar, args.map(arg -> arg.t._match(
+									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
+										at(type!) => type,
+										_ => {
+											errors.push(Errors.invalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
+											arg;
+										}
+									),
+									_ => arg
+								))), span: span};
 							case tvars:
 								finished = false;
 								{t: TMulti(tvars), span: span};

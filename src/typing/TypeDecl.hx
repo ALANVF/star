@@ -14,7 +14,7 @@ abstract class TypeDecl extends AnyFullTypeDecl {
 	@ignore final refinees = new Array<TypeDecl>();
 
 	function new() {
-		thisType = new Type(TConcrete(this));
+		thisType = new Type(TConcrete(this), null);
 	}
 
 	function fullName(cache: TypeCache = Nil) {
@@ -60,7 +60,7 @@ abstract class TypeDecl extends AnyFullTypeDecl {
 			},
 			at([[span, typeName, args], ...rest]) => {
 				var finished = true;
-				final res: Null<Type> = (search == Inside ? null : typevars.find(typeName).map(found -> found.filter(tvar ->
+				final res: Null<Type> = (search == Inside ? None : typevars.find(typeName).map(found -> found.filter(tvar ->
 					!cache.contains(tvar.thisType)
 					&& (tvar.params.length == 0 || tvar.params.length == args.length)
 				)))._match(
@@ -97,11 +97,11 @@ abstract class TypeDecl extends AnyFullTypeDecl {
 								null;
 							} else {
 								finished = false;
-								{t: TApplied(type.thisType, args.map(arg -> arg.t._match(
+								{t: TApplied({t: type.thisType.t, span: span}, args.map(arg -> arg.t._match(
 									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
 										at(type!) => type,
 										_ => {
-											errors.push(Errors.invalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
+											errors.push(Errors.invalidTypeLookup(lookup.span(), 'Unknown type `${arg.simpleName()}`'));
 											arg;
 										}
 									),
@@ -112,8 +112,8 @@ abstract class TypeDecl extends AnyFullTypeDecl {
 					at(Some(found)) => {
 						if(args.length == 0) {
 							finished = false;
-							{t: TMulti(found.map(t -> t.thisType)), span: span};
-						} else switch found.filter(t -> t.params.length == args.length).map(t -> t.thisType) {
+							{t: TMulti(found.map(t -> new Type(t.thisType.t, span))), span: span};
+						} else switch found.filter(t -> t.params.length == args.length).map(t -> new Type(t.thisType.t, span)) {
 							case []:
 								errors.push(Errors.invalidTypeApply(span, "No candidate matches the type arguments"));
 								null;
@@ -182,7 +182,7 @@ abstract class TypeDecl extends AnyFullTypeDecl {
 					if(this != decl
 					&& name.name == decl.name.name
 					&& lookup == decl.lookup
-					&& params.every2Strict(decl.params, (p1, p2) -> p1.hasChildType(p2))
+					&& this.applyArgs(decl.params)!=null
 					&& !decl.refinements.contains(this)) {
 						this.refinements.push(decl);
 						decl.refinees.push(this);
@@ -193,7 +193,7 @@ abstract class TypeDecl extends AnyFullTypeDecl {
 						if(this != decl
 						&& name.name == decl.name.name
 						&& lookup == decl.lookup
-						&& params.every2Strict(decl.params, (p1, p2) -> p1.hasChildType(p2))
+						&& this.applyArgs(decl.params)!=null
 						&& !decl.refinements.contains(this)) {
 							this.refinements.push(decl);
 							decl.refinees.push(this);
@@ -289,7 +289,7 @@ abstract class TypeDecl extends AnyFullTypeDecl {
 			);
 		}
 
-		return {t: TInstance(this, params2, tctx)};
+		return {t: TInstance(this, params2, tctx), span: null};
 	}
 
 

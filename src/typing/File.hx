@@ -168,7 +168,7 @@ class File implements ITypeLookup implements IErrors {
 		}
 
 		return path._match(
-			at([[span, name, args], ...rest]) => {args=args.map(a->a.simplify());
+			at([[span, name, args], ...rest]) => {//args=args.map(a->a.simplify());
 				var finished = true;
 				final res: Null<Type> = decls.find(name).map(found -> found.filter(decl ->
 					!cache.contains(decl.thisType)
@@ -238,7 +238,7 @@ class File implements ITypeLookup implements IErrors {
 								null;
 							} else {
 								finished = false;
-								{t: TApplied(decl.thisType, args.map(arg -> arg.t._match(
+								{t: TApplied(new Type(decl.thisType.t, span), args.map(arg -> arg.t._match(
 									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
 										at(type!) => type,
 										_ => {
@@ -253,8 +253,8 @@ class File implements ITypeLookup implements IErrors {
 					at(Some(decls)) => {
 						if(args.length == 0) {
 							finished = false;
-							{t: TMulti(decls.map(t -> t.thisType)), span: span};
-						} else switch decls.filter(t -> t.params.length == args.length).map(t -> t.thisType) {
+							{t: TMulti(decls.map(t -> new Type(t.thisType.t, span))), span: span};
+						} else switch decls.filter(t -> t.params.length == args.length).map(t -> new Type(t.thisType.t, span)) {
 							case []:
 								//trace(path, span.display());
 								errors.push(Errors.invalidTypeApply(span, "No matching candidates were found"));

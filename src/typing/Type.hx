@@ -173,7 +173,7 @@ class Type implements ITypeable {
 	var t: TypeKind;
 	var span: Null<Span> = null;
 
-	function new(t: TypeKind, ?span: Span) {
+	function new(t: TypeKind, span: Null<Span>) {
 		this.t = t;
 		this.span = span;
 	}
@@ -777,7 +777,7 @@ class Type implements ITypeable {
 							at(a!) => a,
 							_ => return null
 						);
-					}])};
+					}]), span: t.span._or(t1.span)};
 				});
 			},
 			at([TMulti(types1), TMulti(types2)]) => {
@@ -863,23 +863,33 @@ class Type implements ITypeable {
 		return t._match(
 			at(TPath(_, _, _)) => throw "bad",
 			at(TLookup(type, lookup, source)) => throw "todo",
-			at(TConcrete(decl)) => decl.applyArgs(args),
+			at(TConcrete(decl)) => {
+				var res = decl.applyArgs(args);
+				res._and(r => if(r.span == null) res = {t: r.t, span: span});
+				res;
+			},
 			at(TInstance(_, _, _)) => throw "todo", // partially-applied type
-			at(TThis(_) | TBlank) => {t: TApplied(this, args)},
+			at(TThis(_) | TBlank) => {t: TApplied(this, args), span: span},
 			at(TMulti(types)) => {
 				types.filterMap(ty -> ty.applyArgs(args))._match(
 					at([]) => null,
 					at([ty]) => ty,
-					at(tys) => {t: TMulti(tys)}
+					at(tys) => {t: TMulti(tys), span: span}
 				);
 			},
 			at(TApplied({t: TThis(decl)}, args2)) => {
 				//trace("todo "+span._and(s=>s.display()));
-				decl.applyArgs(args);
+				var res = decl.applyArgs(args);
+				res._and(r => if(r.span == null) res = {t: r.t, span: span});
+				res;
 			},
 			at(TApplied(type, params)) => throw "todo"+this.fullName()+" "+args, // partially-applied type
 			at(TTypeVar(typevar)) => throw "todo", // higher-kinded type
-			at(TModular(type, _)) => type.applyArgs(args)
+			at(TModular(type, _)) => {
+				var res = type.applyArgs(args);
+				res._and(r => if(r.span == null) res = {t: r.t, span: span});
+				res;
+			}
 		);
 	}
 
@@ -918,6 +928,14 @@ class Type implements ITypeable {
 				null;
 			},
 
+			at([_, TMulti(types)]) => {
+				if(leastSpecific(types).every(ty -> this.hasParentType(ty) && ty.hasChildType(this))) {
+					throw "todo "+this.fullName()+" "+onto.fullName();
+				} else {
+					null;
+				}
+			},
+
 			// TODO: account for generic typevars and HKTs
 			at([_, TConcrete(decl)]) => {
 				if(this.hasParentDecl(decl)) {
@@ -949,7 +967,9 @@ class Type implements ITypeable {
 				// TODO: make this actually work with subtypes/supertypes
 				if(decl.hasParentType(base) && base.hasChildDecl(decl)) {
 					final params2 = params.zip(args, (p, a) -> p.bindTo(a, ctx));
-					decl.applyArgs(params2);
+					var res = decl.applyArgs(params2);
+					res._and(r => if(r.span == null) res = {t: r.t, span: span});
+					res;
 					
 					//throw "todo "+this.fullName()+" "+onto.fullName()+" "+span._and(s=>s.display());
 				} else {
@@ -1172,12 +1192,13 @@ class Type implements ITypeable {
 			),
 			at(TBlank) => throw "bad "+span._and(s=>s.display()),
 			at(TMulti(types)) => {
-				leastSpecific(types)
+				types
 					.flatMap(type -> type.findMultiStatic(ctx, names, from, setter, cache))
 					.unique();
 			},
 			at(TApplied({t: TMulti(types)}, args)) => {
-				leastSpecific(types.filter(type -> type.acceptsArgs(args)))
+				types
+					.filter(type -> type.acceptsArgs(args))
 					.flatMap(type -> type.findMultiStatic(ctx, names, from, setter, cache))
 					.unique();
 			},
@@ -1466,7 +1487,7 @@ class Type implements ITypeable {
 			at(TApplied({t: TMulti(types)}, args)) => mostSpecific(types.filter(ty -> ty.acceptsArgs(args)).map(ty -> ty.getMostSpecific()))._match(
 				at([]) => throw "bad",
 				at([ty]) => {t: TApplied(ty, args), span: span},
-				at(types2) => if(types2.length == types.length) this else {t: TApplied({t: TMulti(types2)}, args), span: span}
+				at(types2) => if(types2.length == types.length) this else {t: TApplied({t: TMulti(types2), span: span}, args), span: span}
 			),
 			_ => this
 		);
@@ -1494,7 +1515,7 @@ class Type implements ITypeable {
 				leastSpecific(types.filter(ty -> ty.acceptsArgs(args2)).map(ty -> ty.getLeastSpecific()))._match(
 					at([]) => throw "bad",
 					at([ty]) => {t: TApplied(ty, args), span: span},
-					at(types2) => if(types2.length == types.length) this else {t: TApplied({t: TMulti(types2)}, args), span: span}
+					at(types2) => if(types2.length == types.length) this else {t: TApplied({t: TMulti(types2), span: span}, args), span: span}
 				);
 			},
 			_ => this
@@ -1536,7 +1557,7 @@ class Type implements ITypeable {
 						throw 'error: type `${decl.fullName()}` does not accept provided arguments [${args.joinMap(", ", a -> a.fullName())}] ${span._and(ss=>ss.display())}'
 					),*/
 					at([ty]) => {t: TApplied(ty, args), span: span},
-					at(types2) => if(types2.length == types.length) this else {t: TApplied({t: TMulti(types2)}, args), span: span}
+					at(types2) => if(types2.length == types.length) this else {t: TApplied({t: TMulti(types2), span: span}, args), span: span}
 				);
 			},
 			at(TApplied({t: TConcrete(decl)}, args)) => {

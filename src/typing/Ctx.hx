@@ -28,26 +28,10 @@ enum Where {
 		at(WCategory(cat)) => cat,
 		at(WEmptyMethod(m)) => m.decl,
 		at(WMethod(m)) => m.decl,
-		at(WObjCascade(_) | WBlock | WPattern | WTypevars(_)) => outer._match(
+		_ => outer._match(
 			at(ctx!) => ctx.typeDecl,
 			_ => throw "bad"
-		),
-		_ => {
-			function loop(type: Type) return type.t._match(
-				at(TConcrete(decl)) => decl,
-				at(TApplied({t: TConcrete(decl)}, _)) => decl,
-				at(TModular(ty, _)) => loop(ty),
-				at(TMulti(types) | TApplied({t: TMulti(types)}, _)) => Type.leastSpecific(types)._match(
-					at([]) => throw "bad",
-					at([ty]) => loop(ty),
-					at(tys) => throw "todo"
-				),
-				//case TApplied()
-				_ => throw "bad "+type
-			);
-
-			loop(thisType);
-		}
+		)
 	);
 
 	var thisLookup(get, never): ITypeLookupDecl; private function get_thisLookup(): ITypeLookupDecl return where._match(
@@ -199,10 +183,11 @@ enum Where {
 		)._match(
 			at(t!) => return t.t._match(
 				at(TApplied(t2, args)) => {
+					final typeDecl_ = typeDecl;
 					final thisLookup_ = thisLookup;
 					{
 						t: TApplied(t2, args.map(arg -> arg.t._match(
-							at(TPath(depth, lookup, source)) => thisLookup_.findType(lookup, Start, typeDecl, depth)._match(
+							at(TPath(depth, lookup, _)) => thisLookup_.findType(lookup, Start, typeDecl_, depth)._match(
 								at(type!) => type,
 								_ => {
 									addError(Errors.invalidTypeLookup(lookup.span(), 'Unknown type `${arg.simpleName()}`'));
@@ -226,13 +211,6 @@ enum Where {
 		);
 	}
 
-	/*on [findTypevar: typevar (TypeVar)] (Maybe[Type]) {
-		match this at This[typevars: my typevars] {
-			return typevars[maybeAt: typevar]
-		} else {
-			return Maybe[none]
-		}
-	}*/
 	function findTypevar(typevar: TypeVar): Null<Type> {
 		return where._match(
 			at(WTypevars(typevars)) => typevars[typevar],

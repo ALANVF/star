@@ -201,7 +201,7 @@ abstract class Dir implements ITypeLookup {
 
 		path._match(
 			at([[span, name, args]], when(depth == 0)) => {
-				for(unit in units) if(!cache.contains(unit) && unit.name == name) {
+				for(unit in units) if(!cache.contains(unit)) {
 					unit.primary._match(
 						at(None) => {},
 						at(Some(p)) => p.findType(path, Inside, from, 0, cache + unit)._match(
@@ -210,7 +210,11 @@ abstract class Dir implements ITypeLookup {
 								cache += t;
 								depth--;
 							},
-							at(t!!) => return {t: TModular(t, unit), span: span}
+							at(t!!) => if(unit.name == name) {
+								return {t: TModular(t, unit), span: span}
+							} else {
+								return t;
+							}
 						)
 					);
 				}
