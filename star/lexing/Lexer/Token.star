@@ -1,3 +1,5 @@
+use Assignable from: Parser.Infix
+
 kind Token {
 	my span (Span)
 
@@ -240,6 +242,30 @@ kind Token {
 			return true
 		} else {
 			return false
+		}
+	}
+
+	on [maybeAssignableOp] (Maybe[Tuple[Span, Maybe[Assignable]]]) {
+		match this {
+			at This[eq: my span] => return Maybe[the: #{span, Maybe[none]}]
+			at This[plusEq: my span] => return Maybe[the: #{span, Maybe[the: Assignable[plus]]}]
+			at This[minusEq: my span] => return Maybe[the: #{span, Maybe[the: Assignable[minus]]}]
+			at This[starEq: my span] => return Maybe[the: #{span, Maybe[the: Assignable[times]]}]
+			at This[starStarEq: my span] => return Maybe[the: #{span, Maybe[the: Assignable[pow]]}]
+			at This[divEq: my span] => return Maybe[the: #{span, Maybe[the: Assignable[div]]}]
+			at This[divDivEq: my span] => return Maybe[the: #{span, Maybe[the: Assignable[intDiv]]}]
+			at This[modEq: my span] => return Maybe[the: #{span, Maybe[the: Assignable[mod]]}]
+			at This[modModEq: my span] => return Maybe[the: #{span, Maybe[the: Assignable[isMod]]}]
+			at This[andEq: my span] => return Maybe[the: #{span, Maybe[the: Assignable[bitAnd]]}]
+			at This[andAndEq: my span] => return Maybe[the: #{span, Maybe[the: Assignable[and]]}]
+			at This[barEq: my span] => return Maybe[the: #{span, Maybe[the: Assignable[bitOr]]}]
+			at This[barBarEq: my span] => return Maybe[the: #{span, Maybe[the: Assignable[or]]}]
+			at This[caretEq: my span] => return Maybe[the: #{span, Maybe[the: Assignable[bitXor]]}]
+			at This[caretCaretEq: my span] => return Maybe[the: #{span, Maybe[the: Assignable[xor]]}]
+			at This[bangBangEq: my span] => return Maybe[the: #{span, Maybe[the: Assignable[nor]]}]
+			at This[ltLtEq: my span] => return Maybe[the: #{span, Maybe[the: Assignable[shl]]}]
+			at This[gtGtEq: my span] => return Maybe[the: #{span, Maybe[the: Assignable[shr]]}]
+			else => return Maybe[none]
 		}
 	}
 }

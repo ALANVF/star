@@ -2,6 +2,8 @@ use Lexer
 use Info from: Diagnostic
 use Priority from: Info
 use Decl
+use Message
+use Cascade
 
 module Parser {
 	on [parse: tokens (Tokens)] (Program) {
@@ -1080,7 +1082,7 @@ module Parser {
 	
 	on [parseCaseDeclAssoc: tokens (Tokens)] (Result[Message[Type]]) {
 		match tokens {
-			at #[Token[eqGt], Token[lBracket], ...my rest] => match This[finishTypeMsg: rest] {
+			at #[Token[eqGt], Token[lBracket], ...my rest] => match This[Type finishMsg: rest] {
 				at Result[success: #{my msg, _}, my rest'] => return Result[success: msg, rest']
 				at my fail => return fail[Result[Message[Type]] fatalIfBad: tokens]
 			}
@@ -2378,12 +2380,12 @@ module Parser {
 			}
 
 			at #[Token[lBracket: my begin], ...my rest] => match This[parseFullExpr: rest] {
-				at Result[success: Expr[type: my type], #[Token[lSep]?, ...my rest']] => match This[finishTypeMsg: rest'] {
+				at Result[success: Expr[type: my type], #[Token[lSep]?, ...my rest']] => match This[Type finishMsg: rest'] {
 					at Result[success: #{my message, my end}, my rest''] => return Result[success: Expr[:type :begin :message :end], rest'']
 					at my fail => return fail[Result[Expr] fatalIfFailed]
 				}
 
-				at Result[success: my expr, #[Token[lSep]?, ...my rest']] => match This[finishExprMsg: rest'] {
+				at Result[success: my expr, #[Token[lSep]?, ...my rest']] => match This[Expr finishMsg: rest'] {
 					at Result[success: #{my message, my end}, my rest''] => return Result[success: Expr[:expr :begin :message :end], rest'']
 					at my fail => return fail[Result[Expr] fatalIfFailed]
 				}
@@ -2595,6 +2597,8 @@ module Parser {
 				at #[Token[lParen] || Token[hashLParen], ...my rest] => tokens = This[skipParen: rest][next]
 				at #[Token[lBracket] || Token[hashLBracket], ...my rest] => tokens = This[skipBracket: rest][next]
 				at #[Token[lBrace] || Token[hashLBrace], ...my rest] => tokens = This[skipBrace: rest][next]
+				at #[Token[lSep], Token[cascade: _], ...my rest] => tokens = rest
+				at #[Token[lSep], ..._] => tokens[removeAt: 0]
 				at #[Token[rParen], ..._] => return tokens
 				at #[_, ...tokens = _] {}
 				at #[] => throw "Error!"
@@ -2635,9 +2639,9 @@ module Parser {
 				at #[Token[lBracket] || Token[hashLBracket], ...my rest] => tokens = This[skipBracket: rest]
 				at #[Token[lBrace] || Token[hashLBrace], ...my rest] => tokens = This[skipBrace: rest]
 				at #[Token[rParen], ..._] => return true
-				at #[_, Token[lSep], Token[cascade: _], ...tokens = _] {}
-				at #[_, Token[lSep], ..._] {
-					tokens[removeAt: 1]
+				at #[Token[lSep], Token[cascade: _], ...tokens = _] {}
+				at #[Token[lSep], ..._] {
+					tokens[removeAt: 0]
 					tokens++
 				}
 				at #[_, ...tokens = _] {}
@@ -2689,15 +2693,782 @@ module Parser {
 		}
 	}
 
-	; ...
 
-	on [finishExprMsg: tokens (Tokens)] (Result[Tuple[Message[Expr], Span]])
+	;== Message parsing
 
-	on [finishTypeMsg: tokens (Tokens)] (Result[Tuple[Message[Type], Span]])
+	alias MultiMsg is hidden = Tuple[Array[Label], Span]
+	on [parseMultiMsgLabels: tokens (Tokens)] (Result[MultiMsg]) {
+		my rest = tokens
+		my first, match tokens {
+			at #[Token[span: my span label: my name], Token[lSep]?, ...my rest'] {
+				match This[parseFullExpr: rest'] {
+					at Result[success: my expr, rest = _] {
+						my label = Ident[:span :name]
+						first = Label[:label :expr]
+					}
+					at my fail => return fail[Result[MultiMsg]]
+				}
+			}
 
-	;...
+			at #[Token[span: my span punned: my name], ...rest = _] {
+				my label = Ident[:span :name]
+				first = Label[:label]
+			}
 
-	on [parseExpr: tokens (Tokens)] (Result[Expr])
+			else => return Result[fatal: tokens, Maybe[none]]
+		}
+		my labels = #[first]
 
-	on [parseFullExpr: tokens (Tokens)] (Result[Expr])
+		while true {
+			match rest {
+				at #[Token[rBracket: my end], ...my rest'] {
+					return Result[success: #{labels, end}, rest']
+				}
+
+				at #[Token[lSep]?, Token[span: my span label: my name], ...my rest'] {
+					match This[parseFullExpr: rest'] {
+						at Result[success: my expr, rest = _] {
+							my label = Ident[:span :name]
+							labels[add: Label[:label :expr]]
+						}
+						at my fail => return fail[Result[MultiMsg]]
+					}
+				}
+
+				at #[Token[lSep]?, Token[span: my span punned: my name], ...rest = _] {
+					my label = Ident[:span :name]
+					labels[add: Label[:label]]
+				}
+
+				at #[_[isAnyComma], ...my rest'] => match This[parseFullExpr: rest'] {
+					at Result[success: my expr, rest = _] => labels[add: Label[:expr]]
+					at my fail => return fail[Result[MultiMsg]]
+				}
+
+				else => return Result[fatal: tokens, Maybe[the: rest]]
+			}
+		}
+	}
+
+	alias ExprMsg is hidden = Tuple[Message[Expr], Span]
+	category Expr {
+		on [finishMsg: tokens (Tokens)] (Result[ExprMsg]) is static {
+			match tokens {
+				at #[Token[typeName: _] || Token[wildcard], ..._] => match This[parseType: tokens] {
+					at Result[success: my type, #[Token[lSep]?, ...my rest]] => match rest {
+						at #[Token[label: _] || Token[punned: _], ..._] => match This[parseMultiMsgLabels: rest] {
+							at Result[success: #{my labels, my end}, my rest'] {
+								return Result[success: #{Message[category: Maybe[the: type] multi: labels], end}, rest']
+							}
+							at my fail => return fail[Result[ExprMsg]]
+						}
+						
+						at #[Token[span: my span name: my name] = _[asAnyName], ...my rest'] {
+							match rest' at #[Token[rBracket: my end], ...my rest''] {
+								return Result[success: #{Message[category: Maybe[the: type] single: Ident[:span :name]], end}, rest'']
+							} else {
+								return Result[fatal: tokens, Maybe[the: rest']]
+							}
+						}
+
+						at #[Token[typeName: _], ..._] => match This[parseType: rest] {
+							at Result[success: my cast, #[Token[rBracket: my end], ...my rest']] {
+								return Result[success: #{Message[category: Maybe[the: type] :cast], end}, rest']
+							}
+							at Result[success: _, my rest'] => return Result[fatal: tokens, Maybe[the: rest']]
+							at my fail => return fail[Result[ExprMsg]]
+						}
+
+						at #[Token[rBracket: my end], ...my rest'] {
+							return Result[success: #{Message[cast: type], end}, rest']
+						}
+
+						else => return Result[fatal: tokens, Maybe[none]]
+					}
+					at my fail => return fail[Result[ExprMsg]]
+				}
+
+				at #[Token[label: _] || Token[punned: _], ..._] => match This[parseMultiMsgLabels: tokens] {
+					at Result[success: #{my labels, my end}, my rest] {
+						return Result[success: #{Message[multi: labels], end}, rest]
+					}
+					at my fail => return fail[Result[ExprMsg]]
+				}
+
+				at #[Token[span: my span name: my name] = _[asAnyName], ...my rest] {
+					match rest at #[Token[rBracket: my end], ...my rest'] {
+						return Result[success: #{Message[single: Ident[:span :name]], end}, rest']
+					} else {
+						return Result[fatal: tokens, Maybe[the: rest]]
+					}
+				}
+
+				else => return Result[fatal: tokens, Maybe[none]]
+			}
+		}
+	}
+
+	alias TypeMsg is hidden = Tuple[Message[Type], Span]
+	category Type {
+		on [finishMsg: tokens (Tokens)] (Result[TypeMsg]) is static {
+			match This[Expr finishMsg: tokens] {
+				at Result[success: #{Message[cast: _], _}, _] => return Result[fatal: tokens, Maybe[none]]
+				at my result => return result[Result[TypeMsg]]
+			}
+		}
+	}
+
+
+	;== Expression parsing
+
+	;[ Highest ---> Lowest
+	==|  1:  a.b, a[b], a++, a--, a?
+	==|  2:  ++a, --a, -a, ~a, !a
+	==|  3:  a -> [b], a -> [b] = c, a -> b = c, a -> {...}   (Single line only)
+	==|  4:  #a b
+	==|  5:  a ** b
+	==|  6:  a * b, a / b, a // b, a % b
+	==|  7:  a + b, a - b
+	==|  8:  a & b, a | b, a ^ b, a >> b, a << b
+	==|  9:  a %% b
+	==| 10:  a ?= b, a != b, a > b, a >= b, a < b, a <= b
+	==| 11:  a && b, a || b, a ^^ b, a !! b
+	==| 12:  a = b, a += b, a -= b, a *= b, a **= b, a /= b, a //= b, a %= b, a %%= b, a &= b, a |= b, a ^= b, a >>= b, a <<= b, a &&= b, a ||= b, a ^^= b, a !!= b
+	==| 13:  ...a
+	]
+
+	on [parseExpr: tokens (Tokens)] (Result[Expr]) => return This[parseExpr13: tokens]
+
+
+	;[
+	==| Type.member
+	==| Type[message]
+	==| Type <literal>
+	==| expr.member
+	==| expr[message]
+	==| expr?
+	==| expr++
+	==| expr--
+	]
+
+	on [parseExpr1: tokens (Tokens)] (Result[Expr]) {
+		my result = {
+			match This[parseBasicExpr: tokens] {
+				at my res = Result[success: Expr[type: my type], my rest] => match rest {
+					at #[Token[dot], Token[span: my span name: my name], ...my rest'] {
+						return Result[success: Expr[:type member: Ident[:span :name]], rest']
+					}
+
+					at #[Token[lBracket: my begin], ...my rest'] => match This[Type finishMsg: rest'] {
+						at Result[success: #{my message, my end}, my rest''] {
+							return Result[success: Expr[:type :begin :message :end], rest'']
+						}
+						at my fail => return fail[Result[Expr] fatalIfBad: tokens]
+					}
+
+					at #[Token[minus], Token[int: _ exp: _] <= _ <= Token[hex: _], ..._] => match This[parseExpr2: rest] {
+						at Result[success: my literal, my rest'] => return Result[success: Expr[:type :literal], rest']
+						at my fail => return fail[fatalIfBad: tokens]
+					}
+
+					at (
+						|| #[
+							(
+							|| Token[int: _ exp: _] <= _ <= Token[bool: _]
+							|| Token[hashLParen] <= _ <= Token[hashLBrace]
+							)
+							..._
+						]
+						|| #[
+							Token[lBrace]
+							Token[bar] || Token[barBar]
+							..._
+						]
+					) => match This[parseBasicExpr: rest] {
+						at Result[success: my literal, my rest'] => return Result[success: Expr[:type :literal], rest']
+						at my fail => return fail[fatalIfBad: tokens]
+					}
+
+					else => return res
+				}
+				
+				at my res => return res
+			}
+		}
+
+		match result at Result[success: my expr, my rest] {
+			while true {
+				match rest {
+					at #[Token[dot], Token[span: my span name: my name], ...rest = _] {
+						expr = Expr[:expr member: Ident[:span :name]]
+					}
+
+					at #[Token[lBracket: my begin], ...my rest'] => match This[Expr finishMsg: rest'] {
+						at Result[success: #{my message, my end}, rest = _] {
+							expr = Expr[:expr :begin :message :end]
+						}
+						at my fail => return fail[Result[Expr] fatalIfBad: tokens]
+					}
+
+					at #[Token[question: my span], ...rest = _] {
+						expr = Expr[left: expr suffix: span, Suffix.truthy]
+					}
+
+					at #[Token[plusPlus: my span], ...rest = _] {
+						expr = Expr[left: expr suffix: span, Suffix.incr]
+					}
+
+					at #[Token[minusMinus: my span], ...rest = _] {
+						expr = Expr[left: expr suffix: span, Suffix.decr]
+					}
+
+					else => break
+				}
+			}
+
+			return Result[success: expr, rest]
+		} else {
+			return result
+		}
+	}
+
+
+	;[
+	==| -expr
+	==| ++expr
+	==| --expr
+	==| ~expr
+	==| !expr
+	]
+
+	on [parseExpr2: tokens (Tokens)] (Result[Expr]) {
+		match tokens {
+			at #[Token[minus: my span], ...my rest] => return This[parseExpr2Rest: rest, Prefix.neg, span]
+			at #[Token[plusPlus: my span], ...my rest] => return This[parseExpr2Rest: rest, Prefix.incr, span]
+			at #[Token[minusMinus: my span], ...my rest] => return This[parseExpr2Rest: rest, Prefix.decr, span]
+			at #[Token[tilde: my span], ...my rest] => return This[parseExpr2Rest: rest, Prefix.compl, span]
+			at #[Token[bang: my span], ...my rest] => return This[parseExpr2Rest: rest, Prefix.not, span]
+			else => return This[parseExpr1: tokens]
+		}
+	}
+
+	on [parseExpr2Rest: tokens (Tokens), span (Span), op (Prefix)] (Result[Expr]) {
+		match This[parseExpr2: tokens] {
+			at Result[success: my right, my rest] => return Result[success: Expr[prefix: span, op :right], rest]
+			at my fail => return fail
+		}
+	}
+
+
+	;[
+	==| #tag expr
+	]
+	on [parseExpr3: tokens (Tokens)] (Result[Expr]) {
+		match tokens {
+			at #[Token[span: my span tag: my name], ...my rest] => match This[parseExpr3: rest] {
+				at Result[success: my expr, my rest'] {
+					my tag = Ident[:span :name]
+					return Result[success: Expr[:tag :expr], rest']
+				}
+				at my fail => return fail[fatalIfBad: rest]
+			}
+			else => return This[parseExpr2: tokens]
+		}
+	}
+
+
+	;[
+	==| Type -> ...
+	==| sender -> ...
+	]
+
+	on [parseExpr4: tokens (Tokens)] (Result[Expr]) {
+		match This[parseExpr3: tokens] {
+			at Result[success: my expr, #[Token[span: my span cascade: 1], ...my rest]] {
+				match expr at Expr[type: my type] {
+					match This[Type parseExpr4Contents: rest, span] {
+						at Result[success: my cascades, my rest'] => return Result[success: Expr[:type :cascades], rest']
+						at my fail => return fail[Result[Expr]]
+					}
+				} else {
+					match This[Expr parseExpr4Contents: rest, span] {
+						at Result[success: my cascades, my rest'] => return Result[success: Expr[:expr :cascades], rest']
+						at my fail => return fail[Result[Expr]]
+					}
+				}
+			}
+			at my result => return result
+		}
+	}
+
+	type T if T ?= Type || T ?= Expr
+	category T {
+		on [parseExpr4Contents: tokens (Tokens), span (Span)] (Result[Cascades[T]]) is static {
+			my cascades = #[]
+			my rest = tokens
+			
+			while true {
+				match This[T parseExpr4CascadeContents: tokens, span, 1] {
+					at Result[success: my cascade, rest = _] => cascades[add: cascade]
+					at my fail => return fail[Result[Cascades[T]]]
+				}
+
+				match rest at #[Token[span: span = _ cascade: 1], ...rest = _] {
+					next
+				} else {
+					break
+				}
+			}
+
+			return Result[success: cascades, rest]
+		}
+
+		on [parseExpr4CascadeContents: tokens (Tokens), span (Span), level (Int)] (Result[Cascades[T]]) is static {
+			my rest = tokens
+			my cascade ;[(Cascade[T])], match tokens {
+				at #[Token[lBracket], ...my rest'] => match This[T finishMsg: rest'] {
+					at Result[success: #{my message, _}, my rest''] => match rest'' {
+						at #[Token[plusPlus: my span'], ...rest = _] {
+							cascade = Cascade[:span :level :message step: span', Step.incr]
+						}
+						at #[Token[minusMinus: my span'], ...rest = _] {
+							cascade = Cascade[:span :level :message step: span', Step.decr]
+						}
+						at #[Maybe[the: #{my assign, my op}] = _[maybeAssignableOp], ...my rest'''] {
+							match This[parseExpr3: rest'''] {
+								at Result[success: my expr, rest = _] {
+									cascade = Cascade[:span :level :message :assign :op :expr]
+								}
+								at my fail => return fail[Result[Cascades[T]]]
+							}
+						}
+						else {
+							rest = rest''
+							cascade = Cascade[:span :level :message]
+						}
+					}
+					at my fail => return fail[Result[Cascades[T]]]
+				}
+
+				at #[Token[lBrace], ..._] => match This[parseBlock: tokens] {
+					at Result[success: my block, rest = _] => cascade = Cascade[:span :level :block]
+					at my fail => return fail[Result[Cascades[T]]]
+				}
+
+				at #[Token[span: my span' name: my name] = _[asAnyName], ...my rest'] {
+					my member = Ident #{span', name}
+					
+					match rest' {
+						at #[Token[plusPlus: my span''], ...rest = _] {
+							cascade = Cascade[:span :level :member step: span'', Step.incr]
+						}
+						at #[Token[minusMinus: my span''], ...rest = _] {
+							cascade = Cascade[:span :level :member step: span'', Step.decr]
+						}
+						at #[Maybe[the: #{my assign, my op}] = _[maybeAssignableOp], ...my rest''] {
+							match This[parseExpr3: rest''] {
+								at Result[success: my expr, rest = _] {
+									cascade = Cascade[:span :level :member :assign :op :expr]
+								}
+								at my fail => return fail[Result[Cascades[T]]]
+							}
+						}
+						else {
+							rest = rest'
+							cascade = Cascade[:span :level :member]
+						}
+					}
+				}
+
+				else => return Result[fatal: tokens, Maybe[none]]
+			}
+			my level' = level + 1
+
+			while true {
+				match rest at #[Token[span: my span' cascade: level'], ...my rest'] {
+					match This[Expr parseExpr4CascadeContents: rest', span', level'] {
+						at Result[success: my nested, rest = _] => cascade.nested[add: nested]
+						at my fail => return fail[fatalIfFailed]
+					}
+				} else {
+					break
+				}
+			}
+
+			return Result[success: cascade, rest]
+		}
+	}
+
+
+	;[
+	==| left ** right
+	]
+
+	on [parseExpr5: tokens (Tokens)] (Result[Expr]) {
+		match This[parseExpr4: tokens] {
+			at Result[success: my left, #[Token[starStar: my span], ...my rest]] => match This[parseExpr5: rest] {
+				at Result[success: my right, my rest'] => return Result[success: Expr[:left infix: span, Infix[pow] :right], rest']
+				at my fail => return fail[fatalIfBad: rest]
+			}
+			at my result => return result
+		}
+	}
+
+	
+	;[
+	==| left * right
+	==| left / right
+	==| left // right
+	==| left % right
+	]
+
+	on [parseExpr6: tokens (Tokens)] (Result[Expr]) {
+		match This[parseExpr5: tokens] {
+			at Result[success: my left, my rest] {
+				match {
+					match rest {
+						at #[Token[star: my span], ..._] => return Maybe[the: #{Infix[times], span}]
+						at #[Token[div: my span], ..._] => return Maybe[the: #{Infix[div], span}]
+						at #[Token[divDiv: my span], ..._] => return Maybe[the: #{Infix[intDiv], span}]
+						at #[Token[mod: my span], ..._] => return Maybe[the: #{Infix[mod], span}]
+						else => return Maybe[none]
+					}
+				} at Maybe[the: #{my op, my span}] {
+					match This[parseExpr6: rest[next]] {
+						at Result[success: my right, my rest'] => return Result[success: Expr[:left infix: span, op :right], rest']
+						at my fail => return fail[fatalIfBad: rest]
+					}
+				} else {
+					return Result[success: left, rest]
+				}
+			}
+			at my fail => return fail
+		}
+	}
+
+
+	;[
+	==| left + right
+	==| left - right
+	]
+
+	on [parseExpr7: tokens (Tokens)] (Result[Expr]) {
+		match This[parseExpr6: tokens] {
+			at Result[success: my left, my rest] {
+				match {
+					match rest {
+						at #[Token[plus: my span], ..._] => return Maybe[the: #{Infix[plus], span}]
+						at #[Token[minus: my span], ..._] => return Maybe[the: #{Infix[minus], span}]
+						else => return Maybe[none]
+					}
+				} at Maybe[the: #{my op, my span}] {
+					match This[parseExpr7: rest[next]] {
+						at Result[success: my right, my rest'] => return Result[success: Expr[:left infix: span, op :right], rest']
+						at my fail => return fail[fatalIfBad: rest]
+					}
+				} else {
+					return Result[success: left, rest]
+				}
+			}
+			at my fail => return fail
+		}
+	}
+
+
+	;[
+	==| left & right
+	==| left | right
+	==| left ^ right
+	==| left << right
+	==| left >> right
+	]
+
+	on [parseExpr8: tokens (Tokens)] (Result[Expr]) {
+		match This[parseExpr7: tokens] {
+			at Result[success: my left, my rest] {
+				match {
+					match rest {
+						at #[Token[and: my span], ..._] => return Maybe[the: #{Infix[bitAnd], span}]
+						at #[Token[bar: my span], ..._] => return Maybe[the: #{Infix[bitOr], span}]
+						at #[Token[caret: my span], ..._] => return Maybe[the: #{Infix[bitXor], span}]
+						at #[Token[ltLt: my span], ..._] => return Maybe[the: #{Infix[shl], span}]
+						at #[Token[gtGt: my span], ..._] => return Maybe[the: #{Infix[shr], span}]
+						else => return Maybe[none]
+					}
+				} at Maybe[the: #{my op, my span}] {
+					match This[parseExpr8: rest[next]] {
+						at Result[success: my right, my rest'] => return Result[success: Expr[:left infix: span, op :right], rest']
+						at my fail => return fail[fatalIfBad: rest]
+					}
+				} else {
+					return Result[success: left, rest]
+				}
+			}
+			at my fail => return fail
+		}
+	}
+
+
+	;[
+	==| left %% right
+	]
+
+	on [parseExpr9: tokens (Tokens)] (Result[Expr]) {
+		match This[parseExpr8: tokens] {
+			at Result[success: my left, my rest] {
+				match {
+					match rest {
+						at #[Token[modMod: my span], ..._] => return Maybe[the: #{Infix[isMod], span}]
+						else => return Maybe[none]
+					}
+				} at Maybe[the: #{my op, my span}] {
+					match This[parseExpr9: rest[next]] {
+						at Result[success: my right, my rest'] => return Result[success: Expr[:left infix: span, op :right], rest']
+						at my fail => return fail[fatalIfBad: rest]
+					}
+				} else {
+					return Result[success: left, rest]
+				}
+			}
+			at my fail => return fail
+		}
+	}
+
+
+	;[
+	==| left ?= right
+	==| left != right
+	==| left > right
+	==| left >= right
+	==| left < right
+	==| left <= right
+	]
+
+	on [parseExpr10: tokens (Tokens)] (Result[Expr]) {
+		match This[parseExpr9: tokens] {
+			at Result[success: my left, my rest] {
+				match {
+					match rest {
+						at #[Token[questionEq: my span], ..._] => return Maybe[the: #{Infix[eq], span}]
+						at #[Token[bangEq: my span], ..._] => return Maybe[the: #{Infix[ne], span}]
+						at #[Token[gt: my span], ..._] => return Maybe[the: #{Infix[gt], span}]
+						at #[Token[gtEq: my span], ..._] => return Maybe[the: #{Infix[ge], span}]
+						at #[Token[lt: my span], ..._] => return Maybe[the: #{Infix[lt], span}]
+						at #[Token[ltEq: my span], ..._] => return Maybe[the: #{Infix[le], span}]
+						else => return Maybe[none]
+					}
+				} at Maybe[the: #{my op, my span}] {
+					match This[parseExpr10: rest[next]] {
+						at Result[success: my right, my rest'] => return Result[success: Expr[:left infix: span, op :right], rest']
+						at my fail => return fail[fatalIfBad: rest]
+					}
+				} else {
+					return Result[success: left, rest]
+				}
+			}
+			at my fail => return fail
+		}
+	}
+
+
+	;[
+	==| left && right
+	==| left || right
+	==| left ^^ right
+	==| left !! right
+	]
+
+	on [parseExpr11: tokens (Tokens)] (Result[Expr]) {
+		match This[parseExpr10: tokens] {
+			at Result[success: my left, my rest] {
+				match {
+					match rest {
+						at #[Token[andAnd: my span], ..._] => return Maybe[the: #{Infix[and], span}]
+						at #[Token[barBar: my span], ..._] => return Maybe[the: #{Infix[or], span}]
+						at #[Token[caretCaret: my span], ..._] => return Maybe[the: #{Infix[xor], span}]
+						at #[Token[bangBang: my span], ..._] => return Maybe[the: #{Infix[nor], span}]
+						else => return Maybe[none]
+					}
+				} at Maybe[the: #{my op, my span}] {
+					match This[parseExpr11: rest[next]] {
+						at Result[success: my right, my rest'] => return Result[success: Expr[:left infix: span, op :right], rest']
+						at my fail => return fail[fatalIfBad: rest]
+					}
+				} else {
+					return Result[success: left, rest]
+				}
+			}
+			at my fail => return fail
+		}
+	}
+
+
+	;[
+	==| lhs = expr
+	==| lhs op= expr
+	]
+
+	on [parseExpr12: tokens (Tokens)] (Result[Expr]) {
+		match This[parseExpr11: tokens] {
+			at Result[success: my left, #[Maybe[the: #{my span, my op}] = _[maybeAssignableOp], ...my rest]] {
+				match This[parseExpr12: rest] {
+					at Result[success: my right, my rest'] {
+						my op' = {
+							match op at Maybe[the: my assign] {
+								return Infix[:assign]
+							} else {
+								return Infix[assign]
+							}
+						}
+						return Result[success: Expr[:left infix: span, op' :right], rest']
+					}
+					at my fail => return fail[fatalIfBad: rest]
+				}
+			}
+			at my result => return result
+		}
+	}
+
+
+	;[
+	==| ...expr
+	]
+	
+	on [parseExpr13: tokens (Tokens)] (Result[Expr]) {
+		match tokens at #[Token[dotDotDot: my span], ...my rest] {
+			match This[parseExpr12: rest] {
+				at Result[success: my right, my rest'] => return Result[success: Expr[prefix: span, Prefix.spread :right], rest']
+				at my fail => return fail
+			}
+		} else {
+			return This[parseExpr12: tokens]
+		}
+	}
+
+
+	;[
+	==| Type
+	==| -> ...
+	==|
+	==| expr
+	==| -> ...
+	]
+
+	on [parseFullExpr: tokens (Tokens)] (Result[Expr]) {
+		match This[parseExpr: tokens] {
+			at Result[success: my expr, #[Token[lSep], Token[span: my span cascade: 1], ...my rest]] {
+				match expr at Expr[type: my type] {
+					match This[Type parseExprCascades: rest, span] {
+						at Result[success: my cascades, my rest'] => return Result[success: Expr[:type :cascades], rest']
+						at my fail => return fail[Result[Expr]]
+					}
+				} else {
+					match This[Expr parseExprCascades: rest, span] {
+						at Result[success: my cascades, my rest'] => return Result[success: Expr[:expr :cascades], rest']
+						at my fail => return fail[Result[Expr]]
+					}
+				}
+			}
+			at my result => return result
+		}
+	}
+
+	;@@ TODO: make this more modular, duplicate code bad
+	type T if T ?= Expr || T ?= Type
+	category T {
+		on [parseExprCascades: tokens (Tokens), span (Span)] (Result[Cascades[T]]) is static {
+			my cascades = #[]
+			my rest = tokens
+			
+			while true {
+				match This[T parseExprCascadeContents: tokens, span, 1] {
+					at Result[success: my cascade, rest = _] => cascades[add: cascade]
+					at my fail => return fail[Result[Cascades[T]]]
+				}
+
+				match rest at #[Token[lSep], Token[span: span = _ cascade: 1], ...rest = _] {
+					next
+				} else {
+					break
+				}
+			}
+
+			return Result[success: cascades, rest]
+		}
+
+		on [parseExprCascadeContents: tokens (Tokens), span (Span), level (Int)] (Result[Cascades[T]]) is static {
+			my rest = tokens
+			my cascade ;[(Cascade[T])], match tokens {
+				at #[Token[lBracket], ...my rest'] => match This[T finishMsg: rest'] {
+					at Result[success: #{my message, _}, my rest''] => match rest'' {
+						at #[Token[plusPlus: my span'], ...rest = _] {
+							cascade = Cascade[:span :level :message step: span', Step.incr]
+						}
+						at #[Token[minusMinus: my span'], ...rest = _] {
+							cascade = Cascade[:span :level :message step: span', Step.decr]
+						}
+						at #[Maybe[the: #{my assign, my op}] = _[maybeAssignableOp], ...my rest'''] {
+							match This[parseExpr: rest'''] {
+								at Result[success: my expr, rest = _] {
+									cascade = Cascade[:span :level :message :assign :op :expr]
+								}
+								at my fail => return fail[Result[Cascades[T]]]
+							}
+						}
+						else {
+							rest = rest''
+							cascade = Cascade[:span :level :message]
+						}
+					}
+					at my fail => return fail[Result[Cascades[T]]]
+				}
+
+				at #[Token[lBrace], ..._] => match This[parseBlock: tokens] {
+					at Result[success: my block, rest = _] => cascade = Cascade[:span :level :block]
+					at my fail => return fail[Result[Cascades[T]]]
+				}
+
+				at #[Token[span: my span' name: my name] = _[asAnyName], ...my rest'] {
+					my member = Ident #{span', name}
+					
+					match rest' {
+						at #[Token[plusPlus: my span''], ...rest = _] {
+							cascade = Cascade[:span :level :member step: span'', Step.incr]
+						}
+						at #[Token[minusMinus: my span''], ...rest = _] {
+							cascade = Cascade[:span :level :member step: span'', Step.decr]
+						}
+						at #[Maybe[the: #{my assign, my op}] = _[maybeAssignableOp], ...my rest''] {
+							match This[parseExpr: rest''] {
+								at Result[success: my expr, rest = _] {
+									cascade = Cascade[:span :level :member :assign :op :expr]
+								}
+								at my fail => return fail[Result[Cascades[T]]]
+							}
+						}
+						else {
+							rest = rest'
+							cascade = Cascade[:span :level :member]
+						}
+					}
+				}
+
+				else => return Result[fatal: tokens, Maybe[none]]
+			}
+			my level' = level + 1
+
+			while true {
+				match rest at #[Token[lSep], Token[span: my span' cascade: level'], ...my rest'] {
+					match This[Expr parseExprCascadeContents: rest', span', level'] {
+						at Result[success: my nested, rest = _] => cascade.nested[add: nested]
+						at my fail => return fail[fatalIfFailed]
+					}
+				} else {
+					break
+				}
+			}
+
+			return Result[success: cascade, rest]
+		}
+	}
 }

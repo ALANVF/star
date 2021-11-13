@@ -30,11 +30,11 @@ kind Expr {
 	has [block: (Block)]
 
 	has [type: (Type) begin: (Span) message: (Message[Type]) end: (Span)]
-	has [type: (Type) cascades: (Array[Cascade[Type]])]
+	has [type: (Type) cascades: (Cascades[Type])]
 	has [type: (Type) member: (Ident)]
 	
 	has [expr: (This) begin: (Span) message: (Message[This]) end: (Span)]
-	has [expr: (This) cascades: (Array[Cascade[This]])]
+	has [expr: (This) cascades: (Cascades[This])]
 	has [expr: (This) member: (Ident)]
 
 	has [prefix: (Span), (Prefix) right: (This)]

@@ -19,4 +19,11 @@ kind Type {
 			at Type[blank: _ args: my args] => return "_[\("..., " * (args.of.length - 1))...]"
 		}
 	}
+
+	on [depth] (Int) is getter {
+		match this {
+			at Type[leading: my leading segs: _] => return leading.length
+			else => return 0
+		}
+	}
 }

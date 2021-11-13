@@ -3014,7 +3014,10 @@ class Parser {
 						AssignMember({span: _2, name: name}, _3, op, expr);
 					case err: return cast err;
 				},
-				_ => return Fatal(tokens, Some(rest))
+				_ => {
+					rest = rest2;
+					Member({span: _2, name: name});
+				}
 			),
 			_ => return Fatal(tokens, None)
 		);
@@ -3022,7 +3025,7 @@ class Parser {
 		final nextLevel = level + 1;
 
 		while(true) rest._match(
-			at([T_Cascade(_2, _ == nextLevel => true), ...rest2]) => switch parseExpr4CascadeContents(_2, level + 1, rest2) {
+			at([T_Cascade(_2, _ == nextLevel => true), ...rest2]) => switch parseExpr4CascadeContents(_2, nextLevel, rest2) {
 				case Success(cascade, rest3):
 					rest = rest3;
 					nested.push(cascade);
@@ -3198,7 +3201,7 @@ class Parser {
 	static function parseExpr9(tokens) return switch parseExpr8(tokens) {
 		case Success(left, rest):
 			while(true) rest._match(
-				at([T_ModMod(_1), ...rest2]) => switch parseExpr8(rest2) {
+				at([T_ModMod(_1), ...rest2]) => switch parseExpr9(rest2) {
 					case Success(right, rest3):
 						left = EInfix(left, _1, IsMod, right);
 						rest = rest3;
