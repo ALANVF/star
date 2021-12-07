@@ -10,62 +10,63 @@ import typing.Traits;
 @:build(util.Auto.build())
 class Member implements IErrors {
 	final errors: Array<Diagnostic> = [];
-	final lookup: ITypeLookup;
+	final decl: AnyTypeDecl;
 	final span: Span;
 	final name: Ident;
-	var type: Option<Type>;
+	var type: Null<Type>;
 	var isStatic: Bool = false;
-	var hidden: Option<Option<Type>> = None;
+	var hidden: Null<Option<Type>> = null;
 	var isReadonly: Bool = false;
-	var getter: Option<Option<Ident>> = None;
-	var setter: Option<Option<Ident>> = None;
+	var getter: Null<Option<Ident>> = null;
+	var setter: Null<Option<Ident>> = null;
 	var noInherit: Bool = false;
-	final value: Option<Expr>;
+	final value: Null<Expr>;
+	@ignore var typedValue: Null<TExpr> = null;
 
-	static function fromAST(lookup, ast: parsing.ast.decls.Member) {
+	static function fromAST(decl: AnyTypeDecl, ast: parsing.ast.decls.Member) {
 		final declSpan = Span.range(ast.span, ast.name.span);
 
 		final member = new Member({
-			lookup: lookup,
+			decl: decl,
 			span: ast.span,
 			name: ast.name,
-			type: ast.type.map(t -> lookup.makeTypePath(t)),
-			value: ast.value
+			type: ast.type.toNull()._and(t => decl.makeTypePath(t)),
+			value: ast.value.toNull()
 		});
 
-		var getterSpan = None;
-		var setterSpan = None;
+		var getterSpan = null;
+		var setterSpan = null;
 
 		for(attr => span in ast.attrs) switch attr {
 			case IsStatic: member.isStatic = true;
 
-			case IsHidden(_) if(member.hidden.isSome()): member.errors.push(Errors.duplicateAttribute(member, ast.name.name, "hidden", span));
-			case IsHidden(None): member.hidden = Some(None);
-			case IsHidden(Some(outsideOf)): member.hidden = Some(Some(lookup.makeTypePath(outsideOf)));
+			case IsHidden(_) if(member.hidden != null): member.errors.push(Errors.duplicateAttribute(member, ast.name.name, "hidden", span));
+			case IsHidden(None): member.hidden = None;
+			case IsHidden(Some(outsideOf)): member.hidden = Some(decl.makeTypePath(outsideOf));
 
 			case IsReadonly: member.isReadonly = true;
 
-			case IsGetter(_) if(member.getter.isSome()): member.errors.push(Errors.duplicateAttribute(member, ast.name.name, "getter", span));
+			case IsGetter(_) if(member.getter != null): member.errors.push(Errors.duplicateAttribute(member, ast.name.name, "getter", span));
 			case IsGetter(name):
-				member.getter = Some(name);
-				getterSpan = Some(span);
+				member.getter = name;
+				getterSpan = span;
 
-			case IsSetter(_) if(member.setter.isSome()): member.errors.push(Errors.duplicateAttribute(member, ast.name.name, "setter", span));
+			case IsSetter(_) if(member.setter != null): member.errors.push(Errors.duplicateAttribute(member, ast.name.name, "setter", span));
 			case IsSetter(name):
-				member.setter = Some(name);
-				setterSpan = Some(span);
+				member.setter = name;
+				setterSpan = span;
 
 			case IsNoinherit: member.noInherit = true;
 		}
 
 		switch member.getter {
-			case Some(Some({span: s, name: n})) if(n == ast.name.name):
+			case Some({span: s, name: n}) if(n == ast.name.name):
 				member.errors.push(new Diagnostic({
 					severity: Severity.WARNING,
 					message: "Redundant code",
 					info: [
 						Spanned({
-							span: Span.range(getterSpan.value(), s),
+							span: Span.range(getterSpan.nonNull(), s),
 							message: 'Unnecessary use of "is getter `$n`". Doing "is getter" is just fine',
 							isPrimary: true
 						}),
@@ -81,13 +82,13 @@ class Member implements IErrors {
 		}
 
 		switch member.setter {
-			case Some(Some({span: s, name: n})) if(n == ast.name.name):
+			case Some({span: s, name: n}) if(n == ast.name.name):
 				member.errors.push(new Diagnostic({
 					severity: Severity.WARNING,
 					message: "Redundant code",
 					info: [
 						Spanned({
-							span: Span.range(setterSpan.value(), s),
+							span: Span.range(setterSpan.nonNull(), s),
 							message: 'Unnecessary use of "is setter `$n`". Doing "is setter" is just fine',
 							isPrimary: true
 						}),
@@ -103,18 +104,18 @@ class Member implements IErrors {
 		}
 
 		switch member {
-			case {getter: Some(None), setter: Some(None)}:
+			case {getter: None, setter: None}:
 				member.errors.push(new Diagnostic({
 					severity: Severity.WARNING,
 					message: "Redundant code",
 					info: [
 						Spanned({
-							span: getterSpan.value(),
+							span: getterSpan.nonNull(),
 							message: 'Unnecessary use of "is getter" along with "is setter"',
 							isPrimary: true
 						}),
 						Spanned({
-							span: setterSpan.value(),
+							span: setterSpan.nonNull(),
 							isPrimary: true
 						}),
 						Spanned({
@@ -125,18 +126,18 @@ class Member implements IErrors {
 					]
 				}));
 
-			case {getter: Some(Some({name: n1})), setter: Some(Some({name: n2}))} if(n1 == ast.name.name && n1 == n2):
+			case {getter: Some({name: n1}), setter: Some({name: n2})} if(n1 == ast.name.name && n1 == n2):
 				member.errors.push(new Diagnostic({
 					severity: Severity.WARNING,
 					message: "Redundant code",
 					info: [
 						Spanned({
-							span: getterSpan.value(),
+							span: getterSpan.nonNull(),
 							message: 'Unnecessary use of "is getter" along with "is setter"',
 							isPrimary: true
 						}),
 						Spanned({
-							span: setterSpan.value(),
+							span: setterSpan.nonNull(),
 							isPrimary: true
 						}),
 						Spanned({
@@ -167,14 +168,14 @@ class Member implements IErrors {
 
 	function matchesGetter(name: String) {
 		return switch getter {
-			case Some(Some(n)): n.name == name;
+			case Some(n): n.name == name;
 			default: this.name.name == name;
 		}
 	}
 
 	function matchesSetter(name: String) {
 		return !isReadonly && switch setter {
-			case Some(Some(n)): n.name == name;
+			case Some(n): n.name == name;
 			default: this.name.name == name;
 		}
 	}

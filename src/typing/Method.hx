@@ -1,7 +1,7 @@
 package typing;
 
 abstract class Method extends AnyMethod {
-	var ret: Option<Type>;
+	var ret: Null<Type>;
 	var isMain: Bool = false;
 	var isGetter: Bool = false;
 	var isSetter: Bool = false;

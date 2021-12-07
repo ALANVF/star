@@ -13,20 +13,20 @@ class SingleInit extends Init {
 				case Single(name): name;
 				default: throw "Error!";
 			},
-			body: ast.body.map(body -> body.stmts())
+			body: ast.body.toNull()._and(body => body.stmts())
 		});
 
 		for(attr => span in ast.attrs) switch attr {
-			case IsHidden(_) if(init.hidden.isSome()): init.errors.push(Errors.duplicateAttribute(init, init.name.name, "hidden", span));
-			case IsHidden(None): init.hidden = Some(None);
-			case IsHidden(Some(outsideOf)): init.hidden = Some(Some(decl.makeTypePath(outsideOf)));
+			case IsHidden(_) if(init.hidden != null): init.errors.push(Errors.duplicateAttribute(init, init.name.name, "hidden", span));
+			case IsHidden(None): init.hidden = None;
+			case IsHidden(Some(outsideOf)): init.hidden = Some(decl.makeTypePath(outsideOf));
 
 			case IsNoinherit: init.noInherit = true;
 
 			case IsUnordered: init.errors.push(Errors.invalidAttribute(init, init.name.name, "unordered", span));
 
-			case IsNative(_) if(init.native.isSome()): init.errors.push(Errors.duplicateAttribute(init, init.name.name, "native", span));
-			case IsNative(sym): init.native = Some(sym);
+			case IsNative(_) if(init.native != null): init.errors.push(Errors.duplicateAttribute(init, init.name.name, "native", span));
+			case IsNative(sym): init.native = sym;
 
 			case IsAsm: init.isAsm = true;
 			

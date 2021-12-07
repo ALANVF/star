@@ -551,6 +551,32 @@ class Util {
 	}
 #end
 
+	/*static macro function _with<T>(sender: ExprOf<T>, body): ExprOf<T> {
+		return switch body {
+			case macro $b{block}: {
+				final stmts = [
+					(macro final __anon_this = $sender)
+				].concat(
+					block.map(stmt -> switch stmt {
+						case macro $i{name}:
+							macro __anon_this.$name;
+
+						case macro $i{name}($a{args}):
+							macro __anon_this.$name($a{args});
+
+						case {expr: EBinop(op = OpAssignOp(_) | OpAssign, (macro $i{name}), right), pos: pos}:
+							{expr: EBinop(op, (macro __anon_this.$name), right), pos: pos};
+
+						default: stmt;
+					})
+				);
+				return macro $b{stmts};
+			}
+			
+			default: throw "error!";
+		}
+	}*/
+
 	/*private static function _pretty(value: Any, indent: Int, tab: String, nested: List<Any>): String {
 		final thisLevel = tab.repeat(indent);
 		final nextLevel = tab.repeat(indent + 1);

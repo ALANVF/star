@@ -9,20 +9,22 @@ typedef MultiParams = Array<{label: Ident, name: Ident, type: Type, ?value: Expr
 
 enum MatchParams {
 	Yes;
-	Partial;
+	Partial(indexes: Array<Int>);
 	No;
 }
 
 function matchesNames(self: MultiParams, names: Array<String>, isSetter = false) {
 	if(self.every2Strict(names, (l, n) -> (n == "=" && isSetter) || l.label.name == n)) {
 		return Yes;
-	} else if(names.length < self.length) {
+	} else if(names.length < self.length && self.some(p -> p.value != null)) {
+		final indexes = [];
 		var n = 0;
 		var p = 0;
 		var matchedOnce = false;
 		while(n < names.length && p < self.length) {
 			self[p]._match(
 				at({label: {name: label}, value: _}, when(label == names[n])) => {
+					indexes.push(p);
 					n++;
 					p++;
 					if(!matchedOnce) matchedOnce = true;
@@ -40,7 +42,7 @@ function matchesNames(self: MultiParams, names: Array<String>, isSetter = false)
 		}
 
 		if(matchedOnce) {
-			return Partial;
+			return Partial(indexes);
 		} else {
 			return No;
 		}

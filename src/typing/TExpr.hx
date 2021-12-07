@@ -38,7 +38,7 @@ enum Expr {
 	EBlock(stmts: TStmts);
 
 	ETypeMessage(type: Type, msg: TypeMessage);
-	ETypeCascade(type: Type, cascades: Array<Cascade<Type>>);
+	ETypeCascade(type: Type, cascades: Array<Cascade<Type>>); // TODO: make specialized ver
 	ETypeMember(type: Type, kind: SingleStaticKind);
 
 	EObjMessage(expr: TExpr, msg: ObjMessage);

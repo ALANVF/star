@@ -18,11 +18,11 @@ class BinaryOperator extends Operator {
 			paramName: paramName,
 			paramType: null, // hack for partial initialization
 			ret: null,       // hack for partial initialization
-			body: ast.body.map(body -> body.stmts())
+			body: ast.body.toNull()._and(body => body.stmts())
 		});
 
 		oper.paramType = oper.makeTypePath(paramType);
-		oper.ret = ast.ret.map(ret -> oper.makeTypePath(ret));
+		oper.ret = ast.ret.toNull()._and(ret => oper.makeTypePath(ret));
 
 		for(typevar in ast.generics.mapArray(a -> TypeVar.fromAST(oper, a))) {
 			oper.typevars.add(typevar.name.name, typevar);

@@ -245,7 +245,7 @@ abstract class TypeDecl extends AnyFullTypeDecl {
 
 	
 	function hasRefinementDecl(decl: TypeDecl): Bool {
-		throw "NYI!";
+		return refinements.contains(decl) || refinements.some(ref -> ref.hasRefinementDecl(decl));
 	}
 
 	function hasRefinementType(type: Type): Bool {
@@ -319,22 +319,11 @@ abstract class TypeDecl extends AnyFullTypeDecl {
 
 	function canSeeMember(member: Member) {
 		return member.hidden._match(
-			at(None) => true,
-			at(Some(_within)) => {
+			at(null) => true,
+			at(_within!!) => {
 				final within = _within._match(
 					at(Some(t)) => t,
-					at(None) => member.lookup._match(
-						at(td is TypeDecl) => td.thisType,
-						at(cat is Category) => cat.type.orElseDo(
-							cat.lookup._match(
-								at(td is TypeDecl) => td.thisType,
-								at(tv is TypeVar) => tv.thisType,
-								_ => throw "bad"
-							)
-						),
-						at(tv is TypeVar) => tv.thisType,
-						_ => throw "???"
-					)
+					at(None) => member.decl.thisType
 				);
 
 				within.hasChildDecl(this);
@@ -344,22 +333,11 @@ abstract class TypeDecl extends AnyFullTypeDecl {
 	
 	function canSeeMethod(method: AnyMethod) {
 		return method.decl == this || method.hidden._match(
-			at(None) => true,
-			at(Some(_within)) => {
+			at(null) => true,
+			at(_within!!) => {
 				final within = _within._match(
 					at(Some(t)) => t,
-					at(None) => method.decl._match(
-						at(td is TypeDecl) => td.thisType,
-						at(cat is Category) => cat.type.orElseDo(
-							cat.lookup._match(
-								at(td is TypeDecl) => td.thisType,
-								at(tv is TypeVar) => tv.thisType,
-								_ => throw "bad"
-							)
-						),
-						at(tv is TypeVar) => tv.thisType,
-						_ => throw "???"
-					)
+					at(None) => method.decl.thisType
 				);
 
 				within.hasChildDecl(this);

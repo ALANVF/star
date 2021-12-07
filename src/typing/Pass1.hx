@@ -334,11 +334,11 @@ static function resolveTypeVar(typevar: TypeVar) {
 	typevar.parents.forEach(p -> resolveBasicType(typevar.lookup, p));
 	
 	typevar.native._match(
-		at(Some(NPtr(t))) => resolveBasicType(typevar.lookup, t),
+		at(NPtr(t)) => resolveBasicType(typevar.lookup, t),
 		_ => {}
 	);
 
-	typevar.rule.forEach(r -> resolveTypeRule(typevar.lookup, r));
+	typevar.rule._and(r => resolveTypeRule(typevar.lookup, r));
 	
 	for(cat in typevar.categories) resolveCategory(cat);
 
@@ -365,7 +365,7 @@ static function resolveTypeRule(lookup: ITypeLookup, rule: TypeRule) rule._match
 
 
 static function resolveMethod(method: Method) {
-	method.hidden.forEach(h -> h.forEach(t -> resolveBasicType(method, t)));
+	method.hidden._and(h => h.forEach(t -> resolveBasicType(method, t)));
 
 	method._match(
 		at(multi is MultiMethod) => {
@@ -380,12 +380,12 @@ static function resolveMethod(method: Method) {
 		_ => {}
 	);
 
-	method.ret.forEach(r -> resolveBasicType(method, r));
+	method.ret._and(r => resolveBasicType(method, r));
 }
 
 
 static function resolveStaticMethod(method: StaticMethod) {
-	method.hidden.forEach(h -> h.forEach(t -> resolveBasicType(method, t)));
+	method.hidden._and(h => h.forEach(t -> resolveBasicType(method, t)));
 
 	method._match(
 		at(multi is MultiStaticMethod) => {
@@ -395,12 +395,12 @@ static function resolveStaticMethod(method: StaticMethod) {
 		_ => {}
 	);
 
-	method.ret.forEach(r -> resolveBasicType(method, r));
+	method.ret._and(r => resolveBasicType(method, r));
 }
 
 
 static function resolveInit(init: Init) {
-	init.hidden.forEach(h -> h.forEach(t -> resolveBasicType(init, t)));
+	init.hidden._and(h => h.forEach(t -> resolveBasicType(init, t)));
 
 	init._match(
 		at(multi is MultiInit) => {
@@ -413,7 +413,7 @@ static function resolveInit(init: Init) {
 
 
 static function resolveOperator(op: Operator) {
-	op.hidden.forEach(h -> h.forEach(t -> resolveBasicType(op, t)));
+	op.hidden._and(h => h.forEach(t -> resolveBasicType(op, t)));
 
 	op._match(
 		at(binop is BinaryOperator) => {
@@ -423,13 +423,13 @@ static function resolveOperator(op: Operator) {
 		_ => {}
 	);
 
-	op.ret.forEach(r -> resolveBasicType(op, r));
+	op.ret._and(r => resolveBasicType(op, r));
 }
 
 
 static function resolveMember(member: Member) {
-	member.hidden.forEach(h -> h.forEach(t -> resolveBasicType(member.lookup, t)));
-	member.type.forEach(t -> resolveBasicType(member.lookup, t));
+	member.hidden._and(h => h.forEach(t -> resolveBasicType(member.decl, t)));
+	member.type._and(t => resolveBasicType(member.decl, t));
 }
 
 

@@ -4,6 +4,8 @@ import typing.Traits;
 import reporting.Severity;
 import reporting.Diagnostic;
 
+private final EMPTY_ARRAY: Array<Member> = [];
+
 class TaggedKind extends Kind {
 	final taggedCases: Array<TaggedCase> = [];
 	var defaultInit: Option<DefaultInit> = None;
@@ -148,7 +150,7 @@ class TaggedKind extends Kind {
 			tcase._match(
 				at(mcase is MultiTaggedCase) => {
 					if(mcase.params.every2Strict(names, (l, n) -> l.label.name == n)) {
-						return [MSTaggedCase([], mcase)];
+						return [MSTaggedCase(/*[] HAXE DUMB DON'T DO THIS */ EMPTY_ARRAY, mcase)];
 					} else {
 						// BAD
 						if(/*!names.contains("_") &&*/ names.isUnique()) {

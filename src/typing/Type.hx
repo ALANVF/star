@@ -203,7 +203,16 @@ class Type implements ITypeable {
 					case None: Some(type.name.name);
 				}
 			},
-			_ => Some("???")
+			at(tvar is TypeVar) => {
+				switch getFullPath(tvar.lookup).map(p -> '$p#${tvar.name.name}') {
+					case p = Some(_): p;
+					case None: Some(tvar.name.name);
+				}
+			},
+			at(cat is Category) => {
+				Some(cat.thisType.fullName()+"+"+cat.path.fullName());
+			},
+			_ => Some("???"+lookup)
 		);
 	}
 
@@ -454,21 +463,21 @@ class Type implements ITypeable {
 
 
 	function maybeFrom(type: Type): Null<Type> {
-		t._match(
+		return t._match(
 			at(TPath(_, _, _) | TLookup(_, _, _)) => {
-				return this.simplify().maybeFrom(type);
+				this.simplify().maybeFrom(type);
 			},
 			
 			at(TConcrete(_) | TBlank) => {
-				return this;
+				this;
 			},
 
 			at(TInstance(decl, params, ctx)) => {
-				return {
+				{
 					t: TInstance(
 						decl,
 						params.map(p -> p.getFrom(type)),
-						[for(k => v in ctx) k => v.getInTCtx(ctx)]
+						[for(k => v in ctx) k => v.getFrom(type).getInTCtx(ctx)]
 					),
 					span: span
 				};
@@ -476,7 +485,7 @@ class Type implements ITypeable {
 
 			at(TThis(decl)) => {
 				// TODO: check if type <: decl?
-				return type;
+				type;
 			},
 
 			at(TMulti(types)) => {
@@ -488,7 +497,7 @@ class Type implements ITypeable {
 					});
 				}
 
-				return types2._match(
+				types2._match(
 					at([]) => null,
 					at([type0]) => type0,
 					_ => {t: TMulti(types2), span: span}
@@ -497,7 +506,7 @@ class Type implements ITypeable {
 
 			at(TApplied({t: TMulti(types)}, args)) => {
 				final types2 = [];
-				final args2 = args.map(a -> a.maybeFrom(type));
+				final args2 = args.map(a -> a.getFrom(type));
 
 				for(type0 in types) {
 					type0.maybeFrom(type)._and(type2 => {
@@ -507,15 +516,27 @@ class Type implements ITypeable {
 					});
 				}
 
-				return types2._match(
+				mostSpecific(types2)._match(
 					at([]) => null,
 					at([type0]) => type0,
 					_ => {t: TMulti(types2), span: span}
 				);
 			},
+
+			at(TApplied({t: TThis(decl)}, args)) => {
+				// TODO: check if type <: decl?
+				args = args.map(a -> a.getFrom(type));
+				type.t._match(
+					at(TConcrete(decl2)) => decl2.applyArgs(args),
+					at(TInstance(decl2, _, _)) => decl2.applyArgs(args),
+					at(TThis(decl2)) => decl2.applyArgs(args)._or(decl.applyArgs(args)),
+					at(TApplied(type2, _)) => type2.applyArgs(args),
+					_ => throw "todo??? "+type.fullName()
+				);
+			},
 			
 			at(TApplied(type0, args)) => {
-				return type0.maybeFrom(type)._and(type2 => {
+				type0.maybeFrom(type)._and(type2 => {
 					type2.applyArgs(args.map(a -> a.getFrom(type)));
 				});
 			},
@@ -534,7 +555,7 @@ class Type implements ITypeable {
 			),
 
 			at(TModular(type0, _)) => {
-				return type0.maybeFrom(type);
+				type0.maybeFrom(type);
 			}
 		);
 	}
@@ -542,7 +563,7 @@ class Type implements ITypeable {
 	function getFrom(type: Type): Type {
 		return this.maybeFrom(type)._andOr(
 			ty => ty,
-			throw 'Error: invalid type `${this.fullName()}`!'
+			throw 'Error: invalid type `${this.fullName()}` in `${type.fullName()}`! '+span.display()
 		);
 	}
 	
@@ -826,23 +847,7 @@ class Type implements ITypeable {
 		return t._match(
 			at(TPath(_, _, _)) => throw "bad",
 			at(TLookup(type, lookup, source)) => throw "todo",
-			at(TConcrete(decl)) => decl.acceptsArgs(args),/*{
-				//trace(decl.name.name, decl.params.map(t->t.fullName()), args.map(t->t.fullName()));
-				decl.params.every2Strict(args, (p, a) -> {
-					p == a ? true : p.t._match(
-						at(TApplied({t: TMulti(types)}, ps)) => {
-							if(types.contains(this)) {
-								//trace("@", types.map(ty->ty.fullName()), this.fullName());
-								true;
-							} else {
-								a.hasParentType(p);//p.hasChildType(a);
-							}
-						},
-						_ => a.hasParentType(p)//p.hasChildType(a)
-					);
-				});
-			},*/
-
+			at(TConcrete(decl)) => decl.acceptsArgs(args),
 			at(TInstance(decl2, params, _)) => false,//throw "todo "+this.fullName()+" "+span._and(s=>s.display()),
 			at(TThis(source)) => source._match(
 				at(decl is TypeDecl) => decl.params.every2Strict(args, (p, a) -> a.hasParentType(p)),
@@ -868,7 +873,10 @@ class Type implements ITypeable {
 				res._and(r => if(r.span == null) res = {t: r.t, span: span});
 				res;
 			},
-			at(TInstance(_, _, _)) => throw "todo", // partially-applied type
+			at(TInstance(_, _, _)) => { // partially-applied type (?)
+				trace("todo"+this.fullName()+args.map(a->a.fullName()));
+				return null;
+			},
 			at(TThis(_) | TBlank) => {t: TApplied(this, args), span: span},
 			at(TMulti(types)) => {
 				types.filterMap(ty -> ty.applyArgs(args))._match(
@@ -901,6 +909,21 @@ class Type implements ITypeable {
 			at([TPath(_, _, _), _] | [TLookup(_, _, _), _]) => this.simplify().bindTo(onto, ctx),
 			at([_, TPath(_, _, _)] | [_, TLookup(_, _, _)]) => this.bindTo(onto.simplify(), ctx),
 
+			at([TThis(decl1), TThis(decl2)]) => {
+				if(decl1.hasParentType(decl2.thisType)) {
+					this;
+				} else {
+					null;
+				}
+			},
+			at([TThis(decl), _]) => {
+				if(decl.hasParentType(onto)) {
+					this;
+				} else {
+					null;
+				}
+			},
+
 			at([_, TTypeVar(typevar)]) => {
 				ctx[typevar]._match(
 					at(type!) => this.strictUnifyWithType(type),
@@ -926,6 +949,14 @@ class Type implements ITypeable {
 			// TODO: account for generic typevars and HKTs
 			at([TConcrete(decl), TApplied(base, _)]) => {
 				null;
+			},
+
+			at([TConcrete(decl1), TInstance(decl2, params, tctx)]) => {
+				if(decl1 == decl2) {
+					onto;
+				} else {
+					null;
+				}
 			},
 
 			at([_, TMulti(types)]) => {
@@ -975,6 +1006,32 @@ class Type implements ITypeable {
 				} else {
 					null;
 				}
+			},
+
+			at([TInstance(decl1, params1, tctx1), TInstance(decl2, params2, tctx2)]) => {
+				if((decl1 == decl2 || decl1.hasRefinementDecl(decl2)) && params1.length == params2.length) {
+					final tctx: TypeVarCtx = [];
+					final params = [];
+					params1._for(i => param1, {
+						param1.bindTo(params2[i], tctx)._match(
+							at(param!) => params.push(param),
+							_ => return null
+						);
+					});
+					
+					{t: TInstance(decl1, params, tctx), span: span};
+				} else {
+					if(decl2.hasParentDecl(decl1)) {
+						decl2._match(
+							at(ns is Namespace) => {
+								ns.parents.findMap(p -> this.bindTo(p, ctx)); // TODO: stop being lazy
+							},
+							_ => throw "todo"
+						);
+					} else {
+						null;
+					}
+				};
 			},
 
 			// TODO: somehow delay this from happening because we need type refinement
@@ -1216,17 +1273,7 @@ class Type implements ITypeable {
 			at(TPath(depth, lookup, source)) => throw "todo "+lookup+" "+lookup.span().display()+" "+this.span._and(s=>s.display()),
 			at(TLookup(type, lookup, source)) => throw "todo",
 			at(TConcrete(decl) | TInstance(decl, _, _)) => decl.findSingleInst(ctx, name, from, getter, cache),
-			at(TThis(source)) => source._match(
-				at(td is TypeDecl) => {
-					if(td == from) {
-						td.findSingleInst(ctx, name, from, getter, cache);
-					} else {
-						//throw "???";
-						td.findSingleInst(ctx, name, from, getter, cache);
-					}
-				},
-				_ => throw "todo"
-			),
+			at(TThis(source)) => source.findSingleInst(ctx, name, from, getter, cache),
 			at(TBlank) => throw "bad",
 			at(TMulti(types)) => {
 				final found = leastSpecific(types).filterMap(type -> type.findSingleInst(ctx, name, from, getter, cache)).unique();
@@ -1260,17 +1307,7 @@ class Type implements ITypeable {
 			at(TPath(depth, lookup, source)) => throw "todo",
 			at(TLookup(type, lookup, source)) => throw "todo",
 			at(TConcrete(decl) | TInstance(decl, _, _)) => decl.findMultiInst(ctx, names, from, setter, cache),
-			at(TThis(source)) => source._match(
-				at(td is TypeDecl) => {
-					if(td == from) {
-						td.findMultiInst(ctx, names, from, setter, cache);
-					} else {
-						//throw "???"+names+from.fullName()+" "+td.fullName();
-						td.findMultiInst(ctx, names, from, setter, cache);
-					}
-				},
-				_ => throw "todo"
-			),
+			at(TThis(source)) => source.findMultiInst(ctx, names, from, setter, cache),
 			at(TBlank) => throw "bad",
 			at(TMulti(types)) => {
 				types
@@ -1298,17 +1335,7 @@ class Type implements ITypeable {
 			at(TLookup(type, lookup, source)) => throw "todo",
 			at(TConcrete(decl)) => decl.findCast(ctx, target, from, cache),
 			at(TInstance(decl, _, tctx)) => decl.findCast(ctx.innerTypevars(tctx), target, from, cache),
-			at(TThis(source)) => source._match(
-				at(td is TypeDecl) => {
-					if(td.thisType == from.thisType) {
-						td.findCast(ctx, target, from, cache);
-					} else {
-						//throw "???"+td.fullName()+" "+from.fullName()+" "+target.fullName();
-						td.findCast(ctx, target, from, cache);
-					}
-				},
-				_ => throw "todo"
-			),
+			at(TThis(source)) => source.findCast(ctx, target, from, cache),
 			at(TBlank) => throw "bad",
 			at(TMulti(types)) => leastSpecific(types).flatMap(t -> t.findCast(ctx, target, from, cache)),
 			at(TApplied({t: TMulti(types)}, args)) => {
@@ -1330,17 +1357,7 @@ class Type implements ITypeable {
 			at(TPath(depth, lookup, source)) => throw "todo "+lookup+" "+lookup.span().display()+" "+this.span._and(s=>s.display()),
 			at(TLookup(type, lookup, source)) => throw "todo",
 			at(TConcrete(decl) | TInstance(decl, _, _)) => decl.findUnaryOp(ctx, op, from, cache),
-			at(TThis(source)) => source._match(
-				at(td is TypeDecl) => {
-					if(td == from) {
-						td.findUnaryOp(ctx, op, from, cache);
-					} else {
-						//throw "???";
-						td.findUnaryOp(ctx, op, from, cache);
-					}
-				},
-				_ => throw "todo"
-			),
+			at(TThis(source)) => source.findUnaryOp(ctx, op, from, cache),
 			at(TBlank) => throw "bad",
 			at(TMulti(types)) => {
 				final found = leastSpecific(types).filterMap(type -> type.findUnaryOp(ctx, op, from, cache)).unique();
@@ -1374,17 +1391,7 @@ class Type implements ITypeable {
 			at(TPath(depth, lookup, source)) => throw "todo "+lookup+" "+lookup.span().display()+" "+this.span._and(s=>s.display()),
 			at(TLookup(type, lookup, source)) => throw "todo",
 			at(TConcrete(decl) | TInstance(decl, _, _)) => decl.findBinaryOp(ctx, op, from, cache),
-			at(TThis(source)) => source._match(
-				at(td is TypeDecl) => {
-					if(td == from) {
-						td.findBinaryOp(ctx, op, from, cache);
-					} else {
-						//throw "???";
-						td.findBinaryOp(ctx, op, from, cache);
-					}
-				},
-				_ => throw "todo"
-			),
+			at(TThis(source)) => source.findBinaryOp(ctx, op, from, cache),
 			at(TBlank) => throw "bad",
 			at(TMulti(types)) => {
 				leastSpecific(types).flatMap(type -> type.findBinaryOp(ctx, op, from, cache)).unique();
@@ -1411,16 +1418,7 @@ class Type implements ITypeable {
 			at(TLookup(type, lookup, source)) => throw "todo",
 			at(TConcrete(decl)) => decl.findCategory(ctx, cat, forType, from, cache),
 			at(TInstance(decl, _, tctx)) => decl.findCategory(ctx.innerTypevars(tctx), cat, forType, from, cache),
-			at(TThis(source)) => source._match(
-				at(td is TypeDecl) => {
-					if(td == from) {
-						td.findCategory(ctx, cat, forType, from, cache);
-					} else {
-						throw "???";
-					}
-				},
-				_ => throw "todo"
-			),
+			at(TThis(source)) => source.findCategory(ctx, cat, forType, from, cache),
 			at(TBlank) => throw "bad",
 			at(TMulti(types)) => reduceOverloads(types).flatMap(t -> t.findCategory(ctx, cat, forType, from, cache)),
 			at(TApplied({t: TMulti(types)}, args)) => {
@@ -1443,16 +1441,7 @@ class Type implements ITypeable {
 			at(TLookup(type, lookup, source)) => throw "todo",
 			at(TConcrete(decl)) => decl.findThisCategory(ctx, cat, from, cache),
 			at(TInstance(decl, _, tctx)) => decl.findThisCategory(ctx.innerTypevars(tctx), cat, from, cache),
-			at(TThis(source)) => source._match(
-				at(td is TypeDecl) => {
-					if(td == from) {
-						td.findThisCategory(ctx, cat, from, cache);
-					} else {
-						throw "???";
-					}
-				},
-				_ => throw "todo"
-			),
+			at(TThis(source)) => source.findThisCategory(ctx, cat, from, cache),
 			at(TBlank) => throw "bad",
 			at(TMulti(types)) => reduceOverloads(types).flatMap(t -> t.findThisCategory(ctx, cat, from, cache)),
 			at(TApplied(type, args)) => {
@@ -1553,9 +1542,10 @@ class Type implements ITypeable {
 					}
 				})._match(
 					at([]) => throw "bad",
-					/*at([{t: TConcrete(decl), span: s}]) => decl.applyArgs(args.map(a -> a.simplify()))._or(
-						throw 'error: type `${decl.fullName()}` does not accept provided arguments [${args.joinMap(", ", a -> a.fullName())}] ${span._and(ss=>ss.display())}'
-					),*/
+					at([{t: TConcrete(decl)}]) => decl.applyArgs(args)._match(
+						at(res!) => { res.span = span; res; },
+						_ => throw 'error: type `${decl.fullName()}` does not accept provided arguments [${args.joinMap(", ", a -> a.fullName())}] ${span._and(s=>s.display())}'
+					),
 					at([ty]) => {t: TApplied(ty, args), span: span},
 					at(types2) => if(types2.length == types.length) this else {t: TApplied({t: TMulti(types2), span: span}, args), span: span}
 				);

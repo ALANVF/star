@@ -3041,7 +3041,7 @@ class Parser {
 			nested: nested
 		}, rest);
 	}
-
+	
 	static function parseExpr4(tokens) return switch parseExpr3(tokens) {
 		case Success(EType(type), Cons(T_Cascade(_1, 1), rest)):
 			final cascades = [switch parseExpr4TypeCascadeContents(_1, 1, rest) {

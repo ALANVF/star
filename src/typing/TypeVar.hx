@@ -13,21 +13,21 @@ using typing.TypeRule.TypeRuleTools;
 class TypeVar extends AnyFullTypeDecl {
 	//final lookup: ILookupType & ITypeVars;
 	var parents: Array<Type>;
-	var rule: Option<TypeRule>;
-	var defaultInit: Option<DefaultInit> = None;
-	var deinit: Option<Deinit> = None;
+	var rule: Null<TypeRule>;
+	var defaultInit: Option<DefaultInit> = None; // REMOVE
+	var deinit: Option<Deinit> = None; // REMOVE
 	final inits: Array<Init> = [];
 	final members: Array<Member> = [];
 	final methods: Array<Method> = [];
 	final operators: Array<Operator> = [];
-	var staticDeinit: Option<StaticDeinit> = None;
-	var staticInit: Option<StaticInit> = None;
+	var staticDeinit: Option<StaticDeinit> = None; // REMOVE
+	var staticInit: Option<StaticInit> = None; // REMOVE
 	final staticMembers: Array<Member> = [];
 	final staticMethods: Array<StaticMethod> = [];
 	final taggedCases: Array<TaggedCase> = [];
 	final valueCases: Array<ValueCase> = [];
 	final categories: Array<Category> = [];
-	var native: Option<NativeKind> = None;
+	var native: Null<NativeKind> = null;
 	var _isFlags: Bool = false;
 	var _isStrong: Bool = false;
 	var _isUncounted: Bool = false;
@@ -43,30 +43,30 @@ class TypeVar extends AnyFullTypeDecl {
 			name: ast.name,
 			params: null,  // hack for partial initialization
 			parents: null, // hack for partial initialization
-			rule: ast.rule.map(r -> TypeRule.fromAST(cast lookup, r.rule))
+			rule: ast.rule.toNull()._and(r => TypeRule.fromAST(cast lookup, r.rule))
 		});
 
 		typevar.params = ast.params.doOrElse(p => p.of.map(x -> typevar.makeTypePath(x)), []);
 		typevar.parents = ast.parents.doOrElse(p => p.parents.map(x -> typevar.makeTypePath(x)), []);
 		
 		for(attr => span in ast.attrs) switch attr {
-			case IsNative(_, _, _) if(typevar.native.isSome()): typevar.errors.push(Errors.duplicateAttribute(typevar, ast.name.name, "native", span));
+			case IsNative(_, _, _) if(typevar.native != null): typevar.errors.push(Errors.duplicateAttribute(typevar, ast.name.name, "native", span));
 			case IsNative(_, [{label: {name: "repr"}, expr: ELitsym(_, repr)}], _): switch repr {
-				case "void": typevar.native = Some(NVoid);
-				case "bool": typevar.native = Some(NBool);
-				case "voidptr": typevar.native = Some(NVoidPtr);
+				case "void": typevar.native = NVoid;
+				case "bool": typevar.native = NBool;
+				case "voidptr": typevar.native = NVoidPtr;
 				default: typevar.errors.push(Errors.invalidAttribute(typevar, typevar.name.name, "native", span));
 			}
 			case IsNative(_, [
 				{label: {name: "repr"}, expr: ELitsym(_, "ptr")},
 				{label: {name: "elem"}, expr: EType(t)}
-			], _): typevar.native = Some(NPtr(typevar.makeTypePath(t)));
+			], _): typevar.native = NPtr(typevar.makeTypePath(t));
 			case IsNative(_, [
 				{label: {name: "repr"}, expr: ELitsym(_, "dec")},
 				{label: {name: "bits"}, expr: EInt(_, bits, _)}
 			], _): switch bits {
-				case 32: typevar.native = Some(NDec32);
-				case 64: typevar.native = Some(NDec64);
+				case 32: typevar.native = NDec32;
+				case 64: typevar.native = NDec64;
 				default: typevar.errors.push(Errors.invalidAttribute(typevar, typevar.name.name, "native", span));
 			}
 			case IsNative(_, [
@@ -74,10 +74,10 @@ class TypeVar extends AnyFullTypeDecl {
 				{label: {name: "bits"}, expr: EInt(_, bits, _)},
 				{label: {name: "signed"}, expr: EBool(_, signed)}
 			], _): switch bits {
-				case 8: typevar.native = Some(signed ? NInt8 : NUInt8);
-				case 16: typevar.native = Some(signed ? NInt16 : NUInt16);
-				case 32: typevar.native = Some(signed ? NInt32 : NUInt32);
-				case 64: typevar.native = Some(signed ? NInt64 : NUInt64);
+				case 8: typevar.native = signed ? NInt8 : NUInt8;
+				case 16: typevar.native = signed ? NInt16 : NUInt16;
+				case 32: typevar.native = signed ? NInt32 : NUInt32;
+				case 64: typevar.native = signed ? NInt64 : NUInt64;
 				default: typevar.errors.push(Errors.invalidAttribute(typevar, typevar.name.name, "native", span));
 			}
 			case IsNative(_, _, _): typevar.errors.push(Errors.invalidAttribute(typevar, typevar.name.name, "native", span));
@@ -215,14 +215,11 @@ class TypeVar extends AnyFullTypeDecl {
 			if(!decl.hasChildType(parent)) return false;
 		}
 
-		rule._match(
-			at(Some(cond)) => {
-				if(!cond.hasParentDecl(decl, this)) {
-					return false;
-				}
-			},
-			_ => {}
-		);
+		rule._and(cond => {
+			if(!cond.hasParentDecl(decl, this)) {
+				return false;
+			}
+		});
 
 		if(defaultInit != None
 		|| deinit != None
@@ -249,14 +246,11 @@ class TypeVar extends AnyFullTypeDecl {
 			return false;
 		}
 
-		native._match(
-			at(Some(nat)) => {
-				if(!decl.isNative(nat)) {
-					return false;
-				}
-			},
-			_ => {}
-		);
+		native._and(nat => {
+			if(!decl.isNative(nat)) {
+				return false;
+			}
+		});
 
 		return true;
 	}
@@ -267,15 +261,12 @@ class TypeVar extends AnyFullTypeDecl {
 		for(parent in parents) {
 			if(!parent.hasChildDecl(decl)) return false;
 		}
-
-		rule._match(
-			at(Some(cond)) => {
-				if(!cond.hasChildDecl(decl, this)) {
-					return false;
-				}
-			},
-			_ => {}
-		);
+		
+		rule._and(cond => {
+			if(!cond.hasChildDecl(decl, this)) {
+				return false;
+			}
+		});
 
 		if(defaultInit != None
 		|| deinit != None
@@ -302,14 +293,11 @@ class TypeVar extends AnyFullTypeDecl {
 			// TODO
 		}
 
-		native._match(
-			at(Some(nat)) => {
-				if(!decl.isNative(nat)) {
-					return false;
-				}
-			},
-			_ => {}
-		);
+		native._and(nat => {
+			if(!decl.isNative(nat)) {
+				return false;
+			}
+		});
 
 		return true;
 	}
@@ -329,14 +317,11 @@ class TypeVar extends AnyFullTypeDecl {
 			if(!tvar.hasParentType(parent)) return false;
 		}
 
-		rule._match(
-			at(Some(cond)) => {
-				if(!cond.evalWithType(tvar.thisType, this)) {
-					return false;
-				}
-			},
-			_ => {}
-		);
+		rule._and(cond => {
+			if(!cond.evalWithType(tvar.thisType, this)) {
+				return false;
+			}
+		});
 
 		if(defaultInit != None
 		|| deinit != None
@@ -359,14 +344,11 @@ class TypeVar extends AnyFullTypeDecl {
 			throw "todo "+this.name.span.display();
 		}
 
-		native._match(
-			at(Some(nat)) => {
-				if(!tvar.isNative(nat)) {
-					return false;
-				}
-			},
-			_ => {}
-		);
+		native._and(nat => {
+			if(!tvar.isNative(nat)) {
+				return false;
+			}
+		});
 
 		return true;
 	}
@@ -378,7 +360,7 @@ class TypeVar extends AnyFullTypeDecl {
 			case TLookup(_, _, _): throw "todo";
 			case TConcrete(decl): this.hasParentDecl(decl);
 			case TInstance(decl, params, tctx): this.hasParentDecl(decl); // TODO
-			case TThis(source): throw "todo";
+			case TThis(source): this.hasParentType(source.thisType);
 			case TBlank: true;
 			case TMulti(types): types.some(t -> this.hasParentType(t)); // should this mutate to help with type inference?
 			case TApplied(type2, params): this.hasParentType(type2);//throw "todo";
@@ -398,14 +380,11 @@ class TypeVar extends AnyFullTypeDecl {
 			return false;
 		}
 
-		rule._match(
-			at(Some(cond)) => {
-				if(!cond.evalWithType(type, this)) {
-					return false;
-				}
-			},
-			_ => {}
-		);
+		rule._and(cond => {
+			if(!cond.evalWithType(type, this)) {
+				return false;
+			}
+		});
 
 		if(defaultInit == None
 		&& deinit == None
@@ -428,14 +407,11 @@ class TypeVar extends AnyFullTypeDecl {
 			return true;
 		}
 
-		native._match(
-			at(Some(nat)) => {
-				if(!type.isNative(nat)) {
-					return false;
-				}
-			},
-			_ => {}
-		);
+		native._and(nat => {
+			if(!type.isNative(nat)) {
+				return false;
+			}
+		});
 
 		throw "todo "+name.span.display();
 	}
@@ -496,18 +472,15 @@ class TypeVar extends AnyFullTypeDecl {
 	// Attributes
 
 	function isNative(kind: NativeKind) {
-		if(native.exists(nat -> nat.matches(kind))) return true;
+		if(native._andOr(nat => nat.matches(kind), false)) return true;
 
 		if(parents.some(p -> p.isNative(kind))) return true;
 
-		rule._match(
-			at(Some(cond)) => {
-				if(cond.isNative(kind, this)) {
-					return true;
-				}
-			},
-			_ => {}
-		);
+		rule._and(cond => {
+			if(cond.isNative(kind, this)) {
+				return true;
+			}
+		});
 
 		return false;
 	}
@@ -638,7 +611,7 @@ class TypeVar extends AnyFullTypeDecl {
 			);
 		}
 
-		if(rule != None) throw "todo";
+		if(rule != null) throw "todo";
 
 		return null;
 	}
@@ -681,7 +654,7 @@ class TypeVar extends AnyFullTypeDecl {
 				at(mm is MultiStaticMethod) => if(from.canSeeMethod(mm))
 					mm.params.matchesNames(names)._match(
 						at(Yes) => candidates.push(MSFromTypevar(this, names, setter, MSMethod(mm))),
-						at(Partial) => candidates.push(MSFromTypevar(this, names, setter, MSMethod(mm, true))),
+						at(Partial(indexes)) => candidates.push(MSFromTypevar(this, names, setter, MSMethod(mm, indexes))),
 						at(No) => {}
 					),
 				_ => {}
@@ -691,7 +664,7 @@ class TypeVar extends AnyFullTypeDecl {
 				at(mi is MultiInit) => if(from.canSeeMethod(mi))
 					mi.params.matchesNames(names)._match(
 						at(Yes) => candidates.push(MSFromTypevar(this, names, setter, MSInit(mi))),
-						at(Partial) => candidates.push(MSFromTypevar(this, names, setter, MSInit(mi, true))),
+						at(Partial(indexes)) => candidates.push(MSFromTypevar(this, names, setter, MSInit(mi, indexes))),
 						at(No) => {}
 					),
 				_ => {}
@@ -834,7 +807,7 @@ class TypeVar extends AnyFullTypeDecl {
 			);
 		}
 
-		if(rule != None) throw "todo";
+		if(rule != null) throw "todo";
 
 		return null;
 	}
@@ -867,7 +840,7 @@ class TypeVar extends AnyFullTypeDecl {
 					at(mm is MultiMethod) => if(mm.isSetter && from.canSeeMethod(mm))
 						mm.params.matchesNames(names, true)._match(
 							at(Yes) => candidates.push(MIFromTypevar(this, names, setter, MIMethod(mm))),
-							at(Partial) => candidates.push(MIFromTypevar(this, names, setter, MIMethod(mm, true))),
+							at(Partial(indexes)) => candidates.push(MIFromTypevar(this, names, setter, MIMethod(mm, indexes))),
 							at(No) => {}
 						),
 					_ => {}
@@ -878,7 +851,7 @@ class TypeVar extends AnyFullTypeDecl {
 				at(mm is MultiMethod) => if(from.canSeeMethod(mm))
 					mm.params.matchesNames(names, mm.isSetter)._match(
 						at(Yes) => candidates.push(MIFromTypevar(this, names, setter, MIMethod(mm))),
-						at(Partial) => candidates.push(MIFromTypevar(this, names, setter, MIMethod(mm, true))),
+						at(Partial(indexes)) => candidates.push(MIFromTypevar(this, names, setter, MIMethod(mm, indexes))),
 						at(No) => {}
 					),
 				_ => {}
@@ -960,12 +933,9 @@ class TypeVar extends AnyFullTypeDecl {
 			}
 		}
 
-		rule._match(
-			at(Some(cond)) => {
-				candidates.pushAll(cond.findBinaryOp(this, ctx, op, from, cache));
-			},
-			_ => {}
-		);
+		rule._and(cond => {
+			candidates.pushAll(cond.findBinaryOp(this, ctx, op, from, cache));
+		});
 
 		return candidates._match(
 			at([], when(cache.match(Nil | Cons({t: TConcrete(_ is DirectAlias => true)}, _)))) => Pass2.STD_Value.findBinaryOp(ctx, op, from),

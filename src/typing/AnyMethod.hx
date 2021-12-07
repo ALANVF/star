@@ -12,11 +12,11 @@ abstract class AnyMethod implements ITypeLookupDecl {
 	final errors: Array<Diagnostic> = [];
 	final decl: AnyTypeDecl;
 	final span: Span;
-	var hidden: Option<Option<Type>> = None;
+	var hidden: Null<Option<Type>> = null;
 	var noInherit: Bool = false;
-	var native: Option<Option<Ident>> = None;
+	var native: Null<Option<Ident>> = null;
 	var isAsm: Bool = false;
-	final body: Option<Array<Stmt>>;
+	final body: Null<Array<Stmt>>;
 
 	@ignore var typedBody: Null<Array<TStmt>> = null;
 

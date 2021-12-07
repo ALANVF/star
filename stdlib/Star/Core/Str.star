@@ -92,7 +92,7 @@ class Str of Values[Char], Ordered is strong {
 		my result = 5381
 
 		for my i from: 0 upto: length {
-			result = (result << 5) + result + buffer[at: i]
+			result = (result << 5) + result + buffer[at: i][Int]
 		}
 
 		return result
@@ -356,8 +356,6 @@ class Str of Values[Char], Ordered is strong {
 	;== Concating
 	
 	operator `+` [char (Char)] (This) {
-		"abc" + #"d"
-
 		return This[new: length + 1]
 		-> [add: this]
 		-> [add: char]

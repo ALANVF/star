@@ -18,7 +18,7 @@ class MultiMethod extends Method {
 			params: null,    // hack for partial initialization
 			fuzzyName: null, // hack for partial initialization
 			ret: null,       // hack for partial initialization
-			body: ast.body.map(body -> body.stmts())
+			body: ast.body.toNull()._and(body => body.stmts())
 		});
 
 		final params = switch ast.spec.of {
@@ -42,7 +42,7 @@ class MultiMethod extends Method {
 
 		method.params = params;
 		method.fuzzyName = params.map(p -> p.label.name + ":").join(" ");
-		method.ret = ast.ret.map(ret -> method.makeTypePath(ret));
+		method.ret = ast.ret.toNull()._and(ret => method.makeTypePath(ret));
 
 		for(typevar in ast.generics.mapArray(a -> TypeVar.fromAST(method, a))) {
 			method.typevars.add(typevar.name.name, typevar);
@@ -51,9 +51,9 @@ class MultiMethod extends Method {
 		for(attr => span in ast.attrs) switch attr {
 			case IsStatic: method.errors.push(Errors.invalidAttribute(method, method.fuzzyName, "static", span));
 			
-			case IsHidden(_) if(method.hidden.isSome()): method.errors.push(Errors.duplicateAttribute(method, method.fuzzyName, "hidden", span));
-			case IsHidden(None): method.hidden = Some(None);
-			case IsHidden(Some(outsideOf)): method.hidden = Some(Some(decl.makeTypePath(outsideOf)));
+			case IsHidden(_) if(method.hidden != null): method.errors.push(Errors.duplicateAttribute(method, method.fuzzyName, "hidden", span));
+			case IsHidden(None): method.hidden = None;
+			case IsHidden(Some(outsideOf)): method.hidden = Some(decl.makeTypePath(outsideOf));
 
 			case IsMain: method.errors.push(Errors.invalidAttribute(method, method.fuzzyName, "main", span));
 
@@ -65,8 +65,8 @@ class MultiMethod extends Method {
 
 			case IsUnordered: method.isUnordered = true;
 
-			case IsNative(_) if(method.native.isSome()): method.errors.push(Errors.duplicateAttribute(method, method.fuzzyName, "native", span));
-			case IsNative(sym): method.native = Some(sym);
+			case IsNative(_) if(method.native != null): method.errors.push(Errors.duplicateAttribute(method, method.fuzzyName, "native", span));
+			case IsNative(sym): method.native = sym;
 
 			case IsInline: method.isInline = true;
 

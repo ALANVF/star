@@ -165,7 +165,7 @@ class List[T] of Positional[T] {
 
 				for my i, my value in: values {
 					if link ?= tail || i > to {
-						link[insertPrev: Value[:value]]
+						link[insertPrev: Value[T][:value]]
 						length++
 					} else {
 						my vlink = link[Unsafe Value[T]]
@@ -254,7 +254,7 @@ class List[T] of Positional[T] {
 	;== Adding
 
 	on [add: value (T)] (T) {
-		tail[insertPrev: Value[:value]]
+		tail[insertPrev: Value[T][:value]]
 		length++
 		return value
 	}
@@ -263,7 +263,7 @@ class List[T] of Positional[T] {
 	;== Prepending
 
 	on [prepend: value (T)] (T) {
-		head[insertNext: Value[:value]]
+		head[insertNext: Value[T][:value]]
 		length++
 		return value
 	}
@@ -272,7 +272,7 @@ class List[T] of Positional[T] {
 	on [prependAll: values (Iter)] (Iter) {
 		my link = head.next
 		for my value in: values {
-			link[insertPrev: Value[:value]]
+			link[insertPrev: Value[T][:value]]
 			length++
 		}
 
@@ -359,13 +359,13 @@ class List[T] of Positional[T] {
 			my begin, my end, do {
 				my link = this[linkAt: from]
 
-				begin = link.value
+				begin = link
 
 				for _ from: from upto: to {
 					link = link.nextValue
 				}
 
-				end = link.value
+				end = link
 			}
 
 			begin.prev.next = end.next
@@ -488,7 +488,8 @@ type T of Comparable
 class List[T] of Comparable {
 	;== Comparing
 	
-	operator `>` [other (This)] (Bool) {
+	;@@ FIX: buggy due to bad typechecker
+	;[operator `>` [other (This)] (Bool) {
 		match this.length {
 			at _ > other.length => return true
 			at _ < other.length => return false
@@ -574,7 +575,7 @@ class List[T] of Comparable {
 				return true
 			}
 		}
-	}
+	}]
 	
 	
 	;== Querying

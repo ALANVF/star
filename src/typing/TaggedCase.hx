@@ -18,6 +18,9 @@ abstract class TaggedCase implements IDecl {
 	final assoc: Option<Message<parsing.ast.Type>>;
 	final init: Option<Array<Stmt>> = None;
 
+	@ignore var typedAssoc: Null<typing.Message<Type>> = null;
+	@ignore var typedInit: Null<TStmts> = null;
+
 	static function fromAST<T: AnyTypeDecl, ITaggedCases>(decl: T, ast: parsing.ast.decls.Case): TaggedCase {
 		switch ast.kind {
 			case Tagged({of: Single(name)}, assoc):

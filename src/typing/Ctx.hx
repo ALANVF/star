@@ -9,6 +9,8 @@ enum Where {
 	WMethod(m: AnyMethod);
 	WDecl(d: TypeDecl);
 	WCategory(c: Category);
+	WMember(m: Member);
+	WTaggedCase(c: TaggedCase);
 	WBlock;
 	WPattern;
 	WObjCascade(t: Null<Type>);
@@ -28,6 +30,8 @@ enum Where {
 		at(WCategory(cat)) => cat,
 		at(WEmptyMethod(m)) => m.decl,
 		at(WMethod(m)) => m.decl,
+		at(WMember(m)) => m.decl,
+		at(WTaggedCase(c)) => c.decl,
 		_ => outer._match(
 			at(ctx!) => ctx.typeDecl,
 			_ => throw "bad"
@@ -39,6 +43,8 @@ enum Where {
 		at(WCategory(cat)) => cat,
 		at(WMethod(m)) => m,
 		at(WEmptyMethod(m)) => m.decl,
+		at(WMember(m)) => m.decl,
+		at(WTaggedCase(c)) => c.decl,
 		_ => outer._match(
 			at(ctx!) => ctx.thisLookup,
 			_ => throw "bad"
@@ -72,6 +78,22 @@ enum Where {
 	function innerMethod(method: AnyMethod): Ctx {
 		return {
 			where: WMethod(method),
+			outer: this,
+			thisType: thisType
+		};
+	}
+
+	function innerMember(member: Member): Ctx {
+		return {
+			where: WMember(member),
+			outer: this,
+			thisType: thisType
+		};
+	}
+
+	function innerTaggedCase(tcase: TaggedCase): Ctx {
+		return {
+			where: WTaggedCase(tcase),
 			outer: this,
 			thisType: thisType
 		};
@@ -134,7 +156,7 @@ enum Where {
 			at(loc!, when(depth == 0)) => loc,
 			_ => where._match(
 				at(WObjCascade(t!)) => t.findSingleInst(this, name, outer.typeDecl, true)._match(
-					at(SIMember(mem), when(depth == 0)) => new LocalField(this, mem, mem.name.name, mem.type.toNull(), null),
+					at(SIMember(mem), when(depth == 0)) => new LocalField(this, mem, mem.name.name, mem.type, null),
 					_ => outer.findLocal(name, depth)
 				),
 				at(WObjCascade(_)) => outer.findLocal(name, depth),
@@ -146,22 +168,22 @@ enum Where {
 				},
 				at(WDecl(_)) => throw ":thonk:",
 				at(WCategory(_)) => throw "bad",
-				at(WEmptyMethod((_ : BaseMethod) => mth) | WMethod(mth)) => {
+				at(WEmptyMethod({decl: decl}) | WMethod({decl: decl}) | WMember({decl: decl}) | WTaggedCase({decl: decl})) => {
 					final isStatic = !allowsThis();
-					Type.mostSpecificBy(mth.decl.instMembers(mth.decl).filter(mem ->
+					Type.mostSpecificBy(decl.instMembers(decl).filter(mem ->
 						mem.name.name == name && (
 							!isStatic
 							|| (isStatic && mem.isStatic)
-							|| (isStatic && mem.lookup is Module)
+							|| (isStatic && mem.decl is Module)
 						)
-					).unique(), mem -> mem.type.value())._match(
+					).unique(), mem -> mem.type.nonNull())._match(
 						at([]) => null,
 						at([mem]) => (locals[name] = new LocalField(
 							this,
 							mem,
 							mem.name.name,
-							mem.type.toNull()._and(t => t.getIn(this)),
-							mem.value.map(v -> Pass2.typeExpr(this, v)).toNull()
+							mem.type._and(t => t.getIn(this)),
+							mem.value._and(v => Pass2.typeExpr(this, v))
 						)),
 						at(mems) => throw "todo"
 					);
@@ -224,6 +246,8 @@ enum Where {
 			case WCategory(c): true;// meh
 			case WEmptyMethod(m): !(m is StaticInit || m is StaticDeinit) && outer.allowsThis();
 			case WMethod(m): !(m is StaticMethod) && outer.allowsThis();
+			case WMember(m): !m.isStatic && outer.allowsThis();
+			case WTaggedCase(_): true;
 			case WBlock | WPattern: outer.allowsThis();
 			case WObjCascade(_): true;
 			case WTypeCascade: outer.allowsThis();
@@ -241,6 +265,8 @@ enum Where {
 			at(WMethod(m)) => m.declName() + " ["+m.methodName()+"] for "+outer.description(),
 			at(WDecl(decl)) => decl.declName() + " " + decl.fullName(),
 			at(WCategory(_)) => throw "bad",
+			at(WMember(m)) => "member `"+m.name.name+"` for "+outer.description(),
+			at(WTaggedCase(c)) => "tagged case [...] for "+outer.description(),
 			at(WBlock) => "{ ... } in " + {
 				final lookup = cast(this.thisLookup, IDecl);
 				lookup.declName() + " " + lookup._match(

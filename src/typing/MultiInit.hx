@@ -9,7 +9,7 @@ class MultiInit extends Init {
 	@ignore final typevars = new MultiMap<String, TypeVar>();
 	var params: MultiParams = [];
 	var fuzzyName: String;
-	var isUnordered: Bool = true;
+	var isUnordered: Bool = false;
 
 	static function fromAST(decl: AnyTypeDecl, ast: parsing.ast.decls.Init): MultiInit {
 		final init = new MultiInit({
@@ -17,7 +17,7 @@ class MultiInit extends Init {
 			span: ast.span,
 			params: null,    // hack for partial initialization
 			fuzzyName: null, // hack for partial initialization
-			body: ast.body.map(body -> body.stmts())
+			body: ast.body.toNull()._and(body => body.stmts())
 		});
 
 		final params = switch ast.spec.of {
@@ -48,16 +48,16 @@ class MultiInit extends Init {
 		}
 		
 		for(attr => span in ast.attrs) switch attr {
-			case IsHidden(_) if(init.hidden.isSome()): init.errors.push(Errors.duplicateAttribute(init, init.fuzzyName, "hidden", span));
-			case IsHidden(None): init.hidden = Some(None);
-			case IsHidden(Some(outsideOf)): init.hidden = Some(Some(decl.makeTypePath(outsideOf)));
+			case IsHidden(_) if(init.hidden != null): init.errors.push(Errors.duplicateAttribute(init, init.fuzzyName, "hidden", span));
+			case IsHidden(None): init.hidden = None;
+			case IsHidden(Some(outsideOf)): init.hidden = Some(decl.makeTypePath(outsideOf));
 
 			case IsNoinherit: init.noInherit = true;
 
 			case IsUnordered: init.isUnordered = true;
 
-			case IsNative(_) if(init.native.isSome()): init.errors.push(Errors.duplicateAttribute(init, init.fuzzyName, "native", span));
-			case IsNative(sym): init.native = Some(sym);
+			case IsNative(_) if(init.native != null): init.errors.push(Errors.duplicateAttribute(init, init.fuzzyName, "native", span));
+			case IsNative(sym): init.native = sym;
 
 			case IsAsm: init.isAsm = true;
 			

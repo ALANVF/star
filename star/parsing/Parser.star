@@ -280,9 +280,9 @@ module Parser {
 					return This[parseCaseDecl: span, rest]
 				}
 			}
-			at #[Token[init], ...my rest] => return This[parseInitDecl: generics, rest][fatalIfBad: tokens]
-			at #[Token[on], ...my rest] => return This[parseMethodDecl: generics, rest][fatalIfBad: tokens]
-			at #[Token[operator], ...my rest] => return This[parseOperatorDecl: generics, rest][fatalIfBad: tokens]
+			at #[Token[init: my span], ...my rest] => return This[parseInitDecl: generics, span, rest][fatalIfBad: tokens]
+			at #[Token[on: my span], ...my rest] => return This[parseMethodDecl: generics, span, rest][fatalIfBad: tokens]
+			at #[Token[operator: my span], ...my rest] => return This[parseOperatorDecl: generics, span, rest][fatalIfBad: tokens]
 			at #[Token[deinit: my span], ...my rest] {
 				if generics? {
 					return Result[fatalError: Diagnostic[
@@ -2044,10 +2044,10 @@ module Parser {
 			at #[Token[for: my span], ...my rest] => match This[parseExpr: rest] {
 				at Result[success: my var, my rest'] => match rest' {
 					at #[Token[label: "from" span: my span'], ...my rest''] {
-						return This[parseLoopRange: span, var, Stmt.Loop.Start[from] -> span = span']
+						return This[parseLoopRange: span, var, Stmt.Loop.Start[from] -> span = span', rest'']
 					}
 					at #[Token[label: "after" span: my span'], ...my rest''] {
-						return This[parseLoopRange: span, var, Stmt.Loop.Start[after] -> span = span']
+						return This[parseLoopRange: span, var, Stmt.Loop.Start[after] -> span = span', rest'']
 					}
 					at #[Token[comma], ...my rest''] => match This[parseExpr: rest''] {
 						at Result[success: my var', my rest'''] => return This[parseLoopIn: span, var, Maybe[the: var'], rest''']

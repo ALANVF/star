@@ -319,7 +319,7 @@ class Category extends AnyTypeDecl {
 	// Privacy
 
 	function canSeeMember(member: Member) {
-		return member.lookup == this
+		return member.decl == this
 			|| thisType.canSeeMember(member);
 	}
 
@@ -378,7 +378,7 @@ class Category extends AnyTypeDecl {
 				at(mm is MultiStaticMethod) => if(from.canSeeMethod(mm))
 					mm.params.matchesNames(names)._match(
 						at(Yes) => candidates.push(MSMethod(mm)),
-						at(Partial) => candidates.push(MSMethod(mm, true)),
+						at(Partial(indexes)) => candidates.push(MSMethod(mm, indexes)),
 						at(No) => {}
 					),
 				_ => {}
@@ -388,7 +388,7 @@ class Category extends AnyTypeDecl {
 				at(mi is MultiInit) => if(from.canSeeMethod(mi))
 					mi.params.matchesNames(names)._match(
 						at(Yes) => candidates.push(MSInit(mi)),
-						at(Partial) => candidates.push(MSInit(mi, true)),
+						at(Partial(indexes)) => candidates.push(MSInit(mi, indexes)),
 						at(No) => {}
 					),
 				_ => {}
@@ -443,7 +443,7 @@ class Category extends AnyTypeDecl {
 				at(mm is MultiMethod) => if(from.canSeeMethod(mm))
 					mm.params.matchesNames(names, mm.isSetter)._match(
 						at(Yes) => candidates.push(MIMethod(mm)),
-						at(Partial) => candidates.push(MIMethod(mm, true)),
+						at(Partial(indexes)) => candidates.push(MIMethod(mm, indexes)),
 						at(No) => {}
 					),
 				_ => {}

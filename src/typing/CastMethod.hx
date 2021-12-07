@@ -9,8 +9,8 @@ class CastMethod extends Method {
 			decl: decl,
 			span: ast.span,
 			type: null, // hack for partial initialization
-			ret: None,
-			body: ast.body.map(body -> body.stmts())
+			ret: null,
+			body: ast.body.toNull()._and(body => body.stmts())
 		});
 
 		method.type = switch ast.spec.of {
@@ -27,9 +27,9 @@ class CastMethod extends Method {
 		for(attr => span in ast.attrs) switch attr {
 			case IsStatic: method.errors.push(Errors.invalidAttribute(method, typeName, "static", span));
 			
-			case IsHidden(_) if(method.hidden.isSome()): method.errors.push(Errors.duplicateAttribute(method, typeName, "hidden", span));
-			case IsHidden(None): method.hidden = Some(None);
-			case IsHidden(Some(outsideOf)): method.hidden = Some(Some(decl.makeTypePath(outsideOf)));
+			case IsHidden(_) if(method.hidden != null): method.errors.push(Errors.duplicateAttribute(method, typeName, "hidden", span));
+			case IsHidden(None): method.hidden = None;
+			case IsHidden(Some(outsideOf)): method.hidden = Some(decl.makeTypePath(outsideOf));
 
 			case IsMain: method.errors.push(Errors.invalidAttribute(method, typeName, "main", span));
 
@@ -41,8 +41,8 @@ class CastMethod extends Method {
 
 			case IsUnordered: method.errors.push(Errors.invalidAttribute(method, typeName, "unordered", span));
 
-			case IsNative(_) if(method.native.isSome()): method.errors.push(Errors.duplicateAttribute(method, typeName, "native", span));
-			case IsNative(sym): method.native = Some(sym);
+			case IsNative(_) if(method.native != null): method.errors.push(Errors.duplicateAttribute(method, typeName, "native", span));
+			case IsNative(sym): method.native = sym;
 
 			case IsInline: method.isInline = true;
 

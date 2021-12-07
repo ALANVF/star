@@ -16,6 +16,11 @@ class Main {
 	static final stdout = Sys.stdout();
 	public static final renderer = new TextDiagnosticRenderer(stdout);
 
+	static var typesDump: haxe.io.Output = null;
+	public static var typesDumper: typing.Dumper = null;
+	static var stmtsDump: haxe.io.Output = null;
+	public static var stmtsDumper: typing.Dumper = null;
+
 	static inline function nl() {
 		Sys.print("\n");
 	}
@@ -70,7 +75,7 @@ class Main {
 			Sys.println('Build declarations time: ${timeDecls}ms');
 		}
 
-		if(opt.pass1) {
+		if(opt.pass1 && !files.some(f -> f.hasErrors())) {
 			final startPass1 = haxe.Timer.stamp();
 			project.pass1();
 			final stopPass1 = haxe.Timer.stamp();
@@ -87,7 +92,7 @@ class Main {
 			typing.Project.STDLIB = project;
 		}
 		
-		if(opt.pass2) {
+		if(opt.pass2 && !files.some(f -> f.hasErrors())) {
 			final startPass2 = haxe.Timer.stamp();
 			typing.Pass2.resolveProject(project);
 			final stopPass2 = haxe.Timer.stamp();
@@ -133,7 +138,12 @@ class Main {
 		for(file in allFiles("examples")) {
 			parse(newSource(file), false);
 		}*/
-
+	
+	final dumpTypes = false;
+		
+	if(dumpTypes) { typesDump = sys.io.File.write("./dump/types.stir"); typesDumper = new typing.Dumper(typesDump); }
+	stmtsDump = sys.io.File.write("./dump/stmts.stir"); stmtsDumper = new typing.Dumper(stmtsDump);
+	try {
 		testProject("stdlib", {
 			isStdlib: true,
 			pass1: true,
@@ -155,8 +165,49 @@ class Main {
 				trace(direct.simpleName());
 			});
 		}* /);*/
+		for(type in [
+			typing.Pass2.STD_Int,
+			typing.Pass2.STD_Dec,
+			typing.Pass2.STD_Str,
+			typing.Pass2.STD_Array.t._match(
+				at(TMulti(types)) => types[0],
+				_ => throw "bad"
+			)
+		]) type.t._match(
+			at(TConcrete(decl is typing.Class) | TModular({t: TConcrete(decl is typing.Class)}, _)) => {
+				/*stmtsDumper.write(";== of:");
+				stmtsDumper.nextLine();
+				for(p in decl.parents) {
+					stmtsDumper.nextLine();
+					stmtsDumper.dump(p, Nil);
+				}
+				stmtsDumper.nextLine();
+				for(mth in decl.methods) mth.typedBody._and(body => {
+					stmtsDumper.write(";== ");
+					stmtsDumper.write(type.fullName());
+					stmtsDumper.write("#[");
+					stmtsDumper.write(mth.methodName());
+					stmtsDumper.write("]");
+					stmtsDumper.nextLine();
+					stmtsDumper.dump(mth);
+					stmtsDumper.nextLine();
+					stmtsDumper.nextLine();
+				});*/
+				stmtsDumper.dump(decl);
+				stmtsDumper.nextLine();
+				stmtsDumper.nextLine();
+			},
+			_ => throw "???"+type
+		);
 		nl();
 		testProject("star", {pass1: true, pass2: true});
+	} catch(e: haxe.Exception) {
+		if(dumpTypes) typesDump.close();
+		stmtsDump.close();
+		hl.Api.rethrow(e);
+	}
+	if(dumpTypes) typesDump.close();
+	stmtsDump.close();
 		/*nl();
 		testProject("tests/self", true, (project: typing.Project) -> {
 			project.findTypeOld(List2.of(["Slot", []]), true).forEach(slot -> {

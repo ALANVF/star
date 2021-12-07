@@ -22,7 +22,9 @@ class Auto {
 			}
 		}
 
-		//thisClass.meta.add(":auto", [], Context.currentPos());
+		if(thisClass.meta.has("auto")) return thisFields;
+
+		thisClass.meta.add("auto", [], Context.currentPos());
 
 		// Constructor
 		final oldNew = thisFields.find(f -> f.name == "new");
@@ -31,14 +33,14 @@ class Auto {
 			var inits = [];
 			var isOptional = true;
 			final toRemove = [];
-
+			
 			for(f in thisFields) {
 				if(f.access.contains(AStatic)) continue;
 
 				final getThis = ["this", f.name];
 				final getInit = ["init", f.name];
 
-				if(f.meta.find(m -> m.name == "ignore") != null) {
+				if(f.meta.some(m -> m.name == "ignore")) {
 					continue;
 				}
 

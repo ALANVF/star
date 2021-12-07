@@ -20,11 +20,11 @@ typedef VDecl = VErrors & {
 
 typedef IAnyMethod = VDecl & {
 	final decl: AnyTypeDecl;
-	var hidden: Option<Option<Type>>;
+	var hidden: Null<Option<Type>>;
 	var noInherit: Bool;
-	var native: Option<Option<Ident>>;
+	var native: Null<Option<Ident>>;
 	var isAsm: Bool;
-	final body: Option<Array<Stmt>>;
+	final body: Null<Array<Stmt>>;
 }
 
 typedef IDefaultInit = {
@@ -52,7 +52,7 @@ typedef IMembers = {
 }
 
 typedef IMethod = IAnyMethod & {
-	var ret: Option<Type>;
+	var ret: Null<Type>;
 	var isMain: Bool;
 	var isGetter: Bool;
 	var isSetter: Bool;

@@ -6,6 +6,7 @@ import reporting.Diagnostic;
 import typing.Traits;
 
 @:publicFields
+@:build(util.Overload.build())
 class Errors {
 	/*static function invalidDeclType(decl, declSpan, name, typeSpan) {
 		return new Diagnostic({
@@ -318,19 +319,22 @@ class Errors {
 	}
 	
 
-	static extern inline overload function unknownMethod(ctx: Ctx, isStatic: Bool, type: Type, name: String, span, ?categories: Array<Category>)
+	static inline overload function unknownMethod(ctx: Ctx, isStatic: Bool, type: Type, name: String, span, ?categories: Array<Category>)
 		return _unknownMethod(ctx, isStatic, type, '[$name]', span, categories);
 
-	static extern inline overload function unknownMethod(ctx: Ctx, isStatic: Bool, type: Type, names: Array<String>, span, ?categories: Array<Category>)
+	static inline overload function unknownMethod(ctx: Ctx, isStatic: Bool, type: Type, names: Array<String>, args: Array<TExpr>, span, ?categories: Array<Category>)
+		return _unknownMethod(ctx, isStatic, type, "["+names.zip(args, (n, a) -> '$n: (${a.t._andOr(t => t.fullName(), "???")})').join(" ")+"]", span, categories);
+	
+	static inline overload function unknownMethod(ctx: Ctx, isStatic: Bool, type: Type, names: Array<String>, span, ?categories: Array<Category>)
 		return _unknownMethod(ctx, isStatic, type, "["+names.joinMap(" ", n -> '$n:')+"]", span, categories);
 
-	static extern inline overload function unknownMethod(ctx: Ctx, type: Type, op: UnaryOp, span)
+	static inline overload function unknownMethod(ctx: Ctx, type: Type, op: UnaryOp, span)
 		return _unknownMethod(ctx, false, type, '[`${op.symbol()}`]', span);
 
-	static extern inline overload function unknownMethod(ctx: Ctx, type: Type, op: BinaryOp, span)
+	static inline overload function unknownMethod(ctx: Ctx, type: Type, op: BinaryOp, span)
 		return _unknownMethod(ctx, false, type, '[`${op.symbol()}`:]', span);
 	
-	static extern inline overload function unknownMethod(ctx: Ctx, type: Type, rtype: Type, op: BinaryOp, span)
+	static inline overload function unknownMethod(ctx: Ctx, type: Type, rtype: Type, op: BinaryOp, span)
 		return _unknownMethod(ctx, false, type, '[`${op.symbol()}`: (${rtype.fullName()})]', span);
 
 	private static function _unknownMethod(ctx: Ctx, isStatic: Bool, type: Type, methodName, span, ?categories: Array<Category>) {

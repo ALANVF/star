@@ -14,6 +14,7 @@ class ValueCase implements IErrors {
 	final span: Span;
 	final name: Ident;
 	var value: Option<Expr>;
+	@ignore var typedValue: Null<TExpr> = null;
 
 	static function fromAST(decl, ast: parsing.ast.decls.Case) {
 		switch ast.kind {

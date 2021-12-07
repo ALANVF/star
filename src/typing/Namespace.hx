@@ -334,7 +334,7 @@ abstract class Namespace extends TypeDecl {
 				at(mm is MultiStaticMethod) => if(from.canSeeMethod(mm))
 					mm.params.matchesNames(names)._match(
 						at(Yes) => candidates.push(MSMethod(mm)),
-						at(Partial) => candidates.push(MSMethod(mm, true)),
+						at(Partial(indexes)) => candidates.push(MSMethod(mm, indexes)),
 						at(No) => {}
 					),
 				_ => {}

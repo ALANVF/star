@@ -2,6 +2,7 @@ package parsing.ast;
 
 private class _Assignable {}
 
+@:using(parsing.ast.Infix)
 private enum _Infix<T> {
 	Plus: _Infix<_Assignable>;
 	Minus: _Infix<_Assignable>;
@@ -31,6 +32,37 @@ private enum _Infix<T> {
 	Assign(op: Option<_Infix<_Assignable>>);
 }
 
+@:using(parsing.ast.Infix)
 typedef Infix = _Infix<Dynamic>;
 
+@:using(parsing.ast.Infix)
 typedef Assignable = _Infix<_Assignable>;
+
+
+function symbol<T>(self: _Infix<T>) return self._match(
+	at(Plus) => "+",
+	at(Minus) => "-",
+	at(Times) => "*",
+	at(Pow) => "**",
+	at(Div) => "/",
+	at(IntDiv) => "//",
+	at(Mod) => "%",
+	at(IsMod) => "%%",
+	at(BitAnd) => "&",
+	at(BitOr) => "|",
+	at(BitXor) => "^",
+	at(Shl) => "<<",
+	at(Shr) => ">>",
+	at(And) => "&&",
+	at(Or) => "||",
+	at(Xor) => "^^",
+	at(Nor) => "!!",
+	at(Eq) => "?=",
+	at(Ne) => "!=",
+	at(Gt) => ">",
+	at(Ge) => ">=",
+	at(Lt) => "<",
+	at(Le) => "<=",
+	at(Assign(None)) => "=",
+	at(Assign(Some(op))) => op.symbol()+"="
+);

@@ -13,16 +13,16 @@ class SingleStaticMethod extends StaticMethod {
 				case Single(name): name;
 				default: throw "Error!";
 			},
-			ret: ast.ret.map(ret -> decl.makeTypePath(ret)),
-			body: ast.body.map(body -> body.stmts())
+			ret: ast.ret.toNull()._and(ret => decl.makeTypePath(ret)),
+			body: ast.body.toNull()._and(body => body.stmts())
 		});
 
 		for(attr => span in ast.attrs) switch attr {
 			case IsStatic:
 			
-			case IsHidden(_) if(method.hidden.isSome()): method.errors.push(Errors.duplicateAttribute(method, method.name.name, "hidden", span));
-			case IsHidden(None): method.hidden = Some(None);
-			case IsHidden(Some(outsideOf)): method.hidden = Some(Some(decl.makeTypePath(outsideOf)));
+			case IsHidden(_) if(method.hidden != null): method.errors.push(Errors.duplicateAttribute(method, method.name.name, "hidden", span));
+			case IsHidden(None): method.hidden = None;
+			case IsHidden(Some(outsideOf)): method.hidden = Some(decl.makeTypePath(outsideOf));
 
 			case IsMain: method.isMain = true;
 
@@ -34,8 +34,8 @@ class SingleStaticMethod extends StaticMethod {
 
 			case IsUnordered: method.errors.push(Errors.invalidAttribute(method, method.name.name, "unordered", span));
 
-			case IsNative(_) if(method.native.isSome()): method.errors.push(Errors.duplicateAttribute(method, method.name.name, "native", span));
-			case IsNative(sym): method.native = Some(sym);
+			case IsNative(_) if(method.native != null): method.errors.push(Errors.duplicateAttribute(method, method.name.name, "native", span));
+			case IsNative(sym): method.native = sym;
 
 			case IsInline: method.isInline = true;
 

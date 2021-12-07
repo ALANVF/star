@@ -171,7 +171,7 @@ class Protocol extends ClassLike {
 				at(mm is MultiStaticMethod) => if(from.canSeeMethod(mm))
 					mm.params.matchesNames(names)._match(
 						at(Yes) => candidates.push(MSMethod(mm)),
-						at(Partial) => candidates.push(MSMethod(mm, true)),
+						at(Partial(indexes)) => candidates.push(MSMethod(mm, indexes)),
 						at(No) => {}
 					),
 				_ => {}
@@ -181,7 +181,7 @@ class Protocol extends ClassLike {
 				at(mi is MultiInit) => if(from.canSeeMethod(mi))
 					mi.params.matchesNames(names)._match(
 						at(Yes) => candidates.push(MSInit(mi)),
-						at(Partial) => candidates.push(MSInit(mi, true)),
+						at(Partial(indexes)) => candidates.push(MSInit(mi, indexes)),
 						at(No) => {}
 					),
 				_ => {}

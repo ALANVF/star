@@ -96,7 +96,7 @@ private inline function unknownOp(decl: AnyTypeDecl, ast: parsing.ast.decls.Oper
 }
 
 abstract class Operator extends AnyMethod {
-	var ret: Option<Type>;
+	var ret: Null<Type>;
 	final opSpan: Span;
 	var isInline: Bool = false;
 	var isMacro: Bool = false;
@@ -170,14 +170,14 @@ abstract class Operator extends AnyMethod {
 		};
 
 		for(attr => span in ast.attrs) switch attr {
-			case IsHidden(_) if(oper.hidden.isSome()): oper.errors.push(Errors.duplicateAttribute(oper, oper.opName(), "hidden", span));
-			case IsHidden(None): oper.hidden = Some(None);
-			case IsHidden(Some(outsideOf)): oper.hidden = Some(Some(decl.makeTypePath(outsideOf)));
+			case IsHidden(_) if(oper.hidden != null): oper.errors.push(Errors.duplicateAttribute(oper, oper.opName(), "hidden", span));
+			case IsHidden(None): oper.hidden = None;
+			case IsHidden(Some(outsideOf)): oper.hidden = Some(decl.makeTypePath(outsideOf));
 
 			case IsNoinherit: oper.noInherit = true;
 
-			case IsNative(_) if(oper.native.isSome()): oper.errors.push(Errors.duplicateAttribute(oper, oper.opName(), "native", span));
-			case IsNative(sym): oper.native = Some(sym);
+			case IsNative(_) if(oper.native != null): oper.errors.push(Errors.duplicateAttribute(oper, oper.opName(), "native", span));
+			case IsNative(sym): oper.native = sym;
 
 			case IsInline: oper.isInline = true;
 

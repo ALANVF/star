@@ -10,7 +10,22 @@ abstract class ClassLike extends Namespace {
 
 	override function instMembers(from: AnyTypeDecl) {
 		return members.filter(mem -> from.canSeeMember(mem))
-			.concat(parents.flatMap(p -> p.instMembers(from)))
+			.concat(parents.flatMap(p -> p.instMembers(from).map(
+				mem -> new Member({
+					errors: mem.errors,
+					decl: mem.decl,
+					span: mem.span,
+					name: mem.name,
+					type: mem.type._and(t => t.getFrom(p)),
+					isStatic: mem.isStatic,
+					hidden: mem.hidden,
+					isReadonly: mem.isReadonly,
+					getter: mem.getter,
+					setter: mem.setter,
+					noInherit: mem.noInherit,
+					value: mem.value
+				})
+			)))
 			.concat(super.instMembers(from));
 	}
 
@@ -90,7 +105,7 @@ abstract class ClassLike extends Namespace {
 					at(mm is MultiMethod) => if(mm.isSetter && from.canSeeMethod(mm))
 						mm.params.matchesNames(names, true)._match(
 							at(Yes) => candidates.push(MIMethod(mm)),
-							at(Partial) => candidates.push(MIMethod(mm, true)),
+							at(Partial(indexes)) => candidates.push(MIMethod(mm, indexes)),
 							at(No) => {}
 						),
 					_ => {}
@@ -101,7 +116,7 @@ abstract class ClassLike extends Namespace {
 				at(mm is MultiMethod) => if(from.canSeeMethod(mm))
 					mm.params.matchesNames(names, mm.isSetter)._match(
 						at(Yes) => candidates.push(MIMethod(mm)),
-						at(Partial) => candidates.push(MIMethod(mm, true)),
+						at(Partial(indexes)) => candidates.push(MIMethod(mm, indexes)),
 						at(No) => {}
 					),
 				_ => {}

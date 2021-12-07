@@ -196,7 +196,7 @@ class StrongAlias extends Alias {
 				at(mm is MultiStaticMethod) => if(from.canSeeMethod(mm))
 					mm.params.matchesNames(names)._match(
 						at(Yes) => candidates.push(MSMethod(mm)),
-						at(Partial) => candidates.push(MSMethod(mm, true)),
+						at(Partial(indexes)) => candidates.push(MSMethod(mm, indexes)),
 						at(No) => {}
 					),
 				_ => {}
@@ -272,7 +272,7 @@ class StrongAlias extends Alias {
 					at(mm is MultiMethod) => if(mm.isSetter && from.canSeeMethod(mm))
 						mm.params.matchesNames(names, true)._match(
 							at(Yes) => candidates.push(MIMethod(mm)),
-							at(Partial) => candidates.push(MIMethod(mm, true)),
+							at(Partial(indexes)) => candidates.push(MIMethod(mm, indexes)),
 							at(No) => {}
 						),
 					_ => {}
@@ -283,7 +283,7 @@ class StrongAlias extends Alias {
 				at(mm is MultiMethod) => if(from.canSeeMethod(mm))
 					mm.params.matchesNames(names, mm.isSetter)._match(
 						at(Yes) => candidates.push(MIMethod(mm)),
-						at(Partial) => candidates.push(MIMethod(mm, true)),
+						at(Partial(indexes)) => candidates.push(MIMethod(mm, indexes)),
 						at(No) => {}
 					),
 				_ => {}
