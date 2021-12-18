@@ -1814,10 +1814,10 @@ static function typeStmt(ctx: Ctx, stmt: UStmt): TStmt {
 			case SExpr(expr):
 				SExpr(typeExpr(ctx, expr));
 			
-			case SIf(_, cond, thenBlk, elseBlk):
+			case SIf(_, cond, then, elseBlk):
 				SIf(
 					shouldBeLogical(ctx, typeExpr(ctx, cond)),
-					typeBlock(ctx, thenBlk),
+					typeThen(ctx, then),
 					elseBlk._and(b => typeBlock(ctx, b._2))
 				);
 			

@@ -100,13 +100,9 @@ class Array[T] of Values[T] {
 		by: offset (Int) = 0
 		allowPartial: (Bool) = true
 	] (This[This]) {
-		if size <= 0 {
-			throw "Invalid size"
-		}
-
-		if offset + size <= 0 {
-			throw "Invalid offset"
-		}
+		if size <= 0 => throw "Invalid size"
+		
+		if offset + size <= 0 => throw "Invalid offset"
 
 		;-- Thanks to @somebody1234 for helping me figure out this algorithm
 

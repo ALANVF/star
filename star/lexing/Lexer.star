@@ -155,9 +155,7 @@ class Lexer {
 
 		this[trim]
 
-		if !reader[hasNext] {
-			throw Eof[new]
-		}
+		if !reader[hasNext] => throw Eof[new]
 
 		begin = this[here]
 

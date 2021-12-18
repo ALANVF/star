@@ -48,13 +48,8 @@ class Int of Native.Int32, Num {
 		my v = other[abs]
 		my shift = 0
 
-		if u ?= 0 {
-			return v
-		}
-
-		if v ?= 0 {
-			return u
-		}
+		if u ?= 0 => return v
+		if v ?= 0 => return u
 
 		while (u | v) %% 2 {
 			shift++

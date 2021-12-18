@@ -108,9 +108,7 @@ class Reader of Series[Char] is hidden Lexer {
 	}
 
 	on [skip: other (This)] (This) {
-		if !this[sameSeries: other] {
-			throw "Error!"
-		}
+		if !this[sameSeries: other] => throw "Error!"
 
 		for my i from: offset upto: other.offset {
 			cursor[append: buffer[Unsafe at: i]]

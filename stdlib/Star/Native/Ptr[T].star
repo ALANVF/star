@@ -50,21 +50,11 @@ class Ptr[T] of Ordered is native[repr: `ptr` elem: T] {
 	operator `+` [offset (Int)] (Ptr[T]) is native `ptr_add`
 	operator `-` [offset (Int)] (Ptr[T]) is native `ptr_sub`
 	
-	operator `<` [other (Ptr[T])] (Bool) {
-		return this[UInt64] < other[UInt64]
-	}
+	operator `<` [other (Ptr[T])] (Bool) => return this[UInt64] < other[UInt64]
+	operator `<=` [other (Ptr[T])] (Bool) => return this[UInt64] <= other[UInt64]
 
-	operator `<=` [other (Ptr[T])] (Bool) {
-		return this[UInt64] <= other[UInt64]
-	}
-
-	operator `>` [other (Ptr[T])] (Bool) {
-		return this[UInt64] > other[UInt64]
-	}
-
-	operator `>=` [other (Ptr[T])] (Bool) {
-		return this[UInt64] >= other[UInt64]
-	}
+	operator `>` [other (Ptr[T])] (Bool) => return this[UInt64] > other[UInt64]
+	operator `>=` [other (Ptr[T])] (Bool) => return this[UInt64] >= other[UInt64]
 
 
 	;on [Ptr[Void]] is native `cast_ptr_vptr`

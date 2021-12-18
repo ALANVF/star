@@ -4,13 +4,9 @@ class Char of Ordered is native[repr: `int` bits: 8 signed: false] is strong {
 	;== Stepping
 	
 	;-- what to do about underflow/overflow...?
-	on [next] (This) {
-		return this + 1
-	}
+	on [next] (This) => return this + 1
 
-	on [previous] (This) {
-		return this - 1
-	}
+	on [previous] (This) => return this - 1
 
 
 	;== Casing
@@ -97,7 +93,5 @@ class Char of Ordered is native[repr: `int` bits: 8 signed: false] is strong {
 	on [Int64] is native `cast_u8_i64`
 	on [UInt64] is native `cast_u8_u64`
 	on [Int] is native `cast_u8_i32`
-	on [Str] is inline {
-		return Str[new: this]
-	}
+	on [Str] is inline => return Str[new: this]
 }

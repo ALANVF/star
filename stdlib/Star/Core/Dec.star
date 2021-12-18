@@ -26,9 +26,7 @@ class Dec of Num is native[repr: `dec` bits: 64] is strong {
 		while true {
 			my x' = (m * x + this / x ** m) / root
 
-			if [x' - x abs] < [x * 1e-9 abs] {
-				return x'
-			}
+			if [x' - x abs] < [x * 1e-9 abs] => return x'
 			
 			x = x'
 		}

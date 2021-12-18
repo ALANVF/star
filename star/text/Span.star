@@ -52,9 +52,7 @@ class Span {
 	}
 
 	init [from: (Span) to: (Span)] {
-		if from.source != to.source {
-			throw "The two spans originate from different sources!"
-		}
+		if from.source != to.source => throw "The two spans originate from different sources!"
 
 		source = from.source
 		begin = from.begin

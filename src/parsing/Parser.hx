@@ -1978,6 +1978,13 @@ class Parser {
 	
 	static function parseStmt(tokens: Tokens): ParseResult<Stmt> return tokens._match(
 		at([T_If(_1), ...rest]) => switch parseExpr(rest) {
+			case Success(trueCond, Cons(T_EqGt(_2), rest2)): switch parseStmt(rest2) {
+				case Success(trueStmt, rest3): {
+					// TODO: check for simple statement
+					return Success(SIf(_1, trueCond, ThenStmt(_2, trueStmt), null), rest3);
+				}
+				case err: cast err;
+			}
 			case Success(trueCond, rest2): switch parseBlock(rest2) {
 				case Success(trueBlk, rest3):
 					final otherwise = rest3._match(
@@ -1990,7 +1997,7 @@ class Parser {
 						_ => null
 					);
 
-					Success(SIf(_1, trueCond, trueBlk, otherwise), rest3);
+					Success(SIf(_1, trueCond, ThenBlock(trueBlk), otherwise), rest3);
 
 				case err: cast err;
 			}

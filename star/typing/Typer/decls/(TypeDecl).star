@@ -163,9 +163,7 @@ protocol TypeDecl of AnyTypeDecl {
 			at #{my span, my name, my args} {
 				my finished = true
 				my res = {
-					if search ?= Search.inside {
-						return Maybe[none]
-					}
+					if search ?= Search.inside => return Maybe[none]
 
 					match {
 						match typevars[maybeAt: name] at Maybe[the: my found] {
@@ -309,9 +307,7 @@ protocol TypeDecl of AnyTypeDecl {
 	}
 
 	on [hasStrictChild: type (Type)] (Bool) {
-		if thisType ?= type {
-			return true
-		}
+		if thisType ?= type => return true
 
 		match type {
 			at Type[decl: my decl] => return this[hasStrictChild: decl]
@@ -328,9 +324,7 @@ protocol TypeDecl of AnyTypeDecl {
 	;== Unification
 
 	on [strictUnifyWith: type (Type)] (Maybe[Type]) {
-		if thisType ?= type {
-			return Maybe[the: thisType]
-		}
+		if thisType ?= type return Maybe[the: thisType]
 
 		match type {
 			at Type[decl: my decl] {
@@ -355,9 +349,7 @@ protocol TypeDecl of AnyTypeDecl {
 	on [acceptsArgs: args (Array[Type])] (Bool)
 
 	on [applyArgs: args (Array[Type])] (Maybe[Type]) {
-		if args.length != params.length {
-			return Maybe[none]
-		}
+		if args.length != params.length return Maybe[none]
 
 		my typevarCtx = TypeVarCtx #()
 		my params' = #[]
@@ -389,9 +381,7 @@ protocol TypeDecl of AnyTypeDecl {
 	;== Effects tracking
 	
 	on [applyArgs: args (Array[Type]) trackEffectsIn: ctx (Ctx)] (Maybe[Tuple[Type, Effects]]) {
-		if args.length != params.length {
-			return Maybe[none]
-		}
+		if args.length != params.length return Maybe[none]
 
 		my effects = Effects.empty
 		my typevarCtx = TypeVarCtx #()

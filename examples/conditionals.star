@@ -10,6 +10,9 @@ module Main {
 			Core[say: false]
 		}
 
+		; shorthand
+		if 1 ?= 1 => Core[say: true]
+
 		; as a replacement for a long if/else statement chain
 		case {
 			at 1 ?= 2 {

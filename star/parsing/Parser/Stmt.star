@@ -3,7 +3,7 @@ kind Stmt {
 	
 	has [
 		if: (Span), (Expr)
-		then: (Block)
+		then: (Then)
 		else: (Maybe[Tuple[Span, Block]])
 	]
 	

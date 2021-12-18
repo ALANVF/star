@@ -1871,6 +1871,12 @@ module Parser {
 	on [parseStmt: tokens (Tokens)] (Result[Stmt]) {
 		match tokens {
 			at #[Token[if: my span], ...my rest] => match This[parseExpr: rest] {
+				at Result[success: my cond, #[Token[eqGt: my span'], ...my rest']] => match This[parseStmt: rest'] {
+					at Result[success: my stmt, my rest''] {
+						;@@ TODO: check for simple statement
+						return Result[success: Stmt[if: span, cond then: Stmt.Then[stmt: span', stmt] else: else'], rest'']
+					}
+				}
 				at Result[success: my cond, my rest'] => match This[parseBlock: rest'] {
 					at Result[success: my then, my rest''] {
 						my else'
@@ -1883,7 +1889,7 @@ module Parser {
 							else' = Maybe[none]
 						}
 						
-						return Result[success: Stmt[if: span, cond :then else: else'], rest'']
+						return Result[success: Stmt[if: span, cond then: Stmt.Then[block: then] else: else'], rest'']
 					}
 					at my fail => return fail[Result[Stmt]]
 				}
@@ -2653,9 +2659,7 @@ module Parser {
 	on [parseParenContents: tokens (Tokens)] (Result[Tuple[Array[Expr], Span]]) {
 		my exprs = #[]
 
-		if !This[removeNewlines: tokens] {
-			return Result[eof: tokens]
-		}
+		if !This[removeNewlines: tokens] => return Result[eof: tokens]
 
 		my rest = tokens
 		my leadingOp = {

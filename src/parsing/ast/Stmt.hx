@@ -24,7 +24,7 @@ enum Stmt {
 	SIf(
 		_: Span,
 		cond: Expr,
-		thenBlk: Block,
+		then: Then,
 		elseBlk: Null<Tuple2<Span, Block>>
 	);
 	SCase(

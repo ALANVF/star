@@ -68,13 +68,9 @@ class Forwards[T, S] of Range[T, S] is hidden Range {
 
 	;== Observing
 
-	on [max] (T) is inline {
-		return to
-	}
+	on [max] (T) is inline => return to
 	
-	on [min] (T) is inline {
-		return from
-	}
+	on [min] (T) is inline => return from
 
 
 	;== Testing
@@ -93,9 +89,7 @@ class Forwards[T, S] of Range[T, S] is hidden Range {
 
 	;== Iterating
 
-	on [Iterator[T]] is inline {
-		return ForwardsIterator[:from :to :step]
-	}
+	on [Iterator[T]] is inline => return ForwardsIterator[:from :to :step]
 
 
 	;== Reversing

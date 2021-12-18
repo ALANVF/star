@@ -24,9 +24,7 @@ category Power for Int {
 		includesPrefix: (Bool) = true
 		usesUnifiedPrefix: (Bool) = false
 	] (Int) is static {
-		if base < 2 || base > 36 {
-			throw "Invalid base: must be 2..36"
-		}
+		if base < 2 || base > 36 => throw "Invalid base: must be 2..36"
 
 		#{my index, my sign} = This[Power getSignFromStr: str]
 
@@ -58,9 +56,7 @@ category Power for Int {
 				match str[at: index++] at #"0" <= my d1 <= #"9" {
 					match str[at: index++] {
 						at #"0" <= my d2 <= #"9" {
-							if str[at: index++] != #"r" {
-								throw "Parse error"
-							}
+							if str[at: index++] != #"r" => throw "Parse error"
 
 							if (d1 ?= #"0" && d2 < #"2") || (d1 ?= #"3" && d2 > #"6") {
 								throw "Invaid base: must be 2..36"
@@ -81,9 +77,7 @@ category Power for Int {
 					throw "Parse error"
 				}
 			} else {
-				if str[at: index++] != #"0" {
-					throw "Expected prefix"
-				}
+				if str[at: index++] != #"0" => throw "Expected prefix"
 
 				match str[at: index++] {
 					at #"b" => return 2
@@ -147,9 +141,7 @@ category Power for Int {
 		minDigits: (Int) = 1
 		isUpper: (Bool) = false
 	] (Str) {
-		if base < 2 || base > 36 {
-			throw "Invalid base: must be 2..36"
-		}
+		if base < 2 || base > 36 => throw "Invalid base: must be 2..36"
 
 		my result = [this < 0 yes: "-" no: ""]
 

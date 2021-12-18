@@ -177,7 +177,7 @@ class Str of Values[Char], Ordered is strong {
 		return str
 	}
 
-	type T {on [Str]}
+	type T { on [Str] }
 	on [add: value (T)] (T) is inline {
 		this[add: value[Str]]
 
@@ -193,7 +193,7 @@ class Str of Values[Char], Ordered is strong {
 		return value
 	}
 
-	type T {on [Str]}
+	type T { on [Str] }
 	on [maybeAdd: value (Maybe[T])] (Maybe[T]) {
 		match value at Maybe[the: my value'] {
 			this[add: value']
@@ -207,7 +207,7 @@ class Str of Values[Char], Ordered is strong {
 		return this[add: str]
 	}
 
-	type T {on [Str]}
+	type T { on [Str] }
 	type Iter of Iterable[T]
 	on [addAll: values (Iter)] (Iter) {
 		for my value in: values {
@@ -230,7 +230,7 @@ class Str of Values[Char], Ordered is strong {
 		return str
 	}
 
-	type T {on [Str]}
+	type T { on [Str] }
 	on [prepend: value (T)] (T) is inline {
 		this[prepend: value[Str]]
 
@@ -241,7 +241,7 @@ class Str of Values[Char], Ordered is strong {
 		return this[prepend: str]
 	}
 
-	type T {on [Str]}
+	type T { on [Str] }
 	type Iter of Iterable[T]
 	on [prependAll: values (Iter)] (Iter) {
 		this[prepend: "" -> {
