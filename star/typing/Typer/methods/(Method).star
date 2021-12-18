@@ -1,0 +1,3 @@
+protocol Method of RealMethod {
+	
+}

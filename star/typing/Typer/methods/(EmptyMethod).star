@@ -1,0 +1,3 @@
+protocol EmptyMethod of AnyMethod {
+	
+}

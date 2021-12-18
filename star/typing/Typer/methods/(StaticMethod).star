@@ -1,0 +1,3 @@
+protocol StaticMethod of RealMethod {
+	
+}

@@ -1,0 +1,3 @@
+class Single of TaggedCase {
+	
+}

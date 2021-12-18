@@ -1,0 +1,3 @@
+protocol Namespace of TypeDecl {
+	
+}

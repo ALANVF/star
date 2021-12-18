@@ -1,0 +1,3 @@
+class Deinit of EmptyMethod {
+	
+}

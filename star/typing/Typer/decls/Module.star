@@ -1,0 +1,3 @@
+class Module of Namespace {
+	
+}

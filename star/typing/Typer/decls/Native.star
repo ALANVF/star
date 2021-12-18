@@ -1,0 +1,16 @@
+kind Native {
+	has [void]
+	has [bool]
+	has [int8]
+	has [uInt8]
+	has [int16]
+	has [uInt16]
+	has [int32]
+	has [uInt32]
+	has [int64]
+	has [uInt64]
+	has [dec32]
+	has [dec64]
+	has [voidPtr]
+	has [ptr: (Type)]
+}

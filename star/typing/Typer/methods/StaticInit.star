@@ -1,0 +1,3 @@
+class StaticInit of EmptyMethod {
+	
+}

@@ -1,0 +1,3 @@
+class DefaultInit of EmptyMethod {
+	
+}
