@@ -324,7 +324,7 @@ protocol TypeDecl of AnyTypeDecl {
 	;== Unification
 
 	on [strictUnifyWith: type (Type)] (Maybe[Type]) {
-		if thisType ?= type return Maybe[the: thisType]
+		if thisType ?= type => return Maybe[the: thisType]
 
 		match type {
 			at Type[decl: my decl] {
@@ -349,7 +349,7 @@ protocol TypeDecl of AnyTypeDecl {
 	on [acceptsArgs: args (Array[Type])] (Bool)
 
 	on [applyArgs: args (Array[Type])] (Maybe[Type]) {
-		if args.length != params.length return Maybe[none]
+		if args.length != params.length => return Maybe[none]
 
 		my typevarCtx = TypeVarCtx #()
 		my params' = #[]
@@ -381,7 +381,7 @@ protocol TypeDecl of AnyTypeDecl {
 	;== Effects tracking
 	
 	on [applyArgs: args (Array[Type]) trackEffectsIn: ctx (Ctx)] (Maybe[Tuple[Type, Effects]]) {
-		if args.length != params.length return Maybe[none]
+		if args.length != params.length => return Maybe[none]
 
 		my effects = Effects.empty
 		my typevarCtx = TypeVarCtx #()
