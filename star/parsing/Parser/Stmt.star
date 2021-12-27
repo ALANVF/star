@@ -25,14 +25,14 @@ kind Stmt {
 		value: (Expr)
 		at: (Span), (Expr)
 		if: (Maybe[Tuple[Span, Expr]])
-		then: (Block)
+		then: (Then)
 		else: (Maybe[Tuple[Span, Block]])
 	]
 
 	has [
 		while: (Span), (Expr)
 		label: (Maybe[Tuple[Span, Ident]])
-		do: (Block)
+		do: (Then)
 	]
 
 	has [
@@ -47,7 +47,7 @@ kind Stmt {
 		in: (Tuple[Span, Expr])
 		while: (Maybe[Tuple[Span, Expr]])
 		label: (Maybe[Tuple[Span, Ident]])
-		do: (Block)
+		do: (Then)
 	]
 
 	has [
@@ -58,7 +58,7 @@ kind Stmt {
 		step: (Maybe[Tuple[Span, Expr]])
 		while: (Maybe[Tuple[Span, Expr]])
 		label: (Maybe[Tuple[Span, Ident]])
-		do: (Block)
+		do: (Then)
 	]
 
 	has [do: (Span) label: (Maybe[Tuple[Span, Ident]]), (Block)]

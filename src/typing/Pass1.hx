@@ -142,18 +142,20 @@ static function resolveFileContents(file: File) {
 	for(cat in file.categories) resolveCategory(cat);
 }
 
-
+// TODO: get rid of mutation
 static function resolveBasicType(source: ITypeLookup, type: Type, cache: Cache = Nil) {
 	type.t._match(
 		at(TPath(depth, path, src)) => {
 			source.findType(path, Start, null, depth, cache)._match(
 				at(ty!) => {
 					type.t = ty.t;
+					//Sys.println(@:privateAccess hl.Bytes.fromValue(type, null).address().toString()+" "+path.simpleName());
 				},
 				_ => {
 					if(source != src) src.findType(path, Start, null, depth, cache)._match(
 						at(ty!) => {
 							type.t = ty.t;
+							//Sys.println(@:privateAccess hl.Bytes.fromValue(type, null).address().toString()+" "+path.simpleName());
 						},
 						_ => src._match(
 							at(e is IErrors) => {
@@ -182,13 +184,13 @@ static function resolveBasicType(source: ITypeLookup, type: Type, cache: Cache =
 
 			inline path.forEach((_, _, ps) -> if(ps.length != 0) {
 				for(p in ps) {
-					resolveBasicType(source, p);
+					resolveBasicType(source, p, cache);
 				}
 			});
 		},
 
 		at(TLookup(base, path, src)) => {
-			resolveBasicType(src, base);
+			resolveBasicType(src, base, cache);
 
 			base.t._match(
 				at(TConcrete(c) /*| TModular(_, _)*/) => {
@@ -233,8 +235,8 @@ static function resolveBasicType(source: ITypeLookup, type: Type, cache: Cache =
 		},
 
 		at(TApplied(base, params)) => {
-			resolveBasicType(source, base);
-			for(p in params) resolveBasicType(source, p);
+			resolveBasicType(source, base, cache);
+			for(p in params) resolveBasicType(source, p, cache);
 		},
 
 		_ => {}

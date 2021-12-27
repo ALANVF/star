@@ -482,7 +482,7 @@ static function resolveMember(ctx: Ctx, member: Member) {
 			},
 			_ => {}
 		),
-		at(type!!) => type.t = type.simplify().t
+		at(type!!) => member.type = {t: type.simplify().t, span: type.span}
 	);
 
 	member.value._and(value => {
@@ -1845,22 +1845,22 @@ static function typeStmt(ctx: Ctx, stmt: UStmt): TStmt {
 					otherwise._and(o => typeThen(ctx.innerBlock(), o._2))
 				);
 
-			case SShortMatch(_, value, _, pattern, cond, thenBlk, elseBlk):
+			case SShortMatch(_, value, _, pattern, cond, then, elseBlk):
 				final tvalue = typeExpr(ctx, value);
 				final patternCtx = ctx.innerPattern();
 				SMatchAt(
 					tvalue,
 					typeExpr(patternCtx, pattern),
 					cond._and(c => shouldBeLogical(patternCtx, typeExpr(patternCtx, c._2))),
-					typeBlock(patternCtx, thenBlk),
+					typeThen(patternCtx, then),
 					elseBlk._and(e => typeBlock(ctx, e._2))
 				);
 
-			case SWhile(_, cond, label, blk):
+			case SWhile(_, cond, label, body):
 				SWhile(
 					shouldBeLogical(ctx, typeExpr(ctx, cond)),
 					stmtLabel = getLabel(ctx, label),
-					typeBlock(ctx, blk)
+					typeThen(ctx, body)
 				);
 			
 			case SDoWhile(_, label, blk, _, cond):
@@ -1870,7 +1870,7 @@ static function typeStmt(ctx: Ctx, stmt: UStmt): TStmt {
 					shouldBeLogical(ctx, typeExpr(ctx, cond))
 				);
 			
-			case SForIn(_, lvar, lvar2, _, inExpr, cond, label, block):
+			case SForIn(_, lvar, lvar2, _, inExpr, cond, label, body):
 				// TODO
 				final forCtx = ctx.innerPattern();
 				SForIn(
@@ -1882,10 +1882,10 @@ static function typeStmt(ctx: Ctx, stmt: UStmt): TStmt {
 						shouldBeLogical(condCtx, typeExpr(condCtx, c._2));
 					}),
 					label._and(l => l._2.name),
-					typeBlock(forCtx.innerBlock(), block)
+					typeThen(forCtx, body)
 				);
 
-			case SForRange(span, lvar, _, startK, startE, _, stopK, stopE, step, cond, label, block):
+			case SForRange(span, lvar, _, startK, startE, _, stopK, stopE, step, cond, label, body):
 				final forCtx = ctx.innerBlock();
 				final tlvar: Null<TExpr> = lvar._match(
 					at(EWildcard(_)) => null,
@@ -1939,7 +1939,7 @@ static function typeStmt(ctx: Ctx, stmt: UStmt): TStmt {
 					tstep,
 					tcond,
 					label._and(l => l._2.name),
-					typeBlock(forCtx.innerBlock(), block)
+					typeThen(forCtx, body)
 				);
 
 			case SDo(_, label, blk):

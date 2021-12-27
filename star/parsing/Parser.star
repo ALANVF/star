@@ -1871,25 +1871,20 @@ module Parser {
 	on [parseStmt: tokens (Tokens)] (Result[Stmt]) {
 		match tokens {
 			at #[Token[if: my span], ...my rest] => match This[parseExpr: rest] {
-				at Result[success: my cond, #[Token[eqGt: my span'], ...my rest']] => match This[parseStmt: rest'] {
-					at Result[success: my stmt, my rest''] {
-						;@@ TODO: check for simple statement
-						return Result[success: Stmt[if: span, cond then: Stmt.Then[stmt: span', stmt] else: else'], rest'']
-					}
-				}
-				at Result[success: my cond, my rest'] => match This[parseBlock: rest'] {
-					at Result[success: my then, my rest''] {
-						my else'
-						match rest'' at #[Token[else: my span'], ...my rest'''] {
-							match This[parseBlock: rest'''] {
-								at Result[success: my block, rest'' = _] => else' = Maybe[the: #{span', block}]
-								at my fail => return fail[Result[Stmt]]
+				at Result[success: my cond, my rest'] => match This[parseThenStmt: rest'] {
+					at Result[success: my then = Then[block: _], #[Token[else: my span'], ...my rest'']] {
+						match This[parseBlock: rest''] {
+							at Result[success: my block, my rest'''] {
+								return Result[
+									success: Stmt[if: span, cond :then else: Maybe[the: #{span', block}]],
+									rest'''
+								]
 							}
-						} else {
-							else' = Maybe[none]
+							at my fail => return fail[Result[Stmt]]
 						}
-						
-						return Result[success: Stmt[if: span, cond then: Stmt.Then[block: then] else: else'], rest'']
+					}
+					at Result[success: my then, my rest''] {
+						return Result[success: Stmt[if: span, cond :then else: Maybe[none]], rest'']
 					}
 					at my fail => return fail[Result[Stmt]]
 				}
@@ -1996,16 +1991,18 @@ module Parser {
 						} else {
 							cond = Maybe[none]
 						}
-						
-						match This[parseBlock: rest''] {
-							at Result[success: my then, #[Token[else: my span], ...my rest''']] => match This[parseBlock: rest'''] {
-								at Result[success: my else', my rest''''] {
-									return Result[
-										success: Stmt[:match :value :at, pattern if: cond :then else: Maybe[the: #{span, else'}]],
-										rest''''
-									]
+
+						match This[parseThenStmt: rest''] {
+							at Result[success: my then = Then[block: _], #[Token[else: my span], ...my rest''']] {
+								match This[parseBlock: rest'''] {
+									at Result[success: my else', my rest''''] {
+										return Result[
+											success: Stmt[:match :value :at, pattern if: cond :then else: Maybe[the: #{span, else'}]],
+											rest''''
+										]
+									}
+									at my fail => return fail[Result[Stmt] fatalIfFailed]
 								}
-								at my fail => return fail[Result[Stmt] fatalIfFailed]
 							}
 							at Result[success: my then, my rest'''] {
 								return Result[
@@ -2026,8 +2023,8 @@ module Parser {
 				#{my label, rest} = This[parseLoopLabel: rest]
 				
 				match This[parseExpr: rest] {
-					at Result[success: my cond, my rest'] => match This[parseBlock: rest'] {
-						at Result[success: my block, my rest''] => return Result[success: Stmt[:while, cond :label do: block], rest'']
+					at Result[success: my cond, my rest'] => match This[parseThenStmt: rest'] {
+						at Result[success: my do, my rest''] => return Result[success: Stmt[:while, cond :label :do], rest'']
 						at my fail => return fail[Result[Stmt] fatalIfFailed]
 					}
 					at my fail => return fail[Result[Stmt] fatalIfFailed]
@@ -2235,7 +2232,7 @@ module Parser {
 					
 					#{my label, rest'} = This[parseLoopLabel: rest']
 					
-					match This[parseBlock: rest'] {
+					match This[parseThenStmt: rest'] {
 						at Result[success: my do, my rest''] {
 							return Result[
 								success: Stmt[for: span :var :var' in: #{inSpan, inExpr} while: cond :label :do],
@@ -2288,7 +2285,7 @@ module Parser {
 							
 							#{my label, rest'} = This[parseLoopLabel: rest']
 							
-							match This[parseBlock: rest'] {
+							match This[parseThenStmt: rest'] {
 								at Result[success: my do, my rest''] {
 									return Result[
 										success: Stmt[for: span :var :start :stop :step while: cond :label :do],
@@ -2324,6 +2321,7 @@ module Parser {
 			at #[Token[span: my span int: my int exp: Maybe[the: my exp]], ...my rest] {
 				return Result[success: Expr[:span :int exp: exp[Int]], rest]
 			}
+			;@@TODO: hex
 
 			at #[Token[span: my span int: my int dec: my dec exp: Maybe[none]], ...my rest] {
 				return Result[success: Expr[:span :int :dec], rest]

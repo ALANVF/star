@@ -47,7 +47,7 @@ enum Stmt {
 		_2: Span,
 		pattern: Expr,
 		cond: Null<Tuple2<Span, Expr>>,
-		thenBlk: Block,
+		then: Then,
 		elseBlk: Null<Tuple2<Span, Block>>
 	);
 
@@ -55,7 +55,7 @@ enum Stmt {
 		_: Span,
 		cond: Expr,
 		label: Option<Tuple2<Span, Ident>>,
-		block: Block
+		body: Then
 	);
 	SDoWhile(
 		_1: Span,
@@ -72,7 +72,7 @@ enum Stmt {
 		inExpr: Expr,
 		cond: Null<Tuple2<Span, Expr>>,
 		label: Null<Tuple2<Span, Ident>>,
-		block: Block
+		body: Then
 	);
 	SForRange(
 		_: Span,
@@ -86,7 +86,7 @@ enum Stmt {
 		step: Null<Tuple2<Span, Expr>>,
 		cond: Null<Tuple2<Span, Expr>>,
 		label: Null<Tuple2<Span, Ident>>,
-		block: Block
+		body: Then
 	);
 	SDo(_: Span, label: Option<Tuple2<Span, Ident>>, block: Block);
 	SReturn(_: Span, value: Option<Expr>);

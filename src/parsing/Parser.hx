@@ -1978,29 +1978,15 @@ class Parser {
 	
 	static function parseStmt(tokens: Tokens): ParseResult<Stmt> return tokens._match(
 		at([T_If(_1), ...rest]) => switch parseExpr(rest) {
-			case Success(trueCond, Cons(T_EqGt(_2), rest2)): switch parseStmt(rest2) {
-				case Success(trueStmt, rest3): {
-					// TODO: check for simple statement
-					return Success(SIf(_1, trueCond, ThenStmt(_2, trueStmt), null), rest3);
-				}
-				case err: cast err;
-			}
-			case Success(trueCond, rest2): switch parseBlock(rest2) {
-				case Success(trueBlk, rest3):
-					final otherwise = rest3._match(
-						at([T_Else(_2), ...rest4]) => switch parseBlock(rest4) {
-							case Success(elseBlk, rest5):
-								rest3 = rest5;
-								new Tuple2(_2, elseBlk);
-							case err: return cast err;
-						},
-						_ => null
-					);
-
-					Success(SIf(_1, trueCond, ThenBlock(trueBlk), otherwise), rest3);
-
-				case err: cast err;
-			}
+			case Success(trueCond, rest2): parseThenStmt(rest2)._match(
+				at(Success(then = ThenBlock(_), Cons(T_Else(_2), rest3))) => switch parseBlock(rest3) {
+					case Success(elseBlk, rest4):
+						Success(SIf(_1, trueCond, then, new Tuple2(_2, elseBlk)), rest4);
+					case err: return cast err;
+				},
+				at(Success(then, rest3)) => Success(SIf(_1, trueCond, then, null), rest3),
+				at(err) => cast err
+			);
 			case err: cast err;
 		},
 		
@@ -2073,15 +2059,18 @@ class Parser {
 						},
 						_ => null
 					);
-
-					switch parseBlock(rest3) {
-						case Success(thenBlk, Cons(T_Else(_4), rest4)): switch parseBlock(rest4) {
-							case Success(elseBlk, rest5): Success(SShortMatch(_1, expr, _2, pattern, cond, thenBlk, new Tuple2(_4, elseBlk)), rest5);
+					
+					parseThenStmt(rest3)._match(
+						at(Success(then = ThenBlock(_), Cons(T_Else(_3), rest4))) => switch parseBlock(rest4) {
+							case Success(elseBlk, rest5):
+								Success(SShortMatch(_1, expr, _2, pattern, cond, then, new Tuple2(_3, elseBlk)), rest5);
 							case err: fatalIfFailed(cast err);
-						}
-						case Success(thenBlk, rest4): Success(SShortMatch(_1, expr, _2, pattern, cond, thenBlk, null), rest4);
-						case err: fatalIfFailed(cast err);
-					}
+						},
+						at(Success(then, rest4)) => {
+							Success(SShortMatch(_1, expr, _2, pattern, cond, then, null), rest4);
+						},
+						at(err) => fatalIfFailed(cast err)
+					);
 
 				case err: fatalIfFailed(cast err);
 			}
@@ -2098,10 +2087,10 @@ class Parser {
 					},
 					_ => None
 				);
-				switch parseBlock(rest2) {
-					case Success(block, rest3): Success(SWhile(_1, cond, label, block), rest3);
-					case err: fatalIfFailed(cast err);
-				}
+				parseThenStmt(rest2)._match(
+					at(Success(body, rest3)) => Success(SWhile(_1, cond, label, body), rest3),
+					at(err) => fatalIfFailed(cast err)
+				);
 			case err: fatalIfFailed(cast err);
 		},
 
@@ -2254,10 +2243,12 @@ class Parser {
 					_ => null
 				);
 				
-				switch parseBlock(rest2) {
-					case Success(block, rest3): Success(SForIn(_1, lvar, lvar2, inSpan, inExpr, cond, label, block), rest3);
-					case err: fatalIfFailed(cast err);
-				}
+				parseThenStmt(rest2)._match(
+					at(Success(body, rest3)) => {
+						Success(SForIn(_1, lvar, lvar2, inSpan, inExpr, cond, label, body), rest3);
+					},
+					at(err) => fatalIfFailed(cast err)
+				);
 			case err: fatalIfFailed(cast err);
 		},
 		_ => Fatal(tokens, None)
@@ -2316,23 +2307,18 @@ class Parser {
 						_ => null
 					);
 					
-					switch parseBlock(rest2) {
-						case Success(block, rest3): Success(SForRange(
-							_1,
-							lvar,
-							startSpan,
-							startKind,
-							startExpr,
-							stopSpan,
-							stopKind,
-							stopExpr,
-							step,
-							cond,
-							label,
-							block
-						), rest3);
-						case err: fatalIfFailed(cast err);
-					}
+					parseThenStmt(rest2)._match(
+						at(Success(body, rest3)) => {
+							Success(SForRange(
+								_1, lvar,
+								startSpan, startKind, startExpr,
+								stopSpan, stopKind, stopExpr,
+								step, cond, label,
+								body
+							), rest3);
+						},
+						at(err) => fatalIfFailed(cast err)
+					);
 				case err: fatalIfFailed(cast err);
 			}
 		case err: fatalIfFailed(cast err);
