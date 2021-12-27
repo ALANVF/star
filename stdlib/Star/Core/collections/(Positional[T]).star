@@ -8,9 +8,7 @@ protocol Positional[T] of Collection[T] {
 	on [at: index (Int) set: value (T)] is setter
 	
 	on [maybeAt: index (Int)] (Maybe[T]) {
-		if index < 0 {
-			index += this.length
-		}
+		if index < 0 => index += this.length
 
 		if 0 <= index < this.length {
 			return Maybe[the: this[Unsafe at: index]]
@@ -19,9 +17,7 @@ protocol Positional[T] of Collection[T] {
 		}
 	}
 	on [maybeAt: index (Int) set: value (T)] is setter {
-		if index < 0 {
-			index += this.length
-		}
+		if index < 0 => index += this.length
 
 		if 0 <= index < this.length {
 			this[Unsafe at: index] = value
@@ -136,9 +132,7 @@ protocol Positional[T] of Collection[T] {
 
 	on [removeAt: index (Int)] (T)
 	on [maybeRemoveAt: index (Int)] (Maybe[T]) {
-		if index < 0 {
-			index += this.length
-		}
+		if index < 0 => index += this.length
 		
 		if 0 <= index < this.length {
 			return Maybe[the: this[Unsafe removeAt: index]]

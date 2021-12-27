@@ -47,9 +47,7 @@ kind List[T] of Iterable[T] {
 	;== Accessing
 	
 	on [at: index (Int)] (T) {
-		if index < 0 {
-			index += this.length
-		}
+		if index < 0 => index += this.length
 		
 		my index' = index
 		my list = this
@@ -64,9 +62,7 @@ kind List[T] of Iterable[T] {
 	}
 	
 	on [maybeAt: index (Int)] (Maybe[T]) {
-		if index < 0 {
-			index += this.length
-		}
+		if index < 0 => index += this.length
 		
 		my index' = index
 		my list = this
@@ -84,9 +80,7 @@ kind List[T] of Iterable[T] {
 	;== Slicing
 	
 	on [from: (Int)] (This) {
-		if from < 0 {
-			from += this.length
-		}
+		if from < 0 => from += this.length
 		
 		my index = from
 		my list = this
@@ -113,9 +107,7 @@ kind List[T] of Iterable[T] {
 	;== Removing
 	
 	on [removeAt: index (Int)] (Tuple[T, This]) {
-		if index < 0 {
-			index += this.length
-		}
+		if index < 0 => index += this.length
 		
 		try {
 			#{my value, my rest} = this[from: index]
@@ -126,9 +118,7 @@ kind List[T] of Iterable[T] {
 	}
 	
 	on [maybeRemoveAt: index (Int)] (Maybe[Tuple[T, This]]) {
-		if index < 0 {
-			index += this.length
-		}
+		if index < 0 => index += this.length
 		
 		try {
 			#{my value, my rest} = this[from: index]

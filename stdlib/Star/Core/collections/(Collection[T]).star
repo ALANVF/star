@@ -280,9 +280,7 @@ protocol Collection[T] of Iterable[T] {
 	;== Repeating
 	
 	operator `*` [count (Int)] (This) {
-		if count < 0 {
-			throw "invalid count"
-		}
+		if count < 0 => throw "invalid count"
 		
 		my result = This[new: this.length * count]
 		

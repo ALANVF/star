@@ -143,9 +143,7 @@ class Str of Values[Char], Ordered is strong {
 	;== Accessing
 	
 	on [at: index (Int) set: str (Str)] is setter {
-		if index < 0 {
-			index += length
-		}
+		if index < 0 => index += length
 
 		if 0 <= index < length {
 			this[Unsafe at: index set: str]
@@ -155,9 +153,7 @@ class Str of Values[Char], Ordered is strong {
 	}
 
 	on [maybeAt: index (Int) set: str (Str)] is setter {
-		if index < 0 {
-			index += length
-		}
+		if index < 0 => index += length
 
 		if 0 <= index < length {
 			this[Unsafe at: index set: str]

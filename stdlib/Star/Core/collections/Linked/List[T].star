@@ -48,9 +48,7 @@ class List[T] of Positional[T] {
 	}
 	
 	on [at: index (Int)] (T) {
-		if index < 0 {
-			index += length
-		}
+		if index < 0 => index += length
 
 		if 0 <= index < length {
 			return this[linkAt: index].value
@@ -60,9 +58,7 @@ class List[T] of Positional[T] {
 	}
 
 	on [at: index (Int) set: value (T)] is setter {
-		if index < 0 {
-			index += length
-		}
+		if index < 0 => index += length
 
 		if 0 <= index < length {
 			this[linkAt: index].value = value
@@ -75,9 +71,7 @@ class List[T] of Positional[T] {
 	;== Slicing
 	
 	on [from: (Int)] (This) {
-		if from < 0 {
-			from += length
-		}
+		if from < 0 => from += length
 
 		if 0 <= from < length {
 			my result = This[new]
@@ -107,9 +101,7 @@ class List[T] of Positional[T] {
 		}
 	}
 	on [from: (Int) set: values (This)] is setter {
-		if from < 0 {
-			from += length
-		}
+		if from < 0 => from += length
 
 		if 0 <= from < length {
 			if length ?= 0 {
@@ -134,9 +126,7 @@ class List[T] of Positional[T] {
 	}
 	
 	on [to: (Int)] (This) {
-		if to < length {
-			to += length
-		}
+		if to < 0 => to += length
 
 		if 0 <= to < length {
 			my result = This[new]
@@ -153,9 +143,7 @@ class List[T] of Positional[T] {
 		}
 	}
 	on [to: (Int) set: values (This)] is setter {
-		if to < 0 {
-			to += length
-		}
+		if to < 0 => to += length
 
 		if 0 <= to < length {
 			if length ?= 0 {
@@ -181,13 +169,8 @@ class List[T] of Positional[T] {
 	}
 	
 	on [from: (Int) to: (Int)] (This) {
-		if from < length {
-			from += length
-		}
-
-		if to < length {
-			to += length
-		}
+		if from < 0 => from += length
+		if to < 0 => to += length
 
 		if 0 <= from <= to < length {
 			my result = This[new]
@@ -217,13 +200,8 @@ class List[T] of Positional[T] {
 		}
 	}
 	on [from: (Int) to: (Int) set: values (This)] is setter {
-		if from < length {
-			from += length
-		}
-
-		if to < length {
-			to += length
-		}
+		if from < 0 => from += length
+		if to < 0 => to += length
 
 		if 0 <= from <= to < length {
 			if length ?= 0 {
@@ -287,9 +265,7 @@ class List[T] of Positional[T] {
 	}
 
 	on [removeAt: index (Int)] (T) {
-		if index < 0 {
-			index += length
-		}
+		if index < 0 => index += length
 
 		if 0 <= index < length {
 			my link = this[linkAt: index]
@@ -311,9 +287,7 @@ class List[T] of Positional[T] {
 	}
 
 	on [removeFrom: from (Int)] (This) {
-		if from < 0 {
-			from += length
-		}
+		if from < 0 => from += length
 
 		if 0 <= from < length {
 			my res = this[:from]
@@ -328,9 +302,7 @@ class List[T] of Positional[T] {
 	}
 	
 	on [removeTo: to (Int)] (This) {
-		if to < 0 {
-			to += length
-		}
+		if to < 0 => to += length
 
 		if 0 <= to < length {
 			my res = this[:to]
@@ -345,13 +317,8 @@ class List[T] of Positional[T] {
 	}
 	
 	on [removeFrom: from (Int) to: (Int)] (This) {
-		if from < 0 {
-			from += length
-		}
-
-		if to < 0 {
-			to += length
-		}
+		if from < 0 => from += length
+		if to < 0 => to += length
 
 		if 0 <= from <= to < length {
 			my res = this[:from :to]

@@ -36,9 +36,7 @@ class Charset is hidden Lexer {
 		if i >= size {
 			my extraSize = i - size
 
-			for _ from: 0 upto: extraSize {
-				bytes[add: 0]
-			}
+			for _ from: 0 times: extraSize => bytes[add: 0]
 
 			bytes[at: i] = char[Charset UInt8]
 		} else {
@@ -47,9 +45,7 @@ class Charset is hidden Lexer {
 	}
 
 	on [addAll: chars (Iterable[Char])] {
-		for my char in: chars {
-			this[add: char]
-		}
+		for my char in: chars => this[add: char]
 	}
 
 	on [remove: char (Char)] {
@@ -61,9 +57,7 @@ class Charset is hidden Lexer {
 	}
 
 	on [removeAll: chars (Iterable[Char])] {
-		for my char in: chars {
-			this[remove: char]
-		}
+		for my char in: chars => this[remove: char]
 	}
 
 	on [at: char (Char)] (Bool) is inline {

@@ -32,9 +32,7 @@ protocol Values[T] of Positional[T] {
 	;== Sizing
 
 	on [resizeTo: newCapacity (Int)] is hidden {
-		if newCapacity < 0 {
-			throw LengthError[new: newCapacity]
-		}
+		if newCapacity < 0 => throw LengthError[new: newCapacity]
 
 		case {
 			at newCapacity > capacity {
@@ -83,9 +81,7 @@ protocol Values[T] of Positional[T] {
 	;== Accessing
 	
 	on [at: index (Int)] (T) {
-		if index < 0 {
-			index += length
-		}
+		if index < 0 => index += length
 
 		if 0 <= index < length {
 			return buffer[at: index]
@@ -95,9 +91,7 @@ protocol Values[T] of Positional[T] {
 	}
 
 	on [at: index (Int) set: value (T)] is setter {
-		if index < 0 {
-			index += length
-		}
+		if index < 0 => index += length
 
 		if 0 <= index < length {
 			buffer[at: index] = value
@@ -110,9 +104,7 @@ protocol Values[T] of Positional[T] {
 	;== Slicing
 
 	on [from: (Int)] (This) {
-		if from < 0 {
-			from += length
-		}
+		if from < 0 => from += length
 
 		if 0 <= from < length {
 			my newLength = length - from
@@ -127,9 +119,7 @@ protocol Values[T] of Positional[T] {
 	}
 
 	on [from: (Int) set: values (This)] is setter {
-		if from < 0 {
-			from += length
-		}
+		if from < 0 => from += length
 
 		if 0 <= from < length {
 			my maxAfterIndex = from + values.length
@@ -146,9 +136,7 @@ protocol Values[T] of Positional[T] {
 	}
 
 	on [to: (Int)] (This) {
-		if to < 0 {
-			to += length
-		}
+		if to < 0 => to += length
 
 		if 0 <= to < length {
 			return This[
@@ -161,9 +149,7 @@ protocol Values[T] of Positional[T] {
 	}
 
 	on [to: (Int) set: values (This)] is setter {
-		if to < 0 {
-			to += length
-		}
+		if to < 0 => to += length
 
 		if 0 <= to < length {
 			my diff = values.length - to
@@ -188,13 +174,8 @@ protocol Values[T] of Positional[T] {
 	}
 
 	on [from: (Int) to: (Int)] (This) {
-		if from < 0 {
-			from += length
-		}
-
-		if to < 0 {
-			to += length
-		}
+		if from < 0 => from += length
+		if to < 0 => to += length
 
 		if 0 <= from <= to < length {
 			my newLength = to - from
@@ -213,9 +194,7 @@ protocol Values[T] of Positional[T] {
 	;== Removing elements
 
 	on [removeAt: index (Int)] (T) {
-		if index < 0 {
-			index += length
-		}
+		if index < 0 => index += length
 
 		if 0 <= index < length {
 			my value = buffer[at: index]
@@ -229,9 +208,7 @@ protocol Values[T] of Positional[T] {
 	}
 
 	on [maybeRemoveAt: index (Int)] (Maybe[T]) {
-		if index < 0 {
-			index += length
-		}
+		if index < 0 => index += length
 
 		if 0 <= index < length {
 			my value = buffer[at: index]
@@ -248,9 +225,7 @@ protocol Values[T] of Positional[T] {
 	;== Removing sections
 
 	on [removeFrom: from (Int)] (This) {
-		if from < 0 {
-			from += length
-		}
+		if from < 0 => from += length
 
 		if 0 <= from < length {
 			my res = this[:from]

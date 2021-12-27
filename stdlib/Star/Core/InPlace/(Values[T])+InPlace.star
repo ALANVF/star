@@ -3,9 +3,7 @@ category InPlace for Values[T] {
 	;== Removing sections
 
 	on [removeFrom: from (Int)] {
-		if from < 0 {
-			from += length
-		}
+		if from < 0 => from += length
 
 		if 0 <= from < length {
 			this[resizeTo: from]
@@ -97,7 +95,7 @@ category InPlace for Values[T] {
 
 	on [reverse] {
 		match length {
-			at 0 || 1 => {}
+			at 0 || 1 {}
 			
 			at 2 {
 				my first = buffer[at: 0]
