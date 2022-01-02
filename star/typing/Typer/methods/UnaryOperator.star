@@ -9,4 +9,5 @@ class UnaryOperator of Operator {
 	}
 
 	
+	my op (Op) is getter
 }

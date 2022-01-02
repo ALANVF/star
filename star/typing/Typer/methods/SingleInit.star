@@ -1,0 +1,3 @@
+class SingleInit of Init {
+	;...
+}

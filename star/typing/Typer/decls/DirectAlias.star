@@ -1,0 +1,3 @@
+class DirectAlias of RealAlias {
+	
+}

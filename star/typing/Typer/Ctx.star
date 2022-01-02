@@ -250,22 +250,24 @@ kind Ctx {
 	on [findType: path (TypePath)] (Maybe[Type]) {
 		my found, match this {
 			at This[objCascade: Maybe[the: my objType]] {
+				#{my depth, my path'} = path[toLookupPath: this.typeLookup]
 				match objType[
-					findType: path[toLookupPath: this.typeLookup]
+					findType: path'
 					search: Search.start
 					from: Maybe[the: this.typeDecl]
-					depth: path.depth
+					:depth
 				] at Maybe[the: found = _] {} else {
 					return outer.value[findType: path]
 				}
 			}
 
 			at This[decl: _] <= _ <= This[method: _] {
+				#{my depth, my path'} = path[toLookupPath: this.typeLookup]
 				found = this.typeLookup[
-					findType: path[toLookupPath: this.typeLookup]
+					findType: path'
 					search: Search.start
 					from: Maybe[the: this.typeDecl]
-					depth: path.depth
+					:depth
 				]
 			}
 

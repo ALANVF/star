@@ -421,7 +421,7 @@ protocol TypeDecl of AnyTypeDecl {
 
 	;== Members
 
-	on [instanceMembers: from (TypeDecl)] (Array[Member]) {
+	on [instanceMembers: from (AnyTypeDecl)] (Array[Member]) {
 		return refinees[collectAll: $0[instanceMembers: from]]
 	}
 

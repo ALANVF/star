@@ -1,0 +1,3 @@
+class SingleMethod of Method {
+	;...
+}

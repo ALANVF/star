@@ -15,7 +15,7 @@ class Cast of AnyMethod {
 		
 		match path at Maybe[the: my path'] {
 			buf
-			-> [add: path[form]]
+			-> [add: path'[form]]
 			-> [add: "::"]
 		}
 		

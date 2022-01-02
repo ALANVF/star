@@ -57,7 +57,7 @@ protocol Typeable of TypeLookup {
 
 	;== Members
 
-	on [instanceMembers: from (TypeDecl)] (Array[Member])
+	on [instanceMembers: from (AnyTypeDecl)] (Array[Member])
 
 	
 	;== Method lookup

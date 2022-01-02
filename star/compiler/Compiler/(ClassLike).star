@@ -33,7 +33,7 @@ protocol ClassLike of TypeDecl {
 		
 		buf[add: " {"]
 		
-		for my decl in: body.normal {
+		for my decl in: body.default {
 			buf
 			-> [add: ws']
 			-> [add: decl[form: indent']]

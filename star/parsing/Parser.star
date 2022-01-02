@@ -4,6 +4,7 @@ use Priority from: Info
 use Decl
 use Message
 use Cascade
+use Then from: Stmt
 
 module Parser {
 	on [parse: tokens (Tokens)] (Program) {
@@ -2163,16 +2164,16 @@ module Parser {
 	}
 	
 
-	on [parseThenStmt: tokens (Tokens)] (Result[Stmt.Then]) {
+	on [parseThenStmt: tokens (Tokens)] (Result[Then]) {
 		match tokens at #[Token[eqGt: my span], ...my rest] {
 			match This[parseStmt: rest] {
-				at Result[success: my stmt, my rest'] => return Result[success: Stmt.Then[stmt: span, stmt], rest']
-				at my fail => return fail[Result[Stmt.Then] fatalIfFailed]
+				at Result[success: my stmt, my rest'] => return Result[success: Then[stmt: span, stmt], rest']
+				at my fail => return fail[Result[Then] fatalIfFailed]
 			}
 		} else {
 			match This[parseBlock: tokens] {
-				at Result[success: my block, my rest] => return Result[success: Stmt.Then[:block], rest]
-				at my fail => return fail[Result[Stmt.Then] fatalIfBad: tokens]
+				at Result[success: my block, my rest] => return Result[success: Then[:block], rest]
+				at my fail => return fail[Result[Then] fatalIfBad: tokens]
 			}
 		}
 	}

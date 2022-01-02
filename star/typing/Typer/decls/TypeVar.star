@@ -14,7 +14,7 @@ class TypeVar of AnyTypeDecl {
 	my deinit (Maybe[Deinit])
 	my inits (Array[Init]) is getter
 	my members (Array[Member]) is getter
-	my methods (Array[Method]) is getter
+	my methods (Array[RealMethod]) is getter
 	my operators (Array[Operator]) is getter
 	my staticInit (Maybe[StaticInit])
 	my staticDeinit (Maybe[StaticDeinit])

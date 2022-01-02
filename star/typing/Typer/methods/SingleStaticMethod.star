@@ -1,0 +1,3 @@
+class SingleStaticMethod of StaticMethod {
+	;...
+}

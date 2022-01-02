@@ -75,7 +75,7 @@ class Compiler {
 			]]
 			path: TypePath[named: "$T"]
 			body: ClassBody[
-				normal: DeclBody #[
+				default: DeclBody #[
 					DeclStmt[typeDecl: Alias[
 						path: TypePath[named: "Type"]
 						type: Type[path: TypePath[named: "T"]]

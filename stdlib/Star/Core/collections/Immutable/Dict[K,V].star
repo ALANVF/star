@@ -14,4 +14,8 @@ kind Dict[K, V] {
 	on [maybeAt: key (K) set: value (V)] (This)
 
 	; ...
+
+	on [_.Dict[K, V]]
+
+	; ...
 }

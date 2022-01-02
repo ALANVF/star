@@ -1,0 +1,3 @@
+protocol Alias of TypeDecl {
+	
+}

@@ -30,6 +30,11 @@ kind Type of TypeLookup, Typeable {
 
 	;-- A modular type
 	has [type: (Type) unit: (Unit)]
+
+	;-- A reference to a type
+	has [ref: (Box[Type])] {
+		span = ref.value.span
+	}
 	
 	;-- Optional location of the type
 	my span (Maybe[Span]) is getter = Maybe[none]
@@ -306,7 +311,7 @@ kind Type of TypeLookup, Typeable {
 
 	;== Members
 
-	on [instanceMembers] (Array[Member])
+	on [instanceMembers: from (AnyTypeDecl)] (Array[Member])
 
 	
 	;== Method lookup

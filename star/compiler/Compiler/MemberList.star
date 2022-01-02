@@ -11,7 +11,7 @@ class MemberList {
 			match bits at Maybe[the: my bits'] {
 				buf
 				-> [add: ": "]
-				-> [add: bits[:form]]
+				-> [add: bits'[:form]]
 			}
 			
 			buf[add: init[form]]

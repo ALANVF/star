@@ -25,7 +25,7 @@ class Member {
 		
 		match path at Maybe[the: my path'] {
 			buf
-			-> [add: path[form]]
+			-> [add: path'[form]]
 			-> [add: "::"]
 		}
 		
