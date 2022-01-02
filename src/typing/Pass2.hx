@@ -519,6 +519,35 @@ static function resolveTaggedCase(ctx: Ctx, tcase: TaggedCase) {
 
 	tcase.init.toNull()._and(init => {
 		final initCtx = caseCtx.innerBlock();
+
+		tcase._match(
+			at(tcase is MultiTaggedCase) => {
+				for(param in tcase.params) {
+					param.type = param.type.simplify();
+	
+					final span = param.name.span;
+					final name = param.name.name;
+					if(name == "_") {
+						continue;
+					} else initCtx.locals[name]._match(
+						at(local!) => {
+							ctx.addError(Errors.duplicateParam(tcase, name, local.span, span));
+						},
+						_ => {
+							initCtx.locals[name] = new LocalParam(
+								initCtx,
+								span,
+								name,
+								param.type,
+								null
+							);
+						}
+					);
+				}
+			},
+			_ => {}
+		);
+
 		tcase.typedInit = init.map(s -> typeStmt(initCtx, s));
 	});
 }
@@ -1092,7 +1121,10 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 								invalidExpr();
 							},
 							at([found]) => found.findMultiInst(ctx, names, ctx.typeDecl).reduceBySender()._match(
-								at([]) => throw 'error: value of type `${t.fullName()}` does not respond to method `[${names.joinMap(" ", n -> '$n:')}]` in category `${tcat.fullName()}`! ${begin.display()}',
+								at([]) => {
+									ctx.addError(Errors.unknownMethod(ctx, false, t, names, labels[0].span(), categories));
+									invalidExpr();
+								},//throw 'error: value of type `${t.fullName()}` does not respond to method `[${names.joinMap(" ", n -> '$n:')}]` in category `${tcat.fullName()}`! ${begin.display()}',
 								at(kinds) => {
 									e: EObjMessage(tobj, Multi(kinds, names, args)),
 									t: null
@@ -1640,7 +1672,7 @@ static function typeObjCascade(ctx: Ctx, type: Null<Type>, cascade: UCascade<UEx
 						at(kind!) => Single(kind),
 						_ => throw 'error: value of type ${t.fullName()} does not respond to method `[$name]`!'
 					),
-					at(Single(Some(cat), _, name)) => {
+					at(Single(Some(cat), span, name)) => {
 						final tcat: Type = ctx.getType(cat)._or(return null)._match(
 							at({t: TThis(source), span: span}) => source._match(
 								at(td is TypeDecl) => { t: TConcrete(td), span: span },
@@ -1666,7 +1698,10 @@ static function typeObjCascade(ctx: Ctx, type: Null<Type>, cascade: UCascade<UEx
 								_ => throw 'error: value of type `${t.fullName()}` does not respond to method `[$name]` in category `${tcat.fullName()}`!'
 							),
 							at(found) => found.filterMap(f -> f.findSingleInst(ctx, name, ctx.typeDecl))._match(
-								at([]) => throw 'error: value of type `${t.fullName()}` does not respond to method `[$name]` in any categories of: `${found.map(f -> f.fullName()).join(", ")}`!',
+								at([]) => {
+									ctx.addError(Errors.unknownMethod(ctx, false, t, name, span, found));
+									null;
+								},//throw 'error: value of type `${t.fullName()}` does not respond to method `[$name]` in any categories of: `${found.map(f -> f.fullName()).join(", ")}`!',
 								at([kind!]) => Single(kind),
 								at(kinds) => throw "todo"
 							)

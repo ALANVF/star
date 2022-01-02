@@ -220,9 +220,9 @@ abstract class Dir implements ITypeLookup {
 				}
 			},
 			at([[s, name, args], ...rest]) => {
-				for(unit in units) if(!cache.contains(unit) && unit.name == name) {
+				for(unit in units) if((search != Inside || !cache.contains(unit)) && unit.name == name) {
 					//trace(s._and(ss=>ss.display()), name);
-					unit.findType(rest, Inside, from, 0, cache)._match(
+					unit.findType(rest, Inside, from, 0, Nil)._match( // TODO: this is all bad pls redo
 						at(null) => unit.primary.toNull()._and(p => p.findType(path, Inside, from, 0, cache))._match(
 							at(null) => {},
 							at(t!!, when(depth != 0)) => {
@@ -237,6 +237,12 @@ abstract class Dir implements ITypeLookup {
 						},
 						at(t!!) => return t
 					);
+				} else if(unit.name==name) {
+					if(path.match(Cons3(_, "Core", _, Cons3(_, "Dict", _, Nil3)))) {
+						trace(this.path, search);
+					} else {
+						trace("-"+this.path, name, rest, search);
+					}
 				}
 			},
 			_ => throw "bad"

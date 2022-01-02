@@ -858,7 +858,13 @@ class Type implements ITypeable {
 			at(TMulti(types)) => {
 				reduceOverloads(types).every(type -> type.acceptsArgs(args));
 			},
-			at(TApplied(type, args2)) => throw "todo",
+			at(TApplied(type, args2)) => {
+				if(args2.count(a -> a.hasTypevars()) == args.length) {
+					throw "todo "+this.fullName()+" "+args.map(a->a.fullName())+" "+args[0].span.display();
+				} else {
+					false;
+				}
+			},
 			at(TTypeVar(tvar)) => tvar.params.every2Strict(args, (p, a) -> p.hasChildType(a)),
 			at(TModular(type, _)) => type.acceptsArgs(args)
 		);
@@ -909,6 +915,9 @@ class Type implements ITypeable {
 			at([TPath(_, _, _), _] | [TLookup(_, _, _), _]) => this.simplify().bindTo(onto, ctx),
 			at([_, TPath(_, _, _)] | [_, TLookup(_, _, _)]) => this.bindTo(onto.simplify(), ctx),
 
+			at([TModular(t1, _), _]) => t1.bindTo(onto, ctx),
+			at([_, TModular(t2, _)]) => this.bindTo(t2, ctx),
+
 			at([TThis(decl1), TThis(decl2)]) => {
 				if(decl1.hasParentType(decl2.thisType)) {
 					this;
@@ -954,14 +963,6 @@ class Type implements ITypeable {
 			at([TConcrete(decl1), TInstance(decl2, params, tctx)]) => {
 				if(decl1 == decl2) {
 					onto;
-				} else {
-					null;
-				}
-			},
-
-			at([_, TMulti(types)]) => {
-				if(leastSpecific(types).every(ty -> this.hasParentType(ty) && ty.hasChildType(this))) {
-					throw "todo "+this.fullName()+" "+onto.fullName();
 				} else {
 					null;
 				}
@@ -1032,6 +1033,39 @@ class Type implements ITypeable {
 						null;
 					}
 				};
+			},
+			
+			at([TInstance(decl, params, tctx), TMulti(types)]) => {
+				types.filterMap(ty -> this.bindTo(ty, ctx))._match(
+					at([]) => null,
+					at([ty]) => ty,
+					at(tys) => {t: TMulti(tys), span: onto.span}
+				);
+			},
+
+			at([TMulti(types), TInstance(decl, params, tctx)]) => {
+				// lazy for now
+				if(types.some(ty -> ty.hasParentType(onto))) {
+					onto;
+				} else {
+					null;
+				}
+			},
+
+			at([TMulti(types), TApplied(base, args)]) => {
+				// lazy for now
+				base.applyArgs(args)._match(
+					at(onto2!) => this.bindTo(onto2, ctx),
+					_ => null
+				);
+			},
+
+			at([_, TMulti(types)]) => {
+				if(leastSpecific(types).every(ty -> this.hasParentType(ty) && ty.hasChildType(this))) {
+					throw "todo "+this.fullName()+" "+onto.fullName();
+				} else {
+					null;
+				}
 			},
 
 			// TODO: somehow delay this from happening because we need type refinement

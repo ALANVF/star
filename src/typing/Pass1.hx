@@ -230,7 +230,7 @@ static function resolveBasicType(source: ITypeLookup, type: Type, cache: Cache =
 						)
 					);
 				},
-				_ => {}
+				_ => {} // todo?
 			);
 		},
 

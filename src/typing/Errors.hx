@@ -223,7 +223,7 @@ class Errors {
 	}
 
 
-	static function duplicateParam<T: AnyMethod>(method: T, name, origSpan, dupSpan) {
+	overload static function duplicateParam<T: AnyMethod>(method: T, name, origSpan, dupSpan) {
 		return new Diagnostic({
 			severity: Severity.ERROR,
 			message: "Duplicate parameter",
@@ -241,6 +241,29 @@ class Errors {
 				Spanned({
 					span: method.span,
 					message: 'For ${method.declName()} `${method.methodName()}`',
+					isSecondary: true
+				})
+			]
+		});
+	}
+	overload static function duplicateParam(tcase: MultiTaggedCase, name, origSpan, dupSpan) {
+		return new Diagnostic({
+			severity: Severity.ERROR,
+			message: "Duplicate parameter",
+			info: [
+				Spanned({
+					span: dupSpan,
+					message: 'Duplicate parameter `$name`',
+					isPrimary: true
+				}),
+				Spanned({
+					span: origSpan,
+					message: 'First defined here',
+					isSecondary: true
+				}),
+				Spanned({
+					span: tcase.span,
+					message: 'For ${tcase.declName()} `${tcase.params.joinMap("", p -> p.label.name+":")}`',
 					isSecondary: true
 				})
 			]

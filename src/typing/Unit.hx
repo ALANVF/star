@@ -29,15 +29,17 @@ class Unit extends Dir {
 
 		/*for(file in files) if(!cache.contains(file)) {
 			//if(path.simpleName().contains("Tail"))trace(from._and(f => f.name.name), path.simpleName(), file.path);
-			switch file.findType(path, Inside, from, 0, cache) {
-				case None:
-				case Some(t) if(depth != 0):
+			file.findType(path, Inside, from, 0, cache)._match(
+				at(null) => {},
+				at(t!!, when(depth != 0)) => {
 					cache += t;
 					depth--;
-				case Some(t):
+				},
+				at(t!!) => {
 					//if(path.simpleName().contains("Head")) trace(path.span().display(), t);
-					return Some(t);
-			}
+					return t;
+				}
+			);
 		}*/
 
 		final res = super.findType(path, search, from, depth, cache);
