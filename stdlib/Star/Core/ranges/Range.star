@@ -197,6 +197,8 @@ protocol Range[T, S] of Iterable[T] {
 			}
 		}
 	}
+
+	on [Iterator[T]]
 }
 
 

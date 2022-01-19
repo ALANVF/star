@@ -1,5 +1,6 @@
 package util;
 
+/*
 // Better than using an anon structure because enums don't have virtual fields
 private enum Dummy3<T, U, V> {
 	Tuple3(t: T, u: U, v: V);
@@ -22,5 +23,19 @@ abstract Tuple3<T, U, V>(Dummy3<T, U, V>) {
 	
 	private inline function get__3() {
 		return switch this {case Tuple3(_, _, v): v;};
+	}
+}
+*/
+
+/*@:generic*/
+@:structInit @:publicFields final class Tuple3<T, U, V> {
+	final _1: T;
+	final _2: U;
+	final _3: V;
+
+	inline function new(_1: T, _2: U, _3: V) {
+		this._1 = _1;
+		this._2 = _2;
+		this._3 = _3;
 	}
 }

@@ -24,6 +24,6 @@ class Param {
 
 category Param for Array[Param] {
 	on [form] (Str) {
-		return this[collect: $0[form]][joinWith: ", "]
+		return this[collect: Param$0[form]][joinWith: ", "]
 	}
 }

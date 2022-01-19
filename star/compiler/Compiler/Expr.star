@@ -106,22 +106,22 @@ kind Expr {
 			] {
 				return ""
 				-> [add: #"["]
-				-> [add: captures[collect: $0[form]][joinWith: ", "]]
+				-> [add: captures[collect: LambdaCapture$0[form]][joinWith: ", "]]
 				-> [add: #"]"]
 				-> {
 					match template at Maybe[the: my tmpl] {
-						this[add: tmpl[:form]->[removeFirst: "template"]]
+						this[add: tmpl[:form]->[remove: "template"]]
 					}
 				}
 				-> [add: #"("]
-				-> [add: params[collect: $0[form]][joinWith: ", "]]
+				-> [add: params[collect: Param$0[form]][joinWith: ", "]]
 				-> [add: #")"]
 				-> [add: attrs[formTrailing]]
 				-> {
 					match ret at Maybe[the: my ret'] {
 						this
 						-> [add: " -> "]
-						-> [add: ret'[:form]]
+						-> [add: ret'[form]]
 					}
 					
 					match requires at Maybe[the: my req] {
@@ -200,6 +200,6 @@ kind Expr {
 
 category Expr for Array[Expr] {
 	on [form: (Int) = 0] (Str) {
-		return this[collect: $0[:form]][joinWith: ", "]
+		return this[collect: Expr$0[:form]][joinWith: ", "]
 	}
 }

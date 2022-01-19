@@ -43,6 +43,13 @@ interface ITypeable extends ITypeLookup {
 	function isUncounted(): Bool;
 
 
+	// Iterating
+
+	function iterElemType(): Null<Type>;
+
+	function iterAssocType(): Null<Tuple2<Type, Type>>;
+
+
 	// Effects tracking
 
 	function trackEffectsIn(ctx: Ctx): Null<Effects>;
@@ -60,6 +67,13 @@ interface ITypeable extends ITypeLookup {
 	// Members
 
 	function instMembers(from: AnyTypeDecl): Array<Member>;
+
+	function findInstMember(
+		ctx: Ctx,
+		name: String,
+		allowStatic: Bool = true,
+		onlyParents: Bool = false
+	): Null<MemberKind>;
 
 
 	// Method lookup

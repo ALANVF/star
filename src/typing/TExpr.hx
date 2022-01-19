@@ -58,6 +58,8 @@ enum Expr {
 
 	// Assignment
 	ESetName(name: String, loc: Local, value: TExpr);
+	
+	EDestructure(pattern: Pattern, value: TExpr);
 
 	// From tags
 	EInitThis(type: Type, msg: TypeMessage);

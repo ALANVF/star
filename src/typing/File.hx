@@ -328,7 +328,8 @@ class File implements ITypeLookup implements IErrors {
 	function findCategory(ctx: Ctx, cat: Type, forType: Type, from: AnyTypeDecl, cache: Cache = Nil): Array<Category> {
 		if(cache.contains(this)) return [];
 		cache += this;
-		//trace(cat, this.path);
+		//if(cat.fullName()=="Star.Core.InPlace"&&forType.fullName()=="Star.Core.Linked.List[T]"&&this.path=="C:/Users/alani/Documents/GitHub/star/stdlib/Star/Core/InPlace/Linked.List[T]+InPlace.star")
+		///*if(!this.path.startsWith("C:/Users/alani/Documents/GitHub/star/stdlib"))*/trace(cat.fullName()+" for "+forType.fullName(), this.path);
 		for(cat2 in categories) {
 			cat2.path=cat2.path.simplify();
 			cat2.type=cat2.type.map(t->t.simplify());
@@ -367,9 +368,21 @@ class File implements ITypeLookup implements IErrors {
 				//trace(categories.map(c->c.fullName()));
 				categories;
 			}
-		).filter(c -> {
+		).unique().filter(c -> {
+			/*if(cat.fullName()=="Typer.Type"&&forType.fullName()=="Star.Core.Array.[Typer.Member]")
+			//if(!this.path.startsWith("C:/Users/alani/Documents/GitHub/star/stdlib"))
+			{
+				trace("");
+				trace(c.fullName(),c.thisType.fullName(),forType.fullName());
+				trace(
+					cat.hasParentType(c.path), c.path.hasChildType(cat),
+					forType.hasParentType(c.thisType), c.thisType.getMostSpecific().hasChildType(forType)
+				);
+				trace("");
+			}*/
+			c.thisType=c.thisType.simplify();
 			//c.path.hasChildType(cat) && c.thisType.simplify().hasChildType(forType)
-			if(cat.hasParentType(c.path)) {
+			/*if(cat.hasParentType(c.path)) {
 				if(forType.hasParentType(c.thisType)) {
 					//trace("+", c.fullName());
 					true;
@@ -379,7 +392,9 @@ class File implements ITypeLookup implements IErrors {
 				}
 			} else {
 				false;
-			}
+			}*/
+			cat.hasParentType(c.path) && c.path.hasChildType(cat)&&
+					forType.hasParentType(c.thisType) && c.thisType.getMostSpecific().hasChildType(forType);
 		})._match(
 			at([]) => dir.findCategory(ctx, cat, forType, from, cache),
 			at(found) => found

@@ -8,6 +8,8 @@ abstract class ClassLike extends Namespace {
 	final operators: Array<Operator> = [];
 
 
+	// Members
+
 	override function instMembers(from: AnyTypeDecl) {
 		return members.filter(mem -> from.canSeeMember(mem))
 			.concat(parents.flatMap(p -> p.instMembers(from).map(
@@ -29,6 +31,20 @@ abstract class ClassLike extends Namespace {
 			.concat(super.instMembers(from));
 	}
 
+	override function findInstMember(ctx: Ctx, name: String, allowStatic = true, onlyParents = false): Null<MemberKind> {
+		if(!onlyParents) {
+			for(mem in members) {
+				if(mem.name.name == name) {
+					return MKMember(mem);
+				}
+			}
+		}
+
+		return super.findInstMember(ctx, name, allowStatic, onlyParents);
+	}
+
+
+	// Method lookup
 
 	function defaultSingleInst(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false): Null<SingleInstKind> {
 		return null;
@@ -36,12 +52,6 @@ abstract class ClassLike extends Namespace {
 
 	override function findSingleInst(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false, cache: TypeCache = Nil): Null<SingleInstKind> {
 		if(cache.contains(thisType)) return null;
-
-		for(mem in members) {
-			if(mem.matchesGetter(name) && from.canSeeMember(mem)) {
-				return SIMember(mem);
-			}
-		}
 
 		for(mth in methods) mth._match(
 			at(sm is SingleMethod) => {
@@ -56,10 +66,16 @@ abstract class ClassLike extends Namespace {
 			},
 			_ => {}
 		);
+
+		for(mem in members) {
+			if(mem.matchesGetter(name) && from.canSeeMember(mem)) {
+				return SIMember(mem);
+			}
+		}
 		
 		for(parent in parents) {
 			parent.findSingleInst(ctx, name, from, getter, cache)._match(
-				at(si!) => return si,
+				at(si!) => return SIFromParent(parent, si),
 				_ => {}
 			);
 		}
@@ -124,7 +140,9 @@ abstract class ClassLike extends Namespace {
 		}
 
 		for(parent in parents) {
-			candidates.pushAll(parent.findMultiInst(ctx, names, from, setter, cache));
+			for(mi in parent.findMultiInst(ctx, names, from, setter, cache)) {
+				candidates.push(MIFromParent(parent, mi));
+			}
 		}
 
 		for(refinee in refinees) {
@@ -157,7 +175,7 @@ abstract class ClassLike extends Namespace {
 			candidates.pushAll(refinee.findCast(ctx, target, from, cache));
 		}
 
-		return candidates;
+		return candidates.concat(super.findCast(ctx, target, from, cache));
 	}
 
 	

@@ -34,6 +34,8 @@ class Dict[K, V] of Mapped[K, V] is friend #[DictIterator[K], DictIterator[K, V]
 	class Pair is hidden {
 		my key (K)
 		my value (V)
+
+		on [Tuple[K, V]] is inline => return #{key, value}
 	}
 	
 	
@@ -64,13 +66,13 @@ class Dict[K, V] of Mapped[K, V] is friend #[DictIterator[K], DictIterator[K, V]
 	}
 	
 	init [new: pairs (Array[Tuple[K, V]])] {
-		this.pairs = pairs[Array[Pair]]
+		_.pairs = pairs[Array[Pair]]
 	}
 	
 	
 	;== Copying
 	
-	on [new] (This) => return This[pairs: pairs[collect: $0[new]]]
+	on [new] (This) => return This[pairs: pairs[collect: Pair$0[new]]]
 	
 	
 	;== Sizes
@@ -82,12 +84,12 @@ class Dict[K, V] of Mapped[K, V] is friend #[DictIterator[K], DictIterator[K, V]
 	
 	;== Keys
 	
-	on [keys] (Array[K]) is getter => return pairs[collect: $0.key]
+	on [keys] (Array[K]) is getter => return pairs[collect: Pair$0.key]
 	
 	
 	;== Values
 	
-	on [values] (Array[V]) is getter => return pairs[collect: $0.value]
+	on [values] (Array[V]) is getter => return pairs[collect: Pair$0.value]
 	
 	
 	;== Pairs
@@ -149,7 +151,7 @@ class Dict[K, V] of Mapped[K, V] is friend #[DictIterator[K], DictIterator[K, V]
 	}
 	
 	
-	on [maybeAt: key (K)] (V) {
+	on [maybeAt: key (K)] (Maybe[V]) {
 		match this[pairForKey: key] at Maybe[the: Pair[value: my value]] {
 			return Maybe[the: value]
 		} else {

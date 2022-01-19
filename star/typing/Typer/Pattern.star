@@ -68,6 +68,7 @@ kind Pattern {
 
 	;-- An "extractor"; `_` represents the value being matched on, returning an expression
 	has [extractor: (Expr)]
+	has [extractMessage: (ObjMessage)]
 
 	;-- Wildcard
 	has [ignore]
@@ -126,7 +127,7 @@ kind Pattern {
 
 	;-- Tagged kind case w/ memberwise pattern
 	has [type: (Type) taggedCase: (TaggedCase.Single) members: (Array[Tuple[Member, Pattern]])]
-	has [type: (Type) taggedCase: (TaggedCase.Multi), (Array[Pattern]) members: (Array[Tuple[Member, Pattern]])]
+	has [type: (Type) taggedCase: (TaggedCase.Multi), args (Array[Pattern]) members: (Array[Tuple[Member, Pattern]])]
 
 	;-- `&` mulit-kind pattern
 	has [extract: (Pattern) from: (Pattern)]

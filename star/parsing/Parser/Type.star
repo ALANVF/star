@@ -14,7 +14,7 @@ kind Type {
 
 	on [simpleName] (Str) is getter {
 		match this {
-			at Type[leading: my leading segs: my segs] => return ("_." * leading.length) + segs[collect: $0[simpleName]][joinWith: "."]
+			at Type[leading: my leading segs: my segs] => return ("_." * leading.length) + segs[collect: Seg$0[simpleName]][joinWith: "."]
 			at Type[blank: _] => return "_"
 			at Type[blank: _ args: my args] => return "_[\("..., " * (args.of.length - 1))...]"
 		}

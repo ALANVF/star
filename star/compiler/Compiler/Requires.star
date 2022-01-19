@@ -29,7 +29,7 @@ class Requires {
 		if params? {
 			res
 			-> [add: #"("]
-			-> [add: params[collect: $0[form]][joinWith: ", "]]
+			-> [add: params[collect: Param$0[form]][joinWith: ", "]]
 			-> [add: #")"]
 		}
 		

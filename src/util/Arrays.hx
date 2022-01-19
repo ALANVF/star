@@ -246,7 +246,13 @@ class Arrays {
 		return result;
 	}
 
-	static function foldRight<T, U>(array: Array<T>, initial: U, callback: (acc: U, curr: T) -> U): U {
+	static inline function fold<T, U>(array: Array<T>, initial: U, callback: (acc: U, curr: T) -> U): U {
+		for(value in array)
+			initial = callback(initial, value);
+		return initial;
+	}
+
+	static inline function foldRight<T, U>(array: Array<T>, initial: U, callback: (acc: U, curr: T) -> U): U {
 		var i = array.length;
 		while(--i >= 0)
 			initial = callback(initial, array[i]);

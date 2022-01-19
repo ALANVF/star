@@ -31,7 +31,7 @@ kind VarDecl {
 			match this {
 				at This[name: my name] => return name[Expr fixName]
 				at This[names: my names] {
-					return names[collect: $0[Expr fixName]][joinWith: ", "]
+					return names[collect: Str$0[Expr fixName]][joinWith: ", "]
 				}
 			}
 		}]

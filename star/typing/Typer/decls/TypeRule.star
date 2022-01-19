@@ -14,7 +14,7 @@ kind TypeRule {
 	on [eval: ctx (Ctx)] (Maybe[Effects]) {
 		match this {
 			at This[type: my l eq: my r] {
-				if l[in: ctx][strictUnifyWith: r[in: ctx]] {
+				if l[in: ctx][strictUnifyWith: r[in: ctx]]? {
 					return Maybe[the: Effects.empty]
 				} else {
 					return Maybe[none]

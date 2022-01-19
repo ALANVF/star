@@ -57,6 +57,6 @@ category Expr for Str {
 	}
 	
 	on [escape] (Str) {
-		return this[collectAll: $0[Expr escape]]
+		return this[collectAll: Char$0[Expr escape]]
 	}
 }

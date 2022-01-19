@@ -4,6 +4,10 @@ import reporting.render.TextDiagnosticRenderer;
 import reporting.Diagnostic;
 import text.SourceFile;
 
+import parsing.ast.Expr;
+import parsing.ast.Cascade;
+import parsing.ast.Message;
+
 @:publicFields @:structInit class Options {
 	var buildDecls = true;
 	var isStdlib = false;
@@ -92,15 +96,19 @@ class Main {
 			typing.Project.STDLIB = project;
 		}
 		
+		var err = null;
 		if(opt.pass2 && !files.some(f -> f.hasErrors())) {
 			final startPass2 = haxe.Timer.stamp();
-			typing.Pass2.resolveProject(project);
+			try typing.Pass2.resolveProject(project) catch(e: haxe.ValueException) err = e;
 			final stopPass2 = haxe.Timer.stamp();
 			final timePass2 = round(stopPass2*1000 - startPass2*1000);
 			time += timePass2 * 10000;
 			Sys.println('Typer pass 2 time: ${timePass2}ms');
 		}
 
+		err._and(e => Sys.println(e.details()));
+
+		//if(!opt.isStdlib)
 		for(file in files) {
 			for(i => err in file.allErrors()) {
 				#if windows
@@ -120,7 +128,7 @@ class Main {
 			}
 		}
 		
-		Sys.println('Status: ${files.none(file -> file.hasErrors())}');
+		Sys.println('Status: ${files.none(file -> file.hasErrors()) && err == null}');
 		Sys.println('Total time: ${time / 10000}ms');
 
 		opt.callback._and(cb => {
@@ -139,105 +147,381 @@ class Main {
 			parse(newSource(file), false);
 		}*/
 	
-	final dumpTypes = false;
-		
-	if(dumpTypes) { typesDump = sys.io.File.write("./dump/types.stir"); typesDumper = new typing.Dumper(typesDump); }
-	stmtsDump = sys.io.File.write("./dump/stmts.stir"); stmtsDumper = new typing.Dumper(stmtsDump);
-	try {
-		testProject("stdlib", {
-			isStdlib: true,
-			pass1: true,
-			pass2: true
-		});/*(project: typing.Project) -> {
-			project.findTypeOld(List2.of(["Star", []], ["Core", []], ["Array", []]), true).forEach(array -> {
-				trace(array.simpleName());
+		final dumpTypes = false;
+			
+		if(dumpTypes) { typesDump = sys.io.File.write("./dump/types.stir"); typesDumper = new typing.Dumper(typesDump); }
+		stmtsDump = sys.io.File.write("./dump/stmts.stir"); stmtsDumper = new typing.Dumper(stmtsDump);
+		try {
+			testProject("stdlib", {
+				isStdlib: true,
+				pass1: true,
+				pass2: true
 			});
-		});*/
-		/*nl();
-		testProject("tests/hello-world", {pass1: true});
-		nl();
-		testProject("tests/classes/point", {pass1: true});
-		nl();
-		testProject("tests/kinds", {pass1: true});
-		nl();
-		testProject("tests/aliases", {pass1: true} /*, (project: typing.Project) -> {
-			project.findTypeOld(List2.of(["Direct", []]), true).forEach(direct -> {
-				trace(direct.simpleName());
-			});
-		}* /);*/
-		for(type in [
-			typing.Pass2.STD_Int,
-			typing.Pass2.STD_Dec,
-			typing.Pass2.STD_Str,
-			typing.Pass2.STD_Array.t._match(
-				at(TMulti(types)) => types[0],
+
+			for(type in [
+				typing.Pass2.STD_Int,
+				typing.Pass2.STD_Dec,
+				typing.Pass2.STD_Str
+			].concat(typing.Pass2.STD_Array.t._match(
+				at(TMulti(types)) => types,
 				_ => throw "bad"
-			)
-		]) type.t._match(
-			at(TConcrete(decl is typing.Class) | TModular({t: TConcrete(decl is typing.Class)}, _)) => {
-				/*stmtsDumper.write(";== of:");
-				stmtsDumper.nextLine();
-				for(p in decl.parents) {
-					stmtsDumper.nextLine();
-					stmtsDumper.dump(p, Nil);
-				}
-				stmtsDumper.nextLine();
-				for(mth in decl.methods) mth.typedBody._and(body => {
-					stmtsDumper.write(";== ");
-					stmtsDumper.write(type.fullName());
-					stmtsDumper.write("#[");
-					stmtsDumper.write(mth.methodName());
-					stmtsDumper.write("]");
-					stmtsDumper.nextLine();
-					stmtsDumper.dump(mth);
+			)).concat(typing.Pass2.STD_Dict.t._match(
+				at(TConcrete(decl)) => [typing.Pass2.STD_Dict],
+				at(TMulti(types)) => types,
+				_ => throw "bad"
+			))) type.t._match(
+				at(TConcrete(decl is typing.Class) | TModular({t: TConcrete(decl is typing.Class)}, _)) => {
+					stmtsDumper.dump(decl);
 					stmtsDumper.nextLine();
 					stmtsDumper.nextLine();
-				});*/
-				stmtsDumper.dump(decl);
-				stmtsDumper.nextLine();
-				stmtsDumper.nextLine();
-			},
-			_ => throw "???"+type
-		);
-		nl();
-		testProject("star", {pass1: true, pass2: true});
-	} catch(e: haxe.Exception) {
+				},
+				_ => throw "???"+type
+			);
+			nl();
+			testProject("star", {pass1: true, pass2: true});
+		} catch(e: haxe.Exception) {
+			if(dumpTypes) typesDump.close();
+			stmtsDump.close();
+			hl.Api.rethrow(e);
+		}
 		if(dumpTypes) typesDump.close();
 		stmtsDump.close();
-		hl.Api.rethrow(e);
+
+		/*function lex(text) {
+			return new Lexer(new SourceFile("<anon>", text)).tokenize()._2;
+		}
+		function parse(tokens) {
+			return (@:privateAccess Parser.parseFullExpr(tokens))._match(
+				at(Success(made, Nil)) => made,
+				_ => throw "???"
+			);
+		}
+		function test(text) {
+			final tokens = lex(text);
+			final expr = parse(tokens);
+			trace(expr);
+			trace("");
+			reparseStart(expr)._match(
+				at(expr2!) => {
+					trace(expr2);
+				},
+				_ => {
+					trace("(no change)");
+				}
+			);
+			nl();
+		}
+
+		test("$0 + 1");
+		test("$0 + $1");
+		test("$0.a");
+		test("$0.a.b");
+		test("$0.a + 1");
+		test("$0[a: $.1]");
+		test("[$0 a: $.1]");
+		test("$0[a: $0 + $1]");
+		test("[$0 a: $0 + $1]");
+		test("$0[a: $0 + $.1]");
+		test("$0.foo[bar: $.1] + $1[baz: $0 + $1.thing]");
+		test("\" \\($.0)\"+1");
+		test("foo[collect: \" \\($.0)\"]");
+		test("foo[collect: \" \\($.0)\"][join]");*/
 	}
-	if(dumpTypes) typesDump.close();
-	stmtsDump.close();
-		/*nl();
-		testProject("tests/self", true, (project: typing.Project) -> {
-			project.findTypeOld(List2.of(["Slot", []]), true).forEach(slot -> {
-				trace(slot.simpleName());
-			});
 
-			project.findTypeOld(List2.of(["AST", []]), true).forEach(ast -> {
-				trace(ast.simpleName());
-				trace(ast.findTypeOld(List2.of(["Slot", []])).map(t -> t.simpleName()));
-			});
-
-			project.findTypeOld(List2.of(["AST", []], ["Slot", []]), true).forEach(slot -> {
-				trace(slot.simpleName());
-			});
-
-			project.findTypeOld(List2.of(["AST", []], ["Expr", []]), true).forEach(expr -> {
-				trace(expr.simpleName());
-			});
-
-			project.findTypeOld(List2.of(["AST", []], ["Slot", []], ["Method", []]), true).forEach(method -> {
-				trace(method.simpleName());
-				trace(method.findTypeOld(List2.of(["AST", []]), true).map(t -> t.simpleName()));
-				trace(method.findTypeOld(List2.of(["AST", []], ["Slot", []]), true).map(t -> t.simpleName()));
-				trace(method.findTypeOld(List2.of(["Slot", []]), true).map(t -> t.simpleName()));
-			});
-		});*/
-		
-		/*nl();
-		for(s in new compiler.Compiler().stmts) Sys.println(s.form());
-		
-		compiler.nim.Compiler.test();*/
+	/*static function reparseStart(expr: Expr): Null<Expr> {
+		return reparseInner(expr, Nil);
 	}
+
+	static function reparseInner(expr: Expr, stack: List<{n: Int}>): Null<Expr> {
+		final stack2 = stack.prepend({n: 0});
+		return reparse(expr, stack2)._and(
+			expr2 => {
+				stack2.head().n._match(
+					at(0) => expr2,
+					at(n) => EAnonFunc(stack2.length() - 1, n, expr2)
+				);
+			}
+		);
+	}
+
+	static function reparseEach(exprs: Array<Expr>, stack: List<{n: Int}>): Null<Array<Expr>> {
+		var hadAny = false;
+		final exprs2 = exprs.map(e -> reparseInner(e, stack)._andOr(
+			res => {
+				if(!hadAny) hadAny = true;
+				res;
+			},
+			e
+		));
+		
+		return if(hadAny) exprs2 else null;
+	}
+
+	static function reparseMessage<T>(msg: Message<T>, stack: List<{n: Int}>): Null<Message<T>> {
+		return msg._match(
+			at(Multi(category, labels)) => {
+				var hadAny = false;
+				final labels2 = labels.map(l -> l._match(
+					at(Named(span, name, expr)) => {
+						reparseInner(expr, stack)._andOr(
+							res => {
+								if(!hadAny) hadAny = true;
+								Label.Named(span, name, res);
+							},
+							l
+						);
+					},
+					_ => l
+				));
+
+				if(hadAny) {
+					Multi(category, labels2);
+				} else {
+					null;
+				}
+			},
+			_ => null
+		);
+	}
+
+	// !!! This mutates the cascades in order to be efficient !!!
+	static function reparseCascades<T>(cascades: Array<Cascade<T>>, stack: List<{n: Int}>) {
+		var hadAny = false;
+		function loop<U>(cascade: Cascade<U>) {
+			cascade.kind._match(
+				at(Message(msg)) => {
+					reparseMessage(msg, stack)._and(msg2 => {
+						if(!hadAny) hadAny = true;
+						cascade.kind = Message(msg2);
+					});
+				},
+				at(AssignMember(mem, span, op, expr)) => {
+					reparseInner(expr, stack)._and(expr2 => {
+						if(!hadAny) hadAny = true;
+						cascade.kind = AssignMember(mem, span, op, expr2);
+					});
+				},
+				at(AssignMessage(msg, span, op, expr)) => {
+					final msg2 = reparseMessage(msg, stack);
+					final expr2 = reparseInner(expr, stack);
+					if(msg2 != null && expr2 != null) {
+						if(!hadAny) hadAny = true;
+						cascade.kind = AssignMessage(msg2._or(msg), span, op, expr2._or(expr));
+					}
+				},
+				at(StepMessage(msg, span, step)) => {
+					reparseMessage(msg, stack)._and(msg2 => {
+						if(!hadAny) hadAny = true;
+						cascade.kind = StepMessage(msg2, span, step);
+					});
+				},
+				at(Block(blk)) => {}, // TODO
+				_ => {}
+			);
+
+			for(nested in cascade.nested) {
+				loop(nested);
+			}
+		}
+
+		for(cascade in cascades) {
+			loop(cascade);
+		}
+
+		return hadAny;
+	}
+
+	static function reparse(expression: Expr, stack: List<{n: Int}>): Null<Expr> return expression._match(
+		at(EStr(_, [] | [PStr(_)])) => null,
+		at(EStr(span, parts)) => {
+			var hadAny = false;
+			final stack2 = stack.prepend({n: 0});
+			final parts2 = parts.map(p -> p._match(
+				at(PStr(_)) => p,
+				at(PCode(code)) => reparse(code, stack2)._andOr(
+					e => {
+						if(!hadAny) hadAny = true;
+						PCode(e);
+					}, {
+						p;
+					}
+				)
+			));
+			if(stack2.head().n > 0) throw "error: closures cannot be coerced to a string!";
+			if(hadAny) {
+				EStr(span, parts2);
+			} else {
+				null;
+			}
+		},
+
+		at(EArray(_begin, values, _end)) => {
+			reparseEach(values, stack)._and(values2 => {
+				EArray(_begin, values2, _end);
+			});
+		},
+		at(EHash(_begin, pairs, _end)) => {
+			var hadAny = false;
+			final pairs2 = pairs.map(p -> {
+				var hadEither = false;
+				final k = reparseInner(p.k, stack)._andOr(
+					res => {
+						hadEither = true;
+						res;
+					},
+					p.k
+				);
+				final v = reparseInner(p.v, stack)._andOr(
+					res => {
+						hadEither = true;
+						res;
+					},
+					p.v
+				);
+
+				if(!hadAny) hadAny = hadEither;
+				if(hadEither) {k: k, v: v} else p;
+			});
+			
+			if(hadAny) {
+				EHash(_begin, pairs2, _end);
+			} else {
+				null;
+			}
+		},
+		at(ETuple(_begin, values, _end)) => {
+			reparseEach(values, stack)._and(values2 => {
+				ETuple(_begin, values2, _end);
+			});
+		},
+		
+		at(EAnonArg(span, depth, nth)) => {
+			final env = stack.nth(depth);
+			env.n = env.n.max(nth + 1);
+			final name = '${stack.length() - depth - 1}@$nth';
+			EName(span, name);
+		},
+
+		at(ELiteralCtor(type, literal)) => {
+			reparse(literal, stack)._andOr(
+				lit => ELiteralCtor(type, lit),
+				null
+			);
+		},
+
+		at(EParen(_begin, exprs, _end)) => {
+			reparseEach(exprs, stack)._and(exprs2 => {
+				EParen(_begin, exprs2, _end);
+			});
+		},
+
+		at(ETypeMessage(type, _begin, msg, _end)) => {
+			reparseMessage(msg, stack)._and(msg2 => {
+				ETypeMessage(type, _begin, msg2, _end);
+			});
+		},
+
+		at(ETypeCascade(type, cascades)) => {
+			final hadAny = reparseCascades(cascades, stack);
+
+			if(hadAny) {
+				expression;
+			} else {
+				null;
+			}
+		},
+
+		at(EObjMessage(sender, _begin, msg, _end)) => {
+			var hadSender = false;
+			final exprSpan = sender.mainSpan();
+			final sender2 = if(exprSpan.start < _begin.start) { // obj[...]
+				reparse(sender, stack)._andOr(
+					res => {
+						hadSender = true;
+						res;
+					},
+					sender
+				);
+			} else { // [obj ...]
+				reparseInner(sender, stack)._andOr(
+					res => {
+						hadSender = true;
+						res;
+					},
+					sender
+				);
+			};
+
+			reparseMessage(msg, stack)._andOr(msg2 => {
+				EObjMessage(sender2, _begin, msg2, _end);
+			}, {
+				if(hadSender) {
+					EObjMessage(sender2, _begin, msg, _end);
+				} else {
+					null;
+				}
+			});
+		},
+		
+		at(EObjCascade(sender, cascades)) => {
+			var hadSender = false;
+			final sender2 = reparse(sender, stack)._andOr(
+				res => {
+					hadSender = true;
+					res;
+				},
+				sender
+			);
+
+			final hadAny = reparseCascades(cascades, stack);
+
+			if(hadSender) {
+				EObjCascade(sender2, cascades);
+			} else if(hadAny) {
+				expression;
+			} else {
+				null;
+			}
+		},
+		
+		at(EObjMember(expr, member)) => {
+			reparse(expr, stack)._andOr(
+				e => EObjMember(e, member),
+				null
+			);
+		},
+
+		at(EPrefix(span, op, right)) => {
+			reparse(right, stack)._andOr(
+				r => EPrefix(span, op, r),
+				null
+			);
+		},
+
+		at(ESuffix(left, span, op)) => {
+			reparse(left, stack)._andOr(
+				l => ESuffix(l, span, op),
+				null
+			);
+		},
+
+		at(EInfix(left, span, op, right)) => {
+			final left2 = reparse(left, stack);
+			final right2 = reparse(right, stack);
+			if(left2 == null && right2 == null) {
+				null;
+			} else {
+				EInfix(left2._or(left), span, op, right2._or(right));
+			}
+		},
+
+		at(EVarDecl(span, name, type, Some(value))) => {
+			reparseInner(value, stack)._andOr(
+				value2 => EVarDecl(span, name, type, Some(value2)),
+				null
+			);
+		},
+
+		_ => null
+	);*/
 }

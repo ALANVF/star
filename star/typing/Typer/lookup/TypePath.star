@@ -28,15 +28,15 @@ alias TypePath (Parser.Type) {
 				return Type[
 					span: Maybe[the: this.span]
 					type: Type[blank: span]
-					args: args[collect: $0[TypePath][toType: source]]
+					args: args[collect: Parser.Type$0[TypePath][toType: source]]
 				]
 			}
 
 			at This[leading: my leading segs: my segs] {
 				return Type[
-					span: this.span
+					span: Maybe[the: this.span]
 					depth: leading.length
-					lookup: segs[mapSegs: source]
+					lookup: segs[TypePath mapSegs: source]
 					:source
 				]
 			}

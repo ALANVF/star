@@ -145,6 +145,6 @@ kind Type {
 
 category Type for Array[Type] {
 	on [form] (Str) {
-		return this[collect: $0[form]][joinWith: ", "]
+		return this[collect: Type$0[form]][joinWith: ", "]
 	}
 }

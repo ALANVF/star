@@ -13,7 +13,9 @@ class Charset is hidden Lexer {
 		on [max] (Char)
 	}
 	init [new: chars (Chars)] {
-		#init_this This[new: (chars[max][Int] >> 3) + 1]
+		;#init_this This[new: (chars[max][Int] >> 3) + 1]
+		size = (chars[max][Int] >> 3) + 1
+		bytes = Array[fill: size with: UInt8 0]
 
 		for my char in: chars {
 			bytes[at: char[Int] >> 3] = char[Charset UInt8]

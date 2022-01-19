@@ -78,6 +78,12 @@ class Unit extends Dir {
 			}
 		}
 
+		// TODO: figure out a better solution for this
+		//if(!this.path.startsWith("C:/Users/alani/Documents/GitHub/star/stdlib")) {
+			//trace(cat.fullName(), this.path);
+			candidates.pushAll(outer.findCategory(ctx, cat, forType, from, cache));
+		//}
+
 		return candidates;
 	}
 }

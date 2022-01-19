@@ -22,6 +22,6 @@ enum CascadeKind<T> {
 class Cascade<T> {
 	final span: Span;
 	final depth: Int;
-	final kind: CascadeKind<T>;
+	var kind: CascadeKind<T>;
 	final nested: Array<Cascade<Expr>>;
 }

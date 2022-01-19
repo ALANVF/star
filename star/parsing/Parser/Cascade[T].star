@@ -15,6 +15,23 @@ kind Cascade[T] {
 	has [message: (Message[T]) step: (Span), (Step)]
 
 	has [block: (Block)]
+
+
+	on [span: (Span) level: (Int) member: (Ident) assign: (Span) op: (Maybe[Infix.Assignable]) expr: (Expr)] (This) is static {
+		match op at Maybe[the: my op'] {
+			return This[:span :level :member :assign op: op' :expr]
+		} else {
+			return This[:span :level :member :assign :expr]
+		}
+	}
+
+	on [span: (Span) level: (Int) message: (Message[T]) assign: (Span) op: (Maybe[Infix.Assignable]) expr: (Expr)] (This) is static {
+		match op at Maybe[the: my op'] {
+			return This[:span :level :message :assign op: op' :expr]
+		} else {
+			return This[:span :level :message :assign :expr]
+		}
+	}
 }
 
 type T

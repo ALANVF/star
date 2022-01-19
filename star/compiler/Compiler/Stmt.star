@@ -122,9 +122,9 @@ kind Stmt {
 				return ""
 				-> [add: "for("]
 				-> [add: init[:form]]
-				-> [maybeAdd: cond[collect: $0[:form]]]
+				-> [maybeAdd: cond[collect: Expr$0[:form]]]
 				-> [add: "; "]
-				-> [maybeAdd: update[collect: $0[:form]]]
+				-> [maybeAdd: update[collect: Expr$0[:form]]]
 				-> [add: ") "]
 				-> [add: stmt[form: indent']]
 			}

@@ -5,4 +5,6 @@ protocol Iterable[T] {
 
 type K
 type V
-alias Iterable[K, V] = Iterable[Tuple[K, V]]
+protocol Iterable[K, V] {
+	on [Iterator[Tuple[K, V]]]
+}

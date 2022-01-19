@@ -1,4 +1,5 @@
-alias TypePath (Array[Tuple[Str, Maybe[Array[Type]]]]) {
+alias TypeSeg = Tuple[Str, Maybe[Array[Type]]]
+alias TypePath (Array[TypeSeg]) {
 	on [named: name (Str)] (This) is static is inline {
 		return This #[#{name, Maybe[none]}]
 	}
@@ -8,11 +9,11 @@ alias TypePath (Array[Tuple[Str, Maybe[Array[Type]]]]) {
 	}
 	
 	on [form] (Str) {
-		return this[collect: {
-			match $.0 {
+		return this[collect: {|seg (TypeSeg)|
+			match seg {
 				at #{my name, Maybe[none]} => return "\(name)"
 				at #{my name, Maybe[the: my args]} {
-					return "\(name)<\(args[collect: $0[form]][joinWith: ", "])>"
+					return "\(name)<\(args[collect: Type$0[form]][joinWith: ", "])>"
 				}
 			}
 		}][joinWith: "::"]

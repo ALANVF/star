@@ -360,7 +360,7 @@ class List[T] of Positional[T] {
 	class Links[T] of Iterable[Value[T]] is hidden {
 		my head (Head[T])
 		my tail (Tail[T])
-		on [Iterator[Value[T]]] is inline => return LinkIterator[link: head.next :tail]
+		on [Iterator[Value[T]]] is inline => return LinkIterator[link: head :tail]
 	}
 	on [links] (Links[T]) is hidden is inline => return Links[:head :tail]
 

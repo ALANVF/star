@@ -267,6 +267,7 @@ abstract class TypeDecl extends AnyFullTypeDecl {
 		if(args.length != params.length) return false;
 
 		for(i in 0...args.length) {
+			if(args[i] == null) return false;
 			if(!args[i].hasParentType(params[i])) {
 				return false;
 			}
@@ -277,6 +278,7 @@ abstract class TypeDecl extends AnyFullTypeDecl {
 
 	function applyArgs(args: Array<Type>): Null<Type> {
 		if(args.length != params.length) return null;
+		if(!this.acceptsArgs(args)) return null;
 
 		final tctx: TypeVarCtx = [];
 		final params2 = [];
@@ -302,6 +304,30 @@ abstract class TypeDecl extends AnyFullTypeDecl {
 	function isStrong() return false;
 
 	function isUncounted() return false;
+
+
+	// Iterating
+
+	function iterElemType(): Null<Type> {
+		return refinees.findMap(ref ->
+			// this allows us to obtain our typevars from refinee typevars
+			(params.length == 0 ? ref.thisType : ref.applyArgs(params))._and(r =>
+				r.iterElemType()._and(e => e.getFrom(thisType))
+			)
+		);
+	}
+
+	function iterAssocType(): Null<Tuple2<Type, Type>> {
+		return refinees.findMap(ref ->
+			// this allows us to obtain our typevars from refinee typevars
+			(params.length == 0 ? ref.thisType : ref.applyArgs(params))._and(r =>
+				r.iterAssocType()._match(
+					at(null) => null,
+					at({_1: k, _2: v}) => new Tuple2(k.getFrom(thisType), v.getFrom(thisType))
+				)
+			)
+		);
+	}
 
 
 	// Effects tracking
@@ -352,6 +378,20 @@ abstract class TypeDecl extends AnyFullTypeDecl {
 		return refinees.flatMap(r -> r.instMembers(from));
 	}
 
+	function findInstMember(ctx: Ctx, name: String, allowStatic = true, onlyParents = false): Null<MemberKind> {
+		for(ref in refinees) {
+			ref.findInstMember(ctx, name, allowStatic)._and(kind => {
+				final tctx: TypeVarCtx = [];
+				for(i => p in params) {
+					p.bindTo(ref.params[i], tctx);
+				}
+				return MKFromRefinee(this, tctx, kind);
+			});
+		}
+
+		return null;
+	}
+
 
 	// Method lookup
 
@@ -378,6 +418,16 @@ abstract class TypeDecl extends AnyFullTypeDecl {
 
 
 	function findCast(ctx: Ctx, target: Type, from: AnyTypeDecl, cache: TypeCache = Nil): Array<CastKind> {
+		// TODO: fully implement
+		target.t._match(
+			at(TConcrete(sa is StrongAlias)) => {
+				sa.type.strictUnifyWithType(thisType)._and(t => {
+					return [CDowncast(target)];
+				});
+			},
+			_ => {}
+		);
+
 		return [];
 	}
 

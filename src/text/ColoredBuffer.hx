@@ -263,6 +263,7 @@ class ColoredBuffer {
 				writer.write("\n\033[0m");
 			}
 			writer.write("\033[0m");
+			Sys.sleep(0.02);
 		#else
 			writer.write("\033[0m\n");
 		#end

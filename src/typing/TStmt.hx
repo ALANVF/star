@@ -19,12 +19,12 @@ enum Stmt {
 	);
 	SMatch(
 		value: TExpr,
-		cases: Array<{pattern: TExpr, ?cond: TExpr, then: TStmts}>,
+		cases: Array<{pattern: Pattern, ?cond: TExpr, then: TStmts}>,
 		?orelse: TStmts
 	);
 	SMatchAt(
 		value: TExpr,
-		pattern: TExpr,
+		pattern: Pattern,
 		?cond: TExpr,
 		then: TStmts,
 		?orelse: TStmts
@@ -42,8 +42,8 @@ enum Stmt {
 	);
 
 	SForIn(
-		lvar: TExpr,
-		?lvar2: TExpr,
+		lpat: Pattern,
+		?lpat2: Pattern,
 		inExpr: TExpr,
 		?cond: TExpr,
 		?label: String,

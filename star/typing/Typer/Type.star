@@ -30,50 +30,11 @@ kind Type of TypeLookup, Typeable {
 
 	;-- A modular type
 	has [type: (Type) unit: (Unit)]
-
-	;-- A reference to a type
-	has [ref: (Box[Type])] {
-		span = ref.value.span
-	}
 	
 	;-- Optional location of the type
 	my span (Maybe[Span]) is getter = Maybe[none]
 
 	on [span: span' (Span)] is setter => span = Maybe[the: span']
-
-
-	on [simplify: ctx (Ctx)] (Type) {
-		match this {
-			at This[depth: my depth lookup: my lookup source: my source] {
-				match source[
-					findType: lookup
-					search: Search.start
-					from: Maybe[the: ctx.typeDecl]
-					:depth
-				] at Maybe[the: my type] {
-					return type
-				} else {
-					throw "Type `\(this.fullName)` does not exist!"
-				}
-			}
-
-			at This[type: my type lookup: my lookup] {
-				match type[
-					findType: lookup
-					search: Search.inside
-					from: Maybe[the: ctx.typeDecl]
-				] at Maybe[the: my type'] {
-					return type'
-				} else {
-					throw "Type `\(this.fullName)` does not exist!"
-				}
-			}
-
-			else {
-				return this
-			}
-		}
-	}
 
 
 	;== Type lookup
@@ -94,7 +55,7 @@ kind Type of TypeLookup, Typeable {
 	on [maybeIn: ctx (Ctx)] (Maybe[Type]) {
 		match this {
 			at This[depth: _ lookup: _ source: _] || This[type: _ lookup: _] {
-				return this[simplify: ctx][maybeIn: ctx]
+				return this[simplify][maybeIn: ctx]
 			}
 
 			at This[decl: _] || This[decl: _ params: _ ctx: _] || This[this: _] || This[blank] {
@@ -119,7 +80,7 @@ kind Type of TypeLookup, Typeable {
 
 			at This[type: This[types: my types] args: my args] {
 				my types' = #[]
-				my args' = args[collect: $0[in: ctx]]
+				my args' = args[collect: Type$0[in: ctx]]
 
 				for my type in: types {
 					match type[maybeIn: ctx] at Maybe[the: my type'] {
@@ -138,7 +99,7 @@ kind Type of TypeLookup, Typeable {
 
 			at This[type: my type args: my args] {
 				match type[maybeIn: ctx] at Maybe[the: my type'] {
-					return type'[applyArgs: args[collect: $0[in: ctx]]]
+					return type'[applyArgs: args[collect: Type$0[in: ctx]]]
 				} else {
 					return Maybe[none]
 				}
@@ -162,7 +123,107 @@ kind Type of TypeLookup, Typeable {
 		match this[maybeIn: ctx] at Maybe[the: my type] {
 			return type
 		} else {
-			throw "Error: invalid type `\(this[fullName])`!"
+			throw "Error: invalid type `\(this.fullName)`!"
+		}
+	}
+
+	on [in: tctx (TypeVarCtx)] (Type) {
+		my ctx = Ctx[typevars: tctx thisType: this]
+		match this[maybeIn: ctx] at Maybe[the: my type] {
+			return type
+		} else {
+			throw "Error: invalid type `\(this.fullName)`!"
+		}
+	}
+
+	on [maybeFrom: type (Type)] (Maybe[Type]) {
+
+	}
+
+	on [from: type (Type)] (Type) {
+		match this[maybeFrom: type] at Maybe[the: my type'] {
+			return type'
+		} else {
+			throw "Error: invalid type `\(this.fullName) in \(type.fullName)`!"
+		}
+	}
+
+	on [simplify] (Type) {
+		match this {
+			at This[depth: my depth lookup: my lookup source: my source] {
+				match source[
+					findType: lookup
+					search: Search.start
+					from: Maybe[the: source[AnyTypeDecl]]
+					:depth
+				] at Maybe[the: my type] {
+					return type
+				} else {
+					throw "Type `\(this.fullName)` does not exist!"
+				}
+			}
+
+			at This[type: my type lookup: my lookup] {
+				match type[
+					findType: lookup
+					search: Search.inside
+					from: Maybe[none];Maybe[the: ctx.typeDecl]
+				] at Maybe[the: my type'] {
+					return type'
+				} else {
+					throw "Type `\(this.fullName)` does not exist!"
+				}
+			}
+
+			at This[type: This[types: my types] args: my args] {
+				my args' = args[collect: Type$0[simplify]]
+				my types' = types[keepIf: Type$0[acceptsArgs: args']]
+
+				if args'[none: Type$0[hasTypevars]] {
+					types' = types'[Type mostSpecific]
+				}
+
+				match types' {
+					at #[] => throw "bad"
+					at #[This[decl: my decl]] {
+						match decl[applyArgs: args'] at Maybe[the: my type'] {
+							return type'
+							-> span = span
+						} else {
+							throw "error!"
+						}
+					}
+					at #[my type'] => return This[type: type' args: args' :span]
+					else {
+						if types'.length ?= types.length {
+							return this
+						} else {
+							return This[type: This[types: types' :span] args: args' :span]
+						}
+					}
+				}
+			}
+
+			at This[type: This[decl: my decl] args: my args] {
+				my args' = args[collect: Type$0[simplify]]
+				match decl[applyArgs: args'] at Maybe[the: my type'] {
+					return type'
+					-> span = span
+				} else {
+					throw "error!"
+				}
+			}
+
+			at This[type: my type args: my args] {
+				return This[
+					type: type[simplify]
+					args: args[collect: Type$0[simplify]]
+				]
+			}
+
+			else {
+				return this
+			}
 		}
 	}
 
@@ -187,6 +248,8 @@ kind Type of TypeLookup, Typeable {
 
 	;== Unification
 
+	on [unifyWith: type (Type)] (Maybe[Type])
+
 	on [strictUnifyWith: type (Type)] (Maybe[Type])
 
 
@@ -195,6 +258,8 @@ kind Type of TypeLookup, Typeable {
 	on [acceptsArgs: args (Array[Type])] (Bool)
 
 	on [applyArgs: args (Array[Type])] (Maybe[Type])
+
+	on [hasTypevars] (Bool)
 
 
 	;== Binding
@@ -206,13 +271,172 @@ kind Type of TypeLookup, Typeable {
 	
 	;== Attributes
 
-	on [isNative: native (Native)] (Bool)
+	on [isNative: (Native)] (Bool) {
+		match this {
+			at This[depth: _ lookup: _ source: _] || This[type: _ lookup: _] {
+				return this[simplify][:isNative]
+			}
+			at This[decl: my decl] || This[decl: my decl params: _ ctx: _] {
+				return decl[:isNative]
+			}
+			at This[this: my decl] => return decl[:isNative]
+			at This[blank] => throw "bad"
+			at This[types: my types] => return types[any: Type$0[:isNative]]
+			at This[type: my type args: _] => return type[:isNative]
+			at This[typevar: my typevar] => return typevar[:isNative]
+			at This[type: my type unit: _] => return type[:isNative]
+		}
+	}
 
-	on [isFlags] (Bool)
+	on [isFlags] (Bool) {
+		match this {
+			at This[depth: _ lookup: _ source: _] || This[type: _ lookup: _] {
+				return this[simplify][isFlags]
+			}
+			at This[decl: my decl] || This[decl: my decl params: _ ctx: _] {
+				return decl[isFlags]
+			}
+			at This[this: my decl] => return decl[isFlags]
+			at This[blank] => throw "bad"
+			at This[types: my types] => return types[any: Type$0[isFlags]]
+			at This[type: my type args: _] => return type[isFlags]
+			at This[typevar: my typevar] => return typevar[isFlags]
+			at This[type: my type unit: _] => return type[isFlags]
+		}
+	}
 
-	on [isStrong] (Bool)
+	on [isStrong] (Bool) {
+		match this {
+			at This[depth: _ lookup: _ source: _] || This[type: _ lookup: _] {
+				return this[simplify][isStrong]
+			}
+			at This[decl: my decl] || This[decl: my decl params: _ ctx: _] {
+				return decl[isStrong]
+			}
+			at This[this: my decl] => return decl[isStrong]
+			at This[blank] => throw "bad"
+			at This[types: my types] => return types[any: Type$0[isStrong]]
+			at This[type: my type args: _] => return type[isStrong]
+			at This[typevar: my typevar] => return typevar[isStrong]
+			at This[type: my type unit: _] => return type[isStrong]
+		}
+	}
 
-	on [isUncounted] (Bool)
+	on [isUncounted] (Bool) {
+		match this {
+			at This[depth: _ lookup: _ source: _] || This[type: _ lookup: _] {
+				return this[simplify][isUncounted]
+			}
+			at This[decl: my decl] || This[decl: my decl params: _ ctx: _] {
+				return decl[isUncounted]
+			}
+			at This[this: my decl] => return decl[isUncounted]
+			at This[blank] => throw "bad"
+			at This[types: my types] => return types[any: Type$0[isUncounted]]
+			at This[type: my type args: _] => return type[isUncounted]
+			at This[typevar: my typevar] => return typevar[isUncounted]
+			at This[type: my type unit: _] => return type[isUncounted]
+		}
+	}
+
+
+	;== Iterating
+
+	on [iterElemType] (Maybe[Type]) {
+		my result = {
+			match this {
+				at This[depth: _ lookup: _ source: _] || This[type: _ lookup: _] {
+					return this[simplify][iterElemType]
+				}
+
+				at This[decl: my decl] || This[decl: my decl params: _ ctx: _] {
+					return decl[iterElemType]
+				}
+
+				at This[this: my decl] => return decl[iterElemType]
+
+				at This[blank] => throw "bad"
+				
+				at This[types: my types] {
+					match types[Type leastSpecific] {
+						at #[] => return Maybe[none]
+						at #[my type] => return type[iterElemType]
+						at my types' => throw "todo"
+					}
+				}
+
+				at This[type: my type args: my args] {
+					match type[applyArgs: args] at Maybe[the: my type'] {
+						match type'[iterElemType] at Maybe[the: my elem] {
+							return Maybe[the: elem[from: type']]
+						} else {
+							return Maybe[none]
+						}
+					} else {
+						return Maybe[none]
+					}
+				}
+
+				at This[typevar: my typevar] => return typevar[iterElemType]
+
+				at This[type: my type unit: _] => return type[iterElemType]
+			}
+		}
+
+		match result at Maybe[the: my elem] {
+			return Maybe[the: elem[from: this]]
+		} else {
+			return Maybe[none]
+		}
+	}
+
+	on [iterAssocType] (Maybe[Tuple[Type, Type]]) {
+		my result = {
+			match this {
+				at This[depth: _ lookup: _ source: _] || This[type: _ lookup: _] {
+					return this[simplify][iterAssocType]
+				}
+
+				at This[decl: my decl] || This[decl: my decl params: _ ctx: _] {
+					return decl[iterAssocType]
+				}
+
+				at This[this: my decl] => return decl[iterAssocType]
+
+				at This[blank] => throw "bad"
+				
+				at This[types: my types] {
+					match types[Type leastSpecific] {
+						at #[] => return Maybe[none]
+						at #[my type] => return type[iterAssocType]
+						at my types' => throw "todo"
+					}
+				}
+
+				at This[type: my type args: my args] {
+					match type[applyArgs: args] at Maybe[the: my type'] {
+						match type'[iterAssocType] at Maybe[the: #{my k, my v}] {
+							return Maybe[the: #{k[from: type'], v[from: type']}]
+						} else {
+							return Maybe[none]
+						}
+					} else {
+						return Maybe[none]
+					}
+				}
+
+				at This[typevar: my typevar] => return typevar[iterAssocType]
+
+				at This[type: my type unit: _] => return type[iterAssocType]
+			}
+		}
+
+		match result at Maybe[the: #{my k, my v}] {
+			return Maybe[the: #{k[from: this], v[from: this]}]
+		} else {
+			return Maybe[none]
+		}
+	}
 
 
 	;== Effects tracking
@@ -220,7 +444,7 @@ kind Type of TypeLookup, Typeable {
 	on [trackEffectsIn: ctx (Ctx)] (Maybe[Effects]) {
 		match this {
 			at This[depth: _ lookup: _ source: _] || This[type: _ lookup: _] {
-				return this[simplify: ctx][trackEffectsIn: ctx]
+				return this[simplify][trackEffectsIn: ctx]
 			}
 
 			at This[decl: _] || This[decl: _ params: _ ctx: _] || This[this: _] || This[blank] {
@@ -254,7 +478,7 @@ kind Type of TypeLookup, Typeable {
 	on [applyArgs: args (Array[Type]) trackEffectsIn: ctx (Ctx)] (Maybe[Tuple[Type, Effects]]) {
 		match this {
 			at This[depth: _ lookup: _ source: _] || This[type: _ lookup: _] {
-				return this[simplify: ctx][applyArgs: args trackEffectsIn: ctx]
+				return this[simplify][applyArgs: args trackEffectsIn: ctx]
 			}
 
 			at This[decl: my decl] {
@@ -419,5 +643,66 @@ category Type for TypeLookup {
 
 			else => return Maybe[the: "???"]
 		}
+	}
+}
+
+type T
+category Type for Array[T] {
+	on [leastSpecific: by (Func[Type, T])] (This) {
+		if this.length < 2 {
+			return this[new]
+		} else {
+			my res = #[this[at: 0]]
+
+			for my i after: 0 upto: this.length {
+				my value = this[at: i]
+				my res' = res[keepIf: {|value' (T)|
+					my parent = by[call: value]
+					my child = by[call: value']
+
+					return parent[hasChild: child] || !parent[hasParent: child]
+				}]
+				if res'.length != res.length {
+					res = res'
+					res[add: value]
+				}
+			}
+
+			return res
+		}
+	}
+	
+	on [mostSpecific: by (Func[Type, T])] (This) {
+		if this.length < 2 {
+			return this[new]
+		} else {
+			my res = #[this[at: 0]]
+
+			for my i after: 0 upto: this.length {
+				my value = this[at: i]
+				my res' = res[keepIf: {|value' (T)|
+					my parent = by[call: value]
+					my child = by[call: value']
+
+					return parent[hasParent: child] && !parent[hasChild: child]
+				}]
+				if res'.length != res.length {
+					res = res'
+					res[add: value]
+				}
+			}
+
+			return res
+		}
+	}
+}
+
+category Type for Array[Type] {
+	on [leastSpecific] (This) {
+		return #inline this[Type leastSpecific: Type$0]
+	}
+
+	on [mostSpecific] (This) {
+		return #inline this[Type mostSpecific: Type$0]
 	}
 }

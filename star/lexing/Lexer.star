@@ -17,7 +17,7 @@ class Lexer {
 	my alpha_u is static is readonly = alpha | #"_"
 	my alnum_q is static is readonly = alnum | #"'"
 	
-	my keywords is static is readonly = #(
+	my keywords is static is readonly = Dict[Str, Func[Token, Span]] #(
 		"module" => Token[module: $.0]
 		"my" => Token[my: $.0]
 		"on" => Token[on: $.0]
@@ -49,7 +49,7 @@ class Lexer {
 		"try" => Token[try: $.0]
 		"catch" => Token[catch: $.0]
 	)
-	my attrs is static is readonly = #(
+	my attrs is static is readonly = Dict[Str, Func[Token, Span]] #(
 		"static" => Token[static: $.0]
 		"hidden" => Token[hidden: $.0]
 		"readonly" => Token[readonly: $.0]
@@ -161,7 +161,7 @@ class Lexer {
 
 		return this[make: {
 			match reader[first] {
-				at #"\n" <= _ <= #"\r" => {
+				at #"\n" <= _ <= #"\r" {
 					begin = oldBegin
 					return this[readLSep]
 				}
@@ -1053,7 +1053,7 @@ class Lexer {
 
 	on [readStr] (Token) is inline {
 		my seg = ""
-		my segments = #[]
+		my segments = Array[StrSegment] #[]
 
 		while reader[hasNext] {
 			match reader[eat] {
@@ -1229,7 +1229,7 @@ category Lexer for Tokens is hidden {
 				)
 				Token[lSep]
 				...my rest
-			] => {
+			] {
 				this[removeAt: 1]
 				rest[Lexer retoken]
 			}
@@ -1276,7 +1276,7 @@ category Lexer for Tokens is hidden {
 
 				rest[Lexer retoken]
 			}
-			at #[Token[name: my name span: my span], ...my rest] if Lexer.keywords[hasKey: name] {
+			at #[Token[name: my name span: my span], ...my rest] if Lexer.keywords[containsKey: name] {
 				this[at: 0] = Lexer.keywords[at: name][call: span]
 				
 				rest[Lexer retoken]

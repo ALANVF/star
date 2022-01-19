@@ -143,14 +143,15 @@ class TaggedKind extends Kind {
 	}
 
 	
-	override function findMultiStatic(ctx: Ctx, names: Array<String>, from: AnyTypeDecl, setter = false, cache: TypeCache = Nil): Array<MultiStaticKind> {
+	override function findMultiStatic(ctx: Ctx, names: Array<String>, from: AnyTypeDecl, setter = false, cache: TypeCache = Nil) {
 		if(cache.contains(thisType)) return [];
 		
+		var candidates: Array<MultiStaticKind> = [];
 		if(!setter) for(tcase in taggedCases) {
 			tcase._match(
 				at(mcase is MultiTaggedCase) => {
 					if(mcase.params.every2Strict(names, (l, n) -> l.label.name == n)) {
-						return [MSTaggedCase(/*[] HAXE DUMB DON'T DO THIS */ EMPTY_ARRAY, mcase)];
+						candidates = [MSTaggedCase(/*[] HAXE DUMB DON'T DO THIS */ EMPTY_ARRAY, mcase)]; break;
 					} else {
 						// BAD
 						if(/*!names.contains("_") &&*/ names.isUnique()) {
@@ -199,7 +200,7 @@ class TaggedKind extends Kind {
 							}
 
 							if(!bad && mcase.params.every2Strict(names.slice(begin, end + 1), (l, n) -> l.label.name == n)) {
-								return [MSTaggedCase(found, mcase)];
+								candidates = [MSTaggedCase(found, mcase)]; break;
 							}
 						}
 					}
@@ -213,12 +214,14 @@ class TaggedKind extends Kind {
 						case Named(_, name, _) | Punned(_, name): name == n;
 						case Anon(_): n == "_";
 					})
-				)) => return [MSTaggedCaseAlias(tcase)],
+				)) => {
+					candidates = [MSTaggedCaseAlias(tcase)]; break;
+				},
 				_ => {}
 			);
 		}
 		
-		return super.findMultiStatic(ctx, names, from, setter, cache);
+		return candidates.concat(super.findMultiStatic(ctx, names, from, setter, cache));
 	}
 
 

@@ -12,6 +12,7 @@ enum SingleStaticKind {
 	SSValueCase(c: ValueCase);
 
 	SSFromTypevar(tvar: TypeVar, name: String, getter: Bool, kind: SingleStaticKind);
+	SSFromParent(parent: Type, kind: SingleStaticKind);
 }
 
 function name(self: SingleStaticKind) return self._match(
@@ -26,5 +27,22 @@ function name(self: SingleStaticKind) return self._match(
 		_ => throw ""
 	),
 	at(SSValueCase(vcase)) => vcase.name.name,
-	at(SSFromTypevar(_, name, _, _)) => name
+	at(SSFromTypevar(_, name, _, _)) => name,
+	at(SSFromParent(_, kind)) => name(kind)
+);
+
+function retType(self: SingleStaticKind): Null<Type> return self._match(
+	at(SSMethod(m)) => m.ret._or(Pass2.STD_Void.thisType),
+	at(SSMultiMethod(m)) => m.ret._or(Pass2.STD_Void.thisType),
+	at(SSInit({decl: d}) | SSMultiInit({decl: d})
+	 | SSTaggedCase({decl: d}) | SSTaggedCaseAlias({decl: d})
+	 | SSValueCase({decl: d})) => {t: TThis(d), span: null},
+	at(SSMember(m)) => m.type,
+	at(SSFromTypevar(_, _, _, _)) => null, // TODO
+	at(SSFromParent(parent, kind)) => {
+		retType(kind)._and(ret => {
+			// TODO: make this smarter
+			ret.t.match(TThis(_)) ? ret : ret.getFrom(parent.simplify());
+		});
+	}
 );

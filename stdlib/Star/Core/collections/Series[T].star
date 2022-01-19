@@ -13,8 +13,8 @@ class Series[T] of Ordered, Iterable[T] {
 	
 	
 	;== Creating
-
-	init [new: values (Values[T])] {
+	type V of Values[T]
+	init [new: values (V)] {
 		buffer = values[new]
 		offset = 0
 	}
@@ -194,7 +194,8 @@ class Series[T] of Ordered, Iterable[T] {
 		}
 	}
 
-	on [startsWithEach: values (Positional[T])] (Bool) {
+	type V of Positional[T]
+	on [startsWithEach: values (V)] (Bool) {
 		if this[isTail] || values.length > this.length {
 			return false
 		} else {

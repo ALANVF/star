@@ -6,7 +6,7 @@ class Field of Local {
 		_.member = member
 		span = member.span
 		name = member.name
-		type = member.type[collect: $0[in: ctx]]
-		expr = member.value[collect: Pass2[:ctx typeExpr: $.0]]
+		type = member.type[collect: Type$0[in: ctx]]
+		expr = member.value[collect: Pass2[:ctx typeExpr: Parser.Expr$.0]]
 	}
 }

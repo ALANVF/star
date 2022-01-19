@@ -155,6 +155,7 @@ enum Where {
 		return locals[name]._match(
 			at(loc!, when(depth == 0)) => loc,
 			_ => where._match(
+				// use findInstMember?
 				at(WObjCascade(t!)) => t.findSingleInst(this, name, outer.typeDecl, true)._match(
 					at(SIMember(mem), when(depth == 0)) => new LocalField(this, mem, mem.name.name, mem.type, null),
 					_ => outer.findLocal(name, depth)
@@ -169,24 +170,18 @@ enum Where {
 				at(WDecl(_)) => throw ":thonk:",
 				at(WCategory(_)) => throw "bad",
 				at(WEmptyMethod({decl: decl}) | WMethod({decl: decl}) | WMember({decl: decl}) | WTaggedCase({decl: decl})) => {
-					final isStatic = !allowsThis();
-					Type.mostSpecificBy(decl.instMembers(decl).filter(mem ->
-						mem.name.name == name && (
-							!isStatic
-							|| (isStatic && mem.isStatic)
-							|| (isStatic && mem.decl is Module)
-						)
-					).unique(), mem -> mem.type.nonNull())._match(
-						at([]) => null,
-						at([mem]) => (locals[name] = new LocalField(
+					// TODO: add proper check for statics?
+					//final isStatic = !allowsThis();
+					decl.findInstMember(this, name)._and(kind => {
+						final mem = kind.getMember();
+						(locals[name] = new LocalField(
 							this,
 							mem,
 							mem.name.name,
-							mem.type._and(t => t.getIn(this)),
+							kind.retType()._and(t => t.getIn(this)),
 							mem.value._and(v => Pass2.typeExpr(this, v))
-						)),
-						at(mems) => throw "todo"
-					);
+						));
+					});
 				},
 				at(WTypevars(_)) => outer.findLocal(name, depth)
 			)

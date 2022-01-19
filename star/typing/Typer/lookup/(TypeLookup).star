@@ -20,7 +20,7 @@ protocol TypeLookup of HasErrors {
 
 
 category TypeLookup for Array[Type] {
-	on [resolveArgs: from (AnyTypeDecl), errors (Array[Diagnostic])] (Array[Type]) {
+	on [resolveArgs: from (Maybe[AnyTypeDecl]), errors (Array[Diagnostic])] (Array[Type]) {
 		return this[collect: {|arg|
 			match arg at Type[depth: my depth lookup: my lookup source: source] {
 				match source[findType: lookup search: Search.start :from :depth] at Maybe[the: my type] {

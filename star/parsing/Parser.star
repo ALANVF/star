@@ -22,8 +22,8 @@ module Parser {
 	on [parseModular: tokens (Tokens)] (Program) {
 		my expectSep = false
 		my lastWasError = false
-		my errors = #[]
-		my decls = #[]
+		my errors = Array[Diagnostic] #[]
+		my decls = Array[Decl] #[]
 		my badTokens = IdentitySet[Token] #[]
 		
 		while tokens? {
@@ -51,7 +51,7 @@ module Parser {
 				}
 			}
 			
-			match This[nextDecl: #[], tokens] {
+			match This[nextDecl: Array[Generic.Param] #[], tokens] {
 				at Result[success: my decl, my rest] {
 					decls[add: decl]
 					tokens = rest
@@ -211,7 +211,7 @@ module Parser {
 				my decls = #[]
 				
 				while true {
-					match This[nextDecl: #[], rest] {
+					match This[nextDecl: Array[Generic.Param] #[], rest] {
 						at Result[success: my decl, my rest'] {
 							decls[add: decl]
 							
@@ -543,8 +543,8 @@ module Parser {
 			at Result[success: my spec, my rest] {
 				my from, match rest at #[Token[span: my span' label: "from"], ...my rest'] {
 					match rest' at #[Token[span: my span'' str: my segs], ...my rest''] {
-						match This[parseStrSegs: rest''] {
-							at Result[success: #[Expr.StrPart[str: my path]], rest = _] => from = Maybe[the: Use.From[span: span' file: path, span'']]
+						match This[parseStrSegs: segs] {
+							at Result[success: #[Expr.StrPart[str: my path]], rest = _] => from = Maybe[the: Use.From[span: span' file: span'', path]]
 							at Result[success: _, _] => return Result[fatal: tokens, Maybe[the: rest'']] ;@@ TODO: custom error message
 							at my fail => return fail[Result[Decl] fatalIfBad: tokens]
 						}
@@ -707,7 +707,7 @@ module Parser {
 						return This[parseIsFriendAttr: rest, attrs, i | a]
 					}
 					at #[Token[is: my i], Token[noinherit: my a], ...my rest] {
-						return Alias.Attrs[isNoinherit: i | a]
+						return Result[success: Alias.Attrs[isNoinherit: i | a], rest]
 					}
 					else => break
 				}
@@ -1018,7 +1018,7 @@ module Parser {
 			at #[Token[name: my name span: my span'] = _[asSoftName], ...my rest] {
 				my type
 				match This[parseTypeAnno: rest] {
-					at Result[success: my type', ...rest = _] => type = Maybe[the: type']
+					at Result[success: my type', rest = _] => type = Maybe[the: type']
 					at Result[failure: _, _] => type = Maybe[none]
 					at my fail => return fail[Result[Decl]]
 				}
@@ -1535,8 +1535,8 @@ module Parser {
 	
 	;== Types
 	
-	on [parseTypeParents: tokens (Tokens), allowEOL (Bool) = true] (Result[Tuple[Span, Array[Type]]]) {
-		match tokens at #[Token[of: my span], ...my rest] {
+	on [parseTypeParents: tokens (Tokens), allowEOL (Bool) = true] (Result[Array[Type]]) {
+		match tokens at #[Token[of], ...my rest] {
 			match This[parseType: rest] {
 				at Result[success: my type, rest = _] {
 					my parents = #[type]
@@ -1546,16 +1546,16 @@ module Parser {
 							match This[parseType: rest'] {
 								at Result[success: my type', rest = _] => parents[add: type']
 								at _ if allowEOL => break
-								at my fail => return fail[Result[Tuple[Span, Array[Type]]] fatalIfBad: rest]
+								at my fail => return fail[Result[Array[Type]] fatalIfBad: rest]
 							}
 						} else {
 							break
 						}
 					}
 					
-					return Result[success: #{span, parents}, rest]
+					return Result[success: parents, rest]
 				}
-				at my fail => return fail[Result[Tuple[Span, Array[Type]]] fatalIfBad: rest]
+				at my fail => return fail[Result[Array[Type]] fatalIfBad: rest]
 			}
 		} else {
 			return Result[failure: tokens, Maybe[none]]
@@ -1645,7 +1645,7 @@ module Parser {
 				at my fail => return fail[Result[Type]]
 			}
 		} else {
-			leading = #[]
+			leading = Array[Span] #[]
 		}
 		
 		match This[parseTypeSeg: rest] {
@@ -1683,7 +1683,7 @@ module Parser {
 	on [parseTypeSegs: tokens (Tokens)] (Result[Array[Type.Seg]]) {
 		match tokens at #[Token[dot], ...my rest] {
 			match This[parseTypeSeg: rest] {
-				at Result[success: my seg, ...my rest'] => match This[parseTypeSegs: rest'] {
+				at Result[success: my seg, my rest'] => match This[parseTypeSegs: rest'] {
 					at Result[success: my segs, my rest''] {
 						segs[prepend: seg]
 						return Result[success: segs, rest'']
@@ -1698,7 +1698,7 @@ module Parser {
 		}
 	}
 	
-	on [parseTypeArgs: tokens (Tokens)] (Delims[Array[Type]]) {
+	on [parseTypeArgs: tokens (Tokens)] (Result[Delims[Array[Type]]]) {
 		match tokens at #[Token[lBracket: my begin], ...my rest] {
 			my types = #[]
 			
@@ -2071,6 +2071,8 @@ module Parser {
 			at #[Token[break: my break], ...my rest] => match rest {
 				at #[Token[int: my int exp: my exp span: my span], ...my rest'] {
 					return Result[success: Stmt[:break depth: span, {
+						match int at "0" {}
+						match span at _ {}
 						match exp at Maybe[the: my exp'] {
 							return "\(int)e\(exp')"[Int]
 						} else {
@@ -2299,7 +2301,7 @@ module Parser {
 						at my fail => return fail[Result[Stmt] fatalIfFailed]
 					}
 				}
-				at my fail => return fail[Result[Stmt] fatalIfFailed]
+				else => return Result[fatal: tokens, Maybe[the: rest]]
 			}
 			at my fail => return fail[Result[Stmt] fatalIfFailed]
 		}
@@ -2317,18 +2319,18 @@ module Parser {
 			at #[Token[span: my span litsym: my name], ...my rest] => return Result[success: Expr[litsym: Ident[:span :name]], rest]
 
 			at #[Token[span: my span int: my int exp: Maybe[none]], ...my rest] {
-				return Result[success: Expr[:span :int], rest]
+				return Result[success: Expr[:span int: int[Int]], rest]
 			}
 			at #[Token[span: my span int: my int exp: Maybe[the: my exp]], ...my rest] {
-				return Result[success: Expr[:span :int exp: exp[Int]], rest]
+				return Result[success: Expr[:span int: int[Int] exp: exp[Int]], rest]
 			}
 			;@@TODO: hex
 
 			at #[Token[span: my span int: my int dec: my dec exp: Maybe[none]], ...my rest] {
-				return Result[success: Expr[:span :int :dec], rest]
+				return Result[success: Expr[:span int: int[Int] :dec], rest]
 			}
 			at #[Token[span: my span int: my int dec: my dec exp: Maybe[the: my exp]], ...my rest] {
-				return Result[success: Expr[:span :int :dec exp: exp[Int]], rest]
+				return Result[success: Expr[:span int: int[Int] :dec exp: exp[Int]], rest]
 			}
 
 			at #[Token[span: my span str: my segs], ...my rest] => match This[parseStrSegs: segs] {
@@ -2946,11 +2948,11 @@ module Parser {
 
 	on [parseExpr2: tokens (Tokens)] (Result[Expr]) {
 		match tokens {
-			at #[Token[minus: my span], ...my rest] => return This[parseExpr2Rest: rest, Prefix.neg, span]
-			at #[Token[plusPlus: my span], ...my rest] => return This[parseExpr2Rest: rest, Prefix.incr, span]
-			at #[Token[minusMinus: my span], ...my rest] => return This[parseExpr2Rest: rest, Prefix.decr, span]
-			at #[Token[tilde: my span], ...my rest] => return This[parseExpr2Rest: rest, Prefix.compl, span]
-			at #[Token[bang: my span], ...my rest] => return This[parseExpr2Rest: rest, Prefix.not, span]
+			at #[Token[minus: my span], ...my rest] => return This[parseExpr2Rest: rest, span, Prefix.neg]
+			at #[Token[plusPlus: my span], ...my rest] => return This[parseExpr2Rest: rest, span, Prefix.incr]
+			at #[Token[minusMinus: my span], ...my rest] => return This[parseExpr2Rest: rest, span, Prefix.decr]
+			at #[Token[tilde: my span], ...my rest] => return This[parseExpr2Rest: rest, span, Prefix.compl]
+			at #[Token[bang: my span], ...my rest] => return This[parseExpr2Rest: rest, span, Prefix.not]
 			else => return This[parseExpr1: tokens]
 		}
 	}
@@ -3030,31 +3032,31 @@ module Parser {
 			my rest = tokens
 			my cascade ;[(Cascade[T])], match tokens {
 				at #[Token[lBracket], ...my rest'] => match This[T finishMsg: rest'] {
-					at Result[success: #{my message, _}, my rest''] => match rest'' {
+					at Result[success: #{my message ;[temp] (Message[T]), _}, my rest''] => match rest'' {
 						at #[Token[plusPlus: my span'], ...rest = _] {
-							cascade = Cascade[:span :level :message step: span', Step.incr]
+							cascade = Cascade[T][:span :level :message step: span', Step.incr]
 						}
 						at #[Token[minusMinus: my span'], ...rest = _] {
-							cascade = Cascade[:span :level :message step: span', Step.decr]
+							cascade = Cascade[T][:span :level :message step: span', Step.decr]
 						}
 						at #[Maybe[the: #{my assign, my op}] = _[maybeAssignableOp], ...my rest'''] {
 							match This[parseExpr3: rest'''] {
 								at Result[success: my expr, rest = _] {
-									cascade = Cascade[:span :level :message :assign :op :expr]
+									cascade = Cascade[T][:span :level :message :assign :op :expr]
 								}
 								at my fail => return fail[Result[Cascades[T]]]
 							}
 						}
 						else {
 							rest = rest''
-							cascade = Cascade[:span :level :message]
+							cascade = Cascade[T][:span :level :message]
 						}
 					}
 					at my fail => return fail[Result[Cascades[T]]]
 				}
 
 				at #[Token[lBrace], ..._] => match This[parseBlock: tokens] {
-					at Result[success: my block, rest = _] => cascade = Cascade[:span :level :block]
+					at Result[success: my block, rest = _] => cascade = Cascade[T][:span :level :block]
 					at my fail => return fail[Result[Cascades[T]]]
 				}
 
@@ -3063,22 +3065,22 @@ module Parser {
 					
 					match rest' {
 						at #[Token[plusPlus: my span''], ...rest = _] {
-							cascade = Cascade[:span :level :member step: span'', Step.incr]
+							cascade = Cascade[T][:span :level :member step: span'', Step.incr]
 						}
 						at #[Token[minusMinus: my span''], ...rest = _] {
-							cascade = Cascade[:span :level :member step: span'', Step.decr]
+							cascade = Cascade[T][:span :level :member step: span'', Step.decr]
 						}
 						at #[Maybe[the: #{my assign, my op}] = _[maybeAssignableOp], ...my rest''] {
 							match This[parseExpr3: rest''] {
 								at Result[success: my expr, rest = _] {
-									cascade = Cascade[:span :level :member :assign :op :expr]
+									cascade = Cascade[T][:span :level :member :assign :op :expr]
 								}
 								at my fail => return fail[Result[Cascades[T]]]
 							}
 						}
 						else {
 							rest = rest'
-							cascade = Cascade[:span :level :member]
+							cascade = Cascade[T][:span :level :member]
 						}
 					}
 				}
@@ -3128,21 +3130,23 @@ module Parser {
 	on [parseExpr6: tokens (Tokens)] (Result[Expr]) {
 		match This[parseExpr5: tokens] {
 			at Result[success: my left, my rest] {
-				match {
-					match rest {
-						at #[Token[star: my span], ..._] => return Maybe[the: #{Infix[times], span}]
-						at #[Token[div: my span], ..._] => return Maybe[the: #{Infix[div], span}]
-						at #[Token[divDiv: my span], ..._] => return Maybe[the: #{Infix[intDiv], span}]
-						at #[Token[mod: my span], ..._] => return Maybe[the: #{Infix[mod], span}]
-						else => return Maybe[none]
+				while true {
+					match {
+						match rest {
+							at #[Token[star: my span], ..._] => return Maybe[the: #{Infix[times], span}]
+							at #[Token[div: my span], ..._] => return Maybe[the: #{Infix[div], span}]
+							at #[Token[divDiv: my span], ..._] => return Maybe[the: #{Infix[intDiv], span}]
+							at #[Token[mod: my span], ..._] => return Maybe[the: #{Infix[mod], span}]
+							else => return Maybe[none]
+						}
+					} at Maybe[the: #{my op, my span}] {
+						match This[parseExpr5: rest[next]] {
+							at Result[success: my right, rest = _] => left = Expr[:left infix: span, op :right]
+							at my fail => return fail[fatalIfBad: rest]
+						}
+					} else {
+						return Result[success: left, rest]
 					}
-				} at Maybe[the: #{my op, my span}] {
-					match This[parseExpr6: rest[next]] {
-						at Result[success: my right, my rest'] => return Result[success: Expr[:left infix: span, op :right], rest']
-						at my fail => return fail[fatalIfBad: rest]
-					}
-				} else {
-					return Result[success: left, rest]
 				}
 			}
 			at my fail => return fail
@@ -3158,19 +3162,21 @@ module Parser {
 	on [parseExpr7: tokens (Tokens)] (Result[Expr]) {
 		match This[parseExpr6: tokens] {
 			at Result[success: my left, my rest] {
-				match {
-					match rest {
-						at #[Token[plus: my span], ..._] => return Maybe[the: #{Infix[plus], span}]
-						at #[Token[minus: my span], ..._] => return Maybe[the: #{Infix[minus], span}]
-						else => return Maybe[none]
+				while true {
+					match {
+						match rest {
+							at #[Token[plus: my span], ..._] => return Maybe[the: #{Infix[plus], span}]
+							at #[Token[minus: my span], ..._] => return Maybe[the: #{Infix[minus], span}]
+							else => return Maybe[none]
+						}
+					} at Maybe[the: #{my op, my span}] {
+						match This[parseExpr6: rest[next]] {
+							at Result[success: my right, rest = _] => left = Expr[:left infix: span, op :right]
+							at my fail => return fail[fatalIfBad: rest]
+						}
+					} else {
+						return Result[success: left, rest]
 					}
-				} at Maybe[the: #{my op, my span}] {
-					match This[parseExpr7: rest[next]] {
-						at Result[success: my right, my rest'] => return Result[success: Expr[:left infix: span, op :right], rest']
-						at my fail => return fail[fatalIfBad: rest]
-					}
-				} else {
-					return Result[success: left, rest]
 				}
 			}
 			at my fail => return fail
@@ -3189,22 +3195,24 @@ module Parser {
 	on [parseExpr8: tokens (Tokens)] (Result[Expr]) {
 		match This[parseExpr7: tokens] {
 			at Result[success: my left, my rest] {
-				match {
-					match rest {
-						at #[Token[and: my span], ..._] => return Maybe[the: #{Infix[bitAnd], span}]
-						at #[Token[bar: my span], ..._] => return Maybe[the: #{Infix[bitOr], span}]
-						at #[Token[caret: my span], ..._] => return Maybe[the: #{Infix[bitXor], span}]
-						at #[Token[ltLt: my span], ..._] => return Maybe[the: #{Infix[shl], span}]
-						at #[Token[gtGt: my span], ..._] => return Maybe[the: #{Infix[shr], span}]
-						else => return Maybe[none]
+				while true {
+					match {
+						match rest {
+							at #[Token[and: my span], ..._] => return Maybe[the: #{Infix[bitAnd], span}]
+							at #[Token[bar: my span], ..._] => return Maybe[the: #{Infix[bitOr], span}]
+							at #[Token[caret: my span], ..._] => return Maybe[the: #{Infix[bitXor], span}]
+							at #[Token[ltLt: my span], ..._] => return Maybe[the: #{Infix[shl], span}]
+							at #[Token[gtGt: my span], ..._] => return Maybe[the: #{Infix[shr], span}]
+							else => return Maybe[none]
+						}
+					} at Maybe[the: #{my op, my span}] {
+						match This[parseExpr7: rest[next]] {
+							at Result[success: my right, rest = _] => left = Expr[:left infix: span, op :right]
+							at my fail => return fail[fatalIfBad: rest]
+						}
+					} else {
+						return Result[success: left, rest]
 					}
-				} at Maybe[the: #{my op, my span}] {
-					match This[parseExpr8: rest[next]] {
-						at Result[success: my right, my rest'] => return Result[success: Expr[:left infix: span, op :right], rest']
-						at my fail => return fail[fatalIfBad: rest]
-					}
-				} else {
-					return Result[success: left, rest]
 				}
 			}
 			at my fail => return fail
@@ -3250,23 +3258,25 @@ module Parser {
 	on [parseExpr10: tokens (Tokens)] (Result[Expr]) {
 		match This[parseExpr9: tokens] {
 			at Result[success: my left, my rest] {
-				match {
-					match rest {
-						at #[Token[questionEq: my span], ..._] => return Maybe[the: #{Infix[eq], span}]
-						at #[Token[bangEq: my span], ..._] => return Maybe[the: #{Infix[ne], span}]
-						at #[Token[gt: my span], ..._] => return Maybe[the: #{Infix[gt], span}]
-						at #[Token[gtEq: my span], ..._] => return Maybe[the: #{Infix[ge], span}]
-						at #[Token[lt: my span], ..._] => return Maybe[the: #{Infix[lt], span}]
-						at #[Token[ltEq: my span], ..._] => return Maybe[the: #{Infix[le], span}]
-						else => return Maybe[none]
+				while true {
+					match {
+						match rest {
+							at #[Token[questionEq: my span], ..._] => return Maybe[the: #{Infix[eq], span}]
+							at #[Token[bangEq: my span], ..._] => return Maybe[the: #{Infix[ne], span}]
+							at #[Token[gt: my span], ..._] => return Maybe[the: #{Infix[gt], span}]
+							at #[Token[gtEq: my span], ..._] => return Maybe[the: #{Infix[ge], span}]
+							at #[Token[lt: my span], ..._] => return Maybe[the: #{Infix[lt], span}]
+							at #[Token[ltEq: my span], ..._] => return Maybe[the: #{Infix[le], span}]
+							else => return Maybe[none]
+						}
+					} at Maybe[the: #{my op, my span}] {
+						match This[parseExpr9: rest[next]] {
+							at Result[success: my right, rest = _] => left = Expr[:left infix: span, op :right]
+							at my fail => return fail[fatalIfBad: rest]
+						}
+					} else {
+						return Result[success: left, rest]
 					}
-				} at Maybe[the: #{my op, my span}] {
-					match This[parseExpr10: rest[next]] {
-						at Result[success: my right, my rest'] => return Result[success: Expr[:left infix: span, op :right], rest']
-						at my fail => return fail[fatalIfBad: rest]
-					}
-				} else {
-					return Result[success: left, rest]
 				}
 			}
 			at my fail => return fail
@@ -3284,21 +3294,23 @@ module Parser {
 	on [parseExpr11: tokens (Tokens)] (Result[Expr]) {
 		match This[parseExpr10: tokens] {
 			at Result[success: my left, my rest] {
-				match {
-					match rest {
-						at #[Token[andAnd: my span], ..._] => return Maybe[the: #{Infix[and], span}]
-						at #[Token[barBar: my span], ..._] => return Maybe[the: #{Infix[or], span}]
-						at #[Token[caretCaret: my span], ..._] => return Maybe[the: #{Infix[xor], span}]
-						at #[Token[bangBang: my span], ..._] => return Maybe[the: #{Infix[nor], span}]
-						else => return Maybe[none]
+				while true {
+					match {
+						match rest {
+							at #[Token[andAnd: my span], ..._] => return Maybe[the: #{Infix[and], span}]
+							at #[Token[barBar: my span], ..._] => return Maybe[the: #{Infix[or], span}]
+							at #[Token[caretCaret: my span], ..._] => return Maybe[the: #{Infix[xor], span}]
+							at #[Token[bangBang: my span], ..._] => return Maybe[the: #{Infix[nor], span}]
+							else => return Maybe[none]
+						}
+					} at Maybe[the: #{my op, my span}] {
+						match This[parseExpr10: rest[next]] {
+							at Result[success: my right, rest = _] => left = Expr[:left infix: span, op :right]
+							at my fail => return fail[fatalIfBad: rest]
+						}
+					} else {
+						return Result[success: left, rest]
 					}
-				} at Maybe[the: #{my op, my span}] {
-					match This[parseExpr11: rest[next]] {
-						at Result[success: my right, my rest'] => return Result[success: Expr[:left infix: span, op :right], rest']
-						at my fail => return fail[fatalIfBad: rest]
-					}
-				} else {
-					return Result[success: left, rest]
 				}
 			}
 			at my fail => return fail
@@ -3403,31 +3415,31 @@ module Parser {
 			my rest = tokens
 			my cascade ;[(Cascade[T])], match tokens {
 				at #[Token[lBracket], ...my rest'] => match This[T finishMsg: rest'] {
-					at Result[success: #{my message, _}, my rest''] => match rest'' {
+					at Result[success: #{my message ;[temp] (Message[T]), _}, my rest''] => match rest'' {
 						at #[Token[plusPlus: my span'], ...rest = _] {
-							cascade = Cascade[:span :level :message step: span', Step.incr]
+							cascade = Cascade[T][:span :level :message step: span', Step.incr]
 						}
 						at #[Token[minusMinus: my span'], ...rest = _] {
-							cascade = Cascade[:span :level :message step: span', Step.decr]
+							cascade = Cascade[T][:span :level :message step: span', Step.decr]
 						}
 						at #[Maybe[the: #{my assign, my op}] = _[maybeAssignableOp], ...my rest'''] {
 							match This[parseExpr: rest'''] {
 								at Result[success: my expr, rest = _] {
-									cascade = Cascade[:span :level :message :assign :op :expr]
+									cascade = Cascade[T][:span :level :message :assign :op :expr]
 								}
 								at my fail => return fail[Result[Cascades[T]]]
 							}
 						}
 						else {
 							rest = rest''
-							cascade = Cascade[:span :level :message]
+							cascade = Cascade[T][:span :level :message]
 						}
 					}
 					at my fail => return fail[Result[Cascades[T]]]
 				}
 
 				at #[Token[lBrace], ..._] => match This[parseBlock: tokens] {
-					at Result[success: my block, rest = _] => cascade = Cascade[:span :level :block]
+					at Result[success: my block, rest = _] => cascade = Cascade[T][:span :level :block]
 					at my fail => return fail[Result[Cascades[T]]]
 				}
 
@@ -3436,22 +3448,22 @@ module Parser {
 					
 					match rest' {
 						at #[Token[plusPlus: my span''], ...rest = _] {
-							cascade = Cascade[:span :level :member step: span'', Step.incr]
+							cascade = Cascade[T][:span :level :member step: span'', Step.incr]
 						}
 						at #[Token[minusMinus: my span''], ...rest = _] {
-							cascade = Cascade[:span :level :member step: span'', Step.decr]
+							cascade = Cascade[T][:span :level :member step: span'', Step.decr]
 						}
 						at #[Maybe[the: #{my assign, my op}] = _[maybeAssignableOp], ...my rest''] {
 							match This[parseExpr: rest''] {
 								at Result[success: my expr, rest = _] {
-									cascade = Cascade[:span :level :member :assign :op :expr]
+									cascade = Cascade[T][:span :level :member :assign :op :expr]
 								}
 								at my fail => return fail[Result[Cascades[T]]]
 							}
 						}
 						else {
 							rest = rest'
-							cascade = Cascade[:span :level :member]
+							cascade = Cascade[T][:span :level :member]
 						}
 					}
 				}

@@ -305,6 +305,17 @@ class Category extends AnyTypeDecl {
 	}
 
 
+	// Iterating
+
+	function iterElemType() {
+		return thisType.iterElemType();
+	}
+
+	function iterAssocType() {
+		return thisType.iterAssocType();
+	}
+
+
 	// Effects tracking
 
 	function trackEffectsIn(ctx: Ctx): Null<Effects> {
@@ -334,6 +345,16 @@ class Category extends AnyTypeDecl {
 	function instMembers(from: AnyTypeDecl) {
 		return staticMembers.filter(mem -> from.canSeeMember(mem))
 			.concat(thisType.instMembers(from));
+	}
+
+	function findInstMember(ctx: Ctx, name: String, allowStatic = true, onlyParents = false): Null<MemberKind> {
+		if(allowStatic) for(mem in staticMembers) {
+			if(mem.name.name == name) {
+				return MKMember(mem);
+			}
+		}
+
+		return thisType.findInstMember(ctx, name, allowStatic, onlyParents);
 	}
 
 

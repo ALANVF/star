@@ -89,23 +89,8 @@ class StrongAlias extends Alias {
 		return "strong alias";
 	}
 
-
-	override function isNative(kind: NativeKind) {
-		return !noInherit && type.isNative(kind);
-	}
-
-	override function isFlags() {
-		return !noInherit && type.isFlags();
-	}
 	
-	override function isStrong() {
-		return !noInherit && type.isStrong();
-	}
-
-	override function isUncounted() {
-		return !noInherit && type.isUncounted();
-	}
-
+	// Type checking
 
 	override function hasParentDecl(decl: TypeDecl) {
 		return super.hasParentDecl(decl)
@@ -129,6 +114,41 @@ class StrongAlias extends Alias {
 	}
 
 
+	// Attributes
+
+	override function isNative(kind: NativeKind) {
+		return !noInherit && type.isNative(kind);
+	}
+
+	override function isFlags() {
+		return !noInherit && type.isFlags();
+	}
+	
+	override function isStrong() {
+		return !noInherit && type.isStrong();
+	}
+
+	override function isUncounted() {
+		return !noInherit && type.isUncounted();
+	}
+
+
+	// Iterating
+
+	override function iterElemType() {
+		return type.iterElemType()._and(ty => ty.getFrom(thisType));
+	}
+
+	override function iterAssocType() {
+		return type.iterAssocType()._match(
+			at(null) => null,
+			at({_1: k, _2: v}) => new Tuple2(k.getFrom(thisType), v.getFrom(thisType))
+		);
+	}
+
+
+	// Privacy
+
 	override function canSeeMember(member: Member) {
 		return super.canSeeMember(member)
 			|| type.canSeeMember(member);
@@ -140,11 +160,39 @@ class StrongAlias extends Alias {
 	}
 
 
+	// Members
+
 	override function instMembers(from: AnyTypeDecl) {
 		return staticMembers.concat(members).filter(mem -> from.canSeeMember(mem))
 			.concat(noInherit ? [] : type.instMembers(from));
 	}
 
+	override function findInstMember(ctx: Ctx, name: String, allowStatic = true, onlyParents = false): Null<MemberKind> {
+		if(!onlyParents) {
+			if(allowStatic) for(mem in staticMembers) {
+				if(mem.name.name == name) {
+					return MKMember(mem);
+				}
+			}
+
+			for(mem in members) {
+				if(mem.name.name == name) {
+					return MKMember(mem);
+				}
+			}
+		}
+
+		return noInherit ? null : type.findInstMember(ctx, name, allowStatic)._and(res => {
+			if(params.length > 0) {
+				MKFromParent(type, res);
+			} else {
+				res;
+			}
+		});
+	}
+
+
+	// Method lookup
 
 	override function findSingleStatic(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {
 		if(cache.contains(thisType)) return null;
@@ -170,7 +218,7 @@ class StrongAlias extends Alias {
 		);
 		
 		if(!noInherit) type.findSingleStatic(ctx, name, from, getter, cache + thisType)._match(
-			at(ss!) => return ss,
+			at(ss!) => return SSFromParent(type, ss),
 			_ => {}
 		);
 
@@ -241,7 +289,7 @@ class StrongAlias extends Alias {
 			);
 		}
 		
-		return noInherit ? null : type.findSingleInst(ctx, name, from, getter, cache + thisType);
+		return noInherit ? null : type.findSingleInst(ctx, name, from, getter, cache + thisType)._and(k => SIFromParent(type, k));
 	}
 
 

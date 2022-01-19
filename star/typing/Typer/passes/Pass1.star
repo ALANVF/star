@@ -188,6 +188,16 @@ module Pass1 {
 		for my c in: typevar.taggedCases => This[resolve: c]
 	}
 
+	on [resolve: method (RealMethod)] {
+		match method {
+			at my mth (Method) => This[resolve: mth]
+			at my mth (StaticMethod) => This[resolve: mth]
+			at my init (Init) => This[resolve: init]
+			at my oper (Operator) => This[resolve: oper]
+			else => throw "error!"
+		}
+	}
+
 	on [resolve: method (Method)] {
 		match method.hidden at Maybe[the: Maybe[the: my h]] {
 			match This[resolve: h from: method] at Maybe[the: my type] {
@@ -313,10 +323,10 @@ module Pass1 {
 			at TypeRule[type: my l of: my r] => return TypeRule[type: This[resolve: l :from][orElse: l] of: This[resolve: r :from][orElse: r]]
 			at TypeRule[type: my l lt: my r] => return TypeRule[type: This[resolve: l :from][orElse: l] lt: This[resolve: r :from][orElse: r]]
 			at TypeRule[type: my l le: my r] => return TypeRule[type: This[resolve: l :from][orElse: l] le: This[resolve: r :from][orElse: r]]
-			at TypeRule[not: my r] => return TypeRule[not: This[resolve: r :from][orElse: r]]
-			at TypeRule[all: my rs] => return TypeRule[all: rs[collect: This[resolve: $.0 :from][orElse: $.0]]]
-			at TypeRule[any: my rs] => return TypeRule[any: rs[collect: This[resolve: $.0 :from][orElse: $.0]]]
-			at TypeRule[one: my rs] => return TypeRule[one: rs[collect: This[resolve: $.0 :from][orElse: $.0]]]
+			at TypeRule[not: my r] => return TypeRule[not: This[resolve: r :from]]
+			at TypeRule[all: my rs] => return TypeRule[all: rs[collect: This[resolve: Type$.0 :from][orElse: $.0]]]
+			at TypeRule[any: my rs] => return TypeRule[any: rs[collect: This[resolve: Type$.0 :from][orElse: $.0]]]
+			at TypeRule[one: my rs] => return TypeRule[one: rs[collect: This[resolve: Type$.0 :from][orElse: $.0]]]
 		}
 	}
 
@@ -355,7 +365,7 @@ module Pass1 {
 						match decl[findType: path search: Search.inside from: Maybe[none]] at Maybe[the: my type'] {
 							return Maybe[the: type']
 						} else {
-							if decl != source {
+							if source != decl {
 								cache += decl
 								match source[findType: path search: Search.start from: Maybe[none] :cache] at Maybe[the: my type'] {
 									return Maybe[the: type']

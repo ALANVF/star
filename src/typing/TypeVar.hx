@@ -531,6 +531,24 @@ class TypeVar extends AnyFullTypeDecl {
 	}
 
 
+	// Iterating
+
+	function iterElemType() {
+		// TODO: finish
+
+		return parents.findMap(p -> p.iterElemType())._and(p => p.getFrom(thisType));
+	}
+
+	function iterAssocType(): Null<Tuple2<Type, Type>> {
+		// TODO: finish
+		
+		return parents.findMap(p -> p.iterAssocType())._match(
+			at(null) => null,
+			at({_1: k, _2: v}) => {_1: k.getFrom(thisType), _2: v.getFrom(thisType)}
+		);
+	}
+
+
 	// Effects tracking
 
 	function trackEffectsIn(ctx: Ctx): Null<Effects> {
@@ -560,6 +578,32 @@ class TypeVar extends AnyFullTypeDecl {
 		return members.filter(mem -> from.canSeeMember(mem))
 			.concat(staticMembers.filter(mem -> from.canSeeMember(mem)))
 			.concat(parents.flatMap(p -> p.instMembers(from)));
+	}
+
+	function findInstMember(ctx: Ctx, name: String, allowStatic = true, onlyParents = false): Null<MemberKind> {
+		// TODO: account for type rule effects
+		
+		if(!onlyParents) {
+			if(allowStatic) for(mem in staticMembers) {
+				if(mem.name.name == name) {
+					return MKFromTypevar(this, MKMember(mem));
+				}
+			}
+			
+			for(mem in members) {
+				if(mem.name.name == name) {
+					return MKFromTypevar(this, MKMember(mem));
+				}
+			}
+		}
+
+		for(p in parents) {
+			p.findInstMember(ctx, name, allowStatic)._and(res => {
+				return res;
+			});
+		}
+
+		return null;
 	}
 
 

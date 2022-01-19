@@ -55,13 +55,13 @@ protocol TypeDecl of AnyTypeDecl {
 	on [hasErrors] (Bool) {
 		return (
 			|| this[Super[HasErrors] hasErrors]
-			|| typevars.values[any: $0[hasErrors]]
+			|| typevars.values[any: TypeVar$0[hasErrors]]
 		)
 	}
 
 	on [allErrors] (Array[Diagnostic]) {
 		return this[Super[HasErrors] allErrors]
-		-> [addAll: typevars.values[collectAll: $0[allErrors]]]
+		-> [addAll: typevars.values[collectAll: TypeVar$0[allErrors]]]
 	}
 
 
@@ -82,7 +82,7 @@ protocol TypeDecl of AnyTypeDecl {
 							&& this != decl
 							&& this.name ?= decl.name
 							&& lookup ?= decl.lookup
-							&& params[zip: decl.params all: $0[hasChildType: $.1]]
+							&& params[zip: decl.params all: Type$0[hasChild: Type$.1]]
 							&& !decl.refinements[contains: this]
 						) {
 							refinements[add: decl]
@@ -97,7 +97,7 @@ protocol TypeDecl of AnyTypeDecl {
 									&& this != decl
 									&& this.name ?= decl.name
 									&& lookup ?= decl.lookup
-									&& params[zip: decl.params all: $0[hasChildType: $.1]]
+									&& params[zip: decl.params all: Type$0[hasChild: Type$.1]]
 									&& !decl.refinements[contains: this]
 								) {
 									refinements[add: decl]
@@ -132,24 +132,25 @@ protocol TypeDecl of AnyTypeDecl {
 		}
 
 		; temp until I get destructuring working
-		my head = path[at: 0]
-		my rest = path[after: 0]
+		;[my head = path[at: 0]
+		my rest = path[after: 0]]
+		#[my head, ...my rest] = path
 		match head {
 			at #{my span, "This", my args} if search != Search.inside && depth ?= 0 {
 				if args? {
 					match params.length {
 						at 0 {
-							errors[add: Error[invalidTypeApply: span because: "Attempt to apply arguments to a non-parametric type"]]
+							errors[add: Error[invalidTypeApply: span.value because: "Attempt to apply arguments to a non-parametric type"]]
 							return Maybe[none]
 						}
 
 						at _ < args.length {
-							errors[add: Error[invalidTypeApply: span because: "Too many arguments"]]
+							errors[add: Error[invalidTypeApply: span.value because: "Too many arguments"]]
 							return Maybe[none]
 						}
 
 						at _ > args.length {
-							errors[add: Error[invalidTypeApply: span because: "Not enough arguments"]]
+							errors[add: Error[invalidTypeApply: span.value because: "Not enough arguments"]]
 							return Maybe[none]
 						}
 
@@ -167,7 +168,7 @@ protocol TypeDecl of AnyTypeDecl {
 
 					match {
 						match typevars[maybeAt: name] at Maybe[the: my found] {
-							return Maybe[the: found[keepIf: {|typevar|
+							return Maybe[the: found[keepIf: {|typevar (TypeVar)|
 								return !cache[has: typevar.thisType] && (
 									|| typevar.params.length ?= 0
 									|| typevar.params.length ?= args.length
@@ -198,12 +199,12 @@ protocol TypeDecl of AnyTypeDecl {
 
 							at #{_, my params'} => case {
 								at args.length > params.length {
-									errors[add: Error[invalidTypeApply: span because: "Too many arguments"]]
+									errors[add: Error[invalidTypeApply: span.value because: "Too many arguments"]]
 									return Maybe[none]
 								}
 
 								at args.length < params.length {
-									errors[add: Error[invalidTypeApply: span because: "Not enough arguments"]]
+									errors[add: Error[invalidTypeApply: span.value because: "Not enough arguments"]]
 									return Maybe[none]
 								}
 
@@ -221,11 +222,11 @@ protocol TypeDecl of AnyTypeDecl {
 						at Maybe[the: my found] {
 							if args.length ?= 0 {
 								finished = false
-								return Maybe[the: Type[types: found[collect: $0.thisType] :span]]
+								return Maybe[the: Type[types: found[collect: TypeVar$0.thisType] :span]]
 							} else {
-								match found[keepIf: $0.params.length ?= args.length][collect: $0.thisType] {
+								match found[keepIf: TypeVar$0.params.length ?= args.length][collect: TypeVar$0.thisType] {
 									at #[] {
-										errors[add: Error[invalidTypeApply: span because: "No candidate matches the type arguments"]]
+										errors[add: Error[invalidTypeApply: span.value because: "No candidate matches the type arguments"]]
 										return Maybe[none]
 									}
 
@@ -269,14 +270,14 @@ protocol TypeDecl of AnyTypeDecl {
 		return (
 			|| this ?= decl
 			|| (decl ?= Pass2.std_Value && !this[isNative: Native[void]])  ;-- If `decl` is Star.Value and this is not void
-			|| refinees[any: $0[hasParent: decl]]                          ;-- If any refinements have a parent `decl`
+			|| refinees[any: TypeDecl$0[hasParent: decl]]                          ;-- If any refinements have a parent `decl`
 		)
 	}
 
 	on [hasParent: type (Type)] (Bool) {
 		return (
 			|| thisType ?= type
-			|| refinees[any: $0[hasParent: type]]  ;-- If any refinees have a parent `type`
+			|| refinees[any: TypeDecl$0[hasParent: type]]  ;-- If any refinees have a parent `type`
 			|| type[hasChild: this]                ;-- Check in the opposite direction
 		)
 	}
@@ -285,7 +286,7 @@ protocol TypeDecl of AnyTypeDecl {
 	on [hasChild: decl (TypeDecl)] (Bool) {
 		return (
 			|| this ?= decl
-			|| refinements[any: $0[hasChild: decl]]  ;-- If any refinements have a child `decl`
+			|| refinements[any: TypeDecl$0[hasChild: decl]]  ;-- If any refinements have a child `decl`
 		)
 	}
 
@@ -293,7 +294,7 @@ protocol TypeDecl of AnyTypeDecl {
 		return (
 			|| thisType ?= type
 			|| (this ?= Pass2.std_Value && !type[isNative: Native[void]])  ;-- If this is Star.Value and `type` is not void
-			|| refinees[any: $0[hasChild: type]]                           ;-- If any refinees have a child `type`
+			|| refinees[any: TypeDecl$0[hasChild: type]]                           ;-- If any refinees have a child `type`
 			|| type[hasParent: this]                                       ;-- Check in the opposite direction
 		)
 	}
@@ -352,7 +353,7 @@ protocol TypeDecl of AnyTypeDecl {
 		if args.length != params.length => return Maybe[none]
 
 		my typevarCtx = TypeVarCtx #()
-		my params' = #[]
+		my params' = Array[Type] #[]
 
 		;-- Expand all typevars by binding the arg to the param
 		for #{my param, my arg} in: params[zip: args] {
@@ -378,6 +379,52 @@ protocol TypeDecl of AnyTypeDecl {
 	on [isUncounted] (Bool) => return false
 
 
+	;== Iterating
+
+	on [iterElemType] (Maybe[Type]) {
+		for my refinee in: refinees {
+			;-- this allows us to obtain our typevars from refinee typevars
+			my ref = {
+				if params? {
+					return refinee[applyArgs: params]
+				} else {
+					return Maybe[the: refinee.thisType]
+				}
+			}
+			match ref at Maybe[the: my ref'] {
+				match ref'[iterElemType] at Maybe[the: my elem] {
+					return Maybe[the: elem[from: thisType]]
+				}
+			}
+		}
+
+		return Maybe[none]
+	}
+
+	on [iterAssocType] (Maybe[Tuple[Type, Type]]) {
+		for my refinee in: refinees {
+			;-- this allows us to obtain our typevars from refinee typevars
+			my ref = {
+				if params? {
+					return refinee[applyArgs: params]
+				} else {
+					return Maybe[the: refinee.thisType]
+				}
+			}
+			match ref at Maybe[the: my ref'] {
+				match ref'[iterAssocType] at Maybe[the: #{my k, my v}] {
+					return Maybe[the: #{
+						k[from: thisType]
+						v[from: thisType]
+					}]
+				}
+			}
+		}
+
+		return Maybe[none]
+	}
+
+
 	;== Effects tracking
 	
 	on [applyArgs: args (Array[Type]) trackEffectsIn: ctx (Ctx)] (Maybe[Tuple[Type, Effects]]) {
@@ -385,7 +432,7 @@ protocol TypeDecl of AnyTypeDecl {
 
 		my effects = Effects.empty
 		my typevarCtx = TypeVarCtx #()
-		my params' = #[]
+		my params' = Array[Type] #[]
 
 		;-- Expand all typevars by binding the arg to the param
 		for #{my param, my arg} in: params[zip: args] {
@@ -422,7 +469,7 @@ protocol TypeDecl of AnyTypeDecl {
 	;== Members
 
 	on [instanceMembers: from (AnyTypeDecl)] (Array[Member]) {
-		return refinees[collectAll: $0[instanceMembers: from]]
+		return refinees[collectAll: TypeDecl$0[instanceMembers: from]]
 	}
 
 	

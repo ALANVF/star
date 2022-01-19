@@ -16,13 +16,17 @@ type T
 kind List[T] of Iterable[T] {
 	has [nil]
 	has [head: (T) tail: (This)]
+
+
+	;== Creating (macros)
+	;init [_: values (Array[T])] is macro {}
 	
 	
 	;== Creating
 	
 	on [new] (This) is static is inline => return This[nil]
 	
-	on [new: values (Iterable[T])] (This) is static => return This[new: values[Iterator[T]]]
+	;[on [new: values (Iterable[T])] (This) is static => return This[new: values[Iterator[T]]]
 	
 	on [new: iter (Iterator[T])] (This) is static is hidden {
 		match iter[next] at Maybe[the: my value] {
@@ -30,6 +34,15 @@ kind List[T] of Iterable[T] {
 		} else {
 			return This[nil]
 		}
+	}]
+	on [new: values (Iterable[T])] (This) is static {
+		my result = This[nil]
+
+		for my value in: values {
+			result = This[head: value tail: result]
+		}
+
+		return result[reverse]
 	}
 	
 	
@@ -110,8 +123,9 @@ kind List[T] of Iterable[T] {
 		if index < 0 => index += this.length
 		
 		try {
-			#{my value, my rest} = this[from: index]
-			return #{value, this[upto: index] + rest}
+			match this[from: index] at This[head: my value tail: my rest] {
+				return #{value, this[upto: index] + rest}
+			}
 		} catch {
 			at RangeError[Int] => throw IndexError[at: index]
 		}
@@ -121,8 +135,9 @@ kind List[T] of Iterable[T] {
 		if index < 0 => index += this.length
 		
 		try {
-			#{my value, my rest} = this[from: index]
-			return Maybe[the: #{value, this[upto: index] + rest}]
+			match this[from: index] at This[head: my value tail: my rest] {
+				return Maybe[the: #{value, this[upto: index] + rest}]
+			}
 		} catch {
 			at RangeError[Int] => return Maybe[none]
 		}

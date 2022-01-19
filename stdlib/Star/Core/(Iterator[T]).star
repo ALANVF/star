@@ -5,4 +5,6 @@ protocol Iterator[T] {
 
 type K
 type V
-alias Iterator[K, V] = Iterator[Tuple[K, V]]
+protocol Iterator[K, V] {
+	on [next] (Maybe[Tuple[K, V]])
+}

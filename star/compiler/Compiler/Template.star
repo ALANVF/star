@@ -5,7 +5,7 @@ class Template {
 	on [form: indent (Int) = 0] (Str) {
 		return ""
 		-> [add: "template<"]
-		-> [add: types[collect: $0[form: indent]][joinWith: ", "]]
+		-> [add: types[collect: TypeParam$0[form: indent]][joinWith: ", "]]
 		-> {
 			match requires at Maybe[the: my req] {
 				this

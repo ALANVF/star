@@ -14,6 +14,6 @@ kind MemberInit {
 
 category MemberInit for Array[MemberInit] {
 	on [form] (Str) {
-		return this[collect: $0[form]][joinWith: ", "]
+		return this[collect: MemberInit$0[form]][joinWith: ", "]
 	}
 }

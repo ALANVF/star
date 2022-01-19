@@ -116,7 +116,7 @@ kind Ctx {
 		return This[
 			outer: Maybe[the: this]
 			thisType: type
-			objCascade: type
+			objCascade: Maybe[the: type]
 		]
 	}
 
@@ -174,9 +174,9 @@ kind Ctx {
 				match this {
 					at This[objCascade: Maybe[the: my objType]] {
 						match objType[
-							ctx: this
-							findSingleInst: name
-							from: outer'
+							in: this
+							findInstance: name
+							from: outer'.typeDecl
 							isGetter: true
 						] at SingleInst[member: my member] if depth ?= 0 || (depth--, false) {
 							return Local.Field[ctx: this :member]
@@ -193,12 +193,12 @@ kind Ctx {
 						my isStatic = !this[allowsThis]
 
 						my allMembers = mth.decl[instanceMembers: mth.decl]
-						-> [InPlace keepIf: {|member|
+						-> [InPlace keepIf: {|member (Member)|
 							return member.name ?= name && (
 								|| !isStatic
-								|| mem.isStatic
+								|| member.isStatic
 								|| {
-									match Member.lookup at (Module) {
+									match member.decl at (Module) {
 										return true
 									} else {
 										return false
@@ -208,7 +208,7 @@ kind Ctx {
 						}]
 						-> [InPlace unique]
 
-						match allMembers[Type mostSpecific: $0.type.value] {
+						match allMembers[Type mostSpecific: Member$0.type.value] {
 							at #[] => return Maybe[none]
 							at #[my member] => return locals[at: name] = Local.Field[ctx: this :member]
 							at my members => throw "todo"
@@ -248,7 +248,7 @@ kind Ctx {
 	;== Type lookup
 
 	on [findType: path (TypePath)] (Maybe[Type]) {
-		my found, match this {
+		my found (Maybe[Type]), match this {
 			at This[objCascade: Maybe[the: my objType]] {
 				#{my depth, my path'} = path[toLookupPath: this.typeLookup]
 				match objType[

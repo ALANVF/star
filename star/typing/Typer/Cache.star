@@ -12,6 +12,7 @@ class Cache {
 	on [has: file (File)] (Bool) => return files[contains: file]
 	on [has: dir (Dir)] (Bool) => return dirs[contains: dir]
 
+	operator `+` [decl (TypeDecl)] => return this + decl.thisType
 	operator `+` [type (Type)] (Cache) => return Cache[types: types[add: type] :cats :files :dirs]
 	operator `+` [cat (Category)] (Cache) => return Cache[:types cats: cats[add: cat] :files :dirs]
 	operator `+` [file (File)] (Cache) => return Cache[:types :cats files: files[add: file] :dirs]

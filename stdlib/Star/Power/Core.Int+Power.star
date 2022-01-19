@@ -60,6 +60,8 @@ category Power for Int {
 
 							if (d1 ?= #"0" && d2 < #"2") || (d1 ?= #"3" && d2 > #"6") {
 								throw "Invaid base: must be 2..36"
+							} else {
+								return ((d1[Int] - 48) * 10) + (d2[Int] - 48)
 							}
 						}
 						
@@ -214,7 +216,7 @@ category Power for Int {
 			return #[0]
 		} else {
 			my int = this[abs]
-			my digits = #[]
+			my digits = Array[Int] #[]
 
 			while int != 0 {
 				digits[add: int % base]

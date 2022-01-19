@@ -1249,8 +1249,8 @@ class Lexer {
 				
 				if(start != end - 1) {
 					segments = Cons(SStr(reader.substring(start, end - 1)), segments);
-					start = reader.offset;
 				}
+				start = reader.offset;
 				
 				segments = Cons(seg, segments);
 

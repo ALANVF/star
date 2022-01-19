@@ -35,7 +35,7 @@ class TypeParam {
 		match default at Maybe[the: my default'] {
 			buf
 			-> [add: " = "]
-			-> [add: default'[:form]]
+			-> [add: default'[form]]
 		}
 		
 		return buf

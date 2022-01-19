@@ -42,6 +42,13 @@ protocol Typeable of TypeLookup {
 	on [isUncounted] (Bool)
 
 
+	;== Iterating
+
+	on [iterElemType] (Maybe[Type])
+
+	on [iterAssocType] (Maybe[Tuple[Type, Type]])
+
+
 	;== Effects tracking
 
 	on [trackEffectsIn: ctx (Ctx)] (Maybe[Effects])

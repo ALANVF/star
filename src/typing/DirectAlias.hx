@@ -122,6 +122,20 @@ class DirectAlias extends Alias {
 	}
 
 
+	// Iterating
+
+	override function iterElemType() {
+		return type.iterElemType()._and(ty => ty.getFrom(thisType));
+	}
+
+	override function iterAssocType() {
+		return type.iterAssocType()._match(
+			at(null) => null,
+			at({_1: k, _2: v}) => new Tuple2(k.getFrom(thisType), v.getFrom(thisType))
+		);
+	}
+
+
 	// Privacy
 
 	override function canSeeMember(member: Member) {
@@ -144,13 +158,26 @@ class DirectAlias extends Alias {
 		return type.instMembers(from);
 	}
 
+	override function findInstMember(ctx: Ctx, name: String, allowStatic = true, onlyParents = false): Null<MemberKind> {
+		// maybe include super call?
+		return type.findInstMember(ctx, name, allowStatic, onlyParents)._and(res => {
+			if(params.length > 0) {
+				MKFromParent(type, res);
+			} else {
+				res;
+			}
+		});
+	}
+
 
 	// Method lookup
 
-	override function findSingleStatic(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false, cache: TypeCache = Nil) {
+	override function findSingleStatic(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {
 		if(cache.contains(thisType)) return null;
 		
-		return type.findSingleStatic(ctx, name, from, getter, cache + thisType);
+		return type.findSingleStatic(ctx, name, from, getter, cache + thisType)._and(
+			kind => SSFromParent(type, kind)
+		);
 	}
 
 
@@ -161,10 +188,10 @@ class DirectAlias extends Alias {
 	}
 
 
-	override function findSingleInst(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false, cache: TypeCache = Nil) {
+	override function findSingleInst(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false, cache: TypeCache = Nil): Null<SingleInstKind> {
 		if(cache.contains(thisType)) return null;
 		
-		return type.findSingleInst(ctx, name, from, getter, cache + thisType);
+		return type.findSingleInst(ctx, name, from, getter, cache + thisType)._and(k => SIFromParent(type, k));
 	}
 
 

@@ -25,6 +25,7 @@ enum Expr {
 	EThis(_: Span);
 	EWildcard(_: Span);
 	EFunc(_begin: Span, params: Array<{name: Ident, type: Option<Type>}>, ret: Option<Type>, body: Array<Stmt>, _end: Span);
+	EAnonFunc(depth: Int, nparams: Int, types: Null<Map<Int, Type>>, expr: Expr);
 	EAnonArg(_: Span, depth: Int, nth: Int);
 	ELiteralCtor(type: Type, literal: Expr/*EInt|EDec|EChar|EStr|EArray|EHash|ETuple|EFunc(|EBlock|ELitSym ?)*/);
 
@@ -71,6 +72,8 @@ function mainSpan(self: Expr) return self._match(
 	| EBlock({begin: b, end: e})
 	| ETypeMessage(_, b, _, e)
 	| EObjMessage(_, b, _, e)) => b.union(e),
+
+	at(EAnonFunc(_, _, _, e)) => e.mainSpan(),
 
 	at(ELiteralCtor(t, c)) => t.span().union(c.mainSpan()),
 

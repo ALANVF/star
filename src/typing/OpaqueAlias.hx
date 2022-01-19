@@ -76,6 +76,8 @@ class OpaqueAlias extends Alias {
 	}
 
 
+	// Method lookup
+
 	override function findSingleStatic(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {
 		if(cache.contains(thisType)) return null;
 		

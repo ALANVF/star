@@ -7,4 +7,7 @@ protocol RealMethod of AnyMethod {
 	my isAsm (Bool) = false
 	my body (Maybe[Array[Parser.Stmt]]) is getter
 	my body' (Maybe[Stmts]) = Maybe[none]
+
+
+	on [methodName] (Str) is getter
 }

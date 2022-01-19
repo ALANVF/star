@@ -23,7 +23,7 @@ alias MultiParams (Array[MultiParam]) {
 			}
 
 			;-- partial match
-			at names.length < this.length && this[any: $0.value?] {
+			at names.length < this.length && this[any: MultiParam$0.value?] {
 				my indexes = Array[Int] #[]
 				my namePos = 0
 				my thisPos = 0

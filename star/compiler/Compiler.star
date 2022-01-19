@@ -58,7 +58,7 @@ class Compiler {
 			template: Maybe[the: Template[
 				types: #[
 					TypeParam[
-						type: Type[path: TypePath[named: "$Array" of: #[Type[const: Type[char]]]]]
+						type: Maybe[the: Type[path: TypePath[named: "$Array" of: #[Type[const: Type[char]]]]]]
 						name: Maybe[the: "Name"]
 					]
 				]
@@ -109,7 +109,7 @@ class Compiler {
 				return this[getFullPath: type.lookup]
 				-> [add: #{
 					type.name
-					type.params[collect: $0[collect: Type[fromType: $.0 in: this]]]
+					type.params[collect: Array[Typer.Type]$0[collect: Type[fromType: Typer.Type$.0 in: this]]]
 				}]
 			}
 			

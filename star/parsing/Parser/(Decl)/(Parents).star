@@ -1,3 +1,3 @@
 protocol Parents {
-	my parents (Array[Type])
+	my parents (Maybe[Array[Type]])
 }

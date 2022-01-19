@@ -16,17 +16,16 @@ private class _Dict<K, V> {
 	}
 }
 
-@:publicFields
 abstract Dict<K, V>(_Dict<K, V>) {
 	private function new(keys, values) {
 		this = new _Dict(keys, values);
 	}
 
-	static inline function make() {
+	public static inline function make() {
 		return new Dict(new ArrayObj(), new ArrayObj());
 	}
 
-	static inline function alloc(size) {
+	public static inline function alloc(size) {
 		return new Dict(
 			ArrayObj.alloc(new NativeArray(size)),
 			ArrayObj.alloc(new NativeArray(size))

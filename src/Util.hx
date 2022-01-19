@@ -263,7 +263,7 @@ class Util {
 							if(!didChange) didChange = true;
 							macro Util._unsafeNonNull(_) => $lhs2;
 						
-						case macro $i{name}:
+						case (macro $i{name}) | {expr: EDisplay(macro $i{name}, _)}:
 							if(!didChange) didChange = true;
 							final anon = '__anon${anons++}__$name';
 							newVars.push({

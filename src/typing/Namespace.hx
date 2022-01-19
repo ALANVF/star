@@ -245,6 +245,28 @@ abstract class Namespace extends TypeDecl {
 	}
 
 
+	// Iterating
+
+	override function iterElemType() {
+		if(this == Pass2.STD_Iterable1) {
+			return params[0];
+		} else {
+			return parents.findMap(p -> p.iterElemType())._and(e => e.getFrom(thisType))._or(super.iterElemType());
+		}
+	}
+
+	override function iterAssocType(): Null<Tuple2<Type, Type>> {
+		if(this == Pass2.STD_Iterable2) {
+			return {_1: params[0], _2: params[1]};
+		} else {
+			return parents.findMap(p -> p.iterAssocType())._match(
+				at(null) => super.iterAssocType(),
+				at({_1: k, _2: v}) => {_1: k.getFrom(thisType), _2: v.getFrom(thisType)}
+			);
+		}
+	}
+
+
 	// Privacy
 
 	override function canSeeMember(member: Member) {
@@ -261,8 +283,26 @@ abstract class Namespace extends TypeDecl {
 	// Members
 
 	override function instMembers(from: AnyTypeDecl) {
-		return staticMembers.filter(mem -> from.canSeeMember(mem))
+		return staticMembers.filter(mem -> from.canSeeMember(mem)) // WHY DOES THIS NOT LOOK IN THE PARENTS???
 			.concat(super.instMembers(from));
+	}
+
+	override function findInstMember(ctx: Ctx, name: String, allowStatic = true, onlyParents = false): Null<MemberKind> {
+		if(!onlyParents) {
+			if(allowStatic) for(mem in staticMembers) {
+				if(mem.name.name == name) {
+					return MKMember(mem);
+				}
+			}
+		}
+
+		for(p in parents) {
+			p.findInstMember(ctx, name, allowStatic)._and(res => {
+				return MKFromParent(p, res);
+			});
+		}
+
+		return super.findInstMember(ctx, name);
 	}
 
 
@@ -297,7 +337,7 @@ abstract class Namespace extends TypeDecl {
 		
 		for(parent in parents) {
 			parent.findSingleStatic(ctx, name, from, getter, cache)._match(
-				at(ss!) => return ss,
+				at(ss!) => return SSFromParent(parent, ss),
 				_ => {}
 			);
 		}
@@ -341,7 +381,7 @@ abstract class Namespace extends TypeDecl {
 			);
 		}
 
-		for(parent in parents) {
+		for(parent in parents) { // TODO: MSFromParent
 			candidates.pushAll(parent.findMultiStatic(ctx, names, from, setter, cache));
 		}
 

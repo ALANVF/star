@@ -317,6 +317,12 @@ class Dumper {
 			dump(tvar.thisType, Nil);
 			nextLine();
 			dump(kind2);
+		},
+		at(SSFromParent(parent, kind2)) => {
+			write(":from ");
+			dump(parent, Nil);
+			nextLine();
+			dump(kind2);
 		}
 	);
 
@@ -385,6 +391,12 @@ class Dumper {
 			dump(tvar.thisType, Nil);
 			nextLine();
 			dump(kind2);
+		},
+		at(MSFromParent(parent, kind2)) => {
+			write(":from ");
+			dump(parent, Nil);
+			nextLine();
+			dump(kind2);
 		}
 	);
 
@@ -419,6 +431,12 @@ class Dumper {
 			dump(tvar.thisType, Nil);
 			nextLine();
 			dump(kind2);
+		},
+		at(SIFromParent(parent, kind2)) => {
+			write(":from ");
+			dump(parent, Nil);
+			nextLine();
+			dump(kind2);
 		}
 	);
 
@@ -448,6 +466,12 @@ class Dumper {
 		at(MIFromTypevar(tvar, names, setter, kind2)) => {
 			write(":from ");
 			dump(tvar.thisType, Nil);
+			nextLine();
+			dump(kind2);
+		},
+		at(MIFromParent(parent, kind2)) => {
+			write(":from ");
+			dump(parent, Nil);
 			nextLine();
 			dump(kind2);
 		}
@@ -544,6 +568,12 @@ class Dumper {
 				write('$label: ');
 				dump(args[i]);
 			}
+		},
+		at(Super(parent, msg2)) => {
+			write(":super ");
+			dump(parent, Nil);
+			nextLine();
+			dump(msg2);
 		}
 	);
 
@@ -1121,6 +1151,17 @@ class Dumper {
 			write(")");
 		},
 
+		at(EDestructure(pattern, value)) => {
+			write('(destructure');
+			level++;
+			nextLine();
+			dump(pattern);
+			nextLine();
+			dump(value);
+			level--;
+			write(")");
+		},
+
 		at(ESetName(name, local, value)) => {
 			if(local is Pass2.LocalField) {
 				write('(set-slot $name');
@@ -1169,6 +1210,266 @@ class Dumper {
 			dump(type, Nil);
 			write(")");
 		}
+	);
+
+	overload function dump(pattern: Pattern) pattern.p._match(
+		at(PExpr(expr)) => dump(expr),
+		at(PExtractor(_)) => throw "NYI!",
+		at(PExtractMessage(msg)) => {
+			write("(extract-send");
+			level++;
+			nextLine();
+			dump(msg);
+			nextLine();
+			dump(msg);
+			level--;
+			write(")");
+		},
+		at(PIgnore) => write("_"),
+		at(PMy(name)) => {
+			write("(my ");
+			write(name);
+			level++;
+			nextLine();
+			pattern.t._andOr(
+				t => dump(t, Nil),
+				write("???")
+			);
+			level--;
+			write(")");
+		},
+		at(PMyType(name, type)) => {
+			write("(my ");
+			write(name);
+			level++;
+			nextLine();
+			write(":flow ");
+			dump(type, Nil);
+			level--;
+			write(")");
+		},
+		at(PType(type)) => {
+			write("(of? ");
+			dump(type, Nil);
+			write(")");
+		},
+		at(PAll(patterns)) => {
+			write("(all");
+			writeLines(patterns, p -> dump(p));
+			write(")");
+		},
+		at(PAny(patterns)) => {
+			write("(any");
+			writeLines(patterns, p -> dump(p));
+			write(")");
+		},
+		at(POne(patterns)) => {
+			write("(one");
+			writeLines(patterns, p -> dump(p));
+			write(")");
+		},
+		at(PNone(patterns)) => {
+			write("(none");
+			writeLines(patterns, p -> dump(p));
+			write(")");
+		},
+		at(PNot(not)) => {
+			write("(not");
+			level++;
+			nextLine();
+			dump(not);
+			level--;
+			write(")");
+		},
+		at(PBoundsMin(min, _, pat)) => {
+			write("(range");
+			level++;
+			nextLine();
+			dump(pat);
+			nextLine();
+			write(":min ");
+			dump(min);
+			level--;
+			write(")");
+		},
+		at(PBoundsMax(pat, max, _)) => {
+			write("(range");
+			level++;
+			nextLine();
+			dump(pat);
+			nextLine();
+			write(":max ");
+			dump(max);
+			level--;
+			write(")");
+		},
+		at(PBoundsMinMax(min, _, pat, max, _)) => {
+			write("(range");
+			level++;
+			nextLine();
+			dump(pat);
+			nextLine();
+			write(":min ");
+			dump(min);
+			nextLine();
+			write(":max ");
+			dump(max);
+			level--;
+			write(")");
+		},
+		at(PAssignPattern(assign, pat)) => {
+			write("(destructure");
+			level++;
+			nextLine();
+			dump(assign);
+			nextLine();
+			dump(pat);
+			level--;
+			write(")");
+		},
+		at(PArray(patterns)) => {
+			write("(array");
+			writeLines(patterns, p -> p.p._match(
+				at(PSpread(pat)) => {
+					write(":spread ");
+					dump(pat);
+				},
+				at(POptional(opt)) => {
+					write(":opt");
+					dump(opt);
+				},
+				_ => dump(p)
+			));
+			write(")");
+		},
+		at(PTypeArray(type, patterns)) => {
+			write("(array :of ");
+			dump(type, Nil);
+			writeLines(patterns, p -> p.p._match(
+				at(PSpread(pat)) => {
+					write(":spread ");
+					dump(pat);
+				},
+				at(POptional(opt)) => {
+					write(":opt");
+					dump(opt);
+				},
+				_ => dump(p)
+			));
+			write(")");
+		},
+		at(PTuple(patterns)) => {
+			write("(tuple");
+			writeLines(patterns, p -> dump(p));
+			write(")");
+		},
+		at(PTypeTuple(type, patterns)) => {
+			write("(tuple :of");
+			dump(type, Nil);
+			writeLines(patterns, p -> dump(p));
+			write(")");
+		},
+		at(PTypeMembers(type, members)) => {
+			write("(memberwise");
+			level++;
+			nextLine();
+			dump(type, Nil);
+			level--;
+			writeLines(members, m -> {
+				write(":"+m._1.name.name+" ");
+				dump(m._2);
+			});
+			write(")");
+		},
+		at(PTypeValueCase(type, valueCase)) => {
+			write("(value-kind");
+			level++;
+			nextLine();
+			dump(type, Nil);
+			nextLine();
+			write("#"+valueCase.name.name);
+			level--;
+			write(")");
+		},
+		at(PTypeTaggedCaseSingle(type, taggedCase)) => {
+			write("(tagged-kind");
+			level++;
+			nextLine();
+			dump(type, Nil);
+			nextLine();
+			write(taggedCase.name.name);
+			level--;
+			write(")");
+		},
+		at(PTypeTaggedCaseMulti(type, taggedCase, args)) => {
+			write("(tagged-kind");
+			level++;
+			nextLine();
+			dump(type, Nil);
+			for(i => param in taggedCase.params) {
+				nextLine();
+				write('${param.label.name}: ');
+				dump(args[i]);
+			}
+			level--;
+			write(")");
+		},
+		at(PTypeTaggedCaseMembersSingle(type, taggedCase, members)) => {
+			write("(tagged-kind");
+			level++;
+			nextLine();
+			dump(type, Nil);
+			nextLine();
+			write(taggedCase.name.name);
+			nextLine();
+			write(":members {");
+			writeLines(members, m -> {
+				write(":"+m._1+" ");
+				dump(m._2);
+			});
+			write("}");
+			level--;
+			write(")");
+		},
+		at(PTypeTaggedCaseMembersMulti(type, taggedCase, args, members)) => {
+			write("(tagged-kind");
+			level++;
+			nextLine();
+			dump(type, Nil);
+			for(i => param in taggedCase.params) {
+				nextLine();
+				write('${param.label.name}: ');
+				dump(args[i]);
+			}
+			nextLine();
+			write(":members {");
+			writeLines(members, m -> {
+				write(":"+m._1+" ");
+				dump(m._2);
+			});
+			write("}");
+			level--;
+			write(")");
+		},
+		at(PExtractFrom(extract, from)) => {
+			write("(extract");
+			writeLines([extract, from], p -> dump(p));
+			write(")");
+		},
+		at(PExcludeFrom(exclude, from)) => {
+			write("(exclude");
+			writeLines([exclude, from], p -> dump(p));
+			write(")");
+		},
+		at(PComplement(pat)) => {
+			write("(complement");
+			level++;
+			nextLine();
+			dump(pat);
+			level--;
+			write(")");
+		},
+		_ => write("(!!!)")
 	);
 
 	overload function dump(statement: TStmt) statement.s._match(
@@ -1228,12 +1529,15 @@ class Dumper {
 		at(SMatchAt(value, pattern, cond, then, orelse)) => {
 			write("(match ");
 			dump(value);
-			write(" :at ");
+			level++;
+			nextLine();
+			write(":at ");
 			dump(pattern);
 			cond._and(c => {
 				write(" :if ");
 				dump(c);
 			});
+			level--;
 			writeLines(then, s -> dump(s));
 			orelse._and(oe => {
 				nextLine();
@@ -1371,7 +1675,9 @@ class Dumper {
 	overload function dump(typevars: MultiMap<String, TypeVar>) {
 		if(typevars.size != 0) {
 			write(" given [");
-			writeLines(typevars.allValues(), tvar -> dump(tvar));
+			final allTypevars = typevars.allValues();
+			writeLines(allTypevars, tvar -> dump(tvar));
+			if(allTypevars.length > 0) nextLine();
 			write("]");
 		}
 	}
@@ -1593,13 +1899,14 @@ class Dumper {
 	}
 
 	overload function dump(params: MultiParams, cache: Cache) {
-		write(params, " ", param -> {
+		writeLines(params, param -> {
 			write(param.label.name+": "+param.name.name+" ");
 			dump(param.type, cache);
 			param.value._and(value => {
 				write(" (untyped ...)");
 			});
 		});
+		nextLine();
 	}
 
 

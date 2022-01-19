@@ -1,6 +1,6 @@
 type K
 type V
-kind Dict[K, V] {
+kind Dict[K, V] of Iterable[K, V] {
 	; ...
 
 	on [new] (This) is static
@@ -12,6 +12,10 @@ kind Dict[K, V] {
 
 	on [maybeAt: key (K)] (Maybe[V])
 	on [maybeAt: key (K) set: value (V)] (This)
+
+	; ...
+
+	on [Iterator[K, V]]
 
 	; ...
 

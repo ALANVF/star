@@ -31,7 +31,7 @@ protocol Mapped[K, V] of Iterable[K], Iterable[K, V] {
 	on [at: key (K)] (V)
 	on [at: key (K) set: value (V)] is setter
 	
-	on [maybeAt: key (K)] (V)
+	on [maybeAt: key (K)] (Maybe[V])
 	on [maybeAt: key (K) set: value (V)] is setter
 	
 	on [atNew: key (K) set: value (V)] is setter

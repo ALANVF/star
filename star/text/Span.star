@@ -20,7 +20,6 @@ class Span {
 		this.begin = begin
 		this.end = end
 	}
-	
 	init [begin: (Pos) end: (Pos) source: (SourceFile)] {
 		this.source = Maybe[the: source]
 		this.begin = begin
@@ -32,7 +31,6 @@ class Span {
 		begin = pos
 		end = pos[advance]
 	}
-	
 	init [at: pos (Pos) source: (SourceFile)] {
 		this.source = Maybe[the: source]
 		begin = pos
@@ -44,7 +42,6 @@ class Span {
 		this.begin = begin
 		end = begin[advance: length]
 	}
-	
 	init [begin: (Pos) length: (Int) source: (SourceFile)] {
 		this.source = Maybe[the: source]
 		this.begin = begin
@@ -76,11 +73,13 @@ class Span {
 	}
 	
 	on [first] (Span) {
-		return Span[at: begin :source]
+		return Span[at: begin]
+		-> source = source
 	}
 	
 	on [last] (Span) {
-		return Span[at: end :source]
+		return Span[at: end]
+		-> source = source
 	}
 	
 	on [next] (Span) {

@@ -494,4 +494,72 @@ class Errors {
 			]
 		});
 	}
+
+
+	static function possiblyUnintendedArrowBlock(ctx: Ctx, span) {
+		final lookup = ctx.thisLookup;
+		return new Diagnostic({
+			severity: Severity.WARNING,
+			message: "Possibly unintentional arrow shorthand",
+			info: [
+				Spanned({
+					span: span,
+					message: 'Using a block in an arrow shorthand does not act the same as a plain block!',
+					isPrimary: true
+				}),
+				Spanned({
+					span: lookup.span,
+					message: 'In ${ctx.description()}',
+					isSecondary: true
+				})
+			]
+		});
+	}
+
+	
+	static function arrayPatternNotAllowed(ctx: Ctx, span) {
+		final lookup = ctx.thisLookup;
+		return new Diagnostic({
+			severity: Severity.ERROR,
+			message: "Invalid pattern",
+			info: [
+				Spanned({
+					span: span,
+					message: 'This pattern is only allowed in array patterns',
+					isPrimary: true
+				}),
+				Spanned({
+					span: lookup.span,
+					message: 'In ${ctx.description()}',
+					isSecondary: true
+				})
+			]
+		});
+	}
+
+
+	static function duplicateBinding(ctx: Ctx, name, origSpan, dupSpan) {
+		final lookup = ctx.thisLookup;
+		return new Diagnostic({
+			severity: Severity.WARNING,
+			message: "Duplicate binding",
+			info: [
+				Spanned({
+					span: dupSpan,
+					message: 'This shadows a previous binding `$name`',
+					isPrimary: true
+				}),
+				Spanned({
+					span: origSpan,
+					message: 'First defined here',
+					isSecondary: true
+				}),
+				Spanned({
+					span: lookup.span,
+					message: 'In ${ctx.description()}',
+					isSecondary: true
+				})
+			]
+		});
+	}
 }
