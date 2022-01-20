@@ -174,7 +174,7 @@ module Pass1 {
 		}
 
 		match typevar.rule at Maybe[the: my rule] {
-			typevar.rule = This[resolve: rule from: typevar]
+			typevar.rule = Maybe[the: This[resolve: rule from: typevar]]
 		}
 
 		for my cat in: typevar.categories => This[resolve: cat]
@@ -300,7 +300,7 @@ module Pass1 {
 
 		match member.type at Maybe[the: my t] {
 			match This[resolve: t from: member.decl] at Maybe[the: my type] {
-				member.type = type
+				member.type = Maybe[the: type]
 			}
 		}
 	}

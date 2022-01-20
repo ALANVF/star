@@ -1128,65 +1128,59 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 				end
 			)),
 		
-		//case EInfix(left = EObjMember(obj, {span: span1, name: name}), span2, Assign(None), right):
 
-		// TODO: bad
+		at(EInfix(left = EObjMember(EWildcard(span0), {name: name, span: span1}), span2, Assign(assign), right)) =>
+			typeLocalAssign(ctx, ctx.findLocal(name, 1), left, '_.$name', span0.union(span1), span2, assign, right),
+		// TODO: _._.var, ...
+
 		at(EInfix(left = EName(span1, name), span2, Assign(assign), right)) =>
-			ctx.findLocal(name)._match(
-				at(local!) => {
-					local._match(
-						at({member: {isReadonly: true}} is LocalField) => {
-							throw 'error: field `$name` is readonly and cannot be assigned! ${span1.display()}';
-						},
-						_ => {}
-					);
+			typeLocalAssign(ctx, ctx.findLocal(name), left, name, span1, span2, assign, right),
+		
+		
+		// TODO: make this better
 
-					{
-						e: assign._match(
-							at(None) => {
-								final tvalue = typeExpr(ctx, right);
-								//trace(local.name, local.type._and(t => t.fullName()), tvalue.t._and(t => t.fullName()), span2.display());
-								local._match(
-									at(lvar is LocalVar | lvar is LocalBinding) => {
-										//if(local.expr == null) local.expr = tvalue;
-										tvalue.t._and(rt => {
-											rt = rt.simplify();
-											lvar.type._andOr(lt => {
-												lt = lt.simplify().getIn(ctx);//.getFrom(ctx.thisType);
-												lt.strictUnifyWithType(rt)._match(
-													at(t!) => {
-														//trace(t);
-													},
-													_ => if(!ctx.isPattern()) {
-														ctx.addError(Errors.localVarTypeMismatch(ctx, name, lt, rt, lvar.span, span1));
-														return invalidExpr();
-													}
-												);
-											}, {
-												lvar.type = rt;
-											});
-										});
-									},
-									_ => {}
-								);
-								ESetName(name, local, tvalue);
+		at(EInfix(EObjMember(obj, {name: name, span: span1}), span2, Assign(None), right)) => {
+			final tobj = typeExpr(ctx, obj);
+			tobj.t._match(
+				at(t!) => {
+					final tright = typeExpr(ctx, right);
+					t = t.getIn(ctx);
+					t.findMultiInst(ctx, [name], ctx.typeDecl, true)._match(
+						at([]) => {
+							ctx.addError(Errors.unknownSetter(ctx, false, t, name, span1));
+							invalidExpr();
+						},
+						at(kinds) => kinds.reduceOverloads(t, [tright])._match(
+							at([]) => {
+								ctx.addError(Errors.unknownSetter(ctx, false, t, name, tright, span1));
+								invalidExpr();
 							},
-							at(Some(op)) => {
-								final tvalue = typeExpr(ctx, EInfix(left, span2, op, right));
-								if((local is LocalVar || local is LocalBinding) && local.expr == null) {
-									throw 'error: variable `$name` is used before being assigned! ${span1.display()}';
-								}
-								ESetName(name, local, tvalue);
+							at(overloads) => {
+								e: EObjMessage(tobj, Multi(overloads.map(ov -> ov.kind), [name], [tright])),
+								t: tright.t
 							}
-						),
-						t: local.type
-					};
+						)
+					);
 				},
 				_ => {
-					ctx.addError(Errors.unknownFieldOrVar(ctx, name, span1));
-					invalidExpr();
+					throw "todo at "+span1.display();
 				}
-			),
+			);
+		},
+
+		at(EInfix(left = EObjMember(obj, ident), span, Assign(Some(op)), right)) => {
+			typeExpr(ctx, EInfix(
+				left,
+				span,
+				Assign(None),
+				EInfix(
+					left,
+					span,
+					op,
+					right
+				)
+			));
+		},
 
 		
 		// TEMP left pattern
@@ -1355,6 +1349,76 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 	});
 
 	return res;
+}
+
+static function typeLocalAssign(
+	ctx: Ctx,
+	found: Null<Local>,
+	left: UExpr,
+	name: String,
+	span1: Span,
+	span2: Span,
+	assign: Option<TExpr.AssignInfix>,
+	right: UExpr
+): TExpr {
+	// TODO: bad
+	return found._match(
+		at(local!) => {
+			local._match(
+				at({member: {isReadonly: true}} is LocalField) => {
+					if(!ctx.canAssignReadonlyField()) {
+						throw 'error: field `$name` is readonly and cannot be assigned! ${span1.display()}';
+					}
+				},
+				_ => {}
+			);
+
+			{
+				e: assign._match(
+					at(None) => {
+						final tvalue = typeExpr(ctx, right);
+						//trace(local.name, local.type._and(t => t.fullName()), tvalue.t._and(t => t.fullName()), span2.display());
+						local._match(
+							at(lvar is LocalVar | lvar is LocalBinding) => {
+								//if(local.expr == null) local.expr = tvalue;
+								tvalue.t._and(rt => {
+									rt = rt.simplify();
+									lvar.type._andOr(lt => {
+										lt = lt.simplify().getIn(ctx);//.getFrom(ctx.thisType);
+										lt.strictUnifyWithType(rt)._match(
+											at(t!) => {
+												//trace(t);
+											},
+											_ => if(!ctx.isPattern()) {
+												ctx.addError(Errors.localVarTypeMismatch(ctx, name, lt, rt, lvar.span, span1));
+												return invalidExpr();
+											}
+										);
+									}, {
+										lvar.type = rt;
+									});
+								});
+							},
+							_ => {}
+						);
+						ESetName(name, local, tvalue);
+					},
+					at(Some(op)) => {
+						final tvalue = typeExpr(ctx, EInfix(left, span2, op, right));
+						if((local is LocalVar || local is LocalBinding) && local.expr == null) {
+							throw 'error: variable `$name` is used before being assigned! ${span1.display()}';
+						}
+						ESetName(name, local, tvalue);
+					}
+				),
+				t: local.type
+			};
+		},
+		_ => {
+			ctx.addError(Errors.unknownFieldOrVar(ctx, name, span1));
+			invalidExpr();
+		}
+	);
 }
 
 static function typeExprs(ctx: Ctx, exprs: Array<UExpr>): TExprs {

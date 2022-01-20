@@ -432,6 +432,45 @@ class Errors {
 		});
 	}
 
+	overload static function unknownSetter(ctx: Ctx, isStatic: Bool, type: Type, name, span) {
+		final lookup = ctx.thisLookup;
+		return new Diagnostic({
+			severity: Severity.ERROR,
+			message: "Unknown name access",
+			info: [
+				Spanned({
+					span: span,
+					message: '${isStatic ? "Type" : "Value of type"} `${type.fullName()}` does not have member/setter `$name`',
+					isPrimary: true
+				}),
+				Spanned({
+					span: lookup.span,
+					message: 'In ${ctx.description()}',
+					isSecondary: true
+				})
+			]
+		});
+	}
+	overload static function unknownSetter(ctx: Ctx, isStatic: Bool, type: Type, name, expr: TExpr, span) {
+		final lookup = ctx.thisLookup;
+		return new Diagnostic({
+			severity: Severity.ERROR,
+			message: "Unknown name access",
+			info: [
+				Spanned({
+					span: span,
+					message: '${isStatic ? "Type" : "Value of type"} `${type.fullName()}` does not have member/setter `$name` of type ${expr.t._andOr(t=>t.fullName(), "???")}',
+					isPrimary: true
+				}),
+				Spanned({
+					span: lookup.span,
+					message: 'In ${ctx.description()}',
+					isSecondary: true
+				})
+			]
+		});
+	}
+
 
 	static function unknownCategory(ctx: Ctx, isStatic: Bool, type: Type, cat: Type, span) {
 		final lookup = ctx.thisLookup;

@@ -250,6 +250,19 @@ enum Where {
 		};
 	}
 
+	function canAssignReadonlyField() {
+		return where._match(
+			at(WEmptyMethod(m)) => m is DefaultInit || m is StaticInit,
+			at(WMethod(m)) => m is Init,
+			at(WTaggedCase(_)) => true,
+			at(WBlock | WPattern | WTypevars(_)) => outer._andOr(
+				o => o.canAssignReadonlyField(),
+				false
+			),
+			_ => false
+		);
+	}
+
 	function isPattern() {
 		return where.match(WPattern);
 	}

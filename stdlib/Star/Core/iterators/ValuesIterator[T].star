@@ -9,7 +9,7 @@ class ValuesIterator[T] of Iterator[T] {
 	;== Creation
 
 	init [new: values (Values[T])] {
-		this.values = values[new]
+		_.values = values[new]
 		index = 0
 	}
 
@@ -29,7 +29,7 @@ class ValuesIterator[T] of Iterator[T] {
 type T
 category Unsafe for ValuesIterator[T] {
 	init [newWithoutCopying: values (Values[T])] {
-		this.values = values
+		_.values = values
 		index = 0
 	}
 }
