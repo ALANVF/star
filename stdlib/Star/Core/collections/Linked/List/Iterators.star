@@ -7,8 +7,11 @@ class ListIterator[T] of Iterator[T] is hidden List {
 		if link ?= tail {
 			return Maybe[none]
 		} else {
-			Value[value: my value next: link] = link[Unsafe Value[T]]
-			return value
+			;Value[value: my value next: link] = link[Unsafe Value[T]]
+			;return value
+			match link[Unsafe Value[T]] at Value[value: my value next: link = _] {
+				return value
+			}
 		}
 	}
 }

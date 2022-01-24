@@ -1478,11 +1478,95 @@ class Type implements ITypeable {
 	// Effects tracking
 
 	function trackEffectsIn(ctx: Ctx): Null<Effects> {
-		throw new haxe.exceptions.NotImplementedException();
+		return t._match(
+			at(TPath(_, _, _) | TLookup(_, _, _)) => {
+				this.simplify().trackEffectsIn(ctx);
+			},
+			at(TConcrete(_) | TInstance(_, _, _) | TThis(_) | TBlank) => {
+				Effects.empty;
+			},
+			at(TMulti(types)) => {
+				// TODO
+				Effects.empty;
+			},
+			at(TApplied(type, args)) => {
+				// TODO: should this check for type = Multi(_)?
+				type.applyArgsTrackEffects(args, ctx)._match(
+					at(null) => null,
+					at({_2: effects}) => effects
+				);
+			},
+			at(TTypeVar(typevar)) => {
+				//typevar.trackEffectsIn(ctx);
+				ctx.findTypevarOf(typevar)._andOr(bound => {
+					//trace(true,typevar.name.name,tvar.name.name);
+					Effects.empty.add(
+						typevar,
+						ETypevar(bound, ctx)
+					);
+				}, {
+					//trace(false,typevar.name.name);
+					Effects.empty;
+				});
+			},
+			at(TModular(type, _)) => {
+				type.trackEffectsIn(ctx);
+			}
+		);
 	}
 
 	function applyArgsTrackEffects(args: Array<Type>, ctx: Ctx): Null<Tuple2<Type, Effects>> {
-		throw new haxe.exceptions.NotImplementedException();
+		return t._match(
+			at(TPath(_, _, _) | TLookup(_, _, _)) => {
+				this.simplify().applyArgsTrackEffects(args, ctx);
+			},
+			at(TConcrete(decl)) => {
+				decl.applyArgsTrackEffects(args, ctx);
+			},
+			at(TInstance(_, _, _)) => {
+				// This theoretically shouldn't happen unless the type is curried
+				throw "bad";
+			},
+			at(TThis(source)) => {
+				throw "todo";
+				// is this even right?!?!
+				/*
+				my typeDecl = ctx.typeDecl
+
+				if source ?= typeDecl {
+					return source.thisType[applyArgs: args trackEffectsIn: ctx]
+				} else {
+					;@@ TODO: how the hell do I make this work
+					throw "Not yet implemented!"
+				}
+				*/
+			},
+			at(TBlank) => {
+				_1: {t: TApplied(this, args), span: span},
+				_2: Effects.empty
+			},
+			at(TMulti(types)) => {
+				// TODO
+				{
+					_1: {t: TApplied(this, args), span: span},
+					_2: Effects.empty
+				};
+			},
+			at(TApplied(type, args2)) => {
+				// This theoretically shouldn't happen unless the type is curried
+				throw "bad";
+			},
+			at(TTypeVar(typevar)) => {
+				// TODO:
+				{
+					_1: {t: TApplied(this, args), span: span},
+					_2: Effects.empty
+				};
+			},
+			at(TModular(type, _)) => {
+				type.applyArgsTrackEffects(args, ctx);
+			}
+		);
 	}
 
 	

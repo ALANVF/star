@@ -33,10 +33,19 @@ kind Result[T] {
 		}
 	}
 	
-	type U
+	;@@ TODO: do we really need this? it's only used once in Parser+Type#finishMsg:
+	type U if Power.Castable[T, U]?
 	on [Result[U]] {
 		match this at This[success: my made, my rest] {
 			return Result[U][success: made[U], rest]
+		} else {
+			return this[Unsafe Result[U]]
+		}
+	}
+	type U if !Power.Castable[T, U]
+	on [Result[U]] {
+		match this at This[success: my made, my rest] {
+			throw "Cannot convert type!"
 		} else {
 			return this[Unsafe Result[U]]
 		}

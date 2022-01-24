@@ -1,6 +1,7 @@
 package typing;
 
 import typing.Traits;
+import typing.Effects;
 
 @:using(typing.TypeRule)
 enum TypeRule {
@@ -147,6 +148,15 @@ function hasChildDecl(self: TypeRule, decl: TypeDecl, tvar: TypeVar) {
 }
 
 
+// TODO
+function trackEffectsIn(self: TypeRule, ctx: Ctx) return self._match(
+	at(Exists(t)) => {
+		t.trackEffectsIn(ctx);
+	},
+	_ => null
+);
+
+
 function evalWithType(self: TypeRule, type: Type, tvar: TypeVar) return self._match(
 	at(Eq(left, right)) => {
 		if(left == tvar.thisType) {
@@ -172,7 +182,66 @@ function evalWithType(self: TypeRule, type: Type, tvar: TypeVar) return self._ma
 
 	at(Not(rule)) => !evalWithType(rule, type, tvar),
 
+	at(Exists(t)) => {
+		final ctx: Ctx = {
+			where: WTypevars([]),
+			thisType: tvar.thisType // pretend that this works
+		};
+		t.trackEffectsIn(ctx)._andOr(effects => {
+			trace(tvar, t, effects);
+			true;
+		}, {
+			false;
+		});
+	},
+
 	_ => throw "todo "+self+" "+type.fullName()+" "+tvar.fullName()
+);
+
+
+function findCast(self: TypeRule, tvar: TypeVar,
+ctx: Ctx, target: Type, from: AnyTypeDecl, cache: TypeCache = Nil): Array<CastKind> return self._match(
+	at(Eq(left, right)) => {
+		if(left == tvar.thisType) {
+			right.findCast(ctx, target, from, cache);
+		} else if(right == tvar.thisType) {
+			left.findCast(ctx, target, from, cache);
+		} else {
+			throw "todo";
+		}
+	},
+	at(Of(left, right)) => {
+		if(left == tvar.thisType) {
+			right.findCast(ctx, target, from, cache);
+		} else if(right == tvar.thisType) {
+			left.findCast(ctx, target, from, cache);
+		} else {
+			throw "todo";
+		}
+	},
+
+	at(All(conds)) => {
+		var found = [];
+		for(cond in conds.toArray()) {
+			cond.findCast(tvar, ctx, target, from, cache)._match(
+				at([]) => return [],
+				at(kinds) => found = found.concat(kinds)
+			);
+		}
+		found.unique();
+	},
+	at(Any(conds)) => conds.toArray().flatMap(cond -> cond.findCast(tvar, ctx, target, from, cache)).unique(),
+
+	at(Not(rule)) => [], // TODO
+
+	at(Exists(t)) => {
+		t.trackEffectsIn(ctx)._and(effects => {
+			trace(tvar, t, effects);
+			[];
+		});
+	},
+
+	_ => throw "todo "+self+" "+target.fullName()+" "+tvar.fullName()
 );
 
 

@@ -426,6 +426,20 @@ static function resolveMethod(ctx: Ctx, method: Method) {
 	final methodCtx = ctx.innerMethod(method);
 
 	method._match(
+		at({typevars: tvars} is MultiMethod
+		| {typevars: tvars} is CastMethod) => {
+			for(tvar in tvars.allValues()) {
+				tvar.rule._and(rule => {
+					rule.trackEffectsIn(ctx)._and(effects => {//trace(effects.adds, effects.removes);
+						methodCtx.effects += effects;
+					});
+				});
+			}
+		},
+		_ => {}
+	);
+
+	method._match(
 		at(multi is MultiMethod) => {
 			for(param in multi.params) {
 				param.type = param.type.simplify();
@@ -1130,11 +1144,11 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 		
 
 		at(EInfix(left = EObjMember(EWildcard(span0), {name: name, span: span1}), span2, Assign(assign), right)) =>
-			typeLocalAssign(ctx, ctx.findLocal(name, 1), left, '_.$name', span0.union(span1), span2, assign, right),
+			typeLocalAssign(ctx, ctx.findLocal(name, 1), left, name, 1, span0.union(span1), span2, assign, right),
 		// TODO: _._.var, ...
 
 		at(EInfix(left = EName(span1, name), span2, Assign(assign), right)) =>
-			typeLocalAssign(ctx, ctx.findLocal(name), left, name, span1, span2, assign, right),
+			typeLocalAssign(ctx, ctx.findLocal(name), left, name, 0, span1, span2, assign, right),
 		
 		
 		// TODO: make this better
@@ -1355,7 +1369,7 @@ static function typeLocalAssign(
 	ctx: Ctx,
 	found: Null<Local>,
 	left: UExpr,
-	name: String,
+	name: String, depth: Int,
 	span1: Span,
 	span2: Span,
 	assign: Option<TExpr.AssignInfix>,
@@ -1367,6 +1381,7 @@ static function typeLocalAssign(
 			local._match(
 				at({member: {isReadonly: true}} is LocalField) => {
 					if(!ctx.canAssignReadonlyField()) {
+						if(depth > 0) for(_ in 0...depth) name = '_.$name';
 						throw 'error: field `$name` is readonly and cannot be assigned! ${span1.display()}';
 					}
 				},
@@ -1406,6 +1421,7 @@ static function typeLocalAssign(
 					at(Some(op)) => {
 						final tvalue = typeExpr(ctx, EInfix(left, span2, op, right));
 						if((local is LocalVar || local is LocalBinding) && local.expr == null) {
+							if(depth > 0) for(_ in 0...depth) name = '_.$name';
 							throw 'error: variable `$name` is used before being assigned! ${span1.display()}';
 						}
 						ESetName(name, local, tvalue);

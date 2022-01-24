@@ -16,6 +16,7 @@ import parsing.ast.Message;
 	var callback: Null<(typing.Project) -> Void> = null;
 }
 
+@:build(util.Overload.build())
 class Main {
 	static final stdout = Sys.stdout();
 	public static final renderer = new TextDiagnosticRenderer(stdout);
@@ -24,6 +25,8 @@ class Main {
 	public static var typesDumper: typing.Dumper = null;
 	static var stmtsDump: haxe.io.Output = null;
 	public static var stmtsDumper: typing.Dumper = null;
+	static var stdlibDump: haxe.io.Output = null;
+	public static var stdlibDumper: typing.Dumper = null;
 
 	static inline function nl() {
 		Sys.print("\n");
@@ -33,9 +36,8 @@ class Main {
 		return Math.fround(float * 10000) / 10000;
 	}
 
-	static overload extern inline function testProject(path) _testProject(path, {});
-	static overload extern inline function testProject(path, opt: Options) _testProject(path, opt);
-	static function _testProject(path, opt: Options) {
+	static overload inline function testProject(path) return testProject(path, {});
+	static overload function testProject(path, opt: Options) {
 		Sys.println('Path: $path');
 		
 		var time = 0.0;
@@ -134,6 +136,8 @@ class Main {
 		opt.callback._and(cb => {
 			cb(project);
 		});
+
+		return project;
 	}
 
 	static function main() {
@@ -148,19 +152,23 @@ class Main {
 		}*/
 	
 		final dumpTypes = false;
+		final dumpStmts = false;
 			
 		if(dumpTypes) { typesDump = sys.io.File.write("./dump/types.stir"); typesDumper = new typing.Dumper(typesDump); }
-		stmtsDump = sys.io.File.write("./dump/stmts.stir"); stmtsDumper = new typing.Dumper(stmtsDump);
+		if(dumpStmts) { stmtsDump = sys.io.File.write("./dump/stmts.stir"); stmtsDumper = new typing.Dumper(stmtsDump); }
+		stdlibDump = sys.io.File.write("./dump/stdlib.stir"); stdlibDumper = new typing.Dumper(stdlibDump);
 		try {
-			testProject("stdlib", {
+			final stdlib = testProject("stdlib", {
 				isStdlib: true,
 				pass1: true,
 				pass2: true
 			});
 
-			for(type in [
+			/*for(type in [
 				typing.Pass2.STD_Int,
 				typing.Pass2.STD_Dec,
+				typing.Pass2.STD_Char,
+				typing.Pass2.STD_Bool,
 				typing.Pass2.STD_Str
 			].concat(typing.Pass2.STD_Array.t._match(
 				at(TMulti(types)) => types,
@@ -170,21 +178,32 @@ class Main {
 				at(TMulti(types)) => types,
 				_ => throw "bad"
 			))) type.t._match(
-				at(TConcrete(decl is typing.Class) | TModular({t: TConcrete(decl is typing.Class)}, _)) => {
+				at(TConcrete(decl) | TModular({t: TConcrete(decl)}, _)) => {
 					stmtsDumper.dump(decl);
 					stmtsDumper.nextLine();
 					stmtsDumper.nextLine();
 				},
 				_ => throw "???"+type
-			);
+			);*/
+			
+			final files = stdlib.allFiles();
+			for(i => file in files) {
+				stdlibDumper.dump(file);
+				stdlibDumper.nextLine();
+				stdlibDumper.nextLine();
+				stdlibDumper.nextLine();
+			}
+
 			nl();
 			testProject("star", {pass1: true, pass2: true});
 		} catch(e: haxe.Exception) {
 			if(dumpTypes) typesDump.close();
-			stmtsDump.close();
+			if(dumpStmts) stmtsDump.close();
+			stdlibDump.close();
 			hl.Api.rethrow(e);
 		}
 		if(dumpTypes) typesDump.close();
-		stmtsDump.close();
+		if(dumpStmts) stmtsDump.close();
+		stdlibDump.close();
 	}
 }

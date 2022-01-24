@@ -9,7 +9,7 @@ enum Effect {
 
 typedef Entries = ImmutableMap<TypeVar, IEffects>;
 
-@:publicFields @:structInit class _Effects {
+@:publicFields @:structInit class __Effects {
 	final adds: Entries;
 	final removes: Entries;
 
@@ -17,10 +17,14 @@ typedef Entries = ImmutableMap<TypeVar, IEffects>;
 		this.adds = adds;
 		this.removes = removes;
 	}
+
+	@:keep function toString() {
+		return 'Effects{ adds: $adds, removes: $removes }';
+	}
 }
 
 @:forward
-abstract Effects(_Effects) from _Effects {
+abstract Effects(__Effects) from __Effects {
 	public static final empty: Effects = {adds: new Entries(), removes: new Entries()};
 
 	public var adds(get, never): Entries; inline function get_adds() return this.adds;

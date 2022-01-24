@@ -552,7 +552,8 @@ class TypeVar extends AnyFullTypeDecl {
 	// Effects tracking
 
 	function trackEffectsIn(ctx: Ctx): Null<Effects> {
-		throw "NYI!";
+		return null;
+		//return Effects.empty.add(this, ETypevar(this, ctx));
 	}
 
 	function applyArgsTrackEffects(args: Array<Type>, ctx: Ctx): Null<Tuple2<Type, Effects>> {
@@ -923,11 +924,31 @@ class TypeVar extends AnyFullTypeDecl {
 			},
 			_ => {}
 		);
-
+		
 		for(parent in parents) {
 			candidates.pushAll(parent.findCast(ctx, target, from, cache));
 		}
+		
+		rule._and(cond => {
+			candidates.pushAll(cond.findCast(this, ctx, target, from, cache));
+		});
 
+		// TODO: stop being lazy and figure out how tf to fully implement type effects
+		if(candidates.length == 0) {
+			final effects = ctx.addedEffectsFor(this);
+			for(effect in effects) effect._match(
+				at(ETypevar(typevar, ctx2)) => {
+					//trace(typevar);
+					candidates.pushAll(
+						typevar.findCast(ctx, target, from, cache)
+					);
+				},
+				at(EUnion(effects)) => {
+					trace("todo");
+				}
+			);
+		}
+		
 		return candidates;
 	}
 

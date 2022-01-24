@@ -1,5 +1,6 @@
 package typing;
 
+import typing.Effects;
 import typing.Traits;
 import reporting.Diagnostic;
 import typing.Pass2;
@@ -24,6 +25,7 @@ enum Where {
 	var thisType: Type;
 	var locals: Map<String, Local> = [];
 	var labels: Map<String, TStmt> = [];
+	var effects: Effects = Effects.empty;
 
 	var typeDecl(get, never): AnyTypeDecl; private function get_typeDecl(): AnyTypeDecl return where._match(
 		at(WDecl(decl)) => decl,
@@ -235,6 +237,23 @@ enum Where {
 		);
 	}
 
+	function findTypevarOf(typevar: TypeVar): Null<TypeVar> {
+		return where._match(
+			at(WTypevars(typevars)) => {
+				for(tvar => type in typevars) type.t._match(
+					at(TTypeVar(typevar2)) => {
+						if(typevar == typevar2) {
+							return tvar;
+						}
+					},
+					_ => {}
+				);
+				null;
+			},
+			_ => outer._and(o => o.findTypevarOf(typevar))
+		);
+	}
+
 	function allowsThis() {
 		return switch where {
 			case WDecl(d): !(d is Module);
@@ -293,5 +312,16 @@ enum Where {
 			at(WTypeCascade) => throw "todo",
 			at(WTypevars(_)) => outer.description()
 		);
+	}
+
+	function addedEffectsFor(typevar: TypeVar) {
+		return if(effects == Effects.empty) {
+			outer._andOr(
+				o => o.addedEffectsFor(typevar),
+				new IEffects()
+			);
+		} else {
+			effects.addsFor(typevar);
+		}
 	}
 }

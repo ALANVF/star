@@ -426,6 +426,10 @@ protocol TypeDecl of AnyTypeDecl {
 
 
 	;== Effects tracking
+
+	on [trackEffectsIn: ctx (Ctx)] (Maybe[Effects]) {
+		return Maybe[none]
+	}
 	
 	on [applyArgs: args (Array[Type]) trackEffectsIn: ctx (Ctx)] (Maybe[Tuple[Type, Effects]]) {
 		if args.length != params.length => return Maybe[none]

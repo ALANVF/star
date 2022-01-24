@@ -333,11 +333,45 @@ abstract class TypeDecl extends AnyFullTypeDecl {
 	// Effects tracking
 
 	function trackEffectsIn(ctx: Ctx): Null<Effects> {
-		throw "NYI!";
+		return null;
 	}
 
 	function applyArgsTrackEffects(args: Array<Type>, ctx: Ctx): Null<Tuple2<Type, Effects>> {
-		throw "NYI!";
+		if(args.length != params.length) return null;
+
+		var effects = Effects.empty;
+		var tctx: TypeVarCtx = [];
+		var params2 = [];
+
+		// Expand all typevars by binding the arg to the param
+		params._for(i => param, { final arg = args[i];
+			arg.bindTo(param, tctx)._match(
+				at(type!) => {
+					params2.push(type);
+				},
+				_ => {
+					return null;
+				}
+			);
+		});
+
+		// then gather up the effects from the expanded params
+		var ctx2 = ctx.innerTypevars(tctx);
+		for(type in params2) {
+			type.trackEffectsIn(ctx2)._match(
+				at(effects2!) => {
+					effects += effects2;
+				},
+				_ => {
+					return null;
+				}
+			);
+		}
+		
+		return {
+			_1: {t: TInstance(this, params2, tctx), span: null},
+			_2: effects
+		};
 	}
 
 

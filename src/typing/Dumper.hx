@@ -1589,7 +1589,9 @@ class Dumper {
 		},
 		at(SForRange(lvar, start, stop, by, cond, label, body)) => {
 			write("(for ");
-			dump(lvar);
+			lvar._and(lv => {
+				dump(lv);
+			});
 			write(' :${start._1.getName().substr(4).toLowerCase()} ');
 			dump(start._2);
 			write(' :${stop._1.getName().substr(4).toLowerCase()} ');
@@ -1744,7 +1746,33 @@ class Dumper {
 
 	overload function dump(tcase: TaggedCase) {
 		write("(has [");
-		// ...
+		
+		tcase._match(
+			at(mc is MultiTaggedCase) => {
+				writeLines(mc.params, param -> {
+					write(param.label.name+": "+param.name.name+" ");
+					dump(param.type, Nil);
+				});
+				nextLine();
+			},
+			at(sc is SingleTaggedCase) => {
+				write(sc.name.name);
+			},
+			_ => throw "bad"
+		);
+
+		write("]");
+
+		tcase.typedAssoc._and(assoc => {
+			write(" => (");
+			dump(assoc);
+			write(")");
+		});
+
+		tcase.typedInit._and(init => {
+			writeLines(init, s -> dump(s));
+		});
+
 		write(")");
 	}
 
@@ -2278,6 +2306,62 @@ class Dumper {
 			write(" [");
 			write(decl.params, " ", p -> dump(p, cache));
 			write("]");
+		}
+	}
+
+
+	overload function dump(file: File) {
+		write("; " + file.path);
+		nextLine();
+		nextLine();
+
+		for(imp in file.imported) {
+			write("(use ");
+			
+			if(imp.types.length > 0) {
+				imp.types._match(
+					at([type]) => {
+						dump(type, Nil);
+					},
+					at(types) => {
+						write("[");
+						writeLines(types, t -> dump(t, Nil));
+						write("]");
+					}
+				);
+				write(" :from ");
+			}
+
+			imp.from._match(
+				at(decl is AnyTypeDecl) => {
+					dump(decl.thisType, Nil);
+				},
+				at(type is Type) => {
+					dump(type, Nil);
+				},
+				_ => {
+					write("???");
+				}
+			);
+
+			write(")");
+			nextLine();
+		}
+
+		for(decl in file.decls.allValues().sorted((d1, d2) -> d1.span.start.compare(d2.span.start))) {
+			nextLine();
+
+			dump(decl);
+
+			nextLine();
+		}
+
+		for(cat in file.categories) {
+			nextLine();
+
+			dump(cat);
+			
+			nextLine();
 		}
 	}
 }

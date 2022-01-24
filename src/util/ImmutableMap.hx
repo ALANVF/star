@@ -51,6 +51,10 @@ abstract BaseIMap<K, V>(_IMap<K, V>) from _IMap<K, V> {
 	public inline function keyValueIterator(): KeyValueIterator<K, V> {
 		return new IMapKVIter<K, V>(this);
 	}
+
+	public function toString() {
+		return "{" + _default_toString(this) + "}";
+	}
 }
 
 
@@ -73,6 +77,12 @@ private function _enum_set<K: EnumValue, V>(imap: _IMap<K, V>, key: K, value: V)
 		if(k.equals(key)) Pair(k, value, rest)
 		else Pair(k, v, _enum_set(rest, key, value)),
 	at(End) => Pair(key, value, End)
+);
+
+private function _enum_toString<K: EnumValue, V>(imap: _IMap<K, V>): String return Util._match(imap,
+	at(Pair(k, v, End)) => '$k => $v',
+	at(Pair(k, v, rest)) => '$k => $v, '+_enum_toString(rest),
+	at(End) => ""
 );
 
 @:generic
@@ -100,6 +110,11 @@ abstract _ImmutableEnumMap<K: EnumValue, V>(_IMap<K, V>) from _IMap<K, V> {
 
 	public inline function keyValueIterator(): KeyValueIterator<K, V> {
 		return new IMapKVIter<K, V>(this);
+	}
+
+
+	public function toString() {
+		return "{" + _enum_toString(this) + "}";
 	}
 }
 
@@ -135,6 +150,13 @@ private function _default_set<K, V>(imap: _IMap<K, V>, key: K, value: V): _IMap<
 );
 
 
+private function _default_toString<K, V>(imap: _IMap<K, V>): String return Util._match(imap,
+	at(Pair(k, v, End)) => '$k => $v',
+	at(Pair(k, v, rest)) => '$k => $v, '+_default_toString(rest),
+	at(End) => ""
+);
+
+
 //@:multiType(@:followWithAbstracts K)
 @:generic
 abstract ImmutableMap<K, V>(BaseIMap<K, V>) from _IMap<K, V> {
@@ -156,6 +178,8 @@ abstract ImmutableMap<K, V>(BaseIMap<K, V>) from _IMap<K, V> {
 
 	
 	public inline function keyValueIterator() return this.keyValueIterator();
+
+	public inline function toString() return this.toString();
 
 	
 	//@:to public static inline function toEnumIMap<K: EnumValue, V>(m: BaseIMap<K, V>): ImmutableEnumMap<K,V> return new ImmutableEnumMap<K,V>();
