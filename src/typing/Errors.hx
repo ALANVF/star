@@ -79,7 +79,7 @@ class Errors {
 				}),
 				Spanned({
 					span: decl.span,
-					message: 'For ${decl.declName()} `$name`',
+					message: 'In ${decl.declName()} `$name`',
 					isSecondary: true
 				})
 			]
@@ -114,7 +114,7 @@ class Errors {
 				}),
 				Spanned({
 					span: decl.span,
-					message: 'For ${decl.declName()} `$name`',
+					message: 'In ${decl.declName()} `$name`',
 					isSecondary: true
 				})
 			]
@@ -149,7 +149,7 @@ class Errors {
 				}),
 				Spanned({
 					span: decl.span,
-					message: 'For ${decl.declName()} `$name`',
+					message: 'In ${decl.declName()} `$name`',
 					isSecondary: true
 				})
 			]

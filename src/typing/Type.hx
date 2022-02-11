@@ -279,7 +279,10 @@ class Type implements ITypeable {
 					cache += decl.thisType;
 					getFullPath(decl).value() + '.[${params.joinMap(", ", p -> p.fullName(cache))}]';
 				
-				case TTypeVar(tvar): tvar.fullName(cache);
+				case TTypeVar(tvar): '${tvar.lookup._match(
+					at(it is ITypeable) => it.fullName(cache + this),
+					_ => Std.string(tvar.lookup)
+				)}#'+tvar.fullName(cache);
 				
 				case TThis(decl): 'This (${decl.fullName(cache)})';
 				
@@ -1186,6 +1189,12 @@ class Type implements ITypeable {
 			},
 			at([TThis(decl), _]) => {
 				if(decl.hasParentType(onto) || onto.hasChildType(decl.thisType)) {
+					decl.thisType.t._match(
+						at(TConcrete(d), when(d.params.length > 0)) => {
+							return d.applyArgs(d.params).bindTo(onto, ctx);
+						},
+						_ => {}
+					);
 					this;
 				} else {
 					null;
@@ -1254,9 +1263,29 @@ class Type implements ITypeable {
 				);
 			} else null,
 
-			at([TApplied(_, _), TInstance(_, _, _)]) => {
+			at([TApplied(_, _), TInstance(decl, _, _)]) => {
 				this.simplify()._match(
-					at({t: TApplied({t: TMulti(_)}, _)}) => throw "todo",
+					at({t: TApplied({t: TMulti(types)}, args), span: s}) => {
+						/*types.find(t -> t.t._match(
+							at(TConcrete(d)) => (d.hasParentDecl(decl) || decl.hasChildDecl(d)),
+							_ => false
+						))._andOr(ty => {
+							return ty.applyArgs(args)._and(t => t.bindTo(onto, ctx));
+						}, {
+							
+						});*/
+						leastSpecific(
+							types
+							/*.filter(t -> t.t._match(
+								at(TConcrete(d)) => (d.hasParentDecl(decl) || decl.hasChildDecl(d)),
+								_ => false
+							))*/
+							.filterMap(t -> t.applyArgs(args))
+						)._match(
+							at([ty]) => ty.bindTo(onto, ctx),
+							at(tys) => throw "todo "+tys.map(t->t.fullName())+" "+onto.fullName()
+						);
+					},
 					at(ty) => ty.bindTo(onto, ctx)
 				);
 			},
@@ -1276,7 +1305,8 @@ class Type implements ITypeable {
 			},
 
 			at([TInstance(decl1, params1, tctx1), TInstance(decl2, params2, tctx2)]) => {
-				if((decl1 == decl2 || decl1.hasRefinementDecl(decl2)) && params1.length == params2.length) {
+				//trace(decl1.refinees, decl2.refinees);
+				if((decl1 == decl2 || decl2.hasRefinementDecl(decl1)) && params1.length == params2.length) {
 					final tctx: TypeVarCtx = [];
 					final params = [];
 					params1._for(i => param1, {
@@ -1296,14 +1326,32 @@ class Type implements ITypeable {
 						ty;
 					});
 				} else {
-					if(decl1.hasParentDecl(decl2)) {
+					if(decl1.hasParentDecl(decl2) || decl2.hasChildDecl(decl1)
+						|| decl1.refinements.some(ref -> decl2.hasChildDecl(ref))
+						|| decl2.refinees.some(ref -> decl1.hasParentDecl(ref))) {
 						/*if(decl1.name.name=="Func") {
 							trace(cast(decl1, Namespace).parents.filterMap(p->p.bindTo(onto, ctx.copy())).map(p->p.getFrom(this).fullName()));//.getFrom(this)
 						}*/
 						decl1._match(
 							// maybe use Protocol?
 							at(ns is Namespace) => {
-								ns.parents.findMap(p -> p.bindTo(onto, ctx))._and(res => res.getFrom(this));
+								for(p in ns.parents) {
+									p = p.simplify();
+									final ctx2 = ctx.copy();
+									p.bindTo(onto, ctx2)._and(res => {
+										trace(res.fullName());
+										res = res.getFrom(this);
+										trace(res.fullName());
+										for(k => v in ctx2) {
+											if(!ctx.exists(k)) {
+												trace(k.thisType.getFrom(this).fullName(),v.getFrom(this).fullName());
+												ctx[k]=v.getFrom(this);
+											}
+										}
+										return res;
+									});
+								}
+								null;
 							},
 							at(da is DirectAlias) => {
 								da.type.getInTCtx(tctx1).bindTo(onto, ctx);
@@ -1311,6 +1359,7 @@ class Type implements ITypeable {
 							_ => throw "todo"
 						);
 					} else {
+						trace(decl1.fullName(), decl2.fullName());
 						null;
 					}
 				};
@@ -2061,6 +2110,15 @@ class Type implements ITypeable {
 				);
 			},
 			at(TApplied({t: TConcrete(decl)}, args)) => {
+				args = args.map(a -> a.simplify());
+				if(!decl.acceptsArgs(args)) return null;
+				decl.applyArgs(args)._match(
+					at(res!) => { res.span = span; res; },
+					_ => throw 'error: type `${decl.fullName()}` does not accept provided arguments [${args.joinMap(", ", a -> a.fullName())}] ${span._and(s=>s.display())}'
+				);
+			},
+			// TODO
+			at(TApplied({t: TThis(decl)}, args)) => {
 				args = args.map(a -> a.simplify());
 				if(!decl.acceptsArgs(args)) return null;
 				decl.applyArgs(args)._match(

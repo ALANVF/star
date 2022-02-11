@@ -714,7 +714,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 				case "asm": texpr;
 				case "kind_id": {
 					e: EKindId(texpr),
-					t: null
+					t: {t: STD_Int.t, span: s}
 				};
 				case "kind_slot": {
 					e: switch texpr.e {
@@ -1898,6 +1898,7 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 				}
 			})*/; // BUG: hasParentType has false positives?!?!!??!?!?!!?!?! probably related to refinements
 			//trace(t.fullName(), tcat.fullName(), categories.map(c->c.fullName()));
+			//trace(categories.map(c->c.fullName()), begin.display());
 			categories._match(
 				at([]) => {
 					ctx.addError(Errors.unknownCategory(ctx, false, t, tcat, cat.span()));
@@ -1917,10 +1918,14 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 							_1: Multi(overloads.map(ov -> ov.kind), names, args),
 							_2: overloads.map(ov -> {
 								final res = ov.ret.getFrom(t);
-								ov.tctx._andOr(
-									tctx => res.getInTCtx(tctx),
-									res
-								);
+								final tctx:TypeVarCtx = ov.tctx._or(new TypeVarCtx());
+								/*trace(
+									tctx.display(),
+									t.bindTo(ov.kind.getMethodOwner(), tctx)._and(ty=>ty.fullName()),
+									tctx.display()
+								);*/
+								t.bindTo(ov.kind.getMethodOwner(), tctx);
+								res.getInTCtx(tctx).getFrom(t.getInTCtx(tctx));
 							}).unique()._match(
 								at([]) => null,
 								at([ret]) => ret,
@@ -1941,7 +1946,7 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 				_ => Type.mostSpecificBy(
 					Type.reduceOverloadsBy(
 						categories
-							.map(f -> {cat: f, mth: f.findMultiInst(ctx, names, ctx.typeDecl).reduceBySender()})
+							.map(f -> {cat: f, mth: f.findMultiInst(ctx, names, ctx.typeDecl)})
 							.filter(l -> l.mth.length != 0),
 						f -> f.cat.thisType.getMostSpecific()
 					),
@@ -1960,10 +1965,85 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 						ctx.addError(Errors.unknownMethod(ctx, false, t, names, begin, categories));
 						null;
 					},
-					at([kinds]) => {
-						_1: Multi(kinds.mth, names, args),
-						_2: null
-					},
+					at([kinds]) => kinds.mth.reduceOverloads(t, args)._match(
+						at([]) => {
+							ctx.addError(Errors.unknownMethod(ctx, false, t, names, args, labels[0].span(), categories));
+							null;
+						},
+						at(overloads) => {
+							_1: Multi(overloads.map(ov -> ov.kind), names, args),
+							_2: overloads.map(ov -> {
+								var res = ov.ret.getFrom(t);
+								var tcat = kinds.cat.thisType.getLeastSpecific().simplify();
+								final tctx:TypeVarCtx = ov.tctx._or(new TypeVarCtx());
+								res = res.getInTCtx(tctx);
+								trace(t.fullName());
+								trace(tcat.fullName());
+								var t2;
+								trace(
+									tctx.display(),
+									(t2=t.bindTo(tcat, tctx))._match(
+										at(null) => null,
+										at(res={t: TInstance(decl, params, tctx2)}) => {
+											final rs = [for(ref in decl.refinees) {
+												ref.applyArgs(params).nonNull()._match(
+													at({t: TInstance(_, _, tctx3)}) => tctx3,
+													_ => throw "bad"
+												);
+											}];
+
+											for(r in rs) {
+												//trace(r.display());
+												for(k => v in r) {
+													tctx2[k] = v;
+												}
+											}
+											for(k => v in tctx) {
+												var v2 = v.getInTCtx(tctx2);
+												//for(r in rs) v2 = v2.getInTCtx(r);
+												tctx[k] = v2;
+											}
+											for(k=>v in tctx2) {
+												tctx[k]=v;
+											}
+											res.fullName() + " " + tctx2.display();
+										},
+										at(res) => res.fullName()
+									),
+									tctx.display()
+								);
+								
+								//res = res.getInTCtx(tctx);
+								t2._and(ty2 => {
+									tcat=tcat.getFrom(ty2);
+									res = res.getFrom(ty2).getFrom(tcat);
+								});
+								res=res.getFrom(t.getInTCtx(tctx));
+								res.t._match(
+									at(TTypeVar(tv)) => {
+										tctx[tv]._and(t => {
+											t.t._match(
+												at(TTypeVar({lookup: _ is Category})) => {
+													trace("?!?!?!?!?!?!?!");
+												},
+												_ => {}
+											);
+											trace("!!!", t);
+											res = t;
+										});
+									},
+									_ => {}
+								);
+								trace(res.fullName());
+								Sys.println("");
+								res;
+							}).unique()._match(
+								at([]) => null,
+								at([ret]) => ret,
+								at(rets) => {t: TMulti(rets), span: null}
+							)
+						}
+					),
 					at(kinds) => if(kinds.every(k -> k.mth.length == 0)) {
 						throw 'error: value of type `${t.fullName()}` does not respond to method `[${names.joinMap(" ", n -> '$n:')}]` in any categories of: `${categories.map(f -> f.fullName()).join(", ")}`! ${begin.display()}';
 					} else {
