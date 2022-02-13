@@ -1,8 +1,6 @@
 package typing;
 
-import typing.Traits;
-import reporting.Severity;
-import reporting.Diagnostic;
+import errors.Error;
 
 private final EMPTY_ARRAY: Array<Member> = [];
 
@@ -27,22 +25,10 @@ class TaggedKind extends Kind {
 		}
 
 		if(ast.repr.isSome()) {
-			kind.errors.push(new Diagnostic({
-				severity: Severity.ERROR,
-				message: "Invalid declaration",
-				info: [
-					Spanned({
-						span: ast.repr.value().span(),
-						message: "Tagged kinds may not have an underlaying type",
-						isPrimary: true
-					}),
-					Spanned({
-						span: kind.span,
-						message: 'For kind `${kind.name.name}`',
-						isSecondary: true
-					})
-				]
-			}));
+			kind.errors.push(Type_NoTaggedKindRepr(
+				kind,
+				ast.repr.value().span()
+			));
 		}
 
 		if(ast.parents.isSome()) {
@@ -52,15 +38,15 @@ class TaggedKind extends Kind {
 		}
 
 		for(attr => span in ast.attrs) switch attr {
-			case IsHidden(_) if(kind.hidden.isSome()): kind.errors.push(Errors.duplicateAttribute(kind, ast.name.name, "hidden", span));
+			case IsHidden(_) if(kind.hidden.isSome()): kind.errors.push(Type_DuplicateAttribute(kind, ast.name.name, "hidden", span));
 			case IsHidden(None): kind.hidden = Some(None);
 			case IsHidden(Some(outsideOf)): kind.hidden = Some(Some(kind.makeTypePath(outsideOf)));
 
-			case IsFriend(_) if(kind.friends.length != 0): kind.errors.push(Errors.duplicateAttribute(kind, ast.name.name, "friend", span));
+			case IsFriend(_) if(kind.friends.length != 0): kind.errors.push(Type_DuplicateAttribute(kind, ast.name.name, "friend", span));
 			case IsFriend(One(friend)): kind.friends.push(kind.makeTypePath(friend));
 			case IsFriend(Many(_, friends, _)): for(friend in friends) kind.friends.push(kind.makeTypePath(friend));
 
-			case IsSealed(_) if(kind.sealed.isSome()): kind.errors.push(Errors.duplicateAttribute(kind, ast.name.name, "sealed", span));
+			case IsSealed(_) if(kind.sealed.isSome()): kind.errors.push(Type_DuplicateAttribute(kind, ast.name.name, "sealed", span));
 			case IsSealed(None): kind.sealed = Some(None);
 			case IsSealed(Some(outsideOf)): kind.sealed = Some(Some(kind.makeTypePath(outsideOf)));
 
@@ -100,7 +86,7 @@ class TaggedKind extends Kind {
 			case DDeinit(d) if(kind.staticDeinit.isSome()): kind.staticDeinit = Some(StaticDeinit.fromAST(kind, d));
 			case DDeinit(d): kind.deinit = Some(Deinit.fromAST(kind, d));
 			
-			default: kind.errors.push(Errors.unexpectedDecl(kind, ast.name.name, decl));
+			default: kind.errors.push(Type_UnexpectedDecl(kind, decl));
 		}
 
 		return kind;

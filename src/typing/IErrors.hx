@@ -1,10 +1,10 @@
 package typing;
 
-import reporting.Diagnostic;
+import errors.Error;
 
 interface IErrors {
-	final errors: Array<Diagnostic>;
+	final errors: Array<Error>;
 
 	function hasErrors(): Bool;
-	function allErrors(): Array<Diagnostic>;
+	function allErrors(): Array<Error>;
 }

@@ -16,7 +16,7 @@ class Reader {
 	}
 
 	inline function hasNext() {
-		return offset != length;
+		return offset < length;
 	}
 
 	inline function hasNextAt(index: Int) {

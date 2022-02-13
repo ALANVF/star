@@ -28,15 +28,15 @@ class DirectAlias extends Alias {
 		}
 
 		for(attr => span in ast.attrs) switch attr {
-			case IsHidden(_) if(alias.hidden.isSome()): alias.errors.push(Errors.duplicateAttribute(alias, ast.name.name, "hidden", span));
+			case IsHidden(_) if(alias.hidden.isSome()): alias.errors.push(Type_DuplicateAttribute(alias, ast.name.name, "hidden", span));
 			case IsHidden(None): alias.hidden = Some(None);
 			case IsHidden(Some(outsideOf)): alias.hidden = Some(Some(alias.makeTypePath(outsideOf)));
 
-			case IsFriend(_) if(alias.friends.length != 0): alias.errors.push(Errors.duplicateAttribute(alias, ast.name.name, "friend", span));
+			case IsFriend(_) if(alias.friends.length != 0): alias.errors.push(Type_DuplicateAttribute(alias, ast.name.name, "friend", span));
 			case IsFriend(One(friend)): alias.friends.push(alias.makeTypePath(friend));
 			case IsFriend(Many(_, friends, _)): for(friend in friends) alias.friends.push(alias.makeTypePath(friend));
 			
-			case IsNoinherit: alias.errors.push(Errors.invalidAttribute(alias, ast.name.name, "noinherit", span));
+			case IsNoinherit: alias.errors.push(Type_InvalidAttribute(alias, ast.name.name, "noinherit", span));
 		}
 
 		return alias;

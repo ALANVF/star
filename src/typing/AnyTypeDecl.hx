@@ -1,12 +1,12 @@
 package typing;
 
 import text.Span;
-import reporting.Diagnostic;
+import errors.Error;
 import parsing.ast.Ident;
 
 @:build(util.Auto.build())
 abstract class AnyTypeDecl implements ITypeable implements ITypeLookupDecl {
-	final errors: Array<Diagnostic> = [];
+	final errors: Array<Error> = [];
 	final span: Span;
 	final name: Ident;
 	final lookup: ITypeLookup;

@@ -1,7 +1,7 @@
 package typing;
 
 import typing.Pass2.STD_MultiKind;
-import reporting.Diagnostic;
+import errors.Error;
 import text.Span;
 import typing.Traits;
 
@@ -50,12 +50,12 @@ class TypeVar extends AnyFullTypeDecl {
 		typevar.parents = ast.parents.doOrElse(p => p.parents.map(x -> typevar.makeTypePath(x)), []);
 		
 		for(attr => span in ast.attrs) switch attr {
-			case IsNative(_, _, _) if(typevar.native != null): typevar.errors.push(Errors.duplicateAttribute(typevar, ast.name.name, "native", span));
+			case IsNative(_, _, _) if(typevar.native != null): typevar.errors.push(Type_DuplicateAttribute(typevar, ast.name.name, "native", span));
 			case IsNative(_, [{label: {name: "repr"}, expr: ELitsym(_, repr)}], _): switch repr {
 				case "void": typevar.native = NVoid;
 				case "bool": typevar.native = NBool;
 				case "voidptr": typevar.native = NVoidPtr;
-				default: typevar.errors.push(Errors.invalidAttribute(typevar, typevar.name.name, "native", span));
+				default: typevar.errors.push(Type_InvalidAttribute(typevar, typevar.name.name, "native", span));
 			}
 			case IsNative(_, [
 				{label: {name: "repr"}, expr: ELitsym(_, "ptr")},
@@ -67,7 +67,7 @@ class TypeVar extends AnyFullTypeDecl {
 			], _): switch bits {
 				case 32: typevar.native = NDec32;
 				case 64: typevar.native = NDec64;
-				default: typevar.errors.push(Errors.invalidAttribute(typevar, typevar.name.name, "native", span));
+				default: typevar.errors.push(Type_InvalidAttribute(typevar, typevar.name.name, "native", span));
 			}
 			case IsNative(_, [
 				{label: {name: "repr"}, expr: ELitsym(_, "int")},
@@ -78,9 +78,9 @@ class TypeVar extends AnyFullTypeDecl {
 				case 16: typevar.native = signed ? NInt16 : NUInt16;
 				case 32: typevar.native = signed ? NInt32 : NUInt32;
 				case 64: typevar.native = signed ? NInt64 : NUInt64;
-				default: typevar.errors.push(Errors.invalidAttribute(typevar, typevar.name.name, "native", span));
+				default: typevar.errors.push(Type_InvalidAttribute(typevar, typevar.name.name, "native", span));
 			}
-			case IsNative(_, _, _): typevar.errors.push(Errors.invalidAttribute(typevar, typevar.name.name, "native", span));
+			case IsNative(_, _, _): typevar.errors.push(Type_InvalidAttribute(typevar, typevar.name.name, "native", span));
 			
 			case IsFlags: typevar._isFlags = true;
 			
@@ -112,7 +112,7 @@ class TypeVar extends AnyFullTypeDecl {
 				case DDeinit(d) if(typevar.staticDeinit.isSome()): typevar.staticDeinit = Some(StaticDeinit.fromAST(typevar, d));
 				case DDeinit(d): typevar.deinit = Some(Deinit.fromAST(typevar, d));
 				
-				default: typevar.errors.push(Errors.unexpectedDecl(typevar, ast.name.name, decl));
+				default: typevar.errors.push(Type_UnexpectedDecl(typevar, decl));
 			}
 		}
 
@@ -152,13 +152,13 @@ class TypeVar extends AnyFullTypeDecl {
 				} else {
 					// errors prob shouldn't be attatched to *this* type decl, but eh
 					if(params.length == 0) {
-						errors.push(Errors.invalidTypeApply(span, "Attempt to apply arguments to a non-parametric type"));
+						errors.push(Type_InvalidTypeApply(span, "Attempt to apply arguments to a non-parametric type"));
 						null;
 					} else if(args.length > params.length) {
-						errors.push(Errors.invalidTypeApply(span, "Too many arguments"));
+						errors.push(Type_InvalidTypeApply(span, "Too many arguments"));
 						null;
 					} else if(args.length < params.length) {
-						errors.push(Errors.invalidTypeApply(span, "Not enough arguments"));
+						errors.push(Type_InvalidTypeApply(span, "Not enough arguments"));
 						null;
 					} else {
 						{t: TApplied({t: TThis(this), span: span}, args), span: span};

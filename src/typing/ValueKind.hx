@@ -33,15 +33,15 @@ class ValueKind extends Kind {
 		}
 
 		for(attr => span in ast.attrs) switch attr {
-			case IsHidden(_) if(kind.hidden.isSome()): kind.errors.push(Errors.duplicateAttribute(kind, ast.name.name, "hidden", span));
+			case IsHidden(_) if(kind.hidden.isSome()): kind.errors.push(Type_DuplicateAttribute(kind, ast.name.name, "hidden", span));
 			case IsHidden(None): kind.hidden = Some(None);
 			case IsHidden(Some(outsideOf)): kind.hidden = Some(Some(kind.makeTypePath(outsideOf)));
 
-			case IsFriend(_) if(kind.friends.length != 0): kind.errors.push(Errors.duplicateAttribute(kind, ast.name.name, "friend", span));
+			case IsFriend(_) if(kind.friends.length != 0): kind.errors.push(Type_DuplicateAttribute(kind, ast.name.name, "friend", span));
 			case IsFriend(One(friend)): kind.friends.push(kind.makeTypePath(friend));
 			case IsFriend(Many(_, friends, _)): for(friend in friends) kind.friends.push(kind.makeTypePath(friend));
 
-			case IsSealed(_) if(kind.sealed.isSome()): kind.errors.push(Errors.duplicateAttribute(kind, ast.name.name, "sealed", span));
+			case IsSealed(_) if(kind.sealed.isSome()): kind.errors.push(Type_DuplicateAttribute(kind, ast.name.name, "sealed", span));
 			case IsSealed(None): kind.sealed = Some(None);
 			case IsSealed(Some(outsideOf)): kind.sealed = Some(Some(kind.makeTypePath(outsideOf)));
 
@@ -74,13 +74,13 @@ class ValueKind extends Kind {
 
 			case DOperator(o): Operator.fromAST(kind, o).forEach(x -> kind.operators.push(x));
 
-			case DDefaultInit(_) if(kind.staticInit.isSome()): kind.errors.push(Errors.duplicateDecl(kind, ast.name.name, decl));
+			case DDefaultInit(_) if(kind.staticInit.isSome()): kind.errors.push(Type_DuplicateDecl(kind, decl));
 			case DDefaultInit(i): kind.staticInit = Some(StaticInit.fromAST(kind, i));
 			
 			case DDeinit(d) if(kind.staticDeinit.isSome()): kind.staticDeinit = Some(StaticDeinit.fromAST(kind, d));
 			case DDeinit(d): kind.deinit = Some(Deinit.fromAST(kind, d));
 			
-			default: kind.errors.push(Errors.unexpectedDecl(kind, ast.name.name, decl));
+			default: kind.errors.push(Type_UnexpectedDecl(kind, decl));
 		}
 
 		return kind;

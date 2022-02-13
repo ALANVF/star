@@ -48,7 +48,7 @@ class MultiInit extends Init {
 		}
 		
 		for(attr => span in ast.attrs) switch attr {
-			case IsHidden(_) if(init.hidden != null): init.errors.push(Errors.duplicateAttribute(init, init.fuzzyName, "hidden", span));
+			case IsHidden(_) if(init.hidden != null): init.errors.push(Type_DuplicateAttribute(init, init.fuzzyName, "hidden", span));
 			case IsHidden(None): init.hidden = None;
 			case IsHidden(Some(outsideOf)): init.hidden = Some(decl.makeTypePath(outsideOf));
 
@@ -56,7 +56,7 @@ class MultiInit extends Init {
 
 			case IsUnordered: init.isUnordered = true;
 
-			case IsNative(_) if(init.native != null): init.errors.push(Errors.duplicateAttribute(init, init.fuzzyName, "native", span));
+			case IsNative(_) if(init.native != null): init.errors.push(Type_DuplicateAttribute(init, init.fuzzyName, "native", span));
 			case IsNative(sym): init.native = sym;
 
 			case IsAsm: init.isAsm = true;

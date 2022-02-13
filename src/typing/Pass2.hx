@@ -4,7 +4,7 @@ import typing.Pattern.PatternKind;
 import typing.EmptyMethod;
 import parsing.ast.Ident;
 import text.Span;
-import reporting.Diagnostic;
+import errors.Error;
 import typing.Traits;
 import Util.detuple2;
 import parsing.ast.Expr as UExpr;
@@ -450,7 +450,7 @@ static function resolveMethod(ctx: Ctx, method: Method) {
 					continue;
 				} else methodCtx.locals[name]._match(
 					at(local!) => {
-						ctx.addError(Errors.duplicateParam(multi, name, local.span, span));
+						ctx.addError(Type_DuplicateParam(multi, name, local.span, span));
 					},
 					_ => {
 						methodCtx.locals[name] = new LocalParam(
@@ -495,7 +495,7 @@ static function resolveStaticMethod(ctx: Ctx, method: StaticMethod) {
 					continue;
 				} else methodCtx.locals[name]._match(
 					at(local!) => {
-						ctx.addError(Errors.duplicateParam(multi, name, local.span, span));
+						ctx.addError(Type_DuplicateParam(multi, name, local.span, span));
 					},
 					_ => {
 						methodCtx.locals[name] = new LocalParam(
@@ -540,7 +540,7 @@ static function resolveInit(ctx: Ctx, init: Init) {
 					continue;
 				} else initCtx.locals[name]._match(
 					at(local!) => {
-						ctx.addError(Errors.duplicateParam(multi, name, local.span, span));
+						ctx.addError(Type_DuplicateParam(multi, name, local.span, span));
 					},
 					_ => {
 						initCtx.locals[name] = new LocalParam(
@@ -655,7 +655,7 @@ static function resolveTaggedCase(ctx: Ctx, tcase: TaggedCase) {
 						continue;
 					} else initCtx.locals[name]._match(
 						at(local!) => {
-							ctx.addError(Errors.duplicateParam(tcase, name, local.span, span));
+							ctx.addError(Type_DuplicateCaseParam(tcase, name, local.span, span));
 						},
 						_ => {
 							initCtx.locals[name] = new LocalParam(
@@ -692,7 +692,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 			ctx.findLocal(name)._match(
 				at(local!) => { e: EName(name, local), t: local.type },
 				_ => {
-					ctx.addError(Errors.unknownFieldOrVar(ctx, name, span));
+					ctx.addError(Type_UnknownFieldOrVar(ctx, name, span));
 					invalidExpr();
 				}
 			),
@@ -833,7 +833,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 				else decl is Category ? decl.thisType.t : TThis(decl); // hacky thingy because categories are dumb
 			}, span: span} };
 			else {
-				ctx.addError(Errors.thisNotAllowed(ctx, span));
+				ctx.addError(Type_ThisNotAllowed(ctx, span));
 				invalidExpr();
 			}
 		},
@@ -989,7 +989,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 					t: kind.retType()._and(ret => ret.getFrom(t))
 				},
 				_ => {
-					ctx.addError(Errors.unknownGetter(ctx, true, t, name, s));
+					ctx.addError(Type_UnknownGetter(ctx, Static, t, name, s));
 					invalidExpr();
 				}
 			);
@@ -1019,7 +1019,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 			ctx.findLocal(name, 1)._match(
 				at(local!) => { e: EName(name, local), t: local.type },
 				_ => {
-					ctx.addError(Errors.unknownFieldOrVar(ctx, '_.$name', span1.union(span2)));
+					ctx.addError(Type_UnknownFieldOrVar(ctx, '_.$name', span1.union(span2)));
 					invalidExpr();
 				}
 			),
@@ -1035,7 +1035,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 							t: kind.retType()._and(ret => ret.getFrom(t))
 						},
 						_ => {
-							ctx.addError(Errors.unknownGetter(ctx, false, t, name, s));
+							ctx.addError(Type_UnknownGetter(ctx, Instance, t, name, s));
 							invalidExpr();
 						}
 					);
@@ -1071,7 +1071,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 						_ => if(ctx.isPattern()) {
 							{ e: ELazyPrefix(op, rhs) };
 						} else {
-							ctx.addError(Errors.unknownMethod(ctx, t, op2, span));
+							ctx.addError(Type_UnknownMethod(ctx, t, Unary(op2), span));
 							invalidExpr();
 						}
 					);
@@ -1102,7 +1102,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 						_ => if(ctx.isPattern()) {
 							{ e: ELazySuffix(lhs, op) };
 						} else {
-							ctx.addError(Errors.unknownMethod(ctx, t, op2, span));
+							ctx.addError(Type_UnknownMethod(ctx, t, Unary(op2), span));
 							invalidExpr();
 						}
 					);
@@ -1161,12 +1161,12 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 					t = t.getIn(ctx);
 					t.findMultiInst(ctx, [name], ctx.typeDecl, true)._match(
 						at([]) => {
-							ctx.addError(Errors.unknownSetter(ctx, false, t, name, span1));
+							ctx.addError(Type_UnknownSetter(ctx, Instance, t, name, span1));
 							invalidExpr();
 						},
 						at(kinds) => kinds.reduceOverloads(t, [tright])._match(
 							at([]) => {
-								ctx.addError(Errors.unknownSetter(ctx, false, t, name, tright, span1));
+								ctx.addError(Type_UnknownSetter(ctx, Instance, t, name, span1, tright));
 								invalidExpr();
 							},
 							at(overloads) => {
@@ -1254,8 +1254,8 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 					found._match(
 						at([]) => {
 							(oldFound.some(k -> k.match(BOMethod(_) | BOFromTypevar(_, _, BOMethod(_)))) ? rt : null)._match(
-								at(rt0!) => ctx.addError(Errors.unknownMethod(ctx, lt, rt0, op2, span)),
-								_ => ctx.addError(Errors.unknownMethod(ctx, lt, op2, span))
+								at(rt0!) => ctx.addError(Type_UnknownMethod(ctx, lt, Binary(op2, rt0), span)),
+								_ => ctx.addError(Type_UnknownMethod(ctx, lt, Binary(op2), span))
 							);
 							invalidExpr();
 						},
@@ -1293,7 +1293,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 		at(EVarDecl(_, {name: name, span: span}, type, Some(EObjCascade(obj, cascades)))) => {
 			ctx.findLocal(name)._and(local =>
 				if(!(local is LocalField || (ctx.isPattern() && local.ctx.isPattern() && ctx == local.ctx))) {
-					ctx.addError(Errors.shadowedLocalVar(ctx, name, local.span, span));
+					ctx.addError(Type_ShadowedLocalVar(ctx, name, local.span, span));
 				}
 			);
 			
@@ -1330,7 +1330,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 		at(EVarDecl(_, {name: name, span: span}, type, expr)) => {
 			ctx.findLocal(name)._and(local =>
 				if(!(local is LocalField || (ctx.isPattern() && local.ctx.isPattern() && ctx == local.ctx))) {
-					ctx.addError(Errors.shadowedLocalVar(ctx, name, local.span, span));
+					ctx.addError(Type_ShadowedLocalVar(ctx, name, local.span, span));
 				}
 			);
 			final t = type.toNull()._and(ty => ctx.getType(ty)._or(return invalidExpr()));
@@ -1405,7 +1405,7 @@ static function typeLocalAssign(
 												//trace(t);
 											},
 											_ => if(!ctx.isPattern()) {
-												ctx.addError(Errors.localVarTypeMismatch(ctx, name, lt, rt, lvar.span, span1));
+												ctx.addError(Type_LocalVarTypeMismatch(ctx, name, lt, rt, lvar.span, span1));
 												return invalidExpr();
 											}
 										);
@@ -1431,7 +1431,7 @@ static function typeLocalAssign(
 			};
 		},
 		_ => {
-			ctx.addError(Errors.unknownFieldOrVar(ctx, name, span1));
+			ctx.addError(Type_UnknownFieldOrVar(ctx, name, span1));
 			invalidExpr();
 		}
 	);
@@ -1506,7 +1506,7 @@ static function sendTypeMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: 
 					_2: kind.retType()._and(ret => ret.getFrom(t))
 				},
 				_ => {
-					ctx.addError(Errors.unknownMethod(ctx, true, t, name, span));
+					ctx.addError(Type_UnknownMethod(ctx, t, Single(Static, name), span));
 					null;
 				}
 			);
@@ -1561,7 +1561,7 @@ static function sendTypeMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: 
 			).unique();
 			categories._match(
 				at([]) => {
-					ctx.addError(Errors.unknownCategory(ctx, true, t, tcat, cat.span()));
+					ctx.addError(Type_UnknownCategory(ctx, Static, t, tcat, cat.span()));
 					null;
 				},
 				at([found]) => found.findSingleStatic(ctx, name, ctx.typeDecl)._match(
@@ -1603,12 +1603,12 @@ static function sendTypeMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: 
 			
 			t.findMultiStatic(ctx, names, ctx.typeDecl).unique()/*.reduceBySender()*/._match(
 				at([]) => {
-					ctx.addError(Errors.unknownMethod(ctx, true, t, names, labels[0].span()));
+					ctx.addError(Type_UnknownMethod(ctx, t, Multi(Static, names), labels[0].span()));
 					null;
 				},
 				at(kinds) => kinds.reduceOverloads(t, names, args)._match(
 					at([]) => {
-						ctx.addError(Errors.unknownMethod(ctx, true, t, names, args, labels[0].span()));
+						ctx.addError(Type_UnknownMethod(ctx, t, Multi(Static, names, args), labels[0].span()));
 						null;
 					},
 					at(overloads) => {
@@ -1737,7 +1737,7 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 					_2: kind.retType()._and(ret => ret.getFrom(t))
 				},
 				_ => {
-					ctx.addError(Errors.unknownMethod(ctx, false, t, name, span));
+					ctx.addError(Type_UnknownMethod(ctx, t, Single(Instance, name), span));
 					null;
 				}
 			);
@@ -1792,7 +1792,7 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 			).unique();
 			categories._match(
 				at([]) => {
-					ctx.addError(Errors.unknownCategory(ctx, false, t, tcat, cat.span()));
+					ctx.addError(Type_UnknownCategory(ctx, Instance, t, tcat, cat.span()));
 					null;
 				},
 				at([found]) => found.findSingleInst(ctx, name, ctx.typeDecl)._match(
@@ -1826,12 +1826,12 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 				_ => t
 			).findMultiInst(ctx, names, ctx.typeDecl)._match(
 				at([]) => {
-					ctx.addError(Errors.unknownMethod(ctx, false, t, names, labels[0].span()));
+					ctx.addError(Type_UnknownMethod(ctx, t, Multi(Instance, names), labels[0].span()));
 					null;
 				},
 				at(kinds) => kinds.reduceOverloads(t, args)._match(
 					at([]) => {
-						ctx.addError(Errors.unknownMethod(ctx, false, t, names, args, labels[0].span()));
+						ctx.addError(Type_UnknownMethod(ctx, t, Multi(Instance, names, args), labels[0].span()));
 						null;
 					},
 					at(overloads) => {
@@ -1901,17 +1901,17 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 			//trace(categories.map(c->c.fullName()), begin.display());
 			categories._match(
 				at([]) => {
-					ctx.addError(Errors.unknownCategory(ctx, false, t, tcat, cat.span()));
+					ctx.addError(Type_UnknownCategory(ctx, Instance, t, tcat, cat.span()));
 					null;
 				},
 				at([found]) => found.findMultiInst(ctx, names, ctx.typeDecl)._match(
 					at([]) => {
-						ctx.addError(Errors.unknownMethod(ctx, false, t, names, labels[0].span(), categories));
+						ctx.addError(Type_UnknownMethod(ctx, t, Multi(Instance, names), labels[0].span(), categories));
 						null;
 					},
 					at(kinds) => kinds.reduceOverloads(t, args)._match(
 						at([]) => {
-							ctx.addError(Errors.unknownMethod(ctx, false, t, names, args, labels[0].span(), categories));
+							ctx.addError(Type_UnknownMethod(ctx, t, Multi(Instance, names, args), labels[0].span(), categories));
 							null;
 						},
 						at(overloads) => {
@@ -1935,7 +1935,7 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 					)
 				)/*found.findMultiInst(ctx, names, ctx.typeDecl).reduceBySender()._match(
 					at([]) => {
-						ctx.addError(Errors.unknownMethod(ctx, false, t, names, labels[0].span(), categories));
+						ctx.addError(Type_UnknownMethod(ctx, t, Multi(Instance, names), labels[0].span(), categories));
 						null;
 					},
 					at(kinds) => {
@@ -1962,12 +1962,12 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 					}
 				)._match(
 					at([]) => {
-						ctx.addError(Errors.unknownMethod(ctx, false, t, names, begin, categories));
+						ctx.addError(Type_UnknownMethod(ctx, t, Multi(Instance, names), begin, categories));
 						null;
 					},
 					at([kinds]) => kinds.mth.reduceOverloads(t, args)._match(
 						at([]) => {
-							ctx.addError(Errors.unknownMethod(ctx, false, t, names, args, labels[0].span(), categories));
+							ctx.addError(Type_UnknownMethod(ctx, t, Multi(Instance, names, args), labels[0].span(), categories));
 							null;
 						},
 						at(overloads) => {
@@ -2053,7 +2053,7 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 			final target = ctx.getType(type)._or(return null).getLeastSpecific();
 			t.findCast(ctx, target, ctx.typeDecl)._match(
 				at([]) => {
-					ctx.addError(Errors.unknownCast(ctx, t, target, begin.union(end)));
+					ctx.addError(Type_UnknownCast(ctx, t, target, begin.union(end)));
 					null;
 				},
 				at(casts) => {
@@ -2196,7 +2196,7 @@ static function typeObjCascade(ctx: Ctx, type: Null<Type>, cascade: UCascade<UEx
 							),
 							at(found) => found.filterMap(f -> f.findSingleInst(ctx, name, ctx.typeDecl))._match(
 								at([]) => {
-									ctx.addError(Errors.unknownMethod(ctx, false, t, name, span, found));
+									ctx.addError(Type_UnknownMethod(ctx, t, Single(Instance, name), span, found));
 									null;
 								},//throw 'error: value of type `${t.fullName()}` does not respond to method `[$name]` in any categories of: `${found.map(f -> f.fullName()).join(", ")}`!',
 								at([kind!]) => Single(kind),
@@ -2209,7 +2209,7 @@ static function typeObjCascade(ctx: Ctx, type: Null<Type>, cascade: UCascade<UEx
 						detuple2(@var names, @var args, getNamesArgs(ctx, labels));
 						t.findMultiInst(ctx, names, ctx.typeDecl)._match(
 							at([]) => {
-								ctx.addError(Errors.unknownMethod(ctx, false, t, names, labels[0].span()));
+								ctx.addError(Type_UnknownMethod(ctx, t, Multi(Instance, names), labels[0].span()));
 								return null;
 							},
 							at(kinds) => Multi(kinds, names, args)
@@ -2308,7 +2308,7 @@ static function typeObjCascade(ctx: Ctx, type: Null<Type>, cascade: UCascade<UEx
 								memt.findUnaryOp(ctx, op, ctx.typeDecl)._match(
 									at(opKind!) => StepMember(setKind, getKind, opKind),
 									_ => {
-										ctx.addError(Errors.unknownMethod(ctx, memt, op, span));
+										ctx.addError(Type_UnknownMethod(ctx, memt, Unary(op), span));
 										return null;
 									}
 								);
@@ -2507,12 +2507,12 @@ static function typePattern(ctx: Ctx, expectType: Type, expr: UExpr): Pattern {
 			}
 		},
 		at(EPrefix(span, PSpread, right)) => {
-			ctx.addError(Errors.arrayPatternNotAllowed(ctx, span));
+			ctx.addError(Type_ArrayPatternNotAllowed(ctx, span));
 			PIgnore;
 		},
 		
 		at(ESuffix(left, span, STruthy)) => {
-			ctx.addError(Errors.arrayPatternNotAllowed(ctx, span));
+			ctx.addError(Type_ArrayPatternNotAllowed(ctx, span));
 			PIgnore;
 		},
 		
@@ -2648,7 +2648,7 @@ static function _buildPatternBindings(ctx: Ctx, pattern: Pattern): PatternBindin
 			if(res2.size() > 0) for(name => pair in res2) {
 				if(res.exists(name)) {
 					trace(name, res[name]._1.display(), pair._1.display());
-					ctx.addError(Errors.duplicateBinding(ctx, name, res[name]._1, pair._1));
+					ctx.addError(Type_DuplicateBinding(ctx, name, res[name]._1, pair._1));
 					continue;
 				}
 				res[name] = pair;
@@ -2691,7 +2691,7 @@ static function _buildPatternBindings(ctx: Ctx, pattern: Pattern): PatternBindin
 			for(name => pair in _buildPatternBindings(ctx, p2)) {
 				if(res.exists(name)) {
 					trace(name, res[name]._1.display(), pair._1.display());
-					ctx.addError(Errors.duplicateBinding(ctx, name, res[name]._1, pair._1));
+					ctx.addError(Type_DuplicateBinding(ctx, name, res[name]._1, pair._1));
 					continue;
 				}
 				res[name] = pair;
@@ -2726,7 +2726,7 @@ static function buildPatternBindings(ctx: Ctx, pattern: Pattern) {
 		}*/
 		ctx.findLocal(name)._and(local => {
 			if(!(local is LocalField)) {
-				ctx.addError(Errors.shadowedLocalVar(ctx, name, local.span, p._1));
+				ctx.addError(Type_ShadowedLocalVar(ctx, name, local.span, p._1));
 			}
 		});
 		ctx.locals[name] = new LocalBinding(ctx, p._1, name, p._2);
@@ -2737,7 +2737,7 @@ static function buildPatternBindings(ctx: Ctx, pattern: Pattern) {
 static function checkBadThenStmt(ctx: Ctx, then: parsing.ast.Stmt.Then) {
 	then._match(
 		at(ThenStmt(span, SExpr(EBlock(_)))) => {
-			ctx.addError(Errors.possiblyUnintendedArrowBlock(ctx, span));
+			ctx.addError(Type_PossiblyUnintendedArrowBlock(ctx, span));
 		},
 		_ => {}
 	);
@@ -3007,7 +3007,7 @@ static function typeStmt(ctx: Ctx, stmt: UStmt): TStmt {
 static function shouldBeLogical(ctx: Ctx, texpr: TExpr) {
 	texpr.t._match(
 		at(t!) => if(!t.isNative(NBool)) {
-			ctx.addError(Errors.expectedLogicalValue(ctx, t, texpr.orig.mainSpan()));
+			ctx.addError(Type_ExpectedLogicalValue(ctx, t, texpr.orig.mainSpan()));
 		},
 		_ => {}
 	);

@@ -1,7 +1,7 @@
 package typing;
 
 import reporting.Severity;
-import reporting.Diagnostic;
+import errors.Error;
 import parsing.ast.Expr;
 import text.Span;
 import parsing.ast.Ident;
@@ -9,7 +9,7 @@ import typing.Traits;
 
 @:build(util.Auto.build())
 class ValueCase implements IErrors {
-	final errors: Array<Diagnostic> = [];
+	final errors: Array<Error> = [];
 	final decl: AnyTypeDecl;
 	final span: Span;
 	final name: Ident;
@@ -29,22 +29,11 @@ class ValueCase implements IErrors {
 				switch ast.init {
 					case None:
 					case Some({begin: begin, end: end}):
-						valueCase.errors.push(new Diagnostic({
-							severity: Severity.ERROR,
-							message: "Invalid value case",
-							info: [
-								Spanned({
-									span: Span.range(begin, end),
-									message: "Value cases may not have an initializer",
-									isPrimary: true
-								}),
-								Spanned({
-									span: Span.range(ast.span, name.span),
-									message: 'For value case `${name.name}`',
-									isSecondary: true
-								})
-							]
-						}));
+						valueCase.errors.push(Type_NoValueCaseInit(
+							name.name,
+							Span.range(ast.span, name.span),
+							Span.range(begin, end)
+						));
 				}
 
 				return valueCase;

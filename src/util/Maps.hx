@@ -20,6 +20,26 @@ class IntMaps {
 	public static inline function size<V>(map: IntMap<V>) {
 		return hisize(@:privateAccess map.h);
 	}
+
+	public static inline function forEach<V>(map: IntMap<V>, fn: (Int, V) -> Void) {
+	#if hl
+		final imap = @:privateAccess map.h;
+		final ikeys = imap.keysArray();
+		final ivals = imap.valuesArray();
+		final isize = ikeys.length;
+		for(i in 0...isize)
+	#else
+		for(k => v in map)
+	#end
+		{
+		#if hl
+			final k = ikeys[i];
+			final v: V = ivals[i];
+		#end
+
+			fn(k, v);
+		}
+	}
 }
 
 class StringMaps {
@@ -31,6 +51,26 @@ class StringMaps {
 	public static inline function size<V>(map: StringMap<V>) {
 		return hbsize(@:privateAccess map.h);
 	}
+
+	public static inline function forEach<V>(map: StringMap<V>, fn: (String, V) -> Void) {
+	#if hl
+		final imap = @:privateAccess map.h;
+		final ikeys = imap.keysArray();
+		final ivals = imap.valuesArray();
+		final isize = ikeys.length;
+		for(i in 0...isize)
+	#else
+		for(k => v in map)
+	#end
+		{
+		#if hl
+			final k = ikeys[i];
+			final v: V = ivals[i];
+		#end
+
+			fn(@:privateAccess String.fromUCS2(k), v);
+		}
+	}
 }
 
 class ObjectMaps {
@@ -41,6 +81,26 @@ class ObjectMaps {
 
 	public static inline function size<K: {}, V>(map: ObjectMap<K, V>) {
 		return hosize(@:privateAccess map.h);
+	}
+
+	public static inline function forEach<K: {}, V>(map: ObjectMap<K, V>, fn: (K, V) -> Void) {
+	#if hl
+		final imap = @:privateAccess map.h;
+		final ikeys = imap.keysArray();
+		final ivals = imap.valuesArray();
+		final isize = ikeys.length;
+		for(i in 0...isize)
+	#else
+		for(k => v in map)
+	#end
+		{
+		#if hl
+			final k: K = ikeys[i];
+			final v: V = ivals[i];
+		#end
+
+			fn(k, v);
+		}
 	}
 }
 
@@ -57,6 +117,15 @@ class EnumValueMaps {
 	public static function size<K: EnumValue, V>(map: EnumValueMap<K, V>) {
 		return sizeOfNode(@:privateAccess map.root);
 	}
+
+	/*@:noUsing
+	static function _forEach<K, V>(node: TreeNode<K, V>) {
+
+	}
+
+	public static inline function forEach<K: EnumValue, V>(map: EnumValueMap<K, V>, fn: (K, V) -> Void) {
+		@:privateAccess map.root
+	}*/
 }
 
 class HashMaps {

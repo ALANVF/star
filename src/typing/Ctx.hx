@@ -2,7 +2,7 @@ package typing;
 
 import typing.Effects;
 import typing.Traits;
-import reporting.Diagnostic;
+import errors.Error;
 import typing.Pass2;
 
 enum Where {
@@ -134,7 +134,7 @@ enum Where {
 	}
 
 
-	function addError(diag: Diagnostic) {
+	function addError(diag: Error) {
 		switch where {
 			case WEmptyMethod(method): method.errors.push(diag);
 			case WMethod(method): method.errors.push(diag);
@@ -209,7 +209,7 @@ enum Where {
 							at(TPath(depth, lookup, _)) => thisLookup_.findType(lookup, Start, typeDecl_, depth)._match(
 								at(type!) => type,
 								_ => {
-									addError(Errors.invalidTypeLookup(lookup.span(), 'Unknown type `${arg.simpleName()}`'));
+									addError(Type_InvalidTypeLookup(lookup.span(), 'Unknown type `${arg.simpleName()}`'));
 									arg;
 								}
 							),
@@ -223,7 +223,7 @@ enum Where {
 			_ => outer._match(
 				at(ctx!) => return ctx.getType(path),
 				_ => {
-					addError(Errors.invalidTypeLookup(path.span(), 'Unknown type `${path.simpleName()}`'));
+					addError(Type_InvalidTypeLookup(path.span(), 'Unknown type `${path.simpleName()}`'));
 					return null;
 				}
 			)

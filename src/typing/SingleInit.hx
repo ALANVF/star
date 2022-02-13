@@ -17,15 +17,15 @@ class SingleInit extends Init {
 		});
 
 		for(attr => span in ast.attrs) switch attr {
-			case IsHidden(_) if(init.hidden != null): init.errors.push(Errors.duplicateAttribute(init, init.name.name, "hidden", span));
+			case IsHidden(_) if(init.hidden != null): init.errors.push(Type_DuplicateAttribute(init, init.name.name, "hidden", span));
 			case IsHidden(None): init.hidden = None;
 			case IsHidden(Some(outsideOf)): init.hidden = Some(decl.makeTypePath(outsideOf));
 
 			case IsNoinherit: init.noInherit = true;
 
-			case IsUnordered: init.errors.push(Errors.invalidAttribute(init, init.name.name, "unordered", span));
+			case IsUnordered: init.errors.push(Type_InvalidAttribute(init, init.name.name, "unordered", span));
 
-			case IsNative(_) if(init.native != null): init.errors.push(Errors.duplicateAttribute(init, init.name.name, "native", span));
+			case IsNative(_) if(init.native != null): init.errors.push(Type_DuplicateAttribute(init, init.name.name, "native", span));
 			case IsNative(sym): init.native = sym;
 
 			case IsAsm: init.isAsm = true;

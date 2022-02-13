@@ -30,13 +30,13 @@ abstract class Namespace extends TypeDecl {
 				} else {
 					// errors prob shouldn't be attatched to *this* type decl, but eh
 					if(params.length == 0) {
-						errors.push(Errors.invalidTypeApply(span, "Attempt to apply arguments to a non-parametric type"));
+						errors.push(Type_InvalidTypeApply(span, "Attempt to apply arguments to a non-parametric type"));
 						null;
 					} else if(args.length > params.length) {
-						errors.push(Errors.invalidTypeApply(span, "Too many arguments"));
+						errors.push(Type_InvalidTypeApply(span, "Too many arguments"));
 						null;
 					} else if(args.length < params.length) {
-						errors.push(Errors.invalidTypeApply(span, "Not enough arguments"));
+						errors.push(Type_InvalidTypeApply(span, "Not enough arguments"));
 						null;
 					} else {
 						{t: TApplied({t: TThis(this), span: span}, args), span: span};
@@ -83,7 +83,7 @@ abstract class Namespace extends TypeDecl {
 						case [_, []]:
 							// should this check for type aliases?
 							if(search == Inside) {
-								errors.push(Errors.invalidTypeApply(span, "Attempt to apply arguments to a non-parametric type"));
+								errors.push(Type_InvalidTypeApply(span, "Attempt to apply arguments to a non-parametric type"));
 								null;
 							} else {
 								// error...?
@@ -91,10 +91,10 @@ abstract class Namespace extends TypeDecl {
 							}
 						case [_, params]:
 							if(args.length > params.length) {
-								errors.push(Errors.invalidTypeApply(span, "Too many arguments"));
+								errors.push(Type_InvalidTypeApply(span, "Too many arguments"));
 								null;
 							} else if(args.length < params.length) {
-								errors.push(Errors.invalidTypeApply(span, "Not enough arguments"));
+								errors.push(Type_InvalidTypeApply(span, "Not enough arguments"));
 								null;
 							} else {
 								finished = false;
@@ -102,7 +102,7 @@ abstract class Namespace extends TypeDecl {
 									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
 										at(type!) => type,
 										_ => {
-											errors.push(Errors.invalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
+											errors.push(Type_InvalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
 											arg;
 										}
 									),
@@ -116,7 +116,7 @@ abstract class Namespace extends TypeDecl {
 							{t: TMulti(found.map(t -> t.thisType)), span: span};
 						} else switch found.filter(t -> t.params.length == args.length).map(t -> t.thisType) {
 							case []:
-								errors.push(Errors.invalidTypeApply(span, "No candidate matches the type arguments"));
+								errors.push(Type_InvalidTypeApply(span, "No candidate matches the type arguments"));
 								null;
 							case [type]:
 								finished = false;
@@ -124,7 +124,7 @@ abstract class Namespace extends TypeDecl {
 									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
 										at(type!) => type,
 										_ => {
-											errors.push(Errors.invalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
+											errors.push(Type_InvalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
 											arg;
 										}
 									),
@@ -136,7 +136,7 @@ abstract class Namespace extends TypeDecl {
 									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
 										at(type!) => type,
 										_ => {
-											errors.push(Errors.invalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
+											errors.push(Type_InvalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
 											arg;
 										}
 									),

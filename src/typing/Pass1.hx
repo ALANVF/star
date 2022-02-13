@@ -41,7 +41,7 @@ static function resolveFileContents(file: File) {
 	for(imp in file.imports) {
 		switch imp {
 			case {as: Some(_)}:
-				file.errors.push(Errors.notYetImplemented(imp.span));
+				file.errors.push(Type_NotYetImplemented(imp.span));
 				continue;
 			
 			case {from: None}:
@@ -54,7 +54,7 @@ static function resolveFileContents(file: File) {
 						types = _types;
 					
 					default:
-						file.errors.push(Errors.notYetImplemented(imp.span));
+						file.errors.push(Type_NotYetImplemented(imp.span));
 						continue;
 				}
 
@@ -64,7 +64,7 @@ static function resolveFileContents(file: File) {
 						file.imported.push({from: t, types: []});
 					},
 					_ =>
-						file.errors.push(Errors.invalidTypeLookup(type.span()))
+						file.errors.push(Type_InvalidTypeLookup(type.span()))
 				);
 
 			case {from: Some(UType(_, type))}:
@@ -75,7 +75,7 @@ static function resolveFileContents(file: File) {
 						from = t;
 					},
 					_ => {
-						file.errors.push(Errors.invalidTypeLookup(type.span()));
+						file.errors.push(Type_InvalidTypeLookup(type.span()));
 						continue;
 					}
 				);
@@ -89,7 +89,7 @@ static function resolveFileContents(file: File) {
 						types = _types;
 					
 					default:
-						file.errors.push(Errors.notYetImplemented(imp.span));
+						file.errors.push(Type_NotYetImplemented(imp.span));
 						continue;
 				}
 
@@ -126,14 +126,14 @@ static function resolveFileContents(file: File) {
 							}
 						},
 						_ =>
-							file.errors.push(Errors.invalidTypeLookup(type.span()))
+							file.errors.push(Type_InvalidTypeLookup(type.span()))
 					);
 				}
 
 				file.imported.push({from: from, types: imported});
 
 			default:
-				file.errors.push(Errors.notYetImplemented(imp.span));
+				file.errors.push(Type_NotYetImplemented(imp.span));
 				continue;
 		}
 	}
@@ -159,7 +159,7 @@ static function resolveBasicType(source: ITypeLookup, type: Type, cache: Cache =
 						},
 						_ => src._match(
 							at(e is IErrors) => {
-								e.errors.push(Errors.invalidTypeLookup(
+								e.errors.push(Type_InvalidTypeLookup(
 									type.span.nonNull(),
 									"Type does not exist!"
 								));
@@ -170,7 +170,7 @@ static function resolveBasicType(source: ITypeLookup, type: Type, cache: Cache =
 					); else {
 						source._match(
 							at(e is IErrors) => {
-								e.errors.push(Errors.invalidTypeLookup(
+								e.errors.push(Type_InvalidTypeLookup(
 									type.span.nonNull(),
 									"Type does not exist!"
 								));
@@ -211,7 +211,7 @@ static function resolveBasicType(source: ITypeLookup, type: Type, cache: Cache =
 								},
 								_ => source._match(
 									at(e is IErrors) => {
-										e.errors.push(Errors.invalidTypeLookup(
+										e.errors.push(Type_InvalidTypeLookup(
 											type.span.nonNull(),
 											"Type does not exist!"
 										));
@@ -221,7 +221,7 @@ static function resolveBasicType(source: ITypeLookup, type: Type, cache: Cache =
 							);
 						} else source._match(
 							at(e is IErrors) => {
-								e.errors.push(Errors.invalidTypeLookup(
+								e.errors.push(Type_InvalidTypeLookup(
 									type.span.nonNull(),
 									"Type does not exist!"
 								));

@@ -1,6 +1,6 @@
 package typing;
 
-import reporting.Diagnostic;
+import errors.Error;
 import parsing.ast.Stmt;
 import parsing.ast.Ident;
 import text.Span;
@@ -9,7 +9,7 @@ import typing.Traits;
 @:build(util.Auto.build())
 @:autoBuild(util.Auto.build())
 abstract class AnyMethod implements ITypeLookupDecl {
-	final errors: Array<Diagnostic> = [];
+	final errors: Array<Error> = [];
 	final decl: AnyTypeDecl;
 	final span: Span;
 	var hidden: Null<Option<Type>> = null;

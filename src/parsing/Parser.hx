@@ -5,8 +5,7 @@ import parsing.ast.Infix.Assignable;
 import parsing.ast.Cascade;
 import util.Buffer;
 import text.Span;
-import reporting.Diagnostic;
-import reporting.DiagnosticInfo;
+import errors.Error;
 import lexing.Token;
 import lexing.Tokens;
 import parsing.ParseResult;
@@ -74,19 +73,7 @@ class Parser {
 				tokens = tokens.tail();
 
 				if(!isAnySep(first)) {
-					errors.push(
-						new Diagnostic({
-							severity: reporting.Severity.ERROR,
-							message: "Syntax error",
-							info: [
-								Spanned({
-									span: first.span(),
-									message: 'Unexpected ${first.basicTokenName()}, was expecting a comma or newline instead',
-									isPrimary: true
-								})
-							]
-						})
-					);
+					errors.push(Parse_UnexpectedTokenWantedSep(first));
 
 					badTokens.push(first);
 				}
@@ -103,19 +90,7 @@ class Parser {
 					final first = begin.head();
 
 					if(!badTokens.contains(first) && !(lastWasError && isAnySep(first))) {
-						errors.push(
-							new Diagnostic({
-								severity: reporting.Severity.ERROR,
-								message: "Syntax error",
-								info: [
-									Spanned({
-										span: first.span(),
-										message: 'Unexpected ${first.basicTokenName()}',
-										isPrimary: true
-									})
-								]
-							})
-						);
+						errors.push(Parse_UnexpectedToken(first));
 
 						badTokens.push(first);
 					}
@@ -134,29 +109,7 @@ class Parser {
 					final last = (end != Nil ? end : begin.rev()).head();
 					
 					if(!badTokens.contains(last)) {
-						final info = [
-							Spanned({
-								span: last.span(),
-								message: 'Unexpected ${last.basicTokenName()}',
-								isPrimary: true
-							})
-						];
-
-						if(first != last) {
-							info.push(Spanned({
-								span: first.span(),
-								message: "Starting here",
-								isSecondary: true
-							}));
-						}
-
-						errors.push(
-							new Diagnostic({
-								severity: reporting.Severity.ERROR,
-								message: "Syntax error",
-								info: info
-							})
-						);
+						errors.push(Parse_UnexpectedToken(first, last));
 
 						badTokens.push(last);
 					}
@@ -180,38 +133,15 @@ class Parser {
 					final last = realBegin.rev().head();
 
 					if(!badTokens.contains(first)) {
-						final info = [
-							Spanned({
-								span: last.span(),
-								message: 'Unexpected end of file after ${last.basicTokenName()}',
-								isPrimary: true
-							})
-						];
-
-						// Don't add another message if they're the same token
-						if(first != last) {
-							info.push(Spanned({
-								span: first.span(),
-								message: "Starting here",
-								isSecondary: true
-							}));
-						}
-
-						errors.push(
-							new Diagnostic({
-								severity: reporting.Severity.ERROR,
-								message: "Syntax error",
-								info: info
-							})
-						);
+						errors.push(Parse_UnexpectedEOF(first, last));
 
 						badTokens.push(first);
 					}
 
 					tokens = Nil;
 				
-				case FatalError(diag):
-					errors.push(diag);
+				case FatalError(error):
+					errors.push(error);
 
 					while(true) switch tokens {
 						case Nil | Cons(T_LSep(_), _): break;
@@ -271,32 +201,12 @@ class Parser {
 		at([T_My(_1), ...rest]) => if(generics == Nil) {
 			fatalIfBad(tokens, parseMemberDecl(_1, rest));
 		} else {
-			FatalError(new Diagnostic({
-				severity: reporting.Severity.ERROR,
-				message: "Invalid member",
-				info: [
-					Spanned({
-						span: _1,
-						message: "Members are not allowed to be generic",
-						isPrimary: true
-					})
-				]
-			}));
+			FatalError(Parse_NoGenericMember(_1));
 		},
 		at([T_Has(_1), ...rest]) => if(generics == Nil) {
 			fatalIfBad(tokens, parseCaseDecl(_1, rest));
 		} else {
-			FatalError(new Diagnostic({
-				severity: reporting.Severity.ERROR,
-				message: "Invalid case",
-				info: [
-					Spanned({
-						span: _1,
-						message: "Cases are not allowed to be generic",
-						isPrimary: true
-					})
-				]
-			}));
+			FatalError(Parse_NoGenericCase(_1));
 		},
 		at([T_Init(_1), ...rest]) => fatalIfBad(tokens, parseInitDecl(generics.rev(), _1, rest)),
 		at([T_On(_1), ...rest]) => fatalIfBad(tokens, parseMethodDecl(generics.rev(), _1, rest)),
@@ -304,17 +214,7 @@ class Parser {
 		at([T_Deinit(_1), ...rest]) => if(generics == Nil) {
 			fatalIfBad(tokens, parseDeinitDecl(_1, rest));
 		} else {
-			FatalError(new Diagnostic({
-				severity: reporting.Severity.ERROR,
-				message: "Invalid deinitializer",
-				info: [
-					Spanned({
-						span: _1,
-						message: "Deinitializers are not allowed to be generic",
-						isPrimary: true
-					})
-				]
-			}));
+			FatalError(Parse_NoGenericDeinit(_1));
 		},
 		at([_, ..._]) => Fatal(tokens, None),
 		at([]) => Eof(tokens)

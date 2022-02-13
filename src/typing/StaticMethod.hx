@@ -12,7 +12,7 @@ abstract class StaticMethod extends AnyMethod {
 		case Single(_): Some(SingleStaticMethod.fromAST(decl, ast));
 		case Multi(_): Some(MultiStaticMethod.fromAST(decl, ast));
 		case Cast(_):
-			decl.errors.push(Errors.unexpectedDecl(decl, decl.fullName(), DMethod(ast)));
+			decl.errors.push(Type_UnexpectedDecl(decl, DMethod(ast)));
 			None;
 	}
 

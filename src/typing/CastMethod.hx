@@ -25,23 +25,23 @@ class CastMethod extends Method {
 		final typeName = method.type.simpleName();
 
 		for(attr => span in ast.attrs) switch attr {
-			case IsStatic: method.errors.push(Errors.invalidAttribute(method, typeName, "static", span));
+			case IsStatic: method.errors.push(Type_InvalidAttribute(method, typeName, "static", span));
 			
-			case IsHidden(_) if(method.hidden != null): method.errors.push(Errors.duplicateAttribute(method, typeName, "hidden", span));
+			case IsHidden(_) if(method.hidden != null): method.errors.push(Type_DuplicateAttribute(method, typeName, "hidden", span));
 			case IsHidden(None): method.hidden = None;
 			case IsHidden(Some(outsideOf)): method.hidden = Some(decl.makeTypePath(outsideOf));
 
-			case IsMain: method.errors.push(Errors.invalidAttribute(method, typeName, "main", span));
+			case IsMain: method.errors.push(Type_InvalidAttribute(method, typeName, "main", span));
 
 			case IsNoinherit: method.noInherit = true;
 
-			case IsGetter: method.errors.push(Errors.invalidAttribute(method, typeName, "getter", span));
+			case IsGetter: method.errors.push(Type_InvalidAttribute(method, typeName, "getter", span));
 
-			case IsSetter: method.errors.push(Errors.invalidAttribute(method, typeName, "setter", span));
+			case IsSetter: method.errors.push(Type_InvalidAttribute(method, typeName, "setter", span));
 
-			case IsUnordered: method.errors.push(Errors.invalidAttribute(method, typeName, "unordered", span));
+			case IsUnordered: method.errors.push(Type_InvalidAttribute(method, typeName, "unordered", span));
 
-			case IsNative(_) if(method.native != null): method.errors.push(Errors.duplicateAttribute(method, typeName, "native", span));
+			case IsNative(_) if(method.native != null): method.errors.push(Type_DuplicateAttribute(method, typeName, "native", span));
 			case IsNative(sym): method.native = sym;
 
 			case IsInline: method.isInline = true;

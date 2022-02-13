@@ -51,7 +51,7 @@ class MultiStaticMethod extends StaticMethod {
 		for(attr => span in ast.attrs) switch attr {
 			case IsStatic:
 			
-			case IsHidden(_) if(method.hidden != null): method.errors.push(Errors.duplicateAttribute(method, method.fuzzyName, "hidden", span));
+			case IsHidden(_) if(method.hidden != null): method.errors.push(Type_DuplicateAttribute(method, method.fuzzyName, "hidden", span));
 			case IsHidden(None): method.hidden = None;
 			case IsHidden(Some(outsideOf)): method.hidden = Some(decl.makeTypePath(outsideOf));
 
@@ -65,7 +65,7 @@ class MultiStaticMethod extends StaticMethod {
 
 			case IsUnordered: method.isUnordered = true;
 
-			case IsNative(_) if(method.native != null): method.errors.push(Errors.duplicateAttribute(method, method.fuzzyName, "native", span));
+			case IsNative(_) if(method.native != null): method.errors.push(Type_DuplicateAttribute(method, method.fuzzyName, "native", span));
 			case IsNative(sym): method.native = sym;
 
 			case IsInline: method.isInline = true;

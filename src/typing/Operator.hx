@@ -1,99 +1,7 @@
 package typing;
 
-import reporting.Severity;
-import reporting.Diagnostic;
+import errors.Error;
 import text.Span;
-import typing.Traits;
-
-private inline function notOverloadable(decl: AnyTypeDecl, ast: parsing.ast.decls.Operator, yet = false) {
-	return new Diagnostic({
-		message: "Invalid operator overload",
-		info: [
-			Spanned({
-				span: ast.symbolSpan,
-				message: 'The `${ast.symbol}` operator cannot be overloaded' + (yet? " (yet)" : ""),
-				isPrimary: true
-			}),
-			Spanned({
-				span: ast.span,
-				isSecondary: true
-			}),
-			Spanned({
-				span: decl.span,
-				message: 'For ${decl.declName()} `${decl.fullName()}`',
-				isSecondary: true
-			})
-		]
-	});
-}
-
-private inline function needsParameter(decl: AnyTypeDecl, ast: parsing.ast.decls.Operator) {
-	return new Diagnostic({
-		severity: Severity.ERROR,
-		message: "Invalid operator overload",
-		info: [
-			Spanned({
-				span: ast.symbolSpan,
-				message: 'Overloading the `${ast.symbol}` operator requires a parameter',
-				isPrimary: true
-			}),
-			Spanned({
-				span: ast.span,
-				isSecondary: true
-			}),
-			Spanned({
-				span: decl.span,
-				message: 'For ${decl.declName()} `${decl.fullName()}`',
-				isSecondary: true
-			})
-		]
-	});
-}
-
-private inline function excludeParameter(decl: AnyTypeDecl, ast: parsing.ast.decls.Operator) {
-	return new Diagnostic({
-		severity: Severity.ERROR,
-		message: "Invalid operator overload",
-		info: [
-			Spanned({
-				span: ast.symbolSpan,
-				message: 'Overloading the `${ast.symbol}` operator should not require a parameter',
-				isPrimary: true
-			}),
-			Spanned({
-				span: ast.span,
-				isSecondary: true
-			}),
-			Spanned({
-				span: decl.span,
-				message: 'For ${decl.declName()} `${decl.fullName()}`',
-				isSecondary: true
-			})
-		]
-	});
-}
-
-private inline function unknownOp(decl: AnyTypeDecl, ast: parsing.ast.decls.Operator) {
-	return new Diagnostic({
-		message: "Invalid operator overload",
-		info: [
-			Spanned({
-				span: ast.symbolSpan,
-				message: 'The `${ast.symbol}` operator cannot be overloaded because it does not exist',
-				isPrimary: true
-			}),
-			Spanned({
-				span: ast.span,
-				isSecondary: true
-			}),
-			Spanned({
-				span: decl.span,
-				message: 'For ${decl.declName()} `${decl.fullName()}`',
-				isSecondary: true
-			})
-		]
-	});
-}
 
 abstract class Operator extends AnyMethod {
 	var ret: Null<Type>;
@@ -112,16 +20,16 @@ abstract class Operator extends AnyMethod {
 					case "~": Compl;
 					case "?": Truthy;
 					case "+" | "*" | "**" | "/" | "//" | "%" | "%%" | "&" | "|" | "^" | "<<" | ">>" | "?=" | "!=" | ">" | ">=" | "<" | "<=" | "&&" | "||" | "^^" | "!!":
-						decl.errors.push(needsParameter(decl, ast));
+						decl.errors.push(Type_OpNeedsParameter(decl, ast));
 						return None;
 					case "+=" | "-=" | "*=" | "**=" | "/=" | "//=" | "%=" | "%%=" | "&=" | "|=" | "^=" | "<<=" | ">>=" | "&&=" | "||=" | "^^=" | "!!=":
-						decl.errors.push(notOverloadable(decl, ast));
+						decl.errors.push(Type_OpNotOverloadable(decl, ast, false));
 						return None;
 					case "...":
-						decl.errors.push(notOverloadable(decl, ast, true));
+						decl.errors.push(Type_OpNotOverloadable(decl, ast, true));
 						return None;
 					default:
-						decl.errors.push(unknownOp(decl, ast));
+						decl.errors.push(Type_UnknownOpOverload(decl, ast));
 						return None;
 				};
 
@@ -153,16 +61,16 @@ abstract class Operator extends AnyMethod {
 					case "^^": Xor;
 					case "!!": Nor;
 					case "++" | "--" | "!" | "~" | "?":
-						decl.errors.push(excludeParameter(decl, ast));
+						decl.errors.push(Type_OpDoesNotNeedParameter(decl, ast));
 						return None;
 					case "+=" | "-=" | "*=" | "**=" | "/=" | "//=" | "%=" | "%%=" | "&=" | "|=" | "^=" | "<<=" | ">>=" | "&&=" | "||=" | "^^=" | "!!=":
-						decl.errors.push(notOverloadable(decl, ast));
+						decl.errors.push(Type_OpNotOverloadable(decl, ast, false));
 						return None;
 					case "...":
-						decl.errors.push(notOverloadable(decl, ast, true));
+						decl.errors.push(Type_OpNotOverloadable(decl, ast, true));
 						return None;
 					default:
-						decl.errors.push(unknownOp(decl, ast));
+						decl.errors.push(Type_UnknownOpOverload(decl, ast));
 						return None;
 				};
 
@@ -170,13 +78,13 @@ abstract class Operator extends AnyMethod {
 		};
 
 		for(attr => span in ast.attrs) switch attr {
-			case IsHidden(_) if(oper.hidden != null): oper.errors.push(Errors.duplicateAttribute(oper, oper.opName(), "hidden", span));
+			case IsHidden(_) if(oper.hidden != null): oper.errors.push(Type_DuplicateAttribute(oper, oper.opName(), "hidden", span));
 			case IsHidden(None): oper.hidden = None;
 			case IsHidden(Some(outsideOf)): oper.hidden = Some(decl.makeTypePath(outsideOf));
 
 			case IsNoinherit: oper.noInherit = true;
 
-			case IsNative(_) if(oper.native != null): oper.errors.push(Errors.duplicateAttribute(oper, oper.opName(), "native", span));
+			case IsNative(_) if(oper.native != null): oper.errors.push(Type_DuplicateAttribute(oper, oper.opName(), "native", span));
 			case IsNative(sym): oper.native = sym;
 
 			case IsInline: oper.isInline = true;

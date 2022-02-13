@@ -2,7 +2,7 @@ package typing;
 
 import text.Span;
 import parsing.ast.Ident;
-import reporting.Diagnostic;
+import errors.Error;
 import typing.Traits;
 
 @:build(util.Auto.build())
@@ -42,11 +42,11 @@ class Category extends AnyTypeDecl {
 		}
 
 		for(attr => span in ast.attrs) switch attr {
-			case IsHidden(_) if(category.hidden.isSome()): category.errors.push(Errors.duplicateAttribute(category, category.name.name, "hidden", span));
+			case IsHidden(_) if(category.hidden.isSome()): category.errors.push(Type_DuplicateAttribute(category, category.name.name, "hidden", span));
 			case IsHidden(None): category.hidden = Some(None);
 			case IsHidden(Some(outsideOf)): category.hidden = Some(Some(category.makeTypePath(outsideOf)));
 
-			case IsFriend(_) if(category.friends.length != 0): category.errors.push(Errors.duplicateAttribute(category, category.name.name, "friend", span));
+			case IsFriend(_) if(category.friends.length != 0): category.errors.push(Type_DuplicateAttribute(category, category.name.name, "friend", span));
 			case IsFriend(One(friend)): category.friends.push(category.makeTypePath(friend));
 			case IsFriend(Many(_, friends, _)): for(friend in friends) category.friends.push(category.makeTypePath(friend));
 		}
@@ -61,7 +61,7 @@ class Category extends AnyTypeDecl {
 
 			case DOperator(o): Operator.fromAST(category, o).forEach(x -> category.operators.push(x));
 
-			default: category.errors.push(Errors.unexpectedDecl(category, category.name.name, decl));
+			default: category.errors.push(Type_UnexpectedDecl(category, decl));
 		}
 
 		return category;
@@ -118,7 +118,7 @@ class Category extends AnyTypeDecl {
 					);
 				} else {
 					// prob shouldn't be attatched to *this* category decl, but eh
-					errors.push(Errors.notYetImplemented(span));
+					errors.push(Type_NotYetImplemented(span));
 					null;
 				}
 			},
@@ -144,10 +144,10 @@ class Category extends AnyTypeDecl {
 							null;
 						case [_, params]:
 							if(args.length > params.length) {
-								errors.push(Errors.invalidTypeApply(span, "Too many arguments"));
+								errors.push(Type_InvalidTypeApply(span, "Too many arguments"));
 								null;
 							} else if(args.length < params.length) {
-								errors.push(Errors.invalidTypeApply(span, "Not enough arguments"));
+								errors.push(Type_InvalidTypeApply(span, "Not enough arguments"));
 								null;
 							} else {
 								finished = false;
@@ -155,7 +155,7 @@ class Category extends AnyTypeDecl {
 									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
 										at(type!) => type,
 										_ => {
-											errors.push(Errors.invalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
+											errors.push(Type_InvalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
 											arg;
 										}
 									),
@@ -169,7 +169,7 @@ class Category extends AnyTypeDecl {
 							{t: TMulti(found.map(t -> t.thisType)), span: span};
 						} else switch found.map(t -> t.thisType) {
 							case []:
-								errors.push(Errors.invalidTypeApply(span, "No candidate matches the type arguments"));
+								errors.push(Type_InvalidTypeApply(span, "No candidate matches the type arguments"));
 								null;
 							case [tvar]:
 								finished = false;
@@ -177,7 +177,7 @@ class Category extends AnyTypeDecl {
 									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
 										at(type!) => type,
 										_ => {
-											errors.push(Errors.invalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
+											errors.push(Type_InvalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
 											arg;
 										}
 									),

@@ -1,6 +1,6 @@
 package parsing.ast;
 
-import reporting.Diagnostic;
+import errors.Error;
 import parsing.ast.decls.Decl;
 
 enum ScriptDecl {
@@ -9,6 +9,6 @@ enum ScriptDecl {
 }
 
 enum Program {
-	Modular(errors: Array<Diagnostic>, decls: Array<Decl>);
-	Script(errors: Array<Diagnostic>, decls: Array<ScriptDecl>);
+	Modular(errors: Array<Error>, decls: Array<Decl>);
+	Script(errors: Array<Error>, decls: Array<ScriptDecl>);
 }

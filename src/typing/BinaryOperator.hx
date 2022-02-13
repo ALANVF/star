@@ -1,6 +1,6 @@
 package typing;
 
-import reporting.Diagnostic;
+import errors.Error;
 import parsing.ast.Ident;
 
 class BinaryOperator extends Operator {

@@ -1,7 +1,7 @@
 package typing;
 
 import parsing.ast.Ident;
-import reporting.Diagnostic;
+import errors.Error;
 
 class Module extends Namespace {
 	var isMain: Bool = false;
@@ -30,11 +30,11 @@ class Module extends Namespace {
 		}
 
 		for(attr => span in ast.attrs) switch attr {
-			case IsHidden(_) if(module.hidden.isSome()): module.errors.push(Errors.duplicateAttribute(module, ast.name.name, "hidden", span));
+			case IsHidden(_) if(module.hidden.isSome()): module.errors.push(Type_DuplicateAttribute(module, ast.name.name, "hidden", span));
 			case IsHidden(None): module.hidden = Some(None);
 			case IsHidden(Some(outsideOf)): module.hidden = Some(Some(module.makeTypePath(outsideOf)));
 
-			case IsSealed(_) if(module.sealed.isSome()): module.errors.push(Errors.duplicateAttribute(module, ast.name.name, "sealed", span));
+			case IsSealed(_) if(module.sealed.isSome()): module.errors.push(Type_DuplicateAttribute(module, ast.name.name, "sealed", span));
 			case IsSealed(None): module.sealed = Some(None);
 			case IsSealed(Some(outsideOf)): module.sealed = Some(Some(module.makeTypePath(outsideOf)));
 
@@ -42,11 +42,11 @@ class Module extends Namespace {
 
 			// Logical error: `is friend #[] is friend #[] ...` is technically valid.
 			// Solution: nothing because I'm lazy.
-			case IsFriend(_) if(module.friends.length != 0): module.errors.push(Errors.duplicateAttribute(module, ast.name.name, "friend", span));
+			case IsFriend(_) if(module.friends.length != 0): module.errors.push(Type_DuplicateAttribute(module, ast.name.name, "friend", span));
 			case IsFriend(One(friend)): module.friends.push(module.makeTypePath(friend));
 			case IsFriend(Many(_, friends, _)): for(friend in friends) module.friends.push(module.makeTypePath(friend));
 
-			case IsNative(_, _) if(module.native.isSome()): module.errors.push(Errors.duplicateAttribute(module, ast.name.name, "native", span));
+			case IsNative(_, _) if(module.native.isSome()): module.errors.push(Type_DuplicateAttribute(module, ast.name.name, "native", span));
 			case IsNative(span2, libName): module.native = Some({span: span2, name: libName});
 		}
 
@@ -67,13 +67,13 @@ class Module extends Namespace {
 
 			case DMethod(m): StaticMethod.fromAST(module, m).forEach(x -> module.staticMethods.push(x));
 
-			case DDefaultInit(_) if(module.staticInit.isSome()): module.errors.push(Errors.duplicateDecl(module, ast.name.name, decl));
+			case DDefaultInit(_) if(module.staticInit.isSome()): module.errors.push(Type_DuplicateDecl(module, decl));
 			case DDefaultInit(i): module.staticInit = Some(StaticInit.fromAST(module, i));
 			
-			case DDeinit(_) if(module.staticDeinit.isSome()): module.errors.push(Errors.duplicateDecl(module, ast.name.name, decl));
+			case DDeinit(_) if(module.staticDeinit.isSome()): module.errors.push(Type_DuplicateDecl(module, decl));
 			case DDeinit(d): module.staticDeinit = Some(StaticDeinit.fromAST(module, d));
 			
-			default: module.errors.push(Errors.unexpectedDecl(module, ast.name.name, decl));
+			default: module.errors.push(Type_UnexpectedDecl(module, decl));
 		}
 
 		return module;

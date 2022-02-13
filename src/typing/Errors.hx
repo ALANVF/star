@@ -1,8 +1,8 @@
 package typing;
 
 import text.Span;
-import reporting.Severity;
-import reporting.Diagnostic;
+import reporting.*;
+import errors.Error;
 import typing.Traits;
 
 @:publicFields

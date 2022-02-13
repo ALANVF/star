@@ -1,7 +1,7 @@
 package typing;
 
 import reporting.Severity;
-import reporting.Diagnostic;
+import errors.Error;
 import parsing.Parser;
 import lexing.Lexer;
 import parsing.ast.Program;
@@ -11,7 +11,7 @@ import Util.detuple2;
 
 @:build(util.Auto.build())
 class File implements ITypeLookup implements IErrors {
-	final errors: Array<Diagnostic>;
+	final errors: Array<Error>;
 	final dir: Dir;
 	final path: String;
 	var unit: Option<Unit>;
@@ -51,11 +51,7 @@ class File implements ITypeLookup implements IErrors {
 				this.errors.push(error);
 				
 				if(i == 25) {
-					this.errors.push(new Diagnostic({
-						severity: Severity.ERROR,
-						message: "Too many errors!",
-						info: []
-					}));
+					this.errors.push(TooManyErrors);
 					break;
 				}
 			});
@@ -79,17 +75,7 @@ class File implements ITypeLookup implements IErrors {
 				case DUse({span: span, kind: kind, generics: typevars}):
 					if(!lastWasUse) {
 						lastWasUse = true;
-						errors.push(new Diagnostic({
-							severity: Severity.WARNING,
-							message: "Unorganized code",
-							info: [
-								Spanned({
-									span: span,
-									message: "All imports should be at the beginning of the file",
-									isSecondary: true
-								})
-							]
-						}));
+						errors.push(Type_UnorganizedCode(span));
 					}
 
 					if(typevars != Nil) {
@@ -107,17 +93,7 @@ class File implements ITypeLookup implements IErrors {
 					
 					case Pragma(span2, pragma):
 						status = false;
-						errors.push(new Diagnostic({
-							severity: Severity.ERROR,
-							message: "Unknown pragma",
-							info: [
-								Spanned({
-									span: span2,
-									message: 'Unknown pragma `$pragma`',
-									isPrimary: true
-								})
-							]
-						}));
+						errors.push(Type_UnknownPragma(pragma, span2));
 						continue;
 					}
 
@@ -151,7 +127,7 @@ class File implements ITypeLookup implements IErrors {
 
 				case DUse(_):
 
-				default: errors.push(Errors.unexpectedDecl(this, decl));
+				default: errors.push(Type_UnexpectedDeclInFile(this, decl));
 			}
 		});
 	}
@@ -223,7 +199,7 @@ class File implements ITypeLookup implements IErrors {
 							{t: decl.thisType.t, span: span}; // should probably curry parametrics but eh
 						case [_, []]:
 							if(search == Inside) {
-								errors.push(Errors.invalidTypeApply(span, "Attempt to apply arguments to a non-parametric type"));
+								errors.push(Type_InvalidTypeApply(span, "Attempt to apply arguments to a non-parametric type"));
 								null;
 							} else {
 								// error...?
@@ -231,10 +207,10 @@ class File implements ITypeLookup implements IErrors {
 							}
 						case [_, params]:
 							if(args.length > params.length) {
-								errors.push(Errors.invalidTypeApply(span, "Too many arguments"));
+								errors.push(Type_InvalidTypeApply(span, "Too many arguments"));
 								null;
 							} else if(args.length < params.length) {
-								errors.push(Errors.invalidTypeApply(span, "Not enough arguments"));
+								errors.push(Type_InvalidTypeApply(span, "Not enough arguments"));
 								null;
 							} else {
 								finished = false;
@@ -242,7 +218,7 @@ class File implements ITypeLookup implements IErrors {
 									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
 										at(type!) => type,
 										_ => {
-											errors.push(Errors.invalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
+											errors.push(Type_InvalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
 											arg;
 										}
 									),
@@ -257,7 +233,7 @@ class File implements ITypeLookup implements IErrors {
 						} else switch decls.filter(t -> t.params.length == args.length).map(t -> new Type(t.thisType.t, span)) {
 							case []:
 								//trace(path, span.display());
-								errors.push(Errors.invalidTypeApply(span, "No matching candidates were found"));
+								errors.push(Type_InvalidTypeApply(span, "No matching candidates were found"));
 								null;
 							case [type]:
 								finished = false;
@@ -265,7 +241,7 @@ class File implements ITypeLookup implements IErrors {
 									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
 										at(type!) => type,
 										_ => {
-											errors.push(Errors.invalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
+											errors.push(Type_InvalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
 											arg;
 										}
 									),
@@ -277,7 +253,7 @@ class File implements ITypeLookup implements IErrors {
 									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
 										at(type!) => type,
 										_ => {
-											errors.push(Errors.invalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
+											errors.push(Type_InvalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
 											arg;
 										}
 									),

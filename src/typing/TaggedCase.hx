@@ -3,7 +3,7 @@ package typing;
 import parsing.ast.Message;
 import parsing.ast.Stmt;
 import reporting.Severity;
-import reporting.Diagnostic;
+import errors.Error;
 import text.Span;
 import parsing.ast.Ident;
 import typing.Traits;
@@ -11,7 +11,7 @@ import typing.Traits;
 @:build(util.Auto.build())
 @:autoBuild(util.Auto.build())
 abstract class TaggedCase implements IDecl {
-	final errors: Array<Diagnostic> = [];
+	final errors: Array<Error> = [];
 	//final decl: ITaggedCases;
 	final decl: AnyTypeDecl;
 	final span: Span;

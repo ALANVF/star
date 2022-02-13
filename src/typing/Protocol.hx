@@ -30,15 +30,15 @@ class Protocol extends ClassLike {
 		}
 
 		for(attr => span in ast.attrs) switch attr {
-			case IsHidden(_) if(protocol.hidden.isSome()): protocol.errors.push(Errors.duplicateAttribute(protocol, ast.name.name, "hidden", span));
+			case IsHidden(_) if(protocol.hidden.isSome()): protocol.errors.push(Type_DuplicateAttribute(protocol, ast.name.name, "hidden", span));
 			case IsHidden(None): protocol.hidden = Some(None);
 			case IsHidden(Some(outsideOf)): protocol.hidden = Some(Some(protocol.makeTypePath(outsideOf)));
 
-			case IsFriend(_) if(protocol.friends.length != 0): protocol.errors.push(Errors.duplicateAttribute(protocol, ast.name.name, "friend", span));
+			case IsFriend(_) if(protocol.friends.length != 0): protocol.errors.push(Type_DuplicateAttribute(protocol, ast.name.name, "friend", span));
 			case IsFriend(One(friend)): protocol.friends.push(protocol.makeTypePath(friend));
 			case IsFriend(Many(_, friends, _)): for(friend in friends) protocol.friends.push(protocol.makeTypePath(friend));
 
-			case IsSealed(_) if(protocol.sealed.isSome()): protocol.errors.push(Errors.duplicateAttribute(protocol, ast.name.name, "sealed", span));
+			case IsSealed(_) if(protocol.sealed.isSome()): protocol.errors.push(Type_DuplicateAttribute(protocol, ast.name.name, "sealed", span));
 			case IsSealed(None): protocol.sealed = Some(None);
 			case IsSealed(Some(outsideOf)): protocol.sealed = Some(Some(protocol.makeTypePath(outsideOf)));
 		}
@@ -72,7 +72,7 @@ class Protocol extends ClassLike {
 			case DDeinit(d) if(protocol.staticDeinit.isSome()): protocol.staticDeinit = Some(StaticDeinit.fromAST(protocol, d));
 			case DDeinit(d): protocol.deinit = Some(Deinit.fromAST(protocol, d));
 			
-			default: protocol.errors.push(Errors.unexpectedDecl(protocol, ast.name.name, decl));
+			default: protocol.errors.push(Type_UnexpectedDecl(protocol, decl));
 		}
 
 		return protocol;

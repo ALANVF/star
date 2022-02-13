@@ -6,6 +6,7 @@ import hx.strings.Char;
 import text.Span;
 import lexing.Token;
 import reporting.*;
+import errors.Error;
 
 using util.Strings;
 
@@ -29,7 +30,7 @@ class Lexer {
 	}
 	
 	public function tokenize() {
-		var diags = Nil;
+		var errors = Nil;
 		var tokens = Nil;
 		while(true) {
 			try {
@@ -37,13 +38,13 @@ class Lexer {
 				break;
 			} catch(eof: Eof) {
 				break;
-			} catch(diag: Diagnostic) { // this uses Dynamic but whatever
-				diags = diags.prepend(diag);
+			} catch(error: Error) { // this uses Dynamic but whatever
+				errors = errors.prepend(error);
 			}
 		}
 
 		return new Tuple2(
-			diags.rev(),
+			errors.rev(),
 			retoken(Nil, tokens._match(
 				at([T_LSep(_), ...rest]) => rest,
 				_ => tokens
@@ -197,7 +198,7 @@ class Lexer {
 			_ => {}
 		);
 		
-		throw "unterminated comment!";
+		throw Lex_UnterminatedComment(Span.at(begin, source)); // not entirely accurate but eh
 	}
 
 	/*inline*/ function readToken(): Token {
@@ -265,17 +266,7 @@ class Lexer {
 					if(reader.eat('.'.code)) {
 						T_DotDotDot(span());
 					} else {
-						throw new Diagnostic({
-							severity: Severity.ERROR,
-							message: "Syntax error",
-							info: [
-								Spanned({
-									span: span(),
-									message: 'Invalid operator `..`',
-									isPrimary: true
-								}),
-							]
-						});
+						throw Lex_InvalidOperator("..", span());
 					}
 				} else {
 					T_Dot(span());
@@ -306,21 +297,11 @@ class Lexer {
 					at('['.code) => { reader.next(); T_HashLBracket(span()); },
 					at('{'.code) => { reader.next(); T_HashLBrace(span()); },
 					at('"'.code) => { reader.next(); readChar(); },
-					_ => throw new Diagnostic({
-						severity: Severity.ERROR,
-						message: "Syntax error",
-						info: [
-							Spanned({
-								span: Span.at(here(), source),
-								message: 'Unexpected `${reader.peek()}` after `#`',
-								isPrimary: true
-							}),
-							Spanned({
-								span: Span.at(begin, source),
-								isSecondary: true
-							})
-						]
-					})
+					_ => throw Lex_InvalidInputAfterHash(
+						Span.at(begin, source),
+						reader.peek(),
+						Span.at(here(), source)
+					)
 				);
 			},
 
@@ -331,17 +312,7 @@ class Lexer {
 					at('>'.code) => { reader.next(); T_EqGt(span()); },
 					at('='.code) => {
 						reader.next();
-						throw new Diagnostic({
-							severity: Severity.ERROR,
-							message: "Syntax error",
-							info: [
-								Spanned({
-									span: span(),
-									message: "Please use `?=` instead of `==` in Star",
-									isPrimary: true
-								})
-							]
-						});
+						throw Lex_InvalidEqEq(span());
 					},
 					_ => T_Eq(span())
 				);
@@ -401,21 +372,10 @@ class Lexer {
 									T_Cascade(span(), depth);
 								} else {
 									final end = here();
-									throw new Diagnostic({
-										severity: Severity.ERROR,
-										message: "Unterminated cascade",
-										info: [
-											Spanned({
-												span: Span.at(end, source),
-												message: "Expected a `>` to finish the cascade operator",
-												isPrimary: true
-											}),
-											Spanned({
-												span: new Span(begin, end, source),
-												isSecondary: true
-											})
-										]
-									});
+									throw Lex_UnterminatedCascade(
+										new Span(begin, end, source),
+										Span.at(end, source)
+									);
 								}
 							},
 							at('>'.code) => { reader.next(); T_Cascade(span(), 2); },
@@ -566,17 +526,7 @@ class Lexer {
 			},
 
 			_ => {
-				throw new Diagnostic({
-					severity: Severity.ERROR,
-					message: "Syntax error",
-					info: [
-						Spanned({
-							span: Span.at(begin, source),
-							message: "This is not the syntax that you are looking for",
-							isPrimary: true
-						})
-					]
-				});
+				throw Lex_InvalidInput(Span.at(begin, source));
 			}
 		);
 	}
@@ -639,17 +589,7 @@ class Lexer {
 					readHex();
 				},
 				_ => {
-					throw new Diagnostic({
-						severity: Severity.ERROR,
-						message: "Unexpected start of hexdecimal literal",
-						info: [
-							Spanned({
-								span: span(),
-								message: "Were you wanting a hexdecimal literal here or what?",
-								isPrimary: true
-							})
-						]
-					});
+					throw Lex_InvalidHexStart(span());
 				}
 			);
 		} else {
@@ -681,21 +621,10 @@ class Lexer {
 
 				final endName = here();
 
-				throw new Diagnostic({
-					severity: Severity.ERROR,
-					message: "Invalid hexdecimal literal",
-					info: [
-						Spanned({
-							span: new Span(end, endName, source),
-							message: "Make sure to separate names from numbers",
-							isPrimary: true
-						}),
-						Spanned({
-							span: new Span(begin, end, source),
-							isSecondary: true
-						})
-					]
-				});
+				throw Lex_NameAfterHex(
+					new Span(begin, end, source),
+					new Span(end, endName, source)
+				);
 			},
 			_ => {
 				return T_Hex(span(), reader.substring(start));
@@ -731,21 +660,10 @@ class Lexer {
 				_ => {
 					final end = here();
 					
-					throw new Diagnostic({
-						severity: Severity.ERROR,
-						message: "Invalid decimal literal",
-						info: [
-							Spanned({
-								span: Span.at(afterDigits, source),
-								message: "At least 1 digit is required on both sides of the decimal point",
-								isPrimary: true
-							}),
-							Spanned({
-								span: new Span(begin, end.advance(-1), source),
-								isSecondary: true
-							})
-						]
-					});
+					throw Lex_IncompleteDecimalPoint(
+						new Span(begin, end.advance(-1), source),
+						Span.at(afterDigits, source)
+					);
 				}
 			);
 		} else {
@@ -769,21 +687,10 @@ class Lexer {
 
 				final endName = here();
 
-				throw new Diagnostic({
-					severity: Severity.ERROR,
-					message: "Invalid number literal",
-					info: [
-						Spanned({
-							span: new Span(end, endName, source),
-							message: "Make sure to separate names from numbers",
-							isPrimary: true
-						}),
-						Spanned({
-							span: new Span(begin, end, source),
-							isSecondary: true
-						})
-					]
-				});
+				throw Lex_NameAfterNumber(
+					new Span(begin, end, source),
+					new Span(end, endName, source)
+				);
 			},
 			_ => {
 				return switch dec {
@@ -814,22 +721,10 @@ class Lexer {
 			_ => {
 				final end = here();
 
-				throw new Diagnostic({
-					severity: Severity.ERROR,
-					message: "Invalid number literal",
-					info: [
-						Spanned({
-							span: new Span(end, end.advance(1), source),
-							message: "Expected a number after the exponent indicator",
-							isPrimary: true
-						}),
-						Spanned({
-							span: new Span(ruleBegin.advance(-1), end, source),
-							message: "This indicates that the number has an exponent",
-							isSecondary: true
-						})
-					]
-				});
+				throw Lex_MissingExponent(
+					new Span(ruleBegin.advance(-1), end, source),
+					new Span(end, end.advance(1), source)
+				);
 			}
 		);
 	}
@@ -866,42 +761,17 @@ class Lexer {
 
 						final endName = here();
 
-						throw new Diagnostic({
-							severity: Severity.ERROR,
-							message: "Invalid punned label",
-							info: [
-								Spanned({
-									span: Span.at(end, source),
-									message: "Punned labels may not start with an uppercase letter",
-									isPrimary: true
-								}),
-								Spanned({
-									span: Span.at(begin, source),
-									isSecondary: true
-								}),
-								Spanned({
-									span: new Span(end, endName, source),
-									isSecondary: true
-								})
-							]
-						});
+						throw Lex_NoUppercasePunnedLabel(
+							Span.at(begin, source),
+							Span.at(end, source),
+							new Span(end, endName, source)
+						);
 					},
 					_ => {
-						throw new Diagnostic({
-							severity: Severity.ERROR,
-							message: "Invalid punned label",
-							info: [
-								Spanned({
-									span: Span.at(begin.advance(1), source),
-									message: "Was expecting a name for the punned label",
-									isPrimary: true
-								}),
-								Spanned({
-									span: Span.at(begin, source),
-									isSecondary: true
-								})
-							]
-						});
+						throw Lex_IncompletePunnedLabel(
+							Span.at(begin, source),
+							Span.at(begin.advance(1), source)
+						);
 					}
 				);
 			}
@@ -926,21 +796,10 @@ class Lexer {
 		return if(reader.eat(':')) {
 			final end = here();
 
-			throw new Diagnostic({
-				severity: Severity.ERROR,
-				message: "Invalid label",
-				info: [
-					Spanned({
-						span: Span.at(begin, source),
-						message: "Labels may not start with an uppercase letter",
-						isPrimary: true
-					}),
-					Spanned({
-						span: new Span(begin.advance(1), end, source),
-						isSecondary: true
-					})
-				]
-			});
+			throw Lex_NoUppercaseLabel(
+				Span.at(begin, source),
+				new Span(begin.advance(1), end, source)
+			);
 		} else {
 			T_TypeName(span(), n);
 		}
@@ -971,41 +830,20 @@ class Lexer {
 	}
 
 	inline function readChar(): Token {
+		
 		final char = switch reader.unsafePeek() {
 			case '"'.code:
 				final end = here();
-				if(reader.peekAt(1, '"'.code)) {
-					throw new Diagnostic({
-						severity: Severity.ERROR,
-						message: "Invalid char literal",
-						info: [
-							Spanned({
-								span: Span.at(end, source),
-								message: "`\"` characters need to be escaped in char literals",
-								isPrimary: true
-							}),
-							Spanned({
-								span: new Span(begin, end, source),
-								isSecondary: true
-							}),
-							Spanned({
-								span: Span.at(end.advance(1), source),
-								isSecondary: true
-							})
-						]
-					});
+				reader.next();
+				if(reader.unsafePeek() == '"'.code) {
+					reader.next();
+					throw Lex_EscapeCharQuote(
+						new Span(begin, end, source),
+						Span.at(end, source),
+						Span.at(end.advance(1), source)
+					);
 				} else {
-					throw new Diagnostic({
-						severity: Severity.ERROR,
-						message: "Invalid char literal",
-						info: [
-							Spanned({
-								span: new Span(begin, end.advance(1), source),
-								message: "Char literals may not be empty",
-								isPrimary: true
-							})
-						]
-					});
+					throw Lex_NoEmptyChar(new Span(begin, end, source));
 				}
 
 			case '\\'.code:
@@ -1025,30 +863,14 @@ class Lexer {
 					case 'u'.code: readUniEsc();
 					case 'o'.code: readOctEsc();
 					case c:
-						final end = here().advance(-1);
-						throw new Diagnostic({
-							severity: Severity.ERROR,
-							message: "Invalid escape character",
-							info: [
-								// off by 1 errors?
-								Spanned({
-									span: new Span(here().advance(-2), here(), source),
-									message: 'Escape character `$c` ' + (
-										if(c == '('.code) "is not allowed in char literals"
-										else "does not exist"
-									),
-									isPrimary: true
-								}),
-								Spanned({
-									span: new Span(begin, end.advance(-1), source),
-									isSecondary: true
-								}),
-								Spanned({
-									span: Span.at(end.advance(), source),
-									isSecondary: true
-								})
-							]
-						});
+						final end = here();
+						reader.next();
+						throw Lex_InvalidCharEscape(
+							new Span(begin, end.advance(-2), source),
+							c,
+							new Span(end.advance(-2), end, source),
+							Span.at(end, source)
+						);
 				}
 			
 			default:
@@ -1059,21 +881,10 @@ class Lexer {
 			return T_Char(span(), char);
 		} else {
 			final end = here();
-			throw new Diagnostic({
-				severity: Severity.ERROR,
-				message: "Unterminated char literal",
-				info: [
-					Spanned({
-						span: Span.at(end, source),
-						message: "Expected another `\"` to finish the char literal",
-						isPrimary: true
-					}),
-					Spanned({
-						span: new Span(begin, end, source),
-						isSecondary: true
-					})
-				]
-			});
+			throw Lex_UnterminatedChar(
+				new Span(begin, end, source),
+				Span.at(end, source)
+			);
 		}
 	}
 	
@@ -1090,21 +901,10 @@ class Lexer {
 				},
 				_ => {
 					final end = here();
-					throw new Diagnostic({
-						severity: Severity.ERROR,
-						message: "Invalid hexdecimal escape code",
-						info: [
-							Spanned({
-								span: Span.at(end, source),
-								message: "Was expecting a hexdecimal digit here",
-								isPrimary: true
-							}),
-							Spanned({
-								span: new Span(end.advance(reader.offset - start - 2), end, source),
-								isSecondary: true
-							})
-						]
-					});
+					throw Lex_InvalidHexEscape(
+						new Span(end.advance(reader.offset - start - 2), end, source),
+						Span.at(end, source)
+					);
 				}
 			);
 		}
@@ -1125,21 +925,10 @@ class Lexer {
 				},
 				_ => {
 					final end = here();
-					throw new Diagnostic({
-						severity: Severity.ERROR,
-						message: "Invalid unicode escape code",
-						info: [
-							Spanned({
-								span: Span.at(end, source),
-								message: "Was expecting a hexdecimal digit here",
-								isPrimary: true
-							}),
-							Spanned({
-								span: new Span(end.advance(reader.offset - start - 2), end, source),
-								isSecondary: true
-							})
-						]
-					});
+					throw Lex_InvalidUniEscape(
+						new Span(end.advance(reader.offset - start - 2), end, source),
+						Span.at(end, source)
+					);
 				}
 			);
 		}
@@ -1157,21 +946,10 @@ class Lexer {
 				},
 				_ => {
 					final end = here();
-					throw new Diagnostic({
-						severity: Severity.ERROR,
-						message: "Invalid octal escape code",
-						info: [
-							Spanned({
-								span: Span.at(end, source),
-								message: "Was expecting an octal digit here",
-								isPrimary: true
-							}),
-							Spanned({
-								span: new Span(end.advance(reader.offset - start - 2), end, source),
-								isSecondary: true
-							})
-						]
-					});
+					throw Lex_InvalidOctEscape(
+						new Span(end.advance(reader.offset - start - 2), end, source),
+						Span.at(end, source)
+					);
 				}
 			);
 		}
@@ -1231,17 +1009,10 @@ class Lexer {
 						case 'o'.code: readOctEsc();
 						case c:
 							final end = here().advance(-1);
-							throw new Diagnostic({
-								severity: Severity.ERROR,
-								message: "Invalid escape character",
-								info: [
-									Spanned({
-										span: new Span(end.advance(-1), end.advance(), source), // off by 1 error?
-										message: 'Escape character `\\$c` does not exist',
-										isPrimary: true
-									})
-								]
-							});
+							throw Lex_InvalidStrEscape(
+								c,
+								new Span(end.advance(-1), end.advance(), source) // off by 1 error?
+							);
 					};
 					
 					SChar(char);
@@ -1256,19 +1027,9 @@ class Lexer {
 
 			case _:
 		}
-
+		
 		if(!reader.hasNext()) {
-			throw new Diagnostic({
-				severity: Severity.ERROR,
-				message: "Unterminated string",
-				info: [
-					Spanned({
-						span: Span.at(begin, source),
-						message: "This string is never terminated",
-						isPrimary: true
-					})
-				]
-			});
+			throw Lex_UnterminatedStr(Span.at(begin, source));
 		}
 		
 		return T_Str(span(), segments);
@@ -1298,21 +1059,10 @@ class Lexer {
 			
 						final endName = here();
 			
-						throw new Diagnostic({
-							severity: Severity.ERROR,
-							message: "Invalid anonymous argument",
-							info: [
-								Spanned({
-									span: new Span(end, endName, source),
-									message: "Make sure to separate names from numbers",
-									isPrimary: true
-								}),
-								Spanned({
-									span: new Span(begin, end, source),
-									isSecondary: true
-								})
-							]
-						});
+						throw Lex_NameAfterAnonArg(
+							new Span(begin, end, source),
+							new Span(end, endName, source)
+						);
 					},
 					_ => {
 						return T_AnonArg(span(), depth, reader.substring(start).parseInt());
@@ -1321,21 +1071,10 @@ class Lexer {
 			},
 			_ => {
 				final end = here();
-				throw new Diagnostic({
-					severity: Severity.ERROR,
-					message: "Unterminated anonymous argument",
-					info: [
-						Spanned({
-							span: Span.at(end, source),
-							message: "Was expecting a number here",
-							isPrimary: true
-						}),
-						Spanned({
-							span: new Span(begin, end, source),
-							isSecondary: true
-						})
-					]
-				});
+				throw Lex_UnterminatedAnonArg(
+					new Span(begin, end, source),
+					Span.at(end, source)
+				);
 			}
 		);
 	}

@@ -119,7 +119,7 @@ class Main {
 					renderer.writer.clearLine();
 					Sys.sleep(0.15);
 				#end
-				renderer.render(err);
+				renderer.render(err.asDiagnostic());
 				#if windows
 					renderer.writer.attr(RESET);
 					Sys.sleep(0.15);

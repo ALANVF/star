@@ -2,7 +2,7 @@ package typing;
 
 import typing.Traits;
 import parsing.ast.Ident;
-import reporting.Diagnostic;
+import errors.Error;
 
 class Class extends ClassLike {
 	final inits: Array<Init> = [];
@@ -35,24 +35,24 @@ class Class extends ClassLike {
 		}
 
 		for(attr => span in ast.attrs) switch attr {
-			case IsHidden(_) if(cls.hidden.isSome()): cls.errors.push(Errors.duplicateAttribute(cls, ast.name.name, "hidden", span));
+			case IsHidden(_) if(cls.hidden.isSome()): cls.errors.push(Type_DuplicateAttribute(cls, ast.name.name, "hidden", span));
 			case IsHidden(None): cls.hidden = Some(None);
 			case IsHidden(Some(outsideOf)): cls.hidden = Some(Some(cls.makeTypePath(outsideOf)));
 
-			case IsFriend(_) if(cls.friends.length != 0): cls.errors.push(Errors.duplicateAttribute(cls, ast.name.name, "friend", span));
+			case IsFriend(_) if(cls.friends.length != 0): cls.errors.push(Type_DuplicateAttribute(cls, ast.name.name, "friend", span));
 			case IsFriend(One(friend)): cls.friends.push(cls.makeTypePath(friend));
 			case IsFriend(Many(_, friends, _)): for(friend in friends) cls.friends.push(cls.makeTypePath(friend));
 
-			case IsSealed(_) if(cls.sealed.isSome()): cls.errors.push(Errors.duplicateAttribute(cls, ast.name.name, "sealed", span));
+			case IsSealed(_) if(cls.sealed.isSome()): cls.errors.push(Type_DuplicateAttribute(cls, ast.name.name, "sealed", span));
 			case IsSealed(None): cls.sealed = Some(None);
 			case IsSealed(Some(outsideOf)): cls.sealed = Some(Some(cls.makeTypePath(outsideOf)));
 
-			case IsNative(_, _, _) if(cls.native.isSome()): cls.errors.push(Errors.duplicateAttribute(cls, ast.name.name, "native", span));
+			case IsNative(_, _, _) if(cls.native.isSome()): cls.errors.push(Type_DuplicateAttribute(cls, ast.name.name, "native", span));
 			case IsNative(_, [{label: {name: "repr"}, expr: ELitsym(_, repr)}], _): switch repr {
 				case "void": cls.native = Some(NVoid);
 				case "bool": cls.native = Some(NBool);
 				case "voidptr": cls.native = Some(NVoidPtr);
-				default: cls.errors.push(Errors.invalidAttribute(cls, cls.name.name, "native", span));
+				default: cls.errors.push(Type_InvalidAttribute(cls, cls.name.name, "native", span));
 			}
 			case IsNative(_, [
 				{label: {name: "repr"}, expr: ELitsym(_, "ptr")},
@@ -64,7 +64,7 @@ class Class extends ClassLike {
 			], _): switch bits {
 				case 32: cls.native = Some(NDec32);
 				case 64: cls.native = Some(NDec64);
-				default: cls.errors.push(Errors.invalidAttribute(cls, cls.name.name, "native", span));
+				default: cls.errors.push(Type_InvalidAttribute(cls, cls.name.name, "native", span));
 			}
 			case IsNative(_, [
 				{label: {name: "repr"}, expr: ELitsym(_, "int")},
@@ -75,9 +75,9 @@ class Class extends ClassLike {
 				case 16: cls.native = Some(signed ? NInt16 : NUInt16);
 				case 32: cls.native = Some(signed ? NInt32 : NUInt32);
 				case 64: cls.native = Some(signed ? NInt64 : NUInt64);
-				default: cls.errors.push(Errors.invalidAttribute(cls, cls.name.name, "native", span));
+				default: cls.errors.push(Type_InvalidAttribute(cls, cls.name.name, "native", span));
 			}
-			case IsNative(_, _, _): cls.errors.push(Errors.invalidAttribute(cls, cls.name.name, "native", span));
+			case IsNative(_, _, _): cls.errors.push(Type_InvalidAttribute(cls, cls.name.name, "native", span));
 
 			case IsStrong: cls._isStrong = true;
 
@@ -113,7 +113,7 @@ class Class extends ClassLike {
 			case DDeinit(d) if(cls.staticDeinit.isSome()): cls.staticDeinit = Some(StaticDeinit.fromAST(cls, d));
 			case DDeinit(d): cls.deinit = Some(Deinit.fromAST(cls, d));
 			
-			default: cls.errors.push(Errors.unexpectedDecl(cls, ast.name.name, decl));
+			default: cls.errors.push(Type_UnexpectedDecl(cls, decl));
 		}
 
 		return cls;

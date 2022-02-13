@@ -36,10 +36,10 @@ inline function _findType<T: ITypeLookup & BaseGenericMethod>(method: T, path: L
 						null;
 					case [_, params]:
 						if(args.length > params.length) {
-							method.errors.push(Errors.invalidTypeApply(span, "Too many arguments"));
+							method.errors.push(Type_InvalidTypeApply(span, "Too many arguments"));
 							null;
 						} else if(args.length < params.length) {
-							method.errors.push(Errors.invalidTypeApply(span, "Not enough arguments"));
+							method.errors.push(Type_InvalidTypeApply(span, "Not enough arguments"));
 							null;
 						} else {
 							finished = false;
@@ -47,7 +47,7 @@ inline function _findType<T: ITypeLookup & BaseGenericMethod>(method: T, path: L
 								at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
 									at(type!) => type,
 									_ => {
-										method.errors.push(Errors.invalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
+										method.errors.push(Type_InvalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
 										arg;
 									}
 								),
@@ -61,7 +61,7 @@ inline function _findType<T: ITypeLookup & BaseGenericMethod>(method: T, path: L
 						{t: TMulti(found.map(t -> t.thisType)), span: span};
 					} else switch found.filter(t -> t.params.length == args.length).map(t -> t.thisType) {
 						case []:
-							method.errors.push(Errors.invalidTypeApply(span, "No candidate matches the type arguments"));
+							method.errors.push(Type_InvalidTypeApply(span, "No candidate matches the type arguments"));
 							null;
 						case [tvar]:
 							finished = false;
@@ -69,7 +69,7 @@ inline function _findType<T: ITypeLookup & BaseGenericMethod>(method: T, path: L
 								at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
 									at(type!) => type,
 									_ => {
-										method.errors.push(Errors.invalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
+										method.errors.push(Type_InvalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
 										arg;
 									}
 								),

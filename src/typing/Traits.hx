@@ -1,15 +1,15 @@
 package typing;
 
-import reporting.Diagnostic;
+import errors.Error;
 import text.Span;
 import parsing.ast.Stmt;
 import parsing.ast.Ident;
 
 typedef VErrors = {
-	final errors: Array<Diagnostic>;
+	final errors: Array<Error>;
 
 	function hasErrors(): Bool;
-	function allErrors(): Array<Diagnostic>;
+	function allErrors(): Array<Error>;
 }
 
 typedef VDecl = VErrors & {

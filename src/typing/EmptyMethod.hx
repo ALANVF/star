@@ -1,6 +1,6 @@
 package typing;
 
-import reporting.Diagnostic;
+import errors.Error;
 import parsing.ast.Stmt;
 import text.Span;
 import typing.Traits;
@@ -8,7 +8,7 @@ import typing.Traits;
 @:build(util.Auto.build())
 @:autoBuild(util.Auto.build())
 abstract class EmptyMethod implements IErrors {
-	final errors: Array<Diagnostic> = [];
+	final errors: Array<Error> = [];
 	final decl: AnyTypeDecl;
 	final span: Span;
 	final body: Array<Stmt>;
