@@ -1339,12 +1339,12 @@ class Type implements ITypeable {
 									p = p.simplify();
 									final ctx2 = ctx.copy();
 									p.bindTo(onto, ctx2)._and(res => {
-										trace(res.fullName());
+										//trace(res.fullName());
 										res = res.getFrom(this);
-										trace(res.fullName());
+										//trace(res.fullName());
 										for(k => v in ctx2) {
 											if(!ctx.exists(k)) {
-												trace(k.thisType.getFrom(this).fullName(),v.getFrom(this).fullName());
+												//trace(k.thisType.getFrom(this).fullName(),v.getFrom(this).fullName());
 												ctx[k]=v.getFrom(this);
 											}
 										}
@@ -1359,7 +1359,7 @@ class Type implements ITypeable {
 							_ => throw "todo"
 						);
 					} else {
-						trace(decl1.fullName(), decl2.fullName());
+						//trace(decl1.fullName(), decl2.fullName());
 						null;
 					}
 				};

@@ -1977,45 +1977,41 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 								var tcat = kinds.cat.thisType.getLeastSpecific().simplify();
 								final tctx:TypeVarCtx = ov.tctx._or(new TypeVarCtx());
 								res = res.getInTCtx(tctx);
-								trace(t.fullName());
-								trace(tcat.fullName());
-								var t2;
-								trace(
-									tctx.display(),
-									(t2=t.bindTo(tcat, tctx))._match(
-										at(null) => null,
-										at(res={t: TInstance(decl, params, tctx2)}) => {
-											final rs = [for(ref in decl.refinees) {
-												ref.applyArgs(params).nonNull()._match(
-													at({t: TInstance(_, _, tctx3)}) => tctx3,
-													_ => throw "bad"
-												);
-											}];
+								//trace(t.fullName());
+								//trace(tcat.fullName());
+								var t2=t.bindTo(tcat, tctx);
+								t2._match(
+									at(null) => {},//null,
+									at(res={t: TInstance(decl, params, tctx2)}) => {
+										final rs = [for(ref in decl.refinees) {
+											ref.applyArgs(params).nonNull()._match(
+												at({t: TInstance(_, _, tctx3)}) => tctx3,
+												_ => throw "bad"
+											);
+										}];
 
-											for(r in rs) {
-												//trace(r.display());
-												for(k => v in r) {
-													tctx2[k] = v;
-												}
+										for(r in rs) {
+											//trace(r.display());
+											for(k => v in r) {
+												tctx2[k] = v;
 											}
-											for(k => v in tctx) {
-												var v2 = v.getInTCtx(tctx2);
-												//for(r in rs) v2 = v2.getInTCtx(r);
-												tctx[k] = v2;
-											}
-											for(k=>v in tctx2) {
-												tctx[k]=v;
-											}
-											res.fullName() + " " + tctx2.display();
-										},
-										at(res) => res.fullName()
-									),
-									tctx.display()
+										}
+										for(k => v in tctx) {
+											var v2 = v.getInTCtx(tctx2);
+											//for(r in rs) v2 = v2.getInTCtx(r);
+											tctx[k] = v2;
+										}
+										for(k=>v in tctx2) {
+											tctx[k]=v;
+										}
+										//res.fullName() + " " + tctx2.display();
+									},
+									at(res) => {}//res.fullName()
 								);
 								
 								//res = res.getInTCtx(tctx);
 								t2._and(ty2 => {
-									tcat=tcat.getFrom(ty2);
+									tcat = tcat.getFrom(ty2);
 									res = res.getFrom(ty2).getFrom(tcat);
 								});
 								res=res.getFrom(t.getInTCtx(tctx));
@@ -2028,14 +2024,14 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 												},
 												_ => {}
 											);
-											trace("!!!", t);
+											//trace("!!!", t);
 											res = t;
 										});
 									},
 									_ => {}
 								);
-								trace(res.fullName());
-								Sys.println("");
+								//trace(res.fullName());
+								//Sys.println("");
 								res;
 							}).unique()._match(
 								at([]) => null,
