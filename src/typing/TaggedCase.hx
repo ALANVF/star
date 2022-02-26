@@ -39,16 +39,16 @@ abstract class TaggedCase implements IDecl {
 					params: params.map(p -> {
 						final type = decl.makeTypePath(p.type);
 						return switch [p.label, p.name] {
-							case [Some(l), Some(n)]: {label: l, name: n, type: type};
-							case [Some(l), None]: {label: l, name: l, type: type};
-							case [None, Some(n)]: {label: new Ident(n.span, "_"), name: n, type: type};
+							case [Some(l), Some(n)]: {label: l, name: n, type: type, value: p.value.toNull()};
+							case [Some(l), None]: {label: l, name: l, type: type, value: p.value.toNull()};
+							case [None, Some(n)]: {label: new Ident(n.span, "_"), name: n, type: type, value: p.value.toNull()};
 							case [None, None]:
 								final span = {
 									final s = p.type.span();
 									Span.at(s.start, s.source.toNull());
 								};
 								final ident = new Ident(span, "_");
-								{label: ident, name: ident, type: type};
+								{label: ident, name: ident, type: type, value: p.value.toNull()};
 						}
 					}),
 					assoc: assoc,

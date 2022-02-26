@@ -4,7 +4,7 @@ import text.Span;
 
 enum Tag {
 	Single(name: Ident);
-	Multi(params: Array<{label: Option<Ident>, name: Option<Ident>, type: Type}>);
+	Multi(params: Array<MultiParam>);
 }
 
 enum CaseKind {

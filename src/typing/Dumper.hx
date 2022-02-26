@@ -1749,11 +1749,7 @@ class Dumper {
 		
 		tcase._match(
 			at(mc is MultiTaggedCase) => {
-				writeLines(mc.params, param -> {
-					write(param.label.name+": "+param.name.name+" ");
-					dump(param.type, Nil);
-				});
-				nextLine();
+				dump(mc.params, Nil);
 			},
 			at(sc is SingleTaggedCase) => {
 				write(sc.name.name);

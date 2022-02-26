@@ -1143,90 +1143,34 @@ class Parser {
 		},
 
 		at([T_LBracket(begin), ...rest = [T_Label(_, _), ..._]]) => {
-			final params = [rest._match(
-				// Checking for `a: (B)` syntax before `a: a' (B)` syntax is
-				// probably less expensive than doing it after.
-				at([T_Label(_2, label), ...rest2 = [T_LParen(_), ..._]]) => switch parseTypeAnno(rest2) {
-					case Success(type, rest3):
-						rest = rest3;
-						{label: Some(new Ident(_2, label)), name: None, type: type};
-					case err: return fatalIfBad(tokens, cast err);
+			parseMultiSig(rest)._match(
+				at(Success({params: params, end: end}, rest2)) => {
+					final assoc = rest2._match(
+						at([T_EqGt(_), T_LBracket(_), ...rest3]) => switch finishTypeMsg(rest3) {
+							case Success(msg, rest4):
+								rest2 = rest4;
+								Some(msg.msg);
+							case err: return fatalIfBad(rest2, cast err);
+						},
+						at([T_EqGt(_), ...rest3]) => return Fatal(rest2, Some(rest3)),
+						_ => None
+					);
+					final init = switch parseBlock(rest2) {
+						case Success(block, rest3):
+							rest2 = rest3;
+							Some(block);
+						case Failure(_, _): None;
+						case err: return cast err;
+					};
+					
+					Success(DCase({
+						span: _1,
+						kind: Tagged({begin: begin, of: Multi(params), end: end}, assoc),
+						init: init
+					}), rest2);
 				},
-				at([T_Label(_2, label), _.asSoftName() => T_Name(_3, name), ...rest2]) => switch parseTypeAnno(rest2) {
-					case Success(type, rest3):
-						rest = rest3;
-						{label: Some(new Ident(_2, label)), name: Some(new Ident(_3, name)), type: type};
-					case err: return fatalIfBad(tokens, cast err);
-				},
-				at([T_Label(_, _), ...rest2]) => return Fatal(tokens, Some(rest2)),
-				at([]) => return Eof(tokens),
-				_ => return Fatal(tokens, Some(rest))
-			)];
-
-			while(true) {
-				rest._match(
-					at([T_RBracket(end), ...rest2]) => {
-						final assoc = rest2._match(
-							at([T_EqGt(_), T_LBracket(_), ...rest3]) => switch finishTypeMsg(rest3) {
-								case Success(msg, rest4):
-									rest2 = rest4;
-									Some(msg.msg);
-								case err: return fatalIfBad(rest2, cast err);
-							},
-							at([T_EqGt(_), ...rest3]) => return Fatal(rest2, Some(rest3)),
-							_ => None
-						);
-						final init = switch parseBlock(rest2) {
-							case Success(block, rest3):
-								rest2 = rest3;
-								Some(block);
-							case Failure(_, _): None;
-							case err: return cast err;
-						};
-						
-						return Success(DCase({
-							span: _1,
-							kind: Tagged({begin: begin, of: Multi(params), end: end}, assoc),
-							init: init
-						}), rest2);
-					},
-					at([isAnySep(_) => true, ...rest2]) => rest = rest2,
-					at([T_Label(_, _), ..._]) => {},
-					at([]) => return Eof(tokens),
-					_ => return Fatal(tokens, Some(rest))
-				);
-
-				params.push(rest._match(
-					at([T_Label(_2, label), ...rest2 = [T_LParen(_), ..._]]) => switch parseTypeAnno(rest2) {
-						case Success(type, rest3):
-							rest = rest3;
-							{label: Some(new Ident(_2, label)), name: None, type: type};
-						case err: return fatalIfBad(tokens, cast err);
-					},
-					at([T_Label(_2, label), _.asSoftName() => T_Name(_3, name), ...rest2]) => switch parseTypeAnno(rest2) {
-						case Success(type, rest3):
-							rest = rest3;
-							{label: Some(new Ident(_2, label)), name: Some(new Ident(_3, name)), type: type};
-						case err: return fatalIfBad(tokens, cast err);
-					},
-					at([T_Label(_, _), ...rest2]) => return Fatal(tokens, Some(rest2)),
-					at([_.asSoftName() => T_Name(_2, name), ...rest2]) => switch parseTypeAnno(rest2) {
-						case Success(type, rest3):
-							rest = rest3;
-							{label: None, name: Some(new Ident(_2, name)), type: type};
-						case err: return fatalIfBad(tokens, cast err);
-					},
-					at([]) => return Eof(tokens),
-					_ => switch parseTypeAnno(rest) {
-						case Success(type, rest3):
-							rest = rest3;
-							{label: None, name: None, type: type};
-						case err: return fatalIfBad(tokens, cast err);
-					}
-				));
-			};
-
-			return Fatal(tokens, Some(rest));
+				at(err) => fatalIfBad(tokens, cast err)
+			);
 		},
 		at([T_LBracket(begin), _.asAnyName() => T_Name(_2, name), T_RBracket(end), ...rest]) => {
 			final assoc = rest._match(
