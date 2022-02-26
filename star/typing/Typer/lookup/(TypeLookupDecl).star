@@ -1,0 +1,1 @@
+protocol TypeLookupDecl of TypeLookup, Decl {}

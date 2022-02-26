@@ -9,4 +9,7 @@ class Category of AnyTypeDecl {
 	my operators (Array[Operator]) is getter = #[]
 	my hidden (Maybe[Maybe[Type]]) = Maybe[none]
 	my friends (Array[Type]) is getter = #[]
+
+
+	on [name] (Str) is getter => return path.simpleName
 }

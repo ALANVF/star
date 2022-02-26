@@ -165,6 +165,18 @@ class Array[T] of Values[T] {
 		return result
 	}
 
+	type U
+	type V
+	on [zip: other (Array[U]) collect: func (Func[V, T, U])] (Array[V]) {
+		my result = This[V][new: length]
+
+		for my i from: 0 upto: _.length {
+			result[add: func[call: buffer[at: i], other[Unsafe at: i]]]
+		}
+		
+		return result
+	}
+
 	; ...
 
 	type U

@@ -1,4 +1,4 @@
-class Member of Decl, Named {
+class Member of NamedDecl {
 	kind Attrs is flags {
 		has [empty]
 		has [isStatic: (Span)]

@@ -63,4 +63,8 @@ alias MultiParams (Array[MultiParam]) {
 			else => return MatchParams[no]
 		}
 	}
+
+	on [displayLabels] (Str) {
+		return this[collect: MultiParam$0.label.name + ":"][join]
+	}
 }

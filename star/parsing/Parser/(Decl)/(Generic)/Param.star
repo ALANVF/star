@@ -1,4 +1,4 @@
-class Param of Decl, Named, Parents, Parametric {
+class Param of NamedDecl, Parents, Parametric {
 	kind Attrs is flags {
 		has [empty]
 		has [begin: (Span) isNative: (Array[Tuple[Ident, Expr]]) end: (Span)]

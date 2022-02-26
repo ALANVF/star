@@ -1,1 +1,1 @@
-protocol TypeDecl of Decl, Named, Generic, Parametric {}
+protocol TypeDecl of NamedDecl, Generic, Parametric {}

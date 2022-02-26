@@ -1,6 +1,6 @@
 use Ident from: Parser
 
-class Member of Decl, TypeLookup {
+class Member of TypeLookupDecl {
 	my decl (AnyTypeDecl)
 	my ident (Ident)
 	my type (Maybe[Type])

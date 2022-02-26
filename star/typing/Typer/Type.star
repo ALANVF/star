@@ -37,6 +37,14 @@ kind Type of TypeLookup, Typeable {
 	on [span: span' (Span)] is setter => span = Maybe[the: span']
 
 
+	;== Printing
+
+	on [simpleName] (Str) is getter
+
+	on [fullName] (Str) is getter => return this[fullName: TypeCache #[]]
+	on [fullName: cache (TypeCache)] (Str) is hidden
+
+
 	;== Type lookup
 
 	on [makeTypePath: path (TypePath)] (Type)

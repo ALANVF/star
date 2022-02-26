@@ -1,6 +1,9 @@
-protocol AnyTypeDecl of Typeable, Decl {
+protocol AnyTypeDecl of Typeable, TypeLookupDecl {
 	my lookup (TypeLookup) is getter
 	my thisType (Type) is getter
+
+
+	on [name] (Str) is getter
 
 
 	;== Categories

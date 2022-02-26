@@ -13,6 +13,12 @@ kind Ctx {
 	;-- A callable method
 	has [method: (RealMethod)]
 
+	;-- A member of a type
+	has [member: (Member)]
+
+	;-- A tagged case
+	has [taggedCase: (TaggedCase)]
+
 	;-- Code of some kind
 	has [code]
 
@@ -41,6 +47,8 @@ kind Ctx {
 			at This[category: my cat] => return cat
 			at This[emptyMethod: my mth] => return mth.decl
 			at This[method: my mth] => return mth.decl
+			at This[member: my mem] => return mem.decl
+			at This[taggedCase: my tcase] => return tcase.decl
 			else {
 				match outer at Maybe[the: my outer'] {
 					return outer'.typeDecl
@@ -51,12 +59,14 @@ kind Ctx {
 		}
 	}
 
-	on [typeLookup] (TypeLookup) is getter {
+	on [typeLookup] (TypeLookupDecl) is getter {
 		match this {
 			at This[decl: my decl] => return decl
 			at This[category: my cat] => return cat
 			at This[emptyMethod: my mth] => return mth.decl
 			at This[method: my mth] => return mth
+			at This[member: my mem] => return mem.decl
+			at This[taggedCase: my tcase] => return tcase.decl
 			else {
 				match outer at Maybe[the: my outer'] {
 					return outer'.typeLookup
@@ -100,6 +110,22 @@ kind Ctx {
 		]
 	}
 
+	on [innerMember: member (Member)] (This) {
+		return This[
+			outer: Maybe[the: this]
+			:thisType
+			:member
+		]
+	}
+
+	on [innerTaggedCase: taggedCase (TaggedCase)] (This) {
+		return This[
+			outer: Maybe[the: this]
+			:thisType
+			:taggedCase
+		]
+	}
+
 	on [innerCode] (This) {
 		return This[code]
 		-> outer = Maybe[the: this]
@@ -137,6 +163,8 @@ kind Ctx {
 			|| Ctx[category: my source (HasErrors)]
 			|| Ctx[emptyMethod: my source (HasErrors)]
 			|| Ctx[method: my source (HasErrors)]
+			|| Ctx[member: my source (HasErrors)]
+			|| Ctx[taggedCase: my source (HasErrors)]
 		) {
 			source.errors[add: diag]
 		} else {
@@ -189,10 +217,15 @@ kind Ctx {
 
 					at This[pattern] => return outer'[findLocal: name :depth] ;@@ TODO
 
-					at This[emptyMethod: my mth (AnyMethod)] || This[method: my mth (AnyMethod)] {
+					at (
+						|| This[emptyMethod: AnyMethod[decl: my decl]]
+						|| This[method: AnyMethod[decl: my decl]]
+						|| This[member: Member[decl: my decl]]
+						|| This[taggedCase: TaggedCase[decl: my decl]]
+					) {
 						my isStatic = !this[allowsThis]
 
-						my allMembers = mth.decl[instanceMembers: mth.decl]
+						my allMembers = decl[instanceMembers: decl]
 						-> [InPlace keepIf: {|member (Member)|
 							return member.name ?= name && (
 								|| !isStatic
@@ -234,6 +267,16 @@ kind Ctx {
 			
 			at This[method: (StaticMethod)] => return false
 
+			at This[member: my mem] => return !mem.isStatic && {
+				match outer at Maybe[the: my outer'] {
+					return outer'[allowsThis]
+				} else {
+					return true
+				}
+			}
+
+			at This[taggedCase: _] => return true
+
 			at This[objCascade: _] => return true
 
 			else => match outer at Maybe[the: my outer'] {
@@ -241,6 +284,26 @@ kind Ctx {
 			} else {
 				return true
 			}
+		}
+	}
+
+	on [canAssignReadonlyField] (Bool) {
+		match this {
+			at This[emptyMethod: (DefaultInit) || (StaticDeinit)] => return true
+			
+			at This[method: (Init)] => return true
+
+			at This[taggedCase: _] => return true
+
+			at This[block] || This[pattern] || This[typevars: _] {
+				match outer at Maybe[the: my outer'] {
+					return outer'[canAssignReadonlyField]
+				} else {
+					return false
+				}
+			}
+
+			else => return false
 		}
 	}
 
@@ -331,6 +394,24 @@ kind Ctx {
 		}
 	}
 
+	on [findTypevarOf: typevar (TypeVar)] (Maybe[TypeVar]) {
+		match this at This[typevars: my typevars] {
+			for my tvar, my type in: typevars {
+				match type at Maybe[the: Type[:typevar]] {
+					return Maybe[the: tvar]
+				}
+			}
+
+			return Maybe[none]
+		} else {
+			match outer at Maybe[the: my outer'] {
+				return outer'[findTypevarOf: typevar]
+			} else {
+				return Maybe[none]
+			}
+		}
+	}
+
 
 	;== Describing
 
@@ -354,6 +435,10 @@ kind Ctx {
 				
 				return "\(mth.declName) \(sig) for \(outer.value[description: false])"
 			}
+
+			at This[member: my mem] => return "member `\(mem.name.name)` for \(outer.value[description: false])"
+			
+			at This[taggedCase: my tcase] => return "tagged case [...] for \(outer[description: false])"
 
 			at This[code] if isTop => return "{ ... } in \(outer.value[description: false])"
 
