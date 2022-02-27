@@ -185,8 +185,18 @@ class TaggedKind extends Kind {
 								end--;
 							}
 
-							if(!bad && mcase.params.every2Strict(names.slice(begin, end + 1), (l, n) -> l.label.name == n)) {
-								candidates = [MSTaggedCase(found, mcase)]; break;
+							if(!bad) {
+								final subNames = names.slice(begin, end + 1);
+
+								mcase.params.matchesNames(subNames)._match(
+									at(Yes) => {
+										candidates = [MSTaggedCase(found, mcase)]; break;
+									},
+									at(Partial(indexes)) => {
+										candidates = [MSTaggedCase(found, mcase, indexes)]; break;
+									},
+									at(No) => {}
+								);
 							}
 						}
 					}

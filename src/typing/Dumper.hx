@@ -366,13 +366,17 @@ class Dumper {
 			}, _ => {});
 			write(':member #${mem.name.name}:');
 		},
-		at(MSTaggedCase(ms, tcase)) => {
+		at(MSTaggedCase(ms, tcase, partial)) => {
 			if(ms.length > 0) {
 				write(":members [");
 				write(ms, " ", m -> write("#"+m.name.name+":"));
 				write("]");
 				nextLine();
 			}
+			partial._and(p => {
+				write(':partial $p');
+				nextLine();
+			});
 			write(':multi-tagged-case #');
 			for(p in tcase.params) write(p.label.name+":");
 		},

@@ -715,6 +715,7 @@ class TypeVar extends AnyFullTypeDecl {
 				_ => {}
 			);
 
+			// TODO: implement partial indexes thing from TaggedKind.hx
 			for(tcase in taggedCases) {
 				tcase._match(
 					at(mcase is MultiTaggedCase) => {
