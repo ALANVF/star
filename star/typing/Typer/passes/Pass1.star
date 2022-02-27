@@ -348,11 +348,11 @@ module Pass1 {
 						match source'[findType: path search: Search.start from: Maybe[none] :depth :cache] at Maybe[the: my type'] {
 							return Maybe[the: type']
 						} else {
-							source'.errors[add: Error[invalidTypeLookup: type]]
+							source'.errors[add: TypeError[invalidTypeLookup: type.span.value]]
 							return Maybe[none]
 						}
 					} else {
-						source.errors[add: Error[invalidTypeLookup: type]]
+						source.errors[add: TypeError[invalidTypeLookup: type.span.value]]
 						return Maybe[none]
 					}
 				}
@@ -370,11 +370,11 @@ module Pass1 {
 								match source[findType: path search: Search.start from: Maybe[none] :cache] at Maybe[the: my type'] {
 									return Maybe[the: type']
 								} else {
-									source.errors[add: Error[invalidTypeLookup: type]]
+									source.errors[add: TypeError[invalidTypeLookup: type.span.value]]
 									return Maybe[none]
 								}
 							} else {
-								decl.errors[add: Error[invalidTypeLookup: type]]
+								decl.errors[add: TypeError[invalidTypeLookup: type.span.value]]
 								return Maybe[none]
 							}
 						}

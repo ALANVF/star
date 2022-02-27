@@ -157,7 +157,7 @@ kind Ctx {
 
 	;== Errors
 
-	on [addError: diag (Diagnostic)] {
+	on [addError: error (Error)] {
 		match this at (
 			|| Ctx[decl: my source (HasErrors)]
 			|| Ctx[category: my source (HasErrors)]
@@ -166,10 +166,10 @@ kind Ctx {
 			|| Ctx[member: my source (HasErrors)]
 			|| Ctx[taggedCase: my source (HasErrors)]
 		) {
-			source.errors[add: diag]
+			source.errors[add: error]
 		} else {
 			match outer at Maybe[the: my outer'] {
-				outer'[addError: diag]
+				outer'[addError: error]
 			} else {
 				throw "Cannot add error to unknown context source!"
 			}
@@ -295,7 +295,7 @@ kind Ctx {
 
 			at This[taggedCase: _] => return true
 
-			at This[block] || This[pattern] || This[typevars: _] {
+			at This[code] || This[pattern] || This[typevars: _] {
 				match outer at Maybe[the: my outer'] {
 					return outer'[canAssignReadonlyField]
 				} else {
@@ -354,7 +354,7 @@ kind Ctx {
 							] at Maybe[the: my arg'] {
 								return arg'
 							} else {
-								_.this[addError: Error[invalidTypeLookup: arg]]
+								_.this[addError: TypeError[invalidTypeLookup: arg]]
 								return arg
 							}
 						} else {
@@ -376,7 +376,7 @@ kind Ctx {
 			match outer at Maybe[the: my outer'] {
 				return outer'[findType: path]
 			} else {
-				this[addError: Error[invalidTypePath: path]]
+				this[addError: TypeError[invalidTypeLookup: path.span]]
 				return Maybe[none]
 			}
 		}
@@ -436,9 +436,9 @@ kind Ctx {
 				return "\(mth.declName) \(sig) for \(outer.value[description: false])"
 			}
 
-			at This[member: my mem] => return "member `\(mem.name.name)` for \(outer.value[description: false])"
+			at This[member: my mem] => return "member `\(mem.name)` for \(outer.value[description: false])"
 			
-			at This[taggedCase: my tcase] => return "tagged case [...] for \(outer[description: false])"
+			at This[taggedCase: my tcase] => return "tagged case [...] for \(outer.value[description: false])"
 
 			at This[code] if isTop => return "{ ... } in \(outer.value[description: false])"
 

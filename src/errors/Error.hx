@@ -128,7 +128,7 @@ enum Error {
 	);
 
 	Lex_InvalidStrEscape(
-		char: String,
+		char: Char,
 		_char: Span
 	);
 
@@ -987,6 +987,7 @@ function asDiagnostic(self: Error) { return new Diagnostic(self._match(
 	},
 
 	at(Type_OpNotOverloadable(decl, op, yet)) => {
+		severity: Severity.ERROR,
 		message: "Invalid operator overload",
 		info: [
 			Spanned({
@@ -1049,6 +1050,7 @@ function asDiagnostic(self: Error) { return new Diagnostic(self._match(
 	},
 
 	at(Type_UnknownOpOverload(decl, op)) => {
+		severity: Severity.ERROR,
 		message: "Invalid operator overload",
 		info: [
 			Spanned({

@@ -59,7 +59,7 @@ protocol TypeDecl of AnyTypeDecl {
 		)
 	}
 
-	on [allErrors] (Array[Diagnostic]) {
+	on [allErrors] (Array[Error]) {
 		return this[Super[HasErrors] allErrors]
 		-> [addAll: typevars.values[collectAll: TypeVar$0[allErrors]]]
 	}
@@ -140,17 +140,17 @@ protocol TypeDecl of AnyTypeDecl {
 				if args? {
 					match params.length {
 						at 0 {
-							errors[add: Error[invalidTypeApply: span.value because: "Attempt to apply arguments to a non-parametric type"]]
+							errors[add: TypeError[invalidTypeApply: span.value why: "Attempt to apply arguments to a non-parametric type"]]
 							return Maybe[none]
 						}
 
 						at _ < args.length {
-							errors[add: Error[invalidTypeApply: span.value because: "Too many arguments"]]
+							errors[add: TypeError[invalidTypeApply: span.value why: "Too many arguments"]]
 							return Maybe[none]
 						}
 
 						at _ > args.length {
-							errors[add: Error[invalidTypeApply: span.value because: "Not enough arguments"]]
+							errors[add: TypeError[invalidTypeApply: span.value why: "Not enough arguments"]]
 							return Maybe[none]
 						}
 
@@ -199,12 +199,12 @@ protocol TypeDecl of AnyTypeDecl {
 
 							at #{_, my params'} => case {
 								at args.length > params.length {
-									errors[add: Error[invalidTypeApply: span.value because: "Too many arguments"]]
+									errors[add: TypeError[invalidTypeApply: span.value why: "Too many arguments"]]
 									return Maybe[none]
 								}
 
 								at args.length < params.length {
-									errors[add: Error[invalidTypeApply: span.value because: "Not enough arguments"]]
+									errors[add: TypeError[invalidTypeApply: span.value why: "Not enough arguments"]]
 									return Maybe[none]
 								}
 
@@ -226,7 +226,7 @@ protocol TypeDecl of AnyTypeDecl {
 							} else {
 								match found[keepIf: TypeVar$0.params.length ?= args.length][collect: TypeVar$0.thisType] {
 									at #[] {
-										errors[add: Error[invalidTypeApply: span.value because: "No candidate matches the type arguments"]]
+										errors[add: TypeError[invalidTypeApply: span.value why: "No candidate matches the type arguments"]]
 										return Maybe[none]
 									}
 

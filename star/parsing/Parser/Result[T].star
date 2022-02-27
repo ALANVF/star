@@ -6,7 +6,7 @@ kind Result[T] {
 	has [failure: begin (Tokens), end (Maybe[Tokens])]
 	has [fatal: begin (Tokens), end (Maybe[Tokens])]
 	has [eof: begin (Tokens)]
-	has [fatalError: (Diagnostic)]
+	has [fatalError: (Error)]
 	
 	on [updateIfBad: tokens (Tokens)] (This) {
 		match this {

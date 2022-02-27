@@ -1,6 +1,4 @@
 use Lexer
-use Info from: Diagnostic
-use Priority from: Info
 use Decl
 use Message
 use Cascade
@@ -22,7 +20,7 @@ module Parser {
 	on [parseModular: tokens (Tokens)] (Program) {
 		my expectSep = false
 		my lastWasError = false
-		my errors = Array[Diagnostic] #[]
+		my errors = Array[Error] #[]
 		my decls = Array[Decl] #[]
 		my badTokens = IdentitySet[Token] #[]
 		
@@ -35,17 +33,7 @@ module Parser {
 				tokens++
 				
 				if !first[isAnySep] {
-					errors[add: Diagnostic[
-						severity: Severity.error
-						message: "Syntax error"
-						info: #[
-							Info[
-								span: first.span
-								message: "Unexpected \(first.basicName), was expecting a comma or newline instead"
-								priority: Priority.primary
-							]
-						]
-					]]
+					errors[add: ParseError[unexpectedTokenWantedSep: first]]
 					
 					badTokens[add: first]
 				}
@@ -66,18 +54,8 @@ module Parser {
 					my first = begin[first]
 					
 					if badTokens[contains: first] !! (lastWasError && first[isAnySep]) {
-						errors[add: Diagnostic[
-							severity: Severity.error
-							message: "Syntax error"
-							info: #[
-								Info[
-									span: first.span
-									message: "Unexpected \(first.basicName)"
-									priority: Priority.primary
-								]
-							]
-						]]
-						
+						errors[add: ParseError[unexpectedToken: first, Maybe[none]]]
+
 						badTokens[add: first]
 					}
 					
@@ -103,26 +81,7 @@ module Parser {
 					my last = end?[yes: end[first] no: begin[last]]
 					
 					if !badTokens[contains: last] {
-						errors[add: Diagnostic[
-							severity: Severity.error
-							message: "Syntax error"
-							info: #[
-								Info[
-									span: last.span
-									message: "Unexpected \(last.basicName)"
-									priority: Priority.primary
-								]
-							] -> {
-								;-- Don't add another message if they're the same token
-								if first != last {
-									this[add: Info[
-										span: first.span
-										message: "Starting here"
-										priority: Priority.secondary
-									]]
-								}
-							}
-						]]
+						errors[add: ParseError[unexpectedToken: first, Maybe[the: last]]]
 						
 						badTokens[add: last]
 					}
@@ -151,26 +110,7 @@ module Parser {
 					my last = realBegin[last]
 					
 					if !badTokens[contains: first] {
-						errors[add: Diagnostic[
-							severity: Severity.error
-							message: "Syntax error"
-							info: #[
-								Info[
-									span: last.span
-									message: "Unexpected end of file after \(last.basicName)"
-									priority: Priority.primary
-								]
-							] -> {
-								;-- Don't add another message if they're the same token
-								if first != last {
-									this[add: Info[
-										span: first.span
-										message: "Starting here"
-										priority: Priority.secondary
-									]]
-								}
-							}
-						]]
+						errors[add: ParseError[unexpectedEOF: first, last]]
 						
 						badTokens[add: first]
 					}
@@ -249,34 +189,14 @@ module Parser {
 			at #[Token[kind: my span], ...my rest] => return This[parseKindDecl: generics, span, rest][fatalIfBad: tokens]
 			at #[Token[my: my span], ...my rest] {
 				if generics? {
-					return Result[fatalError: Diagnostic[
-						severity: Severity.error
-						message: "Invalid member"
-						info: #[
-							Info[
-								:span
-								message: "Members are not allowed to be generic"
-								priority: Priority.primary
-							]
-						]
-					]]
+					return Result[fatalError: ParseError[noGenericMember: span]]
 				} else {
 					return This[parseMemberDecl: span, rest]
 				}
 			}
 			at #[Token[has: my span], ...my rest] {
 				if generics? {
-					return Result[fatalError: Diagnostic[
-						severity: Severity.error
-						message: "Invalid case"
-						info: #[
-							Info[
-								:span
-								message: "Cases are not allowed to be generic"
-								priority: Priority.primary
-							]
-						]
-					]]
+					return Result[fatalError: ParseError[noGenericCase: span]]
 				} else {
 					return This[parseCaseDecl: span, rest]
 				}
@@ -286,17 +206,7 @@ module Parser {
 			at #[Token[operator: my span], ...my rest] => return This[parseOperatorDecl: generics, span, rest][fatalIfBad: tokens]
 			at #[Token[deinit: my span], ...my rest] {
 				if generics? {
-					return Result[fatalError: Diagnostic[
-						severity: Severity.error
-						message: "Invalid deinitializer"
-						info: #[
-							Info[
-								:span
-								message: "Deinitializers are not allowed to be generic"
-								priority: Priority.primary
-							]
-						]
-					]]
+					return Result[fatalError: ParseError[noGenericDeinit: span]]
 				} else {
 					return This[parseDeinitDecl: span, rest]
 				}

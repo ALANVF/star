@@ -20,13 +20,13 @@ protocol TypeLookup of HasErrors {
 
 
 category TypeLookup for Array[Type] {
-	on [resolveArgs: from (Maybe[AnyTypeDecl]), errors (Array[Diagnostic])] (Array[Type]) {
+	on [resolveArgs: from (Maybe[AnyTypeDecl]), errors (Array[Error])] (Array[Type]) {
 		return this[collect: {|arg|
 			match arg at Type[depth: my depth lookup: my lookup source: source] {
 				match source[findType: lookup search: Search.start :from :depth] at Maybe[the: my type] {
 					return type
 				} else {
-					errors[add: Error[invalidTypeLookup: lookup.span because: "Unknown type \(arg.simpleName)"]]
+					errors[add: TypeError[invalidTypeLookup: lookup.span why: "Unknown type \(arg.simpleName)"]]
 					return arg
 				}
 			} else {

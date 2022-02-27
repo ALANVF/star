@@ -1,6 +1,3 @@
-use Info from: Diagnostic
-use Priority from: Info
-
 class Eof is hidden {}
 
 class Lexer {
@@ -79,8 +76,8 @@ class Lexer {
 		reader = Reader[new: source.text]
 	}
 
-	on [tokenize] (Tokens) {
-		my diags = #[]
+	on [tokenize] (Tuple[Tokens, Array[Error]]) {
+		my errors = Array[Error] #[]
 		my tokens = Tokens[new]
 
 		do {
@@ -90,8 +87,8 @@ class Lexer {
 				}
 			} catch {
 				at (Eof) => break
-				at my diag (Diagnostic) {
-					diags[add: diag]
+				at my error (Error) {
+					errors[add: error]
 					next
 				}
 			}
@@ -99,16 +96,16 @@ class Lexer {
 
 		tokens[Lexer retoken]
 
-		return tokens
+		return #{tokens, errors}
 	}
 
-	on [here] (Pos) is inline {
-		return reader.cursor[pos]
-	}
+	on [here] (Pos) is inline => return reader.cursor[pos]
 
-	on [span] (Span) is inline {
-		return Span[:begin end: this[here] :source]
-	}
+	on [span] (Span) is inline => return Span[:begin end: this[here] :source]
+
+	on [beginSpan] (Span) is inline => return Span[at: begin :source]
+
+	on [hereSpan] (Span) is inline => return Span[at: this[here] :source]
 
 	on [trim] {
 		while true {
@@ -142,7 +139,7 @@ class Lexer {
 	on [readNestedComment] {
 		while true {
 			case {
-				at !reader[hasNext] => throw "Unterminated comment!"
+				at !reader[hasNext] => throw LexError[unterminatedComment: this[beginSpan]] ; not entirely accurate but eh
 				at reader[eat: #"["] => this[readNestedComment]
 				at reader[eat: #"]"] => break
 				else => reader[next]
@@ -196,17 +193,7 @@ class Lexer {
 						if reader[eat: #"."] {
 							return Token[dotDotDot]
 						} else {
-							throw Diagnostic[
-								severity: Severity.error
-								message: "Syntax error"
-								info: #[
-									Info[
-										span: this[span]
-										message: "Invalid operator `..`"
-										priority: Priority.primary
-									]
-								]
-							]
+							throw LexError[invalidOperator: "..", this[span]]
 						}
 					} else {
 						return Token[dot]
@@ -228,21 +215,7 @@ class Lexer {
 					at #"(" {reader[next], return Token[hashLParen]}
 					at #"[" {reader[next], return Token[hashLBracket]}
 					at #"{" {reader[next], return Token[hashLBrace]}
-					at my char => throw Diagnostic[
-						severity: Severity.error
-						message: "Syntax error"
-						info: #[
-							Info[
-								span: Span[at: this[here] :source]
-								message: "Unexpected `\(char)` after `#`"
-								priority: Priority.primary
-							]
-							Info[
-								span: Span[at: begin :source]
-								priority: Priority.secondary
-							]
-						]
-					]
+					at my char => throw LexError[invalidInput: char, this[hereSpan] afterHash: this[beginSpan]]
 				}
 
 				;-- =, =>
@@ -250,19 +223,7 @@ class Lexer {
 					reader[next]
 					case {
 						at reader[eat: #">"] => return Token[eqGt]
-						at reader[eat: #"="] {
-							throw Diagnostic[
-								severity: Severity.error
-								message: "Syntax error"
-								info: #[
-									Info[
-										span: this[span]
-										message: "Please use `?=` instead of `==` in Star"
-										priority: Priority.primary
-									]
-								]
-							]
-						}
+						at reader[eat: #"="] => throw LexError[invalidEqEq: this[span]]
 						else => return Token[eq]
 					}
 				}
@@ -317,21 +278,7 @@ class Lexer {
 								if reader[eat: #">"] {
 									return Token[cascade: depth]
 								} else {
-									throw Diagnostic[
-										severity: Severity.error
-										message: "Unterminated cascade"
-										info: #[
-											Info[
-												span: Span[at: this[here] :source]
-												message: "Expected a `>` to finish the cascade operator"
-												priority: Priority.primary
-											]
-											Info[
-												span: this[span]
-												priority: Priority.secondary
-											]
-										]
-									]
+									throw LexError[unterminatedCascade: this[span], this[hereSpan]]
 								}
 							}
 							at reader[eat: #">"] => return Token[cascade: 2]
@@ -471,17 +418,7 @@ class Lexer {
 					return this[readAnonArg]
 				}
 
-				else => throw Diagnostic[
-					severity: Severity.error
-					message: "Syntax error"
-					info: #[
-						Info[
-							span: Span[at: begin :source]
-							message: "This is not the syntax that you are looking for"
-							priority: Priority.primary
-						]
-					]
-				]
+				else => throw LexError[invalidInput: this[beginSpan]]
 			}
 		}]
 	}
@@ -526,17 +463,7 @@ class Lexer {
 			if reader[peek: xdigit] {
 				return this[readHex]
 			} else {
-				throw Diagnostic[
-					severity: Severity.error
-					message: "Unexpected start of hexdecimal literal"
-					info: #[
-						Info[
-							span: this[span]
-							message: "Were you wanting a hexdecimal literal here or what?"
-							priority: Priority.primary
-						]
-					]
-				]
+				throw LexError[invalidHexStart: this[span]]
 			}
 		} else {
 			return this[readNumber]
@@ -561,20 +488,9 @@ class Lexer {
 
 			my endName = this[here]
 
-			throw Diagnostic[
-				severity: Severity.error
-				message: "Invalid hexdecimal literal"
-				info: #[
-					Info[
-						span: Span[begin: end end: endName :source]
-						message: "Make sure to separate names from numbers"
-						priority: Priority.primary
-					]
-					Info[
-						span: Span[:begin :end :source]
-						priority: Priority.secondary
-					]
-				]
+			throw LexError[
+				name: Span[begin: end end: endName :source]
+				afterHex: Span[:begin :end :source]
 			]
 		} else {
 			return Token[:hex]
@@ -609,20 +525,10 @@ class Lexer {
 
 					return Maybe[the: dec']
 				} else {
-					throw Diagnostic[
-						severity: Severity.error
-						message: "Invalid decimal literal"
-						info: #[
-							Info[
-								span: Span[at: afterInt :source]
-								message: "At least 1 digit is required on both sides of the decimal point"
-								priority: Priority.primary
-							]
-							Info[
-								span: Span[:begin end: this[here][advance: -2] :source]
-								priority: Priority.secondary
-							]
-						]
+					throw LexError[
+						incompleteDecimalPoint:
+							Span[at: afterInt :source],
+							Span[:begin end: this[here][advance: -1] :source]
 					]
 				}
 			} else {
@@ -645,20 +551,9 @@ class Lexer {
 
 			my endName = this[here]
 
-			throw Diagnostic[
-				severity: Severity.error
-				message: "Invalid number literal"
-				info: #[
-					Info[
-						span: Span[begin: end end: endName :source]
-						message: "Make sure to separate names from numbers"
-						priority: Priority.primary
-					]
-					Info[
-						span: Span[:begin :end :source]
-						priority: Priority.secondary
-					]
-				]
+			throw LexError[
+				name: Span[begin: end end: endName :source]
+				afterNumber: Span[:begin :end :source]
 			]
 		} else {
 			match dec at Maybe[the: my dec'] {
@@ -691,21 +586,10 @@ class Lexer {
 		} else {
 			my end = this[here]
 
-			throw Diagnostic[
-				severity: Severity.error
-				message: "Invalid number literal"
-				info: #[
-					Info[
-						span: Span[begin: end end: end[advance] :source]
-						message: "Make sure to separate names from numbers"
-						priority: Priority.primary
-					]
-					Info[
-						span: Span[begin: begin'[advance: -1] :end :source]
-						message: "This indicates that the number has an exponent"
-						priority: Priority.secondary
-					]
-				]
+			throw LexError[
+				missingExponent:
+					Span[begin: begin'[advance: -1] :end :source],
+					Span[begin: end end: end[advance] :source]
 			]
 		}
 	}
@@ -736,45 +620,24 @@ class Lexer {
 		} else {
 			my end = this[here]
 
-			throw Diagnostic[
-				severity: Severity.error
-				message: "Invalid punned label"
-				info: {
-					if reader[peek: upper] {
-						while reader[eat: alnum_q]? {}
+			if reader[peek: upper] {
+				while reader[eat: alnum_q]? {}
 
-						my endName = this[here]
+				my endName = this[here]
 
-						return #[
-							Info[
-								span: Span[at: end :source]
-								message: "Punned labels may not start with an uppercase letter"
-								priority: Priority.primary
-							]
-							Info[
-								span: Span[at: begin :source]
-								priority: Priority.secondary
-							]
-							Info[
-								span: Span[begin: end end: endName :source]
-								priority: Priority.secondary
-							]
-						]
-					} else {
-						return #[
-							Info[
-								span: Span[at: end :source]
-								message: "Was expecting a name for the punned label"
-								priority: Priority.primary
-							]
-							Info[
-								span: Span[at: begin :source]
-								priority: Priority.secondary
-							]
-						]
-					}
-				}
-			]
+				throw LexError[
+					noUppercasePunnedLabel:
+						this[beginSpan],
+						Span[at: end :source],
+						Span[begin: end end: endName :source]
+				]
+			} else {
+				throw LexError[
+					incompletePunnedLabel:
+						this[beginSpan],
+						Span[at: begin[advance] :source]
+				]
+			}
 		}
 
 		while true {
@@ -800,22 +663,10 @@ class Lexer {
 		}
 
 		if reader[peek: #":"] {
-			my end = this[here]
-
-			throw Diagnostic[
-				severity: Severity.error
-				message: "Invalid label"
-				info: #[
-					Info[
-						span: Span[at: begin :source]
-						message: "Labels may not start with an uppercase letter"
-						priority: Priority.primary
-					]
-					Info[
-						span: Span[begin: begin[advance] end: end[advance] :source]
-						priority: Priority.secondary
-					]
-				]
+			throw LexError[
+				noUppercaseLabel:
+					this[beginSpan],
+					Span[begin: begin[advance] end: this[here] :source]
 			]
 		} else {
 			return Token[typeName: name]
@@ -856,40 +707,17 @@ class Lexer {
 		my char = {
 			match reader[eat] {
 				at #"\"" {
-					my end = this[here]
+					my end = this[here][advance: -1]
 
-					if reader[peek: #"\""] {
-						throw Diagnostic[
-							severity: Severity.error
-							message: "Invalid char literal"
-							info: #[
-								Info[
-									span: Span[at: end :source]
-									message: "`\"` characters need to be escaped in char literals"
-									priority: Priority.primary
-								]
-								Info[
-									span: this[span]
-									priority: Priority.secondary
-								]
-								Info[
-									span: Span[at: end[advance] :source]
-									priority: Priority.secondary
-								]
-							]
+					if reader[eat: #"\""] {
+						throw LexError[
+							escapeCharQuote:
+								Span[:begin :end :source],
+								Span[at: end :source],
+								this[hereSpan]
 						]
 					} else {
-						throw Diagnostic[
-							severity: Severity.error
-							message: "Invalid char literal"
-							info: #[
-								Info[
-									span: Span[:begin end: end[advance] :source]
-									message: "Char literals may not be empty"
-									priority: Priority.primary
-								]
-							]
-						]
+						throw LexError[noEmptyChar: this[span]]
 					}
 				}
 
@@ -909,31 +737,12 @@ class Lexer {
 					at #"o" => return this[readOctEsc]
 					at my c {
 						my end = this[here][advance: -1]
-						throw Diagnostic[
-							severity: Severity.error
-							message: "Invalid escape character"
-							info: #[
-								;@@ off by 1 errors?
-								Info[
-									span: Span[begin: end[advance: -2] end: this[here] :source]
-									message: "Escape character `\\\(c)` \({
-										if c ?= #"(" {
-											return "is not allowed in char literals"
-										} else {
-											return "does not exist"
-										}
-									})"
-									priority: Priority.primary
-								]
-								Info[
-									span: Span[:begin end: end[advance: -1] :source]
-									priority: Priority.secondary
-								]
-								Info[
-									span: Span[at: end[advance] :source]
-									priority: Priority.secondary
-								]
-							]
+						throw LexError[
+							invalidCharEscape:
+								Span[:begin :end :source],
+								c,
+								Span[at: end :source],
+								Span[at: end[advance] :source]
 						]
 					}
 				}
@@ -945,21 +754,7 @@ class Lexer {
 		if reader[eat: #"\""] {
 			return Token[:char]
 		} else {
-			throw Diagnostic[
-				severity: Severity.error
-				message: "Unterminated character literal"
-				info: #[
-					Info[
-						span: Span[at: this[here] :source]
-						message: "Expected another `\"` to finish the char literal"
-						priority: Priority.primary
-					]
-					Info[
-						span: this[span]
-						priority: Priority.secondary
-					]
-				]
-			]
+			throw LexError[unterminatedChar: this[span], this[hereSpan]]
 		}
 	}
 
@@ -971,20 +766,10 @@ class Lexer {
 				hex[add: xdigit']
 			} else {
 				my end = this[here]
-				throw Diagnostic[
-					severity: Severity.error
-					message: "Invalid hexdecimal escape code"
-					info: #[
-						Info[
-							span: Span[at: end :source]
-							message: "Was expecting a hexdecimal digit here"
-							priority: Priority.primary
-						]
-						Info[
-							span: Span[begin: end[advance: -(hex.length + 2)] :end :source]
-							priority: Priority.secondary
-						]
-					]
+				throw LexError[
+					invalidHexEscape:
+						Span[begin: end[advance: -(hex.length + 2)] :end :source],
+						this[hereSpan]
 				]
 			}
 		}
@@ -1000,20 +785,10 @@ class Lexer {
 				uni[add: xdigit']
 			} else {
 				my end = this[here]
-				throw Diagnostic[
-					severity: Severity.error
-					message: "Invalid unicode escape code"
-					info: #[
-						Info[
-							span: Span[at: end :source]
-							message: "Was expecting a hexdecimal digit here"
-							priority: Priority.primary
-						]
-						Info[
-							span: Span[begin: end[advance: -(uni.length + 2)] :end :source]
-							priority: Priority.secondary
-						]
-					]
+				throw LexError[
+					invalidUniEscape:
+						Span[begin: end[advance: -(uni.length + 2)] :end :source],
+						this[hereSpan]
 				]
 			}
 		}
@@ -1030,20 +805,10 @@ class Lexer {
 				oct[add: odigit']
 			} else {
 				my end = this[here]
-				throw Diagnostic[
-					severity: Severity.error
-					message: "Invalid octal escape code"
-					info: #[
-						Info[
-							span: Span[at: end :source]
-							message: "Was expecting an octal digit here"
-							priority: Priority.primary
-						]
-						Info[
-							span: Span[begin: end[advance: -(oct.length + 2)] :end :source]
-							priority: Priority.secondary
-						]
-					]
+				throw LexError[
+					invalidOctEscape:
+						Span[begin: end[advance: -(oct.length + 2)] :end :source],
+						this[hereSpan]
 				]
 			}
 		}
@@ -1116,17 +881,11 @@ class Lexer {
 									at #"u" => return this[readUniEsc]
 									at #"o" => return this[readOctEsc]
 									at my c {
-										my end = this[here][advance: -1]
-										throw Diagnostic[
-											severity: Severity.error
-											message: "Invalid escape character"
-											info: #[
-												Info[
-													span: Span[begin: end[advance: -1] end: end[advance] :source] ;@@ off by 1 error?
-													message: "Escape character `\\\(c)` does not exist"
-													priority: Priority.primary
-												]
-											]
+										my end = this[here]
+										throw LexError[
+											invalidStrEscape:
+												c,
+												Span[begin: end[advance: -2] :end :source] ;@@ off by 1 error?
 										]
 									}
 								}
@@ -1142,17 +901,7 @@ class Lexer {
 		if reader[eat: #"\""] {
 			return Token[str: segments]
 		} else {
-			throw Diagnostic[
-				severity: Severity.error
-				message: "Unterminated string"
-				info: #[
-					Info[
-						span: Span[at: begin :source]
-						message: "This string is never terminated"
-						priority: Priority.primary
-					]
-				]
-			]
+			throw LexError[unterminatedStr: this[beginSpan]]
 		}
 	}
 
@@ -1177,40 +926,15 @@ class Lexer {
 
 				my endName = this[here]
 
-				throw Diagnostic[
-					severity: Severity.error
-					message: "Invalid anonymous argument"
-					info: #[
-						Info[
-							span: Span[begin: end end: endName :source]
-							message: "Make sure to separate names from numbers"
-							priority: Priority.primary
-						]
-						Info[
-							span: Span[:begin :end :source]
-							priority: Priority.secondary
-						]
-					]
+				throw LexError[
+					name: Span[begin: end end: endName :source]
+					afterAnonArg: Span[:begin :end :source]
 				]
 			} else {
 				return Token[anonArg: nth[Int] :depth]
 			}
 		} else {
-			throw Diagnostic[
-				severity: Severity.error
-				message: "Unterminated anonymous argument"
-				info: #[
-					Info[
-						span: Span[at: this[here] :source]
-						message: "Was expecting a number here"
-						priority: Priority.primary
-					]
-					Info[
-						span: this[span]
-						priority: Priority.secondary
-					]
-				]
-			]
+			throw LexError[unterminatedAnonArg: this[span], this[hereSpan]]
 		}
 	}
 }

@@ -1,6 +1,6 @@
 protocol HasErrors {
-	my errors (Array[Diagnostic]) is getter = #[]
+	my errors (Array[Error]) is getter = #[]
 	
 	on [hasErrors] (Bool) => return errors?
-	on [allErrors] (Array[Diagnostic]) => return errors[new]
+	on [allErrors] (Array[Error]) => return errors[new]
 }
