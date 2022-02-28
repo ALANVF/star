@@ -324,9 +324,9 @@ module Pass1 {
 			at TypeRule[type: my l lt: my r] => return TypeRule[type: This[resolve: l :from][orElse: l] lt: This[resolve: r :from][orElse: r]]
 			at TypeRule[type: my l le: my r] => return TypeRule[type: This[resolve: l :from][orElse: l] le: This[resolve: r :from][orElse: r]]
 			at TypeRule[not: my r] => return TypeRule[not: This[resolve: r :from]]
-			at TypeRule[all: my rs] => return TypeRule[all: rs[collect: This[resolve: Type$.0 :from][orElse: $.0]]]
-			at TypeRule[any: my rs] => return TypeRule[any: rs[collect: This[resolve: Type$.0 :from][orElse: $.0]]]
-			at TypeRule[one: my rs] => return TypeRule[one: rs[collect: This[resolve: Type$.0 :from][orElse: $.0]]]
+			at TypeRule[all: my rs] => return TypeRule[all: rs[collect: This[resolve: TypeRule$.0 :from]]]
+			at TypeRule[any: my rs] => return TypeRule[any: rs[collect: This[resolve: TypeRule$.0 :from]]]
+			at TypeRule[one: my rs] => return TypeRule[one: rs[collect: This[resolve: TypeRule$.0 :from]]]
 		}
 	}
 

@@ -631,16 +631,32 @@ class TypeVar extends AnyFullTypeDecl {
 			_ => {}
 		);
 
-		if(!getter) for(tcase in taggedCases) {
-			tcase._match(
-				at(scase is SingleTaggedCase) => if(scase.name.name == name) return SSFromTypevar(this, name, getter, SSTaggedCase(scase)),
+		if(!getter) {
+			for(init in inits) init._match(
+				at(si is SingleInit) => {
+					if(si.name.name == name && from.canSeeMethod(si)) {
+						return SSFromTypevar(this, name, getter, SSInit(si));
+					}
+				},
+				at(mi is MultiInit) => {
+					if(mi.params[0].label.name == name && mi.params.every(p -> p.value != null)) {
+						return SSFromTypevar(this, name, getter, SSMultiInit(mi));
+					}
+				},
 				_ => {}
 			);
 
-			tcase.assoc._match(
-				at(Some(Single(_, _, sname)), when(sname == name)) => return SSFromTypevar(this, name, getter, SSTaggedCaseAlias(tcase)),
-				_ => {}
-			);
+			for(tcase in taggedCases) {
+				tcase._match(
+					at(scase is SingleTaggedCase) => if(scase.name.name == name) return SSFromTypevar(this, name, getter, SSTaggedCase(scase)),
+					_ => {}
+				);
+
+				tcase.assoc._match(
+					at(Some(Single(_, _, sname)), when(sname == name)) => return SSFromTypevar(this, name, getter, SSTaggedCaseAlias(tcase)),
+					_ => {}
+				);
+			}
 		}
 
 		for(vcase in valueCases) {
@@ -651,7 +667,7 @@ class TypeVar extends AnyFullTypeDecl {
 
 		for(parent in parents) {
 			parent.findSingleStatic(ctx, name, from, getter)._match(
-				at(ss!) => return SSFromTypevar(this, name, getter, ss),
+				at(ss!) => return ss,
 				_ => {}
 			);
 		}

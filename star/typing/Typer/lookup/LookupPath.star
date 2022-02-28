@@ -6,14 +6,14 @@ alias LookupSeg = Tuple[
 
 alias LookupPath (Array[LookupSeg]) {
 	on [simpleName] (Str) is getter {
-		return this[collect: {|seg|
+		return this[collect: {|seg (LookupSeg)|
 			match seg {
 				at #{_, my name, #[]} => return name
 				at #{_, my name, my args} {
 					return ""
 					-> [add: name]
 					-> [add: "["]
-					-> [add: args[collect: $0.simpleName][joinWith: ", "]]
+					-> [add: args[collect: Type$0.simpleName][joinWith: ", "]]
 					-> [add: "]"]
 				}
 			}

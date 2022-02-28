@@ -335,7 +335,7 @@ module Parser {
 		my chain = #[]
 		
 		while true {
-			my span, my op = {
+			my span (Span), my op = {
 				match tokens {
 					at #[Token[lt: span = _], ...tokens = _] => return Generic.Cmp.lt
 					at #[Token[ltEq: span = _], ...tokens = _] => return Generic.Cmp.le
@@ -1003,8 +1003,8 @@ module Parser {
 	}
 	
 	on [parseCaseDecl: span (Span), tokens (Tokens)] (Result[Decl]) {
-		my case'
-		my rest
+		my case' (Case)
+		my rest (Tokens)
 		
 		match tokens {
 			at #[Token[name: my name, span: my span'] = _[asAnyName], Token[eqGt], ...rest = _] => match This[parseExpr: rest] {
@@ -1059,7 +1059,7 @@ module Parser {
 	
 	on [parseMultiSig: tokens (Tokens)] (Result[Tuple[Multi.Params, Span]]) {
 		my rest = tokens
-		my params = #[]
+		my params = Multi.Params #[]
 		
 		while true {
 			if params? {
@@ -1136,7 +1136,7 @@ module Parser {
 	
 	on [parseMethodDecl: generics (Array[Generic.Param]), span (Span), tokens (Tokens)] (Result[Decl]) {
 		match tokens at #[Token[lBracket: my begin], ...my rest] {
-			my kind, my end, match rest {
+			my kind (Method.Spec), my end (Span), match rest {
 				at #[Token[label: _], ..._] => match This[parseMultiSig: rest] {
 					at Result[success: #{my params, end = _}, rest = _] => kind = Method.Spec[multi: params]
 					at my fail => return fail[Result[Decl] fatalIfBad: rest]
@@ -1242,7 +1242,7 @@ module Parser {
 	on [parseInitDecl: generics (Array[Generic.Param]), span (Span), tokens (Tokens)] (Result[Decl]) {
 		match tokens {
 			at #[Token[lBracket: my begin], ...my rest] {
-				my kind, my end, match rest {
+				my kind (Init.Spec), my end (Span), match rest {
 					at #[Token[label: _], ..._] => match This[parseMultiSig: rest] {
 						at Result[success: #{my params, end = _}, rest = _] => kind = Init.Spec[multi: params]
 						at my fail => return fail[Result[Decl] fatalIfBad: rest]

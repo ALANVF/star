@@ -77,7 +77,7 @@ kind TypeRule {
 				}
 
 				if anyAreTrue {
-					return Maybe[the: Effects.empty + Effect[union: effects]]
+					return Maybe[the: Effects.empty ;[+ Effect[union: effects]]] ;@@ TODO
 				} else {
 					return Maybe[none]
 				}

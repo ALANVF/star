@@ -71,7 +71,7 @@ enum Stmt {
 	SThrow(span: Span, value: TExpr);
 	STry(
 		body: TStmts,
-		cases: Array<{pattern: TExpr, ?cond: TExpr, then: TStmts}>,
+		cases: Array<{pattern: Pattern, ?cond: TExpr, then: TStmts}>,
 		?orelse: TStmts
 	);
 }

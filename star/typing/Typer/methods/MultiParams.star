@@ -18,7 +18,7 @@ alias MultiParams (Array[MultiParam]) {
 	on [matchesNames: names (Array[Str]) isSetter: (Bool) = false] (MatchParams) {
 		case {
 			;-- exact match
-			at this[zip: names all: {|l, n| return (n ?= "=" && isSetter) || l.label.name ?= n}] {
+			at this[zip: names all: {|l (MultiParam), n (Str)| return (n ?= "=" && isSetter) || l.label.name ?= n}] {
 				return MatchParams[yes]
 			}
 

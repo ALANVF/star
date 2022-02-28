@@ -1930,8 +1930,9 @@ class Dumper {
 		writeLines(params, param -> {
 			write(param.label.name+": "+param.name.name+" ");
 			dump(param.type, cache);
-			param.value._and(value => {
-				write(" (untyped ...)");
+			param.tvalue._and(tvalue => {
+				write(" ");
+				dump(tvalue);
 			});
 		});
 		nextLine();

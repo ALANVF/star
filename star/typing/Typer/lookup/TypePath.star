@@ -46,7 +46,7 @@ alias TypePath (Parser.Type) {
 
 category TypePath for Array[Seg] {
 	on [mapSegs: source (TypeLookup)] (LookupPath) {
-		return this[LookupPath collect: {|seg|
+		return this[LookupPath collect: {|seg (Seg)|
 			match this {
 				at Seg[name: Ident #{my span, my name}] {
 					return #{span, name, #[]}
@@ -56,7 +56,7 @@ category TypePath for Array[Seg] {
 					return #{
 						span
 						name
-						args[collect: source[makeTypePath: $.0[TypePath]]]
+						args[collect: source[makeTypePath: Parser.Type$.0[TypePath]]]
 					}
 				}
 			}

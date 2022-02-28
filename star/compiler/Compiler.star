@@ -109,7 +109,7 @@ class Compiler {
 				return this[getFullPath: type.lookup]
 				-> [add: #{
 					type.name
-					type.params[collect: Array[Typer.Type]$0[collect: Type[fromType: Typer.Type$.0 in: this]]]
+					type.params[collect: Type[fromType: Typer.Type$.0 in: this]]
 				}]
 			}
 			

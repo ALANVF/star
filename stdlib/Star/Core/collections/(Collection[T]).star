@@ -207,6 +207,8 @@ protocol Collection[T] of Iterable[T] {
 	
 	operator `?` (Bool) is inline => return this.length != 0
 
+	operator `!` (Bool) is inline => return this.length ?= 0
+
 
 	;== Counting
 

@@ -460,7 +460,7 @@ static function resolveMethod(ctx: Ctx, method: Method) {
 							name,
 							param.type,
 							param.value._and(v =>
-								assignType(methodCtx, typeExpr(methodCtx, v), param.type)
+								param.tvalue = assignType(methodCtx, typeExpr(methodCtx, v), param.type)
 							)
 						);
 					}
@@ -505,7 +505,7 @@ static function resolveStaticMethod(ctx: Ctx, method: StaticMethod) {
 							name,
 							param.type,
 							param.value._and(v =>
-								assignType(methodCtx, typeExpr(methodCtx, v), param.type)
+								param.tvalue = assignType(methodCtx, typeExpr(methodCtx, v), param.type)
 							)
 						);
 					}
@@ -550,7 +550,7 @@ static function resolveInit(ctx: Ctx, init: Init) {
 							name,
 							param.type,
 							param.value._and(v =>
-								assignType(initCtx, typeExpr(initCtx, v), param.type)
+								param.tvalue = assignType(initCtx, typeExpr(initCtx, v), param.type)
 							)
 						);
 					}
@@ -627,16 +627,19 @@ static function resolveValueCase(ctx: Ctx, vcase: ValueCase) {
 }
 
 static function resolveTaggedCase(ctx: Ctx, tcase: TaggedCase) {
+	final caseCtx = ctx.innerTaggedCase(tcase);
+
 	tcase._match(
 		at({params: params} is MultiTaggedCase) => {
 			for(param in params) {
 				param.type = param.type.simplify();
+				param.value._and(v =>
+					param.tvalue = assignType(caseCtx, typeExpr(caseCtx, v), param.type)
+				);
 			}
 		},
 		_ => {}
 	);
-
-	final caseCtx = ctx.innerTaggedCase(tcase);
 
 	tcase.assoc.toNull()._and(assoc => {
 		tcase.typedAssoc = typeTMessage(caseCtx, assoc);
@@ -664,7 +667,7 @@ static function resolveTaggedCase(ctx: Ctx, tcase: TaggedCase) {
 								span,
 								name,
 								param.type,
-								null
+								param.tvalue
 							);
 						}
 					);
@@ -698,6 +701,14 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 				}
 			),
 		
+		at(ETag(s, "kind_slot", EObjMessage(ETuple(_, [obj, EInt(_, i, _)], _), _, Cast(_, type), _))) => {
+			final tobj = typeExpr(ctx, obj);
+			final ttype = ctx.getType(type)._or(return invalidExpr());
+			{
+				e: EKindSlot(tobj, i),
+				t: ttype
+			};
+		},
 		at(ETag(s, name, expr2)) => {
 			final texpr = typeExpr(ctx, expr2);
 			switch name {
@@ -718,12 +729,9 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 					t: {t: STD_Int.t, span: s}
 				};
 				case "kind_slot": {
-					e: switch texpr.e {
-						case ETuple([tobj, {e: EInt(i)}]): EKindSlot(tobj, i);
-						default: throw 'error: invalid expression for `#kind_slot` tag! ${s.display()}';
-					},
-					t: null
-				};
+					// already handled earlier. anything else is invalid
+					throw 'error: invalid expression for `#kind_slot` tag! ${s.display()}';
+				}
 				default:
 					trace('warning: unknown tag `#$name` ${s.display()}\n');
 					{ e: ETag(name, texpr), t: null };
@@ -1093,11 +1101,11 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 					final op2: UnaryOp = op._match(
 						at(SIncr) => Incr,
 						at(SDecr) => Decr,
-						at(STruthy) => if(ctx.isPattern()) {
+						at(STruthy) => /*if(ctx.isPattern()) {
 							return { e: ELazySuffix(lhs, op) };
-						} else {
-							Truthy;
-						}
+						} else {*/
+							Truthy//;
+						//}
 					);
 					
 					t.findUnaryOp(ctx, op2, ctx.typeDecl)._match(
@@ -1754,7 +1762,7 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 				tparent.findSingleInst(ctx, name, ctx.typeDecl)._match(
 					at(kind!) => {
 						_1: Super(tparent, Single(kind)),
-						_2: (kind._match(
+						_2: /*(kind._match(
 							at(SIMethod({ret: ret!})) => ret.t._match(
 								at(TThis(source), when(source.hasChildType(t))) => t.t._match(
 									at(TConcrete(decl)) => { t: TThis(decl), span: ret.span },
@@ -1768,7 +1776,7 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 							),
 							at(SIMember(mem)) => mem.type, // TODO: solve in ctx
 							_ => null
-						) : Null<Type>)._and(ret => ret.getFrom(t))
+						) : Null<Type>)*/kind.retType()._and(ret => ret.getFrom(t))
 					},
 					_ => throw 'error: value of type `${t.fullName()}` does not have a supertype `${tparent.fullName()}` that responds to method `[$name]`! ${cat.span().display()}'
 				);
@@ -1867,7 +1875,18 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 					at([]) => throw 'error: value of type `${t.fullName()}` does not have a supertype `${tparent.fullName()}` that responds to method `[${names.joinMap(" ", n -> '$n:')}]`! ${begin.display()}',
 					at(kinds) => {
 						_1: Super(tparent, Multi(kinds, names, args)),
-						_2: null
+						// TODO
+						_2: kinds.reduceOverloads(ctx, tparent, args).map(ov -> {
+							final res = ov.ret.getFrom(t);
+							ov.tctx._andOr(
+								tctx => res.getInTCtx(tctx),
+								res
+							);
+						}).unique()._match(
+							at([]) => null,
+							at([ret]) => ret,
+							at(rets) => {t: TMulti(rets), span: null}
+						)
 					}
 				);
 			} else {
@@ -2429,9 +2448,10 @@ static function typePattern(ctx: Ctx, expectType: Type, expr: UExpr): Pattern {
 					detuple2(@var names, @var args, getNamesUntypedArgs(ctx, labels));
 					ttype.findMultiStatic(ctx, names, ctx.typeDecl)._match(
 						at([MSMemberwiseInit(ms)]) => {
+							// TODO: fix this to work with generic subtypes
 							PTypeMembers(ttype, [
 								for(i => m in ms)
-									new Tuple2(m, typePattern(ctx, m.type.nonNull().getFrom(expectType), args[i]))
+									new Tuple2(m, typePattern(ctx, m.type.nonNull().getFrom(ttype).getFrom(expectType), args[i]))
 							]);
 						},
 						at([MSTaggedCase([], tcase)]) => {
@@ -2985,8 +3005,12 @@ static function typeStmt(ctx: Ctx, stmt: UStmt): TStmt {
 					cases.map(c -> {
 						final patternCtx = ctx.innerPattern();
 						checkBadThenStmt(ctx, c.then);
+						
+						final tpattern = typePattern(patternCtx, /*TODO*/{t: TBlank, span: null}, c.pattern);
+						buildPatternBindings(patternCtx, tpattern);
+
 						{
-							pattern: typeExpr(patternCtx, c.pattern),
+							pattern: tpattern,
 							cond: c.when.toNull()._and(w => shouldBeLogical(ctx, typeExpr(patternCtx, w._2))),
 							then: typeThen(patternCtx, c.then)
 						};

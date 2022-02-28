@@ -70,7 +70,7 @@ kind Type {
 			at Typer.Type[blank] => throw "todo"
 			at Typer.Type[types: my types] => throw "todo"
 			at Typer.Type[type: Typer.Type[this: _] args: my args] {
-				return This[path: TypePath[named: "$This" of: args[collect: Type[fromType: $.0 in: cmp]]]]
+				return This[path: TypePath[named: "$This" of: args[collect: Type[fromType: Typer.Type$.0 in: cmp]]]]
 			}
 			at Typer.Type[type: my type' args: my args] => throw "todo"
 			at Typer.Type[typevar: my typevar] => throw "todo"

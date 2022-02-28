@@ -36,7 +36,7 @@ protocol TypeDecl of AnyTypeDecl {
 		if params? {
 			res
 			-> [add: "["]
-			-> [add: params[collect: {|param|
+			-> [add: params[collect: {|param (Type)|
 				if cache[contains: param] {
 					return "..."
 				} else {

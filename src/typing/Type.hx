@@ -1758,6 +1758,7 @@ class Type implements ITypeable {
 				}
 			},
 			at(TApplied({t: TMulti(types)}, args)) => {
+				// TODO: APPARENTLY leastSpecific AND mostSpecific HAVE OPPOSITE BEHAVIOR?!?!?!?!
 				leastSpecific(types.filter(type -> type.acceptsArgs(args)))
 					.filterMap(type -> type.findSingleStatic(ctx, name, from, getter, cache))
 					.unique()

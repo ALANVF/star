@@ -23,7 +23,7 @@ class MultiInit extends Init {
 		final params = switch ast.spec.of {
 			case Multi(params2): params2.map(p -> {
 				final type = init.makeTypePath(p.type);
-				return switch [p.label, p.name] {
+				return (switch [p.label, p.name] {
 					case [Some(l), Some(n)]: {label: l, name: n, type: type, value: p.value.toNull()};
 					case [Some(l), None]: {label: l, name: l, type: type, value: p.value.toNull()};
 					case [None, Some(n)]: {label: new Ident(n.span, "_"), name: n, type: type, value: p.value.toNull()};
@@ -34,7 +34,7 @@ class MultiInit extends Init {
 						};
 						final ident = new Ident(span, "_");
 						{label: ident, name: ident, type: type, value: p.value.toNull()};
-				}
+				} : MultiParams.MultiParam);
 			});
 			default: throw "Error!";
 		};

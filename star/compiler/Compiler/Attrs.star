@@ -16,10 +16,10 @@ kind Attrs (Str) is flags {
 	}
 	
 	on [formLeading] (Str) {
-		return this[Array[Str]][collect: "\($.0) "][join]
+		return this[Array[Str]][collect: "\(Str$.0) "][join]
 	}
 	
 	on [formTrailing] (Str) {
-		return this[Array[Str]][collect: " \($.0)"][join]
+		return this[Array[Str]][collect: " \(Str$.0)"][join]
 	}
 }

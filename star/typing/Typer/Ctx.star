@@ -344,17 +344,17 @@ kind Ctx {
 				
 				return Type[
 					type: type'
-					args: args[collect: {|arg|
+					args: args[collect: {|arg (Type)|
 						match arg at Type[depth: my depth lookup: my lookup source: _] {
 							match typeLookup[
 								findType: lookup
 								search: Search.start
-								from: typeDecl
+								from: Maybe[the: typeDecl]
 								:depth
 							] at Maybe[the: my arg'] {
 								return arg'
 							} else {
-								_.this[addError: TypeError[invalidTypeLookup: arg]]
+								;[_.]this[addError: TypeError[invalidTypeLookup: arg.span.value]]
 								return arg
 							}
 						} else {

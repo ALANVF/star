@@ -12,7 +12,7 @@ enum SingleInstKind {
 
 function name(self: SingleInstKind) return self._match(
 	at(SIMethod(mth)) => mth.name.name,
-	at(SIMultiMethod(mth)) => mth.params.find(p -> p.value == null).label.name,
+	at(SIMultiMethod(mth)) => mth.params.find(p -> p.value == null)._or(mth.params[0]).label.name,
 	at(SIMember(mem)) => mem.name.name,
 	at(SIFromTypevar(_, name, _, _)) => name,
 	at(SIFromParent(_, kind)) => name(kind)
@@ -21,7 +21,7 @@ function name(self: SingleInstKind) return self._match(
 function retType(self: SingleInstKind): Null<Type> return self._match(
 	at(SIMethod(m)) => m.ret._or(Pass2.STD_Void.thisType),
 	at(SIMultiMethod(m)) => m.ret._or(Pass2.STD_Void.thisType),
-	at(SIMember(m)) => m.type,
+	at(SIMember(m)) => m.type, // TODO: handle untyped members
 	at(SIFromTypevar(_, _, _, kind)) => kind.retType(), // TODO
 	at(SIFromParent(parent, kind)) => {
 		retType(kind)._and(ret => {

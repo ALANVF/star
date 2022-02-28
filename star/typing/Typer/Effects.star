@@ -9,7 +9,7 @@ class Effects {
 	alias Entries = Immutable.Dict[TypeVar, IEffects]
 
 
-	my empty is static is readonly = Effects[new]
+	my empty (Effects) is static is readonly = Effects[new]
 	
 	my adds is getter = Entries #()
 	my removes is getter = Entries #()

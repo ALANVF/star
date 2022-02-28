@@ -83,15 +83,30 @@ function reduceOverloads(kinds: Array<MultiInstKind>, ctx: Ctx, sender: Type, ar
 																	ltctx[tvar] = mt;
 																}
 															}
-															atype = ptype.t._match(
-																at(TInstance(decl, args, ltctx3)) => {
+															ptype.t._match(
+																at(TInstance(decl, targs, ltctx3)) => {
 																	for(tvar => mt in ltctx) {
 																		ltctx[tvar] = mt.getInTCtx(ltctx3);
 																	}
 																	largs._for(i => a, {
 																		largs[i] = a.getInTCtx(ltctx);
 																	});
-																	{t: TInstance(decl, largs, ltctx), span: atype.span};
+																	if({
+																		var cond = false;
+																		for(tv => mt in ltctx) {
+																			if(mt.t.match(TTypeVar(_ == tv => true))) {
+																				cond = true;
+																				break;
+																			}
+																		}
+																		cond;
+																	}) {
+																		//trace(largs.map(la->la.fullName()), ltctx.display());
+																	}
+																	else {
+																		//trace(largs.map(la->la.fullName()), ltctx.display());
+																		args[i].t=atype = {t: TInstance(decl, largs, ltctx), span: atype.span};
+																	}
 																},
 																_ => throw "???"
 															);
