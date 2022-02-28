@@ -22,7 +22,7 @@ function retType(self: SingleInstKind): Null<Type> return self._match(
 	at(SIMethod(m)) => m.ret._or(Pass2.STD_Void.thisType),
 	at(SIMultiMethod(m)) => m.ret._or(Pass2.STD_Void.thisType),
 	at(SIMember(m)) => m.type,
-	at(SIFromTypevar(_, _, _, _)) => null, // TODO
+	at(SIFromTypevar(_, _, _, kind)) => kind.retType(), // TODO
 	at(SIFromParent(parent, kind)) => {
 		retType(kind)._and(ret => {
 			// TODO: make this smarter

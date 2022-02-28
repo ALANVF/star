@@ -47,8 +47,8 @@ class Ptr[T] of Ordered is native[repr: `ptr` elem: T] {
 	on [previous] (Ptr[T]) => return this - 1
 
 
-	operator `+` [offset (Int)] (Ptr[T]) is native `ptr_add`
-	operator `-` [offset (Int)] (Ptr[T]) is native `ptr_sub`
+	operator `+` [offset (Int)] (This) is native `ptr_add`
+	operator `-` [offset (Int)] (This) is native `ptr_sub`
 	
 	operator `<` [other (Ptr[T])] (Bool) => return this[UInt64] < other[UInt64]
 	operator `<=` [other (Ptr[T])] (Bool) => return this[UInt64] <= other[UInt64]

@@ -14,6 +14,7 @@ import parsing.ast.Message as UMessage;
 import parsing.ast.Cascade as UCascade;
 import parsing.ast.Block as UBlock;
 
+using typing.CastKind;
 using typing.MultiStaticKind;
 using typing.MultiInstKind;
 
@@ -912,11 +913,14 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 				e: EFunc(params, null, tstmts),
 				t: nparams._match(
 					at(1) => getReturnType(anonCtx, tstmts).ret._andOr(
-						ret => {t: TMulti([ STD_Func1.applyArgs([ret, STD_Func1.params[1]]).nonNull(), STD_Func2.applyArgs([ret, STD_Func2.params[1], STD_Func2.params[2]]).nonNull() ]), span: null},
+						ret => {t: TMulti([
+								STD_Func1.applyArgs([ret, params[0]._and(p => p.type)._or(STD_Func1.params[1])]).nonNull(),
+								STD_Func2.applyArgs([ret, params[0]._and(p => p.type)._or(STD_Func2.params[1]), params[1]._and(p => p.type)._or(STD_Func2.params[2])]).nonNull()
+							]), span: null},
 						{t: TMulti([ STD_Func1.applyArgs(STD_Func1.params).nonNull(), STD_Func2.applyArgs(STD_Func2.params).nonNull() ]), span: null}
 					),
 					at(2) => getReturnType(anonCtx, tstmts).ret._andOr(
-						ret => STD_Func2.applyArgs([ret, STD_Func2.params[1], STD_Func2.params[2]]),
+						ret => STD_Func2.applyArgs([ret, params[0]._and(p => p.type)._or(STD_Func2.params[1]), params[1]._and(p => p.type)._or(STD_Func2.params[2])]),
 						STD_Func2.applyArgs(STD_Func2.params)
 					),
 					at(3) => getReturnType(anonCtx, tstmts).ret._andOr(
@@ -1001,7 +1005,9 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 			tobj.t._match(
 				at(t!) => sendObjMessage(ctx, t, begin, end, msg)._match(
 					at(null) => invalidExpr(),
-					at({_1: msg2, _2: ret}) => {e: EObjMessage(tobj, msg2), t: ret}
+					at({_1: msg2, _2: ret}) => {
+						{ e: EObjMessage(tobj, msg2), t: ret._and(r => r.simplify()) };
+					}
 				),
 				_ => { e: EObjMessage(tobj, Lazy(typeMessage(ctx, msg))) }
 			);
@@ -1164,7 +1170,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 							ctx.addError(Type_UnknownSetter(ctx, Instance, t, name, span1));
 							invalidExpr();
 						},
-						at(kinds) => kinds.reduceOverloads(t, [tright])._match(
+						at(kinds) => kinds.reduceOverloads(ctx, t, [tright])._match(
 							at([]) => {
 								ctx.addError(Type_UnknownSetter(ctx, Instance, t, name, span1, tright));
 								invalidExpr();
@@ -1829,7 +1835,7 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 					ctx.addError(Type_UnknownMethod(ctx, t, Multi(Instance, names), labels[0].span()));
 					null;
 				},
-				at(kinds) => kinds.reduceOverloads(t, args)._match(
+				at(kinds) => kinds.reduceOverloads(ctx, t, args)._match(
 					at([]) => {
 						ctx.addError(Type_UnknownMethod(ctx, t, Multi(Instance, names, args), labels[0].span()));
 						null;
@@ -1909,7 +1915,7 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 						ctx.addError(Type_UnknownMethod(ctx, t, Multi(Instance, names), labels[0].span(), categories));
 						null;
 					},
-					at(kinds) => kinds.reduceOverloads(t, args)._match(
+					at(kinds) => kinds.reduceOverloads(ctx, t, args)._match(
 						at([]) => {
 							ctx.addError(Type_UnknownMethod(ctx, t, Multi(Instance, names, args), labels[0].span(), categories));
 							null;
@@ -1965,7 +1971,7 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 						ctx.addError(Type_UnknownMethod(ctx, t, Multi(Instance, names), begin, categories));
 						null;
 					},
-					at([kinds]) => kinds.mth.reduceOverloads(t, args)._match(
+					at([kinds]) => kinds.mth.reduceOverloads(ctx, t, args)._match(
 						at([]) => {
 							ctx.addError(Type_UnknownMethod(ctx, t, Multi(Instance, names, args), labels[0].span(), categories));
 							null;
@@ -2057,7 +2063,7 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 					null;
 				},
 				at(casts) => {
-					_1: Cast(target, casts.unique()),
+					_1: Cast(target, casts.unique().reduceOverloads()),
 					_2: target
 				}
 			);
@@ -2072,7 +2078,7 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 						throw 'error: value of type `${t.fullName()}` does not have a supertype `${tparent.fullName()}` that can be cast to type `${target.fullName()}`! ${begin.display()}';
 					},
 					at(casts) => {
-						_1: Super(tparent, Cast(target, casts.unique())),
+						_1: Super(tparent, Cast(target, casts.unique().reduceOverloads())),
 						_2: target
 					}
 				);
@@ -2113,7 +2119,7 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 					}
 				),
 				at(found) => found
-					.filterMap(f -> f.findCast(ctx, target, ctx.typeDecl).unique())
+					.filterMap(f -> f.findCast(ctx, target, ctx.typeDecl).unique().reduceOverloads())
 					.filter(c -> c.length != 0)
 				._match(
 					at([]) => throw 'error: value of type `${t.fullName()}` cannot be cast to type `${target.fullName()}` in any categories of: `${found.map(f -> f.fullName()).join(", ")}`! ${begin.display()}',

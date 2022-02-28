@@ -21,9 +21,9 @@ protocol Mapped[K, V] of Iterable[K], Iterable[K, V] {
 	on [values] (Array[V]) is getter
 	
 	
-	;== Pairs
+	;== Entries
 	
-	on [pairs] (Array[Tuple[K, V]]) is getter
+	on [entries] (Array[Tuple[K, V]]) is getter
 
 
 	;== Accessing
@@ -209,7 +209,7 @@ protocol Mapped[K, V] of Iterable[K], Iterable[K, V] {
 
 	;== Converting
 	
-	on [Array[Tuple[K, V]]] is inline => return this.pairs
+	on [Array[Tuple[K, V]]] is inline => return this.entries
 	
 	type K' if Power.Castable[K, K']?
 	type V' if Power.Castable[V, V']?

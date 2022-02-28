@@ -66,7 +66,7 @@ class Dict[K, V] of Mapped[K, V] is friend #[DictIterator[K], DictIterator[K, V]
 	}
 	
 	init [new: pairs (Array[Tuple[K, V]])] {
-		_.pairs = pairs[Array[Pair]]
+		_.pairs = pairs[collect: Pair #{K$.0, V$.1}]
 	}
 	
 	
@@ -92,9 +92,9 @@ class Dict[K, V] of Mapped[K, V] is friend #[DictIterator[K], DictIterator[K, V]
 	on [values] (Array[V]) is getter => return pairs[collect: Pair$0.value]
 	
 	
-	;== Pairs
+	;== Entries
 	
-	on [pairs] (Array[Tuple[K, V]]) is getter => return pairs[Array[Tuple[K, V]]]
+	on [entries] (Array[Tuple[K, V]]) is getter => return pairs[collect: Pair$0[Tuple[K,V]]] ;broken: pairs[Array[Tuple[K, V]]]
 	
 	
 	;== Internal
@@ -281,7 +281,7 @@ class Dict[K, V] of Mapped[K, V] is friend #[DictIterator[K], DictIterator[K, V]
 	;== Iterating
 	
 	on [Iterator[K]] is inline => return DictIterator[K][keys: this.keys]
-	on [Iterator[K, V]] is inline => return DictIterator[K, V][pairs: this[pairs]]
+	on [Iterator[K, V]] is inline => return DictIterator[K, V][pairs: this.entries]
 
 
 	;== Converting

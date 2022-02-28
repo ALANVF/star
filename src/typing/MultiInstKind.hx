@@ -31,7 +31,7 @@ typedef InstOverload = {
 	complete: Bool
 };
 
-function reduceOverloads(kinds: Array<MultiInstKind>, sender: Type, args: Array<TExpr>) {
+function reduceOverloads(kinds: Array<MultiInstKind>, ctx: Ctx, sender: Type, args: Array<TExpr>) {
 	if(kinds.length == 0) return [];
 
 	function loop(kind: MultiInstKind) return kind._match(
@@ -49,21 +49,79 @@ function reduceOverloads(kinds: Array<MultiInstKind>, sender: Type, args: Array<
 				args[i].t._andOr(atype => {
 					final ptype = param.type/*.getInTCtx(tctx)*/.getFrom(sender);
 
-					// WIP: type inference for closures
-					/*args[i].e._match(
+					// WIP type inference for closures
+					// Notes:
+					/// fuck this shit
+					args[i].e._match(
 						at(EFunc(params, ret, body), when(args[i].orig.match(EAnonFunc(_, _, _)))) => {
-							final tctx2:TypeVarCtx=[];
-							//trace(args[i].orig.mainSpan().display());
-							ptype.bindTo(atype, tctx2)._and(a2 => {
-								//trace(tctx.display(), tctx2.display());
-								a2=a2.getFrom(sender).getInTCtx(tctx2).getInTCtx(tctx);
-								//trace(a2.getMostSpecific().fullName());
-								args[i].t=a2;
-							});
+							final ctx2 = ctx.innerBlock();
+							final span = args[i].orig.nonNull().mainSpan();
+							for(p in params) {
+								ctx2.locals[p.name] = new Pass2.LocalParam(ctx2, span, p.name, p.type, null);
+							}
+							Pass2.getReturnType(ctx2, body)._match(
+								at({complete: _, spans: _, incomplete: _, ret: ret2}) => {
+									// TODO: stop being lazy
+									atype.getFrom(sender).t._match(
+										at(TMulti(types)) => {
+											for(ty in types) ty.t._match(
+												at(TInstance(fndecl, largs, ltctx)) => {
+													//trace(ret2.fullName(),largs[0].fullName(), ltctx.display());
+													final ltctx2: TypeVarCtx = [];
+													ret2.bindTo(largs[0], [])._andOr(
+														nret => {
+															//largs[0] = nret;
+															//trace(ret2.fullName(), largs[0].fullName(), nret.fullName());
+															atype.bindTo(ptype, ltctx2);
+															ptype.bindTo(atype, ltctx2);
+															//trace(ltctx.display());
+															//trace(ltctx2.display());
+															for(tvar => mt in ltctx2) {
+																if(!ltctx.exists(tvar)) {
+																	//ltctx2.remove(tvar);
+																} else {
+																	ltctx[tvar] = mt;
+																}
+															}
+															atype = ptype.t._match(
+																at(TInstance(decl, args, ltctx3)) => {
+																	for(tvar => mt in ltctx) {
+																		ltctx[tvar] = mt.getInTCtx(ltctx3);
+																	}
+																	largs._for(i => a, {
+																		largs[i] = a.getInTCtx(ltctx);
+																	});
+																	{t: TInstance(decl, largs, ltctx), span: atype.span};
+																},
+																_ => throw "???"
+															);
+														}, {
+															// TODO: what to do with this??
+															trace("type mismatch???");
+														}
+													);
+												},
+												_ => {
+													trace("???");
+												}
+											);
+										},
+										_ => {}
+									);
+
+									atype.getFrom(sender).bindTo(ptype, tctx)._andOr(atype2 => {
+										args[i].t = atype2; // TODO: maybe wrong?
+										argTypes.push(atype2);
+										continue;
+									}, {
+										return null;
+									});
+								}
+							);
 						},
 						_ => {}
-					);*/
-
+					);
+					
 					atype.getFrom(sender).bindTo(ptype, tctx)._andOr(atype2 => {
 						argTypes.push(atype2);
 					}, {
@@ -78,11 +136,11 @@ function reduceOverloads(kinds: Array<MultiInstKind>, sender: Type, args: Array<
 			/*mth.params._for(i => param, {
 				argTypes[i]._and(atype => {
 					atype.bindTo(param.type.getFrom(sender), tctx);
-					if(tctx.size() > 0) trace(tctx);
+					//if(tctx.size() > 0) trace(tctx);
 				});
 			});*/
 
-			/*if(tctx.size() == 0 && mth.typevars.size != 0 && mth.fuzzyName=="zip:") {
+			/*if(tctx.size() == 0 && mth.typevars.size != 0 && mth.fuzzyName=="collect:") {
 				final mp = mth.params.map(p->p.type.getFrom(sender));
 				trace("");
 				trace("#"+mth.methodName(),
@@ -93,7 +151,7 @@ function reduceOverloads(kinds: Array<MultiInstKind>, sender: Type, args: Array<
 					trace(t.fullName());
 					trace(mp[i].fullName());
 					trace(t.bindTo(mp[i], tctx));
-					trace(tctx);
+					trace(tctx.display());
 				});
 			}*/
 			

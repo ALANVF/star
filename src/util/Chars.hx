@@ -8,8 +8,10 @@ class Chars {
 			at('\r'.code) => "\\r",
 			at('\n'.code) => "\\n",
 			_ => "\\x" + char.toInt().toHex(2)
-		) else {
-			char.toString();
-		}
+		) else Util._match(char,
+			at('"'.code) => "\\\"",
+			at('\\'.code) => "\\\\",
+			_ => char.toString()
+		);
 	}
 }
