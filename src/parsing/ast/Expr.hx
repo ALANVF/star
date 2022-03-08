@@ -14,8 +14,8 @@ enum Expr {
 	
 	ETag(_: Span, name: String, expr: Expr);
 
-	EInt(_: Span, int: Int, exp: Option<Int>);
-	EDec(_: Span, int: Int, dec: String, exp: Option<Int>);
+	EInt(_: Span, int: Int, exp: Null<Int>);
+	EDec(_: Span, int: Int, dec: String, exp: Null<Int>);
 	EChar(_: Span, char: Char);
 	EStr(_: Span, parts: Array<StrPart>);
 	EBool(_: Span, bool: Bool);
@@ -24,7 +24,7 @@ enum Expr {
 	ETuple(_begin: Span, values: Array<Expr>, _end: Span);
 	EThis(_: Span);
 	EWildcard(_: Span);
-	EFunc(_begin: Span, params: Array<{name: Ident, type: Option<Type>}>, ret: Option<Type>, body: Array<Stmt>, _end: Span);
+	EFunc(_begin: Span, params: Array<{name: Ident, type: Null<Type>}>, ret: Null<Type>, body: Array<Stmt>, _end: Span);
 	EAnonFunc(depth: Int, nparams: Int, types: Null<Map<Int, Type>>, expr: Expr);
 	EAnonArg(_: Span, depth: Int, nth: Int);
 	ELiteralCtor(type: Type, literal: Expr/*EInt|EDec|EChar|EStr|EArray|EHash|ETuple|EFunc(|EBlock|ELitSym ?)*/);
@@ -44,7 +44,7 @@ enum Expr {
 	ESuffix(left: Expr, _: Span, op: Suffix);
 	EInfix(left: Expr, _: Span, op: Infix, right: Expr);
 
-	EVarDecl(_: Span, name: Ident, type: Option<Type>, value: Option<Expr>);
+	EVarDecl(_: Span, name: Ident, type: Null<Type>, value: Null<Expr>);
 
 	EType(type: Type);
 }

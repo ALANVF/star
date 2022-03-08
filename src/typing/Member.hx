@@ -28,8 +28,8 @@ class Member implements IDecl {
 			decl: decl,
 			span: ast.span,
 			name: ast.name,
-			type: ast.type.toNull()._and(t => decl.makeTypePath(t)),
-			value: ast.value.toNull()
+			type: ast.type._and(t => decl.makeTypePath(t)),
+			value: ast.value
 		});
 
 		var getterSpan = null;

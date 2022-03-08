@@ -16,7 +16,7 @@ enum MemberAttr {
 class Member {
 	final span: Span;
 	final name: Ident;
-	final type: Option<Type>;
+	final type: Null<Type>;
 	final attrs: Map<MemberAttr, Span>;
-	final value: Option<Expr>;
+	final value: Null<Expr>;
 }

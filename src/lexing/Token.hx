@@ -132,9 +132,9 @@ enum Token {
 	T_Tag(_: Span, tag: String);
 	T_Litsym(_: Span, litsym: String);
 
-	T_Int(_: Span, int: String, exp: Option<String>);
+	T_Int(_: Span, int: String, exp: Null<String>);
 	T_Hex(_: Span, hex: String);
-	T_Dec(_: Span, int: String, dec: String, exp: Option<String>);
+	T_Dec(_: Span, int: String, dec: String, exp: Null<String>);
 	T_Str(_: Span, segments: List<StrSegment>);
 	T_Char(_: Span, char: Char);
 	T_Bool(_: Span, bool: Bool);

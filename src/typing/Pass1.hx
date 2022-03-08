@@ -321,7 +321,7 @@ static function resolveCategory(category: Category) {
 	
 	resolveBasicType(category, category.path);
 
-	category.type.forEach(t -> resolveBasicType(category, t));
+	category.type._and(t => resolveBasicType(category, t));
 
 	for(m in category.staticMembers) resolveMember(m);
 	for(m in category.staticMethods) resolveStaticMethod(m);

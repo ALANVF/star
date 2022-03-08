@@ -17,8 +17,8 @@ class Kind {
 	final generics: List<GenericParam>;
 	final span: Span;
 	final name: Ident;
-	final params: Option<TypeParams>;
-	final repr: Option<Type>;
+	final params: Null<TypeParams>;
+	final repr: Null<Type>;
 	final parents: Parents;
 	final attrs: Map<KindAttr, Span>;
 	final body: DeclBody;

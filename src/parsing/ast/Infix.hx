@@ -29,7 +29,7 @@ private enum _Infix<T> {
 	Lt;
 	Le;
 	
-	Assign(op: Option<_Infix<_Assignable>>);
+	Assign(?op: _Infix<_Assignable>);
 }
 
 @:using(parsing.ast.Infix)
@@ -63,6 +63,6 @@ function symbol<T>(self: _Infix<T>) return self._match(
 	at(Ge) => ">=",
 	at(Lt) => "<",
 	at(Le) => "<=",
-	at(Assign(None)) => "=",
-	at(Assign(Some(op))) => op.symbol()+"="
+	at(Assign(null)) => "=",
+	at(Assign(op!!)) => op.symbol()+"="
 );

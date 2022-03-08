@@ -13,7 +13,7 @@ class Category {
 	final generics: List<GenericParam>;
 	final span: Span;
 	final path: Type;
-	final type: Option<Type>;
+	final type: Null<Type>;
 	final attrs: Map<CategoryAttr, Span>;
 	final body: DeclBody;
 }

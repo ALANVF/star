@@ -28,7 +28,7 @@ class Method {
 	final generics: List<GenericParam>;
 	final span: Span;
 	final spec: Delims<MethodKind>;
-	final ret: Option<Type>;
+	final ret: Null<Type>;
 	final attrs: Map<MethodAttr, Span>;
-	final body: Option<Body>;
+	final body: Null<Body>;
 }

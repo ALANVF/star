@@ -1,3 +1,3 @@
 package parsing.ast.decls;
 
-typedef MultiParam = {label: Option<Ident>, name: Option<Ident>, type: Type, value: Option<Expr>};
+typedef MultiParam = {label: Null<Ident>, name: Null<Ident>, type: Type, value: Null<Expr>};

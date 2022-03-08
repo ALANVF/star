@@ -1,13 +1,7 @@
 package typing;
 
-import parsing.ast.Ident;
-import parsing.ast.Expr;
-
-typedef MultiParam = {label: Ident, name: Ident, type: Type, ?value: Expr, ?tvalue: TExpr};
-
 @:using(typing.MultiParams)
 typedef MultiParams = Array<MultiParam>;
-
 
 enum MatchParams {
 	Yes;

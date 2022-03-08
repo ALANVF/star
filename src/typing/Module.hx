@@ -19,15 +19,15 @@ class Module extends Namespace {
 			module.typevars.add(typevar.name.name, typevar);
 		}
 
-		if(ast.params.isSome()) {
-			module.params = ast.params.value().of.map(param -> module.makeTypePath(param));
-		}
+		ast.params._and(params => {
+			module.params = params.of.map(param -> module.makeTypePath(param));
+		});
 
-		if(ast.parents.isSome()) {
-			for(parent in ast.parents.value().parents) {
+		ast.parents._and(parents => {
+			for(parent in parents.parents) {
 				module.parents.push(module.makeTypePath(parent));
 			}
-		}
+		});
 
 		for(attr => span in ast.attrs) switch attr {
 			case IsHidden(_) if(module.hidden.isSome()): module.errors.push(Type_DuplicateAttribute(module, ast.name.name, "hidden", span));

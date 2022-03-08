@@ -9,7 +9,7 @@ import typing.Traits;
 class Category extends AnyTypeDecl {
 	@ignore final typevars = new MultiMap<String, TypeVar>();
 	var path: Type;
-	var type: Option<Type>;
+	var type: Null<Type>;
 	final staticMembers: Array<Member> = [];
 	final staticMethods: Array<StaticMethod> = [];
 	final methods: Array<Method> = [];
@@ -30,12 +30,11 @@ class Category extends AnyTypeDecl {
 		var path = (ast.path : TypePath).toType(category);
 
 		category.path = path;
-		category.type = ast.type.map(x -> category.makeTypePath(x));
+		category.type = ast.type._and(x => category.makeTypePath(x));
 
-		category.thisType = switch category.type {
-			case Some(t): t;
-			case None: (cast lookup : AnyTypeDecl).thisType;
-		};
+		category.thisType = category.type._or(
+			(cast lookup : AnyTypeDecl).thisType
+		);
 
 		for(typevar in ast.generics.mapArray(a -> TypeVar.fromAST(category, a))) {
 			category.typevars.add(typevar.name.name, typevar);
@@ -95,7 +94,7 @@ class Category extends AnyTypeDecl {
 	}
 
 	function fullName(cache: TypeCache = Nil) {
-		return type.doOrElse(t => t.fullName(cache), lookup._match(
+		return type._andOr(t => t.fullName(cache), lookup._match(
 			at(decl is TypeDecl) => decl.fullName(cache),
 			at(tvar is TypeVar) => tvar.fullName(cache),
 			_ => throw "???"
@@ -112,7 +111,7 @@ class Category extends AnyTypeDecl {
 		return path._match(
 			at([[span, "This", args]], when(depth == 0)) => {
 				if(args.length == 0) {
-					type.doOrElse(
+					type._andOr(
 						t => t,
 						lookup.findType(path, Start, from, 0, cache)
 					);
@@ -210,47 +209,47 @@ class Category extends AnyTypeDecl {
 	// Type checking
 
 	function hasParentDecl(decl: TypeDecl) {
-		return switch type {
-			case Some(t): t.hasParentDecl(decl);
-			case None: lookup._match(
+		return type._andOr(
+			t => t.hasParentDecl(decl),
+			lookup._match(
 				at(td is TypeDecl) => td.hasParentDecl(decl),
 				at(tv is TypeVar) => tv.hasParentDecl(decl),
 				_ => false
-			);
-		}
+			)
+		);
 	}
 
 	function hasChildDecl(decl: TypeDecl) {
-		return switch type {
-			case Some(t): t.hasChildDecl(decl);
-			case None: lookup._match(
+		return type._andOr(
+			t => t.hasChildDecl(decl),
+			lookup._match(
 				at(td is TypeDecl) => td.hasChildDecl(decl),
 				at(tv is TypeVar) => tv.hasChildDecl(decl),
 				_ => false
-			);
-		}
+			)
+		);
 	}
 
 	function hasParentType(type2: Type) {
-		return switch type {
-			case Some(t): t.hasParentType(type2);
-			case None: lookup._match(
+		return type._andOr(
+			t => t.hasParentType(type2),
+			lookup._match(
 				at(td is TypeDecl) => td.hasParentType(type2),
 				at(tv is TypeVar) => tv.hasParentType(type2),
 				_ => false
-			);
-		}
+			)
+		);
 	}
 
 	function hasChildType(type2: Type) {
-		return switch type {
-			case Some(t): t.hasChildType(type2);
-			case None: lookup._match(
+		return type._andOr(
+			t => t.hasChildType(type2),
+			lookup._match(
 				at(td is TypeDecl) => td.hasChildType(type2),
 				at(tv is TypeVar) => tv.hasChildType(type2),
 				_ => false
-			);
-		}
+			)
+		);
 	}
 
 

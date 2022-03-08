@@ -23,9 +23,9 @@ class DirectAlias extends Alias {
 			default: throw "Error!";
 		}
 
-		if(ast.params.isSome()) {
-			alias.params = ast.params.value().of.map(param -> alias.makeTypePath(param));
-		}
+		ast.params._and(params => {
+			alias.params = params.of.map(param -> alias.makeTypePath(param));
+		});
 
 		for(attr => span in ast.attrs) switch attr {
 			case IsHidden(_) if(alias.hidden.isSome()): alias.errors.push(Type_DuplicateAttribute(alias, ast.name.name, "hidden", span));

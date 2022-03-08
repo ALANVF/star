@@ -22,7 +22,7 @@ function name(self: SingleStaticKind) return self._match(
 	at(SSMultiInit(init)) => init.params.find(p -> p.value == null).label.name,
 	at(SSMember(mem)) => mem.name.name,
 	at(SSTaggedCase(tcase)) => tcase.name.name,
-	at(SSTaggedCaseAlias(tcase)) => tcase.assoc.value()._match(
+	at(SSTaggedCaseAlias(tcase)) => tcase.assoc.nonNull()._match(
 		at(Single(_, _, n)) => n,
 		_ => throw ""
 	),

@@ -13,8 +13,8 @@ class SingleMethod extends Method {
 				case Single(name): name;
 				default: throw "Error!";
 			},
-			ret: ast.ret.toNull()._and(ret => decl.makeTypePath(ret)),
-			body: ast.body.toNull()._and(body => body.stmts())
+			ret: ast.ret._and(ret => decl.makeTypePath(ret)),
+			body: ast.body._and(body => body.stmts())
 		});
 
 		for(attr => span in ast.attrs) switch attr {

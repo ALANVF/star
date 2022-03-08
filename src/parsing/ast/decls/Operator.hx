@@ -18,8 +18,8 @@ class Operator {
 	final span: Span;
 	final symbolSpan: Span;
 	final symbol: String;
-	final spec: Option<Delims<{name: Ident, type: Type}>>;
-	final ret: Option<Type>;
+	final spec: Null<Delims<{name: Ident, type: Type}>>;
+	final ret: Null<Type>;
 	final attrs: Map<OperatorAttr, Span>;
-	final body: Option<Body>;
+	final body: Null<Body>;
 }

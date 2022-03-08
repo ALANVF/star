@@ -3,17 +3,17 @@ package text;
 using util.Strings;
 
 @:publicFields
-private class _SourceFile {
+class SourceFile {
 	final path: String;
 	final fullPath: String;
 	final text: String;
 	private var lineStarts: Array<Int> = [];
 	
 	var isReal(get, never): Bool;
-	private function get_isReal() return sys.FileSystem.exists(fullPath);
+	private inline function get_isReal() return sys.FileSystem.exists(fullPath);
 	
 	var lineCount(get, never): Int;
-	private function get_lineCount() return lineStarts.length;
+	private inline function get_lineCount() return lineStarts.length;
 	
 	function new(path, text: String) {
 		this.path = path;
@@ -31,7 +31,7 @@ private class _SourceFile {
 
 	private function __compare(other: Any) {
 		return other._match(
-			at(otherSrc is _SourceFile) => if(fullPath == otherSrc.fullPath) 0 else -1,
+			at(otherSrc is SourceFile) => if(fullPath == otherSrc.fullPath) 0 else -1,
 			_ => hl.Api.comparePointer(this, other)
 		);
 	}
@@ -63,7 +63,7 @@ private class _SourceFile {
 	public function toString() return path;
 }
 
-@:forward(path, fullPath, text, isReal, lineCount, line, __compare, lineIndexToTextIndex, calculateLineStarts, iterator, toString)
+/*@:forward(path, fullPath, text, isReal, lineCount, line, __compare, lineIndexToTextIndex, calculateLineStarts, iterator, toString)
 abstract SourceFile(_SourceFile) {
 	public inline function new(path, text) this = new _SourceFile(path, text);
 
@@ -71,4 +71,4 @@ abstract SourceFile(_SourceFile) {
 	function equal(other: SourceFile) {
 		return this.fullPath == other.fullPath;
 	}
-}
+}*/

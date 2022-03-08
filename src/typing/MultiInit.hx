@@ -17,25 +17,11 @@ class MultiInit extends Init {
 			span: ast.span,
 			params: null,    // hack for partial initialization
 			fuzzyName: null, // hack for partial initialization
-			body: ast.body.toNull()._and(body => body.stmts())
+			body: ast.body._and(body => body.stmts())
 		});
 
 		final params = switch ast.spec.of {
-			case Multi(params2): params2.map(p -> {
-				final type = init.makeTypePath(p.type);
-				return (switch [p.label, p.name] {
-					case [Some(l), Some(n)]: {label: l, name: n, type: type, value: p.value.toNull()};
-					case [Some(l), None]: {label: l, name: l, type: type, value: p.value.toNull()};
-					case [None, Some(n)]: {label: new Ident(n.span, "_"), name: n, type: type, value: p.value.toNull()};
-					case [None, None]:
-						final span = {
-							final s = p.type.span();
-							Span.at(s.start, s.source.toNull());
-						};
-						final ident = new Ident(span, "_");
-						{label: ident, name: ident, type: type, value: p.value.toNull()};
-				} : MultiParams.MultiParam);
-			});
+			case Multi(params2): params2.map(p -> MultiParam.fromUntyped(init, p));
 			default: throw "Error!";
 		};
 

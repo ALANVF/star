@@ -19,15 +19,15 @@ class Protocol extends ClassLike {
 			protocol.typevars.add(typevar.name.name, typevar);
 		}
 
-		if(ast.params.isSome()) {
-			protocol.params = ast.params.value().of.map(param -> protocol.makeTypePath(param));
-		}
+		ast.params._and(params => {
+			protocol.params = params.of.map(param -> protocol.makeTypePath(param));
+		});
 
-		if(ast.parents.isSome()) {
-			for(parent in ast.parents.value().parents) {
+		ast.parents._and(parents => {
+			for(parent in parents.parents) {
 				protocol.parents.push(protocol.makeTypePath(parent));
 			}
-		}
+		});
 
 		for(attr => span in ast.attrs) switch attr {
 			case IsHidden(_) if(protocol.hidden.isSome()): protocol.errors.push(Type_DuplicateAttribute(protocol, ast.name.name, "hidden", span));

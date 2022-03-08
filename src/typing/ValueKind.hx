@@ -18,19 +18,19 @@ class ValueKind extends Kind {
 			kind.typevars.add(typevar.name.name, typevar);
 		}
 
-		if(ast.params.isSome()) {
-			kind.params = ast.params.value().of.map(param -> kind.makeTypePath(param));
-		}
+		ast.params._and(params => {
+			kind.params = params.of.map(param -> kind.makeTypePath(param));
+		});
 
-		if(ast.repr.isSome()) {
-			kind.repr = Some(kind.makeTypePath(ast.repr.value()));
-		}
+		ast.repr._and(repr => {
+			kind.repr = Some(kind.makeTypePath(repr));
+		});
 
-		if(ast.parents.isSome()) {
-			for(parent in ast.parents.value().parents) {
+		ast.parents._and(parents => {
+			for(parent in parents.parents) {
 				kind.parents.push(kind.makeTypePath(parent));
 			}
-		}
+		});
 
 		for(attr => span in ast.attrs) switch attr {
 			case IsHidden(_) if(kind.hidden.isSome()): kind.errors.push(Type_DuplicateAttribute(kind, ast.name.name, "hidden", span));

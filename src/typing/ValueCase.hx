@@ -13,7 +13,7 @@ class ValueCase implements IErrors {
 	final decl: AnyTypeDecl;
 	final span: Span;
 	final name: Ident;
-	var value: Option<Expr>;
+	var value: Null<Expr>;
 	@ignore var typedValue: Null<TExpr> = null;
 
 	static function fromAST(decl, ast: parsing.ast.decls.Case) {
@@ -26,15 +26,13 @@ class ValueCase implements IErrors {
 					value: value
 				});
 
-				switch ast.init {
-					case None:
-					case Some({begin: begin, end: end}):
-						valueCase.errors.push(Type_NoValueCaseInit(
-							name.name,
-							Span.range(ast.span, name.span),
-							Span.range(begin, end)
-						));
-				}
+				ast.init._and(init => {
+					valueCase.errors.push(Type_NoValueCaseInit(
+						name.name,
+						Span.range(ast.span, name.span),
+						Span.range(init.begin, init.end)
+					));
+				});
 
 				return valueCase;
 			

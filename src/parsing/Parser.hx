@@ -226,8 +226,8 @@ class Parser {
 			final parents = switch parseTypeParents(rest, true) {
 				case Success(made, rest2):
 					rest = rest2;
-					Some(made);
-				case Failure(_, _): None;
+					made;
+				case Failure(_, _): null;
 				case err: return fatalIfBad(rest, cast err);
 			};
 			
@@ -281,17 +281,17 @@ class Parser {
 				at([T_If(_2), ...rest2]) => switch parseGenericRule(rest2) {
 					case Success(rule, rest3):
 						rest = rest3;
-						Some({span: _2, rule: rule});
+						{span: _2, rule: rule};
 					case err: return cast err;
 				},
-				_ => None
+				_ => null
 			);
 
 			final body = switch nextDeclBody(rest) {
 				case Success(made, rest2):
 					rest = rest2;
-					Some(made);
-				case Failure(_, _): None;
+					made;
+				case Failure(_, _): null;
 				case err: return fatalIfBad(rest, cast err);
 			};
 
@@ -700,8 +700,8 @@ class Parser {
 			final parents = switch parseTypeParents(rest) {
 				case Success(made, rest2):
 					rest = rest2;
-					Some(made);
-				case Failure(_, _): None;
+					made;
+				case Failure(_, _): null;
 				case err: return cast err;
 			};
 			
@@ -765,8 +765,8 @@ class Parser {
 			final parents = switch parseTypeParents(rest) {
 				case Success(made, rest2):
 					rest = rest2;
-					Some(made);
-				case Failure(_, _): None;
+					made;
+				case Failure(_, _): null;
 				case err: return cast err;
 			};
 			
@@ -858,8 +858,8 @@ class Parser {
 			final parents = switch parseTypeParents(rest) {
 				case Success(made, rest2):
 					rest = rest2;
-					Some(made);
-				case Failure(_, _): None;
+					made;
+				case Failure(_, _): null;
 				case err: return cast err;
 			};
 			
@@ -916,10 +916,10 @@ class Parser {
 				at([T_For(_), ...rest2]) => switch parseType(rest2) {
 					case Success(made, rest3):
 						rest = rest3;
-						Some(made);
+						made;
 					case err: return cast err;
 				},
-				_ => None
+				_ => null
 			);
 			
 			final attrs = new Map<CategoryAttr, Span>();
@@ -964,16 +964,16 @@ class Parser {
 			final repr = switch parseTypeAnno(rest) {
 				case Success(type, rest2):
 					rest = rest2;
-					Some(type);
-				case Failure(_, _): None;
+					type;
+				case Failure(_, _): null;
 				case err: return cast err;
 			};
 
 			final parents = switch parseTypeParents(rest) {
 				case Success(made, rest2):
 					rest = rest2;
-					Some(made);
-				case Failure(_, _): None;
+					made;
+				case Failure(_, _): null;
 				case err: return cast err;
 			};
 			
@@ -1042,8 +1042,8 @@ class Parser {
 			final type = switch parseTypeAnno(rest) {
 				case Success(of, rest2):
 					rest = rest2;
-					Some(of);
-				case Failure(_, _): None;
+					of;
+				case Failure(_, _): null;
 				case err: return cast err;
 			};
 
@@ -1095,10 +1095,10 @@ class Parser {
 					case Success(expr, rest3):
 						expr = reparseExpr(expr);
 						rest = rest3;
-						Some(expr);
+						expr;
 					case err: return cast err;
 				},
-				_ => None
+				_ => null
 			);
 
 			Success(DMember({
@@ -1121,17 +1121,17 @@ class Parser {
 				at([T_EqGt(_), ...rest2]) => switch parseExpr(rest2) {
 					case Success(expr, rest3):
 						rest = rest3;
-						Some(expr);
+						expr;
 					case err: return cast err;
 				},
-				_ => None
+				_ => null
 			);
 
 			final init = switch parseBlock(rest) {
 				case Success(block, rest2):
 					rest = rest2;
-					Some(block);
-				case Failure(_, _): None;
+					block;
+				case Failure(_, _): null;
 				case err: return cast err;
 			};
 
@@ -1149,17 +1149,17 @@ class Parser {
 						at([T_EqGt(_), T_LBracket(_), ...rest3]) => switch finishTypeMsg(rest3) {
 							case Success(msg, rest4):
 								rest2 = rest4;
-								Some(msg.msg);
+								msg.msg;
 							case err: return fatalIfBad(rest2, cast err);
 						},
 						at([T_EqGt(_), ...rest3]) => return Fatal(rest2, Some(rest3)),
-						_ => None
+						_ => null
 					);
 					final init = switch parseBlock(rest2) {
 						case Success(block, rest3):
 							rest2 = rest3;
-							Some(block);
-						case Failure(_, _): None;
+							block;
+						case Failure(_, _): null;
 						case err: return cast err;
 					};
 					
@@ -1177,18 +1177,18 @@ class Parser {
 				at([T_EqGt(_), T_LBracket(_), ...rest2]) => switch finishTypeMsg(rest2) {
 					case Success(msg, rest3):
 						rest = rest3;
-						Some(msg.msg);
+						msg.msg;
 					case err: return fatalIfBad(rest, cast err);
 				},
 				at([T_EqGt(_), ...rest2]) => return Fatal(rest, Some(rest2)),
-				_ => None
+				_ => null
 			);
 			final kind = CaseKind.Tagged({begin: begin, of: Single({span: _2, name: name}), end: end}, assoc);
 			final init = switch parseBlock(rest) {
 				case Success(block, rest2):
 					rest = rest2;
-					Some(block);
-				case Failure(_, _): None;
+					block;
+				case Failure(_, _): null;
 				case err: return cast err;
 			};
 
@@ -1208,31 +1208,31 @@ class Parser {
 
 	static function parseMultiSig(tokens: Tokens): ParseResult<{params: Array<MultiParam>, end: Span}> {
 		var rest = tokens;
-		final params = [rest._match(
+		final params: Array<MultiParam> = [rest._match(
 			// Checking for `a: (B)` syntax before `a: a' (B)` syntax is
 			// probably less expensive than doing it after.
 			at([T_Label(_2, label), ...rest2 = [T_LParen(_), ..._]]) => switch parseTypeAnno(rest2, true) {
 				case Success(type, Cons(T_Eq(_), rest3)): switch parseExpr(rest3) {
 					case Success(expr, rest4):
 						rest = rest4;
-						{label: Some(new Ident(_2, label)), name: None, type: type, value: Some(expr)};
+						{label: new Ident(_2, label), name: null, type: type, value: expr};
 					case err: return fatalIfFailed(cast err);
 				}
 				case Success(type, rest3):
 					rest = rest3;
-					{label: Some(new Ident(_2, label)), name: None, type: type, value: None};
+					{label: new Ident(_2, label), name: null, type: type, value: null};
 				case err: return fatalIfBad(tokens, cast err);
 			},
 			at([T_Label(_2, label), _.asSoftName() => T_Name(_3, name), ...rest2]) => switch parseTypeAnno(rest2, true) {
 				case Success(type, Cons(T_Eq(_), rest3)): switch parseExpr(rest3) {
 					case Success(expr, rest4):
 						rest = rest4;
-						{label: Some(new Ident(_2, label)), name: Some(new Ident(_3, name)), type: type, value: Some(expr)};
+						{label: new Ident(_2, label), name: new Ident(_3, name), type: type, value: expr};
 					case err: return fatalIfFailed(cast err);
 				}
 				case Success(type, rest3):
 					rest = rest3;
-					{label: Some(new Ident(_2, label)), name: Some(new Ident(_3, name)), type: type, value: None};
+					{label: new Ident(_2, label), name: new Ident(_3, name), type: type, value: null};
 				case err: return fatalIfBad(tokens, cast err);
 			},
 			at([T_Label(_, _), ...rest2]) => return Fatal(tokens, Some(rest2)),
@@ -1254,43 +1254,43 @@ class Parser {
 					case Success(type, Cons(T_Eq(_), rest3)): switch parseExpr(rest3) {
 						case Success(expr, rest4):
 							rest = rest4;
-							{label: Some(new Ident(_2, label)), name: None, type: type, value: Some(expr)};
+							{label: new Ident(_2, label), name: null, type: type, value: expr};
 						case err: return fatalIfFailed(cast err);
 					}
 					case Success(type, rest3):
 						rest = rest3;
-						{label: Some(new Ident(_2, label)), name: None, type: type, value: None};
+						{label: new Ident(_2, label), name: null, type: type, value: null};
 					case err: return fatalIfBad(tokens, cast err);
 				},
 				at([T_Label(_2, label), _.asSoftName() => T_Name(_3, name), ...rest2]) => switch parseTypeAnno(rest2, true) {
 					case Success(type, Cons(T_Eq(_), rest3)): switch parseExpr(rest3) {
 						case Success(expr, rest4):
 							rest = rest4;
-							{label: Some(new Ident(_2, label)), name: Some(new Ident(_3, name)), type: type, value: Some(expr)};
+							{label: new Ident(_2, label), name: new Ident(_3, name), type: type, value: expr};
 						case err: return fatalIfFailed(cast err);
 					}
 					case Success(type, rest3):
 						rest = rest3;
-						{label: Some(new Ident(_2, label)), name: Some(new Ident(_3, name)), type: type, value: None};
+						{label: new Ident(_2, label), name: new Ident(_3, name), type: type, value: null};
 					case err: return fatalIfBad(tokens, cast err);
 				},
 				at([T_Label(_, _), ...rest2]) => return Fatal(tokens, Some(rest2)),
 				at([T_LParen(_), ..._]) => switch parseTypeAnno(rest, true) {
 					case Success(type, rest2):
 						rest = rest2;
-						{label: None, name: None, type: type, value: None};
+						{label: null, name: null, type: type, value: null};
 					case err: return fatalIfFailed(cast err);
 				},
 				at([_.asSoftName() => T_Name(_2, name), ...rest2]) => switch parseTypeAnno(rest2, true) {
 					case Success(type, Cons(T_Eq(_), rest3)): switch parseExpr(rest3) {
 						case Success(expr, rest4):
 							rest = rest4;
-							{label: None, name: Some(new Ident(_2, name)), type: type, value: Some(expr)};
+							{label: null, name: new Ident(_2, name), type: type, value: expr};
 						case err: return fatalIfFailed(cast err);
 					}
 					case Success(type, rest3):
 						rest = rest3;
-						{label: None, name: Some(new Ident(_2, name)), type: type, value: None};
+						{label: null, name: new Ident(_2, name), type: type, value: null};
 					case err: return fatalIfBad(tokens, cast err);
 				},
 				at([]) => return Eof(tokens),
@@ -1330,8 +1330,8 @@ class Parser {
 			final ret = switch parseTypeAnno(rest) {
 				case Success(type, rest2):
 					rest = rest2;
-					Some(type);
-				case Failure(_, _): None;
+					type;
+				case Failure(_, _): null;
 				case err: return fatalIfBad(rest, cast err);
 			};
 			final attrs = new Map<MethodAttr, Span>();
@@ -1396,8 +1396,8 @@ class Parser {
 			final body = switch parseBody(rest) {
 				case Success(body2, rest2):
 					rest = rest2;
-					Some(body2);
-				case Failure(_, _): None;
+					body2;
+				case Failure(_, _): null;
 				case err: return fatalIfBad(rest, cast err);
 			};
 
@@ -1475,8 +1475,8 @@ class Parser {
 			final body = switch parseBody(rest) {
 				case Success(body2, rest2):
 					rest = rest2;
-					Some(body2);
-				case Failure(_, _): None;
+					body2;
+				case Failure(_, _): null;
 				case err: return fatalIfBad(rest, cast err);
 			};
 
@@ -1516,17 +1516,17 @@ class Parser {
 				at([T_LBracket(begin), _.asSoftName() => T_Name(_3, name), ...rest2]) => switch parseTypeAnno(rest2) {
 					case Success(type, Cons(T_RBracket(end), rest3)):
 						rest = rest3;
-						Some({begin: begin, of: {name: new Ident(_3, name), type: type}, end: end});
+						{begin: begin, of: {name: new Ident(_3, name), type: type}, end: end};
 					case Success(_, rest3): return Fatal(tokens, Some(rest3));
 					case err: return fatalIfBad(rest2, cast err);
 				},
-				_ => None
+				_ => null
 			);
 			final ret = switch parseTypeAnno(rest) {
 				case Success(type, rest2):
 					rest = rest2;
-					Some(type);
-				case Failure(_, _): None;
+					type;
+				case Failure(_, _): null;
 				case err: return fatalIfBad(rest, cast err);
 			};
 			final attrs = new Map<OperatorAttr, Span>();
@@ -1571,8 +1571,8 @@ class Parser {
 			final body = switch parseBody(rest) {
 				case Success(body2, rest2):
 					rest = rest2;
-					Some(body2);
-				case Failure(_, _): None;
+					body2;
+				case Failure(_, _): null;
 				case err: return fatalIfBad(rest, cast err);
 			};
 
@@ -1638,10 +1638,10 @@ class Parser {
 		_ => Failure(tokens, None)
 	);
 
-	static function parseTypeDeclName(tokens: Tokens): ParseResult<{name: Ident, params: Option<TypeParams>}> return tokens._match(
+	static function parseTypeDeclName(tokens: Tokens): ParseResult<{name: Ident, params: Null<TypeParams>}> return tokens._match(
 		at([T_TypeName(_1, name), ...rest]) => switch parseTypeArgs(rest) {
-			case Success(params, rest2): Success({name: {span: _1, name: name}, params: Some(params)}, rest2);
-			case Failure(_, _): Success({name: {span: _1, name: name}, params: None}, rest);
+			case Success(params, rest2): Success({name: {span: _1, name: name}, params: params}, rest2);
+			case Failure(_, _): Success({name: {span: _1, name: name}, params: null}, rest);
 			case err: cast err;
 		},
 		_ => Failure(tokens, None)
@@ -1936,9 +1936,9 @@ class Parser {
 				final label = rest2._match(
 					at([T_Label(_2, "label"), T_Litsym(_3, name), ...rest3]) => {
 						rest2 = rest3;
-						Some(new Tuple2(_2, new Ident(_3, name)));
+						new Tuple2(_2, new Ident(_3, name));
 					},
-					_ => None
+					_ => null
 				);
 				parseThenStmt(rest2)._match(
 					at(Success(body, rest3)) => Success(SWhile(_1, cond, label, body), rest3),
@@ -1951,9 +1951,9 @@ class Parser {
 			final label = rest._match(
 				at([T_Label(_2, "label"), T_Litsym(_3, name), ...rest2]) => {
 					rest = rest2;
-					Some(new Tuple2(_2, new Ident(_3, name)));
+					new Tuple2(_2, new Ident(_3, name));
 				},
-				_ => None
+				_ => null
 			);
 			switch parseBlock(rest) {
 				case Success(block, Cons(T_While(_2), rest2)): switch parseExpr(rest2) {
@@ -1983,20 +1983,20 @@ class Parser {
 		at([T_Return(_1), ...rest]) => switch parseFullExpr(rest) {
 			case Success(expr, rest2):
 				expr = reparseExpr(expr);
-				Success(SReturn(_1, Some(expr)), rest2);
-			case Failure(_, _): Success(SReturn(_1, None), rest);
+				Success(SReturn(_1, expr), rest2);
+			case Failure(_, _): Success(SReturn(_1, null), rest);
 			case err: cast err;
 		},
 		
-		at([T_Break(_1), T_Int(_2, depth, None), ...rest]) => Success(SBreak(_1, Some(new Tuple2(_2, Left(depth.parseInt())))), rest),
-		at([T_Break(_1), T_Int(_2, depth, Some(exp)), ...rest]) => Success(SBreak(_1, Some(new Tuple2(_2, Left('${depth}e$exp'.parseInt())))), rest),
-		at([T_Break(_1), T_Litsym(_2, label), ...rest]) => Success(SBreak(_1, Some(new Tuple2(_2, Right(label)))), rest),
-		at([T_Break(_1), ...rest]) => Success(SBreak(_1, None), rest),
+		at([T_Break(_1), T_Int(_2, depth, null), ...rest]) => Success(SBreak(_1, new Tuple2(_2, Left(depth.parseInt()))), rest),
+		at([T_Break(_1), T_Int(_2, depth, exp!!), ...rest]) => Success(SBreak(_1, new Tuple2(_2, Left('${depth}e$exp'.parseInt()))), rest),
+		at([T_Break(_1), T_Litsym(_2, label), ...rest]) => Success(SBreak(_1, new Tuple2(_2, Right(label))), rest),
+		at([T_Break(_1), ...rest]) => Success(SBreak(_1, null), rest),
 
-		at([T_Next(_1), T_Int(_2, depth, None), ...rest]) => Success(SNext(_1, Some(new Tuple2(_2, Left(depth.parseInt())))), rest),
-		at([T_Next(_1), T_Int(_2, depth, Some(exp)), ...rest]) => Success(SNext(_1, Some(new Tuple2(_2, Left('${depth}e$exp'.parseInt())))), rest),
-		at([T_Next(_1), T_Litsym(_2, label), ...rest]) => Success(SNext(_1, Some(new Tuple2(_2, Right(label)))), rest),
-		at([T_Next(_1), ...rest]) => Success(SNext(_1, None), rest),
+		at([T_Next(_1), T_Int(_2, depth, null), ...rest]) => Success(SNext(_1, new Tuple2(_2, Left(depth.parseInt()))), rest),
+		at([T_Next(_1), T_Int(_2, depth, exp!!), ...rest]) => Success(SNext(_1, new Tuple2(_2, Left('${depth}e$exp'.parseInt()))), rest),
+		at([T_Next(_1), T_Litsym(_2, label), ...rest]) => Success(SNext(_1, new Tuple2(_2, Right(label))), rest),
+		at([T_Next(_1), ...rest]) => Success(SNext(_1, null), rest),
 
 		at([T_Throw(_1), ...rest]) => switch parseFullExpr(rest) {
 			case Success(expr, rest2):
@@ -2074,13 +2074,13 @@ class Parser {
 			case Success(cond, rest2):
 				cond = reparseExpr(cond);
 				switch parseThenStmt(rest2) {
-					case Success(then, rest3): Success({span: _1, pattern: pattern, when: Some(new Tuple2(_2, cond)), then: then}, rest3);
+					case Success(then, rest3): Success({span: _1, pattern: pattern, when: new Tuple2(_2, cond), then: then}, rest3);
 					case err: fatalIfFailed(cast err);
 				}
 			case err: fatalIfFailed(cast err);
 		}
 		case Success(pattern, rest): switch parseThenStmt(rest) {
-			case Success(then, rest2): Success({span: _1, pattern: pattern, when: None, then: then}, rest2);
+			case Success(then, rest2): Success({span: _1, pattern: pattern, when: null, then: then}, rest2);
 			case err: fatalIfFailed(cast err);
 		}
 		case err: fatalIfFailed(cast err);
@@ -2205,9 +2205,9 @@ class Parser {
 		return tokens._match(
 			at([_.asSoftName() => T_Name(_1, name), ...rest]) => Success(EName(_1, name), rest),
 			at([T_Litsym(_1, sym), ...rest]) => Success(ELitsym(_1, sym), rest),
-			at([T_Int(_1, int, exp), ...rest]) => Success(EInt(_1, int.parseInt(), exp.map(e -> e.parseInt())), rest),
-			at([T_Hex(_1, hex), ...rest]) => Success(EInt(_1, hex.parseHex(), None), rest),
-			at([T_Dec(_1, int, dec, exp), ...rest]) => Success(EDec(_1, int.parseInt(), dec, exp.map(e -> e.parseInt())), rest),
+			at([T_Int(_1, int, exp), ...rest]) => Success(EInt(_1, int.parseInt(), exp._and(e => e.parseInt())), rest),
+			at([T_Hex(_1, hex), ...rest]) => Success(EInt(_1, hex.parseHex(), null), rest),
+			at([T_Dec(_1, int, dec, exp), ...rest]) => Success(EDec(_1, int.parseInt(), dec, exp._and(e => e.parseInt())), rest),
 			at([T_Str(_1, segs), ...rest]) => switch parseStrSegs(segs) {
 				case Success(parts, _): Success(EStr(_1, parts), rest);
 				case err: cast err;
@@ -2265,12 +2265,12 @@ class Parser {
 							at([T_LParen(_), ..._]) => switch parseTypeAnno(rest2) {
 								case Success(type, rest3):
 									rest = rest3;
-									params.push({name: new Ident(_1, name), type: Some(type)});
+									params.push({name: new Ident(_1, name), type: type});
 								case err: return fatalIfFailed(cast err);
 							},
 							_ => {
 								rest = rest2;
-								params.push({name: new Ident(_1, name), type: None});
+								params.push({name: new Ident(_1, name), type: null});
 							}
 						),
 						_ => return Fatal(tokens, Some(rest))
@@ -2297,18 +2297,18 @@ class Parser {
 					final type = switch parseTypeAnno(rest) {
 						case Success(t, rest2):
 							rest = rest2;
-							Some(t);
-						case Failure(_, _): None;
+							t;
+						case Failure(_, _): null;
 						case err: return cast err;
 					};
 					final expr = rest._match(
 						at([T_Eq(_), ...rest2]) => switch parseFullExpr(rest2) {
 							case Success(e, rest3):
 								rest = rest3;
-								Some(e);
+								e;
 							case err: return fatalIfFailed(cast err);
 						},
-						_ => None
+						_ => null
 					);
 		
 					Success(EVarDecl(_1, {span: _2, name: name}, type, expr), rest);
@@ -2320,10 +2320,10 @@ class Parser {
 	}
 
 	static function finishFunc(begin, params, tokens) return switch parseTypeAnno(tokens) {
-		case Success(ret, Cons(T_RBrace(end), rest)): Success(EFunc(begin, params, Some(ret), [], end), rest);
-		case Success(ret, Cons(T_LSep(_), rest) | rest): finishFuncBody(begin, params, Some(ret), rest);
+		case Success(ret, Cons(T_RBrace(end), rest)): Success(EFunc(begin, params, ret, [], end), rest);
+		case Success(ret, Cons(T_LSep(_), rest) | rest): finishFuncBody(begin, params, ret, rest);
 		case Failure(_, _): 
-			finishFuncBody(begin, params, None, tokens._match(
+			finishFuncBody(begin, params, null, tokens._match(
 				at([T_LSep(_), ...rest]) => rest,
 				_ => tokens
 			));
@@ -2635,29 +2635,29 @@ class Parser {
 		at([T_TypeName(_, _) | T_Wildcard(_), ..._]) => switch parseType(tokens) {
 			case Success(type, Cons(T_LSep(_), rest) | rest): rest._match(
 				at([T_Label(_, _) | T_Punned(_, _), ..._]) => switch parseMultiMsgLabels(rest) {
-					case Success({labels: labels, end: end}, rest2): Success({msg: Multi(Some(type), labels), end: end}, rest2);
+					case Success({labels: labels, end: end}, rest2): Success({msg: Multi(type, labels), end: end}, rest2);
 					case err: cast err;
 				},
 				at([_.asAnyName() => T_Name(_1, name), ...rest3]) => rest3._match(
-					at([T_RBracket(end), ...rest4]) => Success({msg: Single(Some(type), _1, name), end: end}, rest4),
+					at([T_RBracket(end), ...rest4]) => Success({msg: Single(type, _1, name), end: end}, rest4),
 					at(_) => Fatal(tokens, Some(rest3))
 				),
 				at([T_TypeName(_, _), ..._]) => switch parseType(rest) {
-					case Success(type2, Cons(T_RBracket(end), rest2)): Success({msg: Cast(Some(type), type2), end: end}, rest2);
+					case Success(type2, Cons(T_RBracket(end), rest2)): Success({msg: Cast(type, type2), end: end}, rest2);
 					case Success(_, rest2): Fatal(tokens, Some(rest2));
 					case err: cast err;
 				},
-				at([T_RBracket(end), ...rest2]) => Success({msg: Cast(None, type), end: end}, rest2),
+				at([T_RBracket(end), ...rest2]) => Success({msg: Cast(null, type), end: end}, rest2),
 				_ => Fatal(tokens, None)
 			);
 			case err: cast err;
 		},
 		at([T_Label(_, _) | T_Punned(_, _), ..._]) => switch parseMultiMsgLabels(tokens) {
-			case Success({labels: labels, end: end}, rest): Success({msg: Multi(None, labels), end: end}, rest);
+			case Success({labels: labels, end: end}, rest): Success({msg: Multi(null, labels), end: end}, rest);
 			case err: cast err;
 		},
 		at([_.asAnyName() => T_Name(_1, name), ...rest3]) => rest3._match(
-			at([T_RBracket(end), ...rest4]) => Success({msg: Single(None, _1, name), end: end}, rest4),
+			at([T_RBracket(end), ...rest4]) => Success({msg: Single(null, _1, name), end: end}, rest4),
 			at(_) => Fatal(tokens, Some(rest3))
 		),
 		_ => Fatal(tokens, None)
@@ -3169,25 +3169,25 @@ class Parser {
 	}
 
 
-	static inline function getAssignableOp(token): Option<{span: Span, op: Option<Assignable>}> return switch token {
-		case T_Eq(span): Some({span: span, op: None});
-		case T_PlusEq(span): Some({span: span, op: Some(Plus)});
-		case T_MinusEq(span): Some({span: span, op: Some(Minus)});
-		case T_StarEq(span): Some({span: span, op: Some(Times)});
-		case T_StarStarEq(span): Some({span: span, op: Some(Pow)});
-		case T_DivEq(span): Some({span: span, op: Some(Div)});
-		case T_DivDivEq(span): Some({span: span, op: Some(IntDiv)});
-		case T_ModEq(span): Some({span: span, op: Some(Mod)});
-		case T_ModModEq(span): Some({span: span, op: Some(IsMod)});
-		case T_AndEq(span): Some({span: span, op: Some(BitAnd)});
-		case T_AndAndEq(span): Some({span: span, op: Some(And)});
-		case T_BarEq(span): Some({span: span, op: Some(BitOr)});
-		case T_BarBarEq(span): Some({span: span, op: Some(Or)});
-		case T_CaretEq(span): Some({span: span, op: Some(BitXor)});
-		case T_CaretCaretEq(span): Some({span: span, op: Some(Xor)});
-		case T_BangBangEq(span): Some({span: span, op: Some(Nor)});
-		case T_LtLtEq(span): Some({span: span, op: Some(Shl)});
-		case T_GtGtEq(span): Some({span: span, op: Some(Shr)});
+	static inline function getAssignableOp(token): Option<{span: Span, op: Null<Assignable>}> return switch token {
+		case T_Eq(span): Some({span: span, op: null});
+		case T_PlusEq(span): Some({span: span, op: Plus});
+		case T_MinusEq(span): Some({span: span, op: Minus});
+		case T_StarEq(span): Some({span: span, op: Times});
+		case T_StarStarEq(span): Some({span: span, op: Pow});
+		case T_DivEq(span): Some({span: span, op: Div});
+		case T_DivDivEq(span): Some({span: span, op: IntDiv});
+		case T_ModEq(span): Some({span: span, op: Mod});
+		case T_ModModEq(span): Some({span: span, op: IsMod});
+		case T_AndEq(span): Some({span: span, op: BitAnd});
+		case T_AndAndEq(span): Some({span: span, op: And});
+		case T_BarEq(span): Some({span: span, op: BitOr});
+		case T_BarBarEq(span): Some({span: span, op: Or});
+		case T_CaretEq(span): Some({span: span, op: BitXor});
+		case T_CaretCaretEq(span): Some({span: span, op: Xor});
+		case T_BangBangEq(span): Some({span: span, op: Nor});
+		case T_LtLtEq(span): Some({span: span, op: Shl});
+		case T_GtGtEq(span): Some({span: span, op: Shr});
 		default: None;
 	};
 
@@ -3717,9 +3717,9 @@ class Parser {
 			}
 		},
 
-		at(EVarDecl(span, name, type, Some(value))) => {
+		at(EVarDecl(span, name, type, value!)) => {
 			reparseInner(value, stack)._andOr(
-				value2 => EVarDecl(span, name, type, Some(value2)),
+				value2 => EVarDecl(span, name, type, value2),
 				null
 			);
 		},

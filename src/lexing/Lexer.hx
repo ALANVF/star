@@ -642,7 +642,7 @@ class Lexer {
 		final int = reader.substring(start);
 		final afterDigits = here();
 
-		final dec = if(reader.hasNextAt(1) && reader.unsafePeek('.'.code) && reader.unsafePeekAt(1)._match(
+		final dec: Null<String> = if(reader.hasNextAt(1) && reader.unsafePeek('.'.code) && reader.unsafePeekAt(1)._match(
 			at(('a'.code ... 'z'.code) | '_'.code) => false,
 			_ => true
 		)) {
@@ -655,7 +655,7 @@ class Lexer {
 						reader.next();
 					} while(reader.peekDigit());
 
-					Some(reader.substring(start));
+					reader.substring(start);
 				},
 				_ => {
 					final end = here();
@@ -667,13 +667,13 @@ class Lexer {
 				}
 			);
 		} else {
-			None;
+			null;
 		};
 
 		final exp = if(reader.eat('e'.code)) {
-			Some(readExponent());
+			readExponent();
 		} else {
-			None;
+			null;
 		};
 
 		reader.unsafePeek()._match(
@@ -693,10 +693,10 @@ class Lexer {
 				);
 			},
 			_ => {
-				return switch dec {
-					case None: T_Int(span(), int, exp);
-					case Some(d): T_Dec(span(), int, d, exp);
-				}
+				return dec._match(
+					at(null) => T_Int(span(), int, exp),
+					at(d!!) => T_Dec(span(), int, d, exp)
+				);
 			}
 		);
 	}

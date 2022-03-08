@@ -23,5 +23,5 @@ class Init {
 	final span: Span;
 	final spec: Delims<InitKind>;
 	final attrs: Map<InitAttr, Span>;
-	final body: Option<Body>;
+	final body: Null<Body>;
 }

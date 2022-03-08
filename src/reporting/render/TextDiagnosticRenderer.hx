@@ -40,7 +40,7 @@ class TextDiagnosticRenderer implements IDiagnosticRenderer {
 		final spannedInfo = diagnostic.info
 			.filterMap(i -> i.getSpannedInfo())
 			.sorted((l, r) -> l.span.start.compare(r.span.start))
-			.groupBy(i -> i.span.source, (l, r) -> l.equals(r));
+			.groupBy(i -> i.span.source.nonNull(), (l, r) -> l.fullPath == r.fullPath);
 		
 		for(infos in spannedInfo) renderSpannedGroup(infos);
 
@@ -52,30 +52,30 @@ class TextDiagnosticRenderer implements IDiagnosticRenderer {
 
 	private function renderDiagnosticHead(diagnostic: Diagnostic) {
 		switch diagnostic {
-			case {severity: None, message: None}:
+			case {severity: null, message: null}:
 			default:
-				diagnostic.severity.forEach(s -> {
+				diagnostic.severity._and(s => {
 					buffer.fg = Some(s.color);
 					buffer.write(s.description);
 					
-					diagnostic.code.forEach(c -> buffer.write('[$c]'));
+					diagnostic.code._and(c => buffer.write('[$c]'));
 
 					buffer.resetColor();
 
-					if(diagnostic.message.isSome()) {
+					if(diagnostic.message != null) {
 						buffer.write(": ");
 					}
 				});
 
 				buffer.resetColor();
-				diagnostic.message.forEach(buffer.write);
+				diagnostic.message._and(m => buffer.write(m));
 
 				buffer.newLine();
 		}
 	}
 
 	private function renderSpannedGroup(infos: Array<SpannedInfo>) {
-		final sourceFile = infos[0].span.source.value();
+		final sourceFile = infos[0].span.source.nonNull();
 		final linePrimitives = collectLinesToRender(infos);
 		final maxLineIndex = linePrimitives.filterMap(l -> switch l {
 			case Source(_, line): line;
@@ -158,7 +158,7 @@ class TextDiagnosticRenderer implements IDiagnosticRenderer {
 	}
 
 	private function renderAnnotationLines(line: Int, annotations: Array<SpannedInfo>, prefix: String) {
-		final sourceFile = annotations[0].span.source.value();
+		final sourceFile = annotations[0].span.source.nonNull();
 		final line = sourceFile.line(line).trimRight();
 		final annotationsOrdered = annotations.sorted((l, r) -> l.span.start.compare(r.span.start));
 		final arrowHeadColumns: Array<{column: Int, info: SpannedInfo}> = [];
@@ -271,7 +271,7 @@ class TextDiagnosticRenderer implements IDiagnosticRenderer {
 		
 		// We need to group the spanned informations per line
 		final groupedInfos = infos.groupBy(si -> si.span.start.line).pairs().sorted((a, b) -> a.key - b.key);
-		final sourceFile = infos[0].span.source.value();
+		final sourceFile = infos[0].span.source.nonNull();
 
 		// Now we collect each line primitive
 		var lastLineIndex = None;

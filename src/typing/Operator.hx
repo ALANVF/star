@@ -10,8 +10,8 @@ abstract class Operator extends AnyMethod {
 	var isMacro: Bool = false;
 
 	static function fromAST(decl: AnyTypeDecl, ast: parsing.ast.decls.Operator) {
-		final oper: Operator = switch ast.spec {
-			case None:
+		final oper: Operator = ast.spec._match(
+			at(null) => {
 				final op: UnaryOp = switch ast.symbol {
 					case "++": Incr;
 					case "--": Decr;
@@ -34,8 +34,9 @@ abstract class Operator extends AnyMethod {
 				};
 
 				UnaryOperator.fromAST(decl, op, ast);
+			},
 
-			case Some({of: {name: name, type: type}}):
+			at({of: {name: name, type: type}}) => {
 				final op: BinaryOp = switch ast.symbol {
 					case "+": Plus;
 					case "-": Minus;
@@ -75,7 +76,8 @@ abstract class Operator extends AnyMethod {
 				};
 
 				BinaryOperator.fromAST(decl, op, name, type, ast);
-		};
+			}
+		);
 
 		for(attr => span in ast.attrs) switch attr {
 			case IsHidden(_) if(oper.hidden != null): oper.errors.push(Type_DuplicateAttribute(oper, oper.opName(), "hidden", span));

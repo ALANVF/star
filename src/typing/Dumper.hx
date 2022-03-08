@@ -304,7 +304,7 @@ class Dumper {
 			write(':single-tagged-case #${tcase.name.name}');
 		},
 		at(SSTaggedCaseAlias(tcase)) => {
-			write(':single-tagged-case-alias #${tcase.assoc.value()._match(
+			write(':single-tagged-case-alias #${tcase.assoc.nonNull()._match(
 				at(Single(_, _, name)) => name,
 				_ => throw "bad"
 			)}');
@@ -382,7 +382,7 @@ class Dumper {
 		},
 		at(MSTaggedCaseAlias(tcase)) => {
 			write(':multi-tagged-case-alias #');
-			tcase.assoc.value()._match(
+			tcase.assoc.nonNull()._match(
 				at(Multi(_, labels)) => for(l in labels) write(l._match(
 					at(Named(_, name, _) | Punned(_, name)) => name+":",
 					at(Anon(_)) => "_:"
@@ -1103,7 +1103,7 @@ class Dumper {
 			level--;
 			write(")");
 		},
-		at(ELazyInfix(left, Assign(None), right)) => {
+		at(ELazyInfix(left, Assign(null), right)) => {
 			write("(lazy-assign");
 			level++;
 			nextLine();
@@ -1113,7 +1113,7 @@ class Dumper {
 			level--;
 			write(")");
 		},
-		at(ELazyInfix(left, Assign(Some(op)), right)) => {
+		at(ELazyInfix(left, Assign(op!!), right)) => {
 			write("(lazy-assign :in-place #"+op.symbol());
 			level++;
 			nextLine();
@@ -2025,7 +2025,7 @@ class Dumper {
 
 		write("(category ");
 		dump(cat.path, cache);
-		cat.type.toNull()._and(type => {
+		cat.type._and(type => {
 			write(" for ");
 			dump(type, cache);
 			

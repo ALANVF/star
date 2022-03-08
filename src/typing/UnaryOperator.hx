@@ -9,8 +9,8 @@ class UnaryOperator extends Operator {
 			span: ast.span,
 			op: op,
 			opSpan: ast.symbolSpan,
-			ret: ast.ret.toNull()._and(ret => decl.makeTypePath(ret)),
-			body: ast.body.toNull()._and(body => body.stmts())
+			ret: ast.ret._and(ret => decl.makeTypePath(ret)),
+			body: ast.body._and(body => body.stmts())
 		});
 	}
 

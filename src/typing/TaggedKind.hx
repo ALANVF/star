@@ -20,22 +20,22 @@ class TaggedKind extends Kind {
 			kind.typevars.add(typevar.name.name, typevar);
 		}
 
-		if(ast.params.isSome()) {
-			kind.params = ast.params.value().of.map(param -> kind.makeTypePath(param));
-		}
+		ast.params._and(params => {
+			kind.params = params.of.map(param -> kind.makeTypePath(param));
+		});
 
-		if(ast.repr.isSome()) {
+		ast.repr._and(repr => {
 			kind.errors.push(Type_NoTaggedKindRepr(
 				kind,
-				ast.repr.value().span()
+				repr.span()
 			));
-		}
+		});
 
-		if(ast.parents.isSome()) {
-			for(parent in ast.parents.value().parents) {
+		ast.parents._and(parents => {
+			for(parent in parents.parents) {
 				kind.parents.push(kind.makeTypePath(parent));
 			}
-		}
+		});
 
 		for(attr => span in ast.attrs) switch attr {
 			case IsHidden(_) if(kind.hidden.isSome()): kind.errors.push(Type_DuplicateAttribute(kind, ast.name.name, "hidden", span));
@@ -120,7 +120,7 @@ class TaggedKind extends Kind {
 			);
 
 			tcase.assoc._match(
-				at(Some(Single(_, _, sname)), when(sname == name)) => return SSTaggedCaseAlias(tcase),
+				at(Single(_, _, sname), when(sname == name)) => return SSTaggedCaseAlias(tcase),
 				_ => {}
 			);
 		}
@@ -205,7 +205,7 @@ class TaggedKind extends Kind {
 			);
 
 			tcase.assoc._match(
-				at(Some(Multi(_, labels)), when(
+				at(Multi(_, labels), when(
 					labels.every2Strict(names, (l, n) -> switch l {
 						case Named(_, name, _) | Punned(_, name): name == n;
 						case Anon(_): n == "_";

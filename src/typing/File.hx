@@ -308,7 +308,7 @@ class File implements ITypeLookup implements IErrors {
 		///*if(!this.path.startsWith("C:/Users/alani/Documents/GitHub/star/stdlib"))*/trace(cat.fullName()+" for "+forType.fullName(), this.path);
 		for(cat2 in categories) {
 			cat2.path=cat2.path.simplify();
-			cat2.type=cat2.type.map(t->t.simplify());
+			cat2.type=cat2.type._and(t=>t.simplify());
 		}
 		/*if(categories.length!=0) {
 			Sys.print("\n");

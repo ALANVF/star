@@ -403,7 +403,7 @@ abstract class Namespace extends TypeDecl {
 	}
 	
 	override function findThisCategory(ctx: Ctx, cat: Type, from: AnyTypeDecl, cache: Cache = Nil): Array<Category> {
-		return categories.filter(c -> c.type.isNone() && c.path.hasChildType(cat))._match(
+		return categories.filter(c -> c.type == null && c.path.hasChildType(cat))._match(
 			at([]) => super.findThisCategory(ctx, cat, from, cache),
 			at(found) => found.concat(super.findThisCategory(ctx, cat, from, cache))
 		).concat(parents.flatMap(p -> p.findThisCategory(ctx, cat, from, cache + thisType)).unique());

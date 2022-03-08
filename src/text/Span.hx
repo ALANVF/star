@@ -3,12 +3,12 @@ package text;
 //@:struct
 @:publicFields
 class Span {
-	var source: Option<SourceFile>;
+	var source: Null<SourceFile>;
 	final start: Pos;
 	final end: Pos;
 
 	function new(start, end, ?source) {
-		this.source = Option.fromNull(source);
+		this.source = source;
 		this.start = start;
 		this.end = end;
 	}
@@ -26,11 +26,11 @@ class Span {
 	}
 
 	static function range(from: Span, to: Span) {
-		if(from.source.toNull() != to.source.toNull()) {
+		if(from.source != to.source) {
 			throw "The two spans originate from different sources!";
 		}
 		
-		return new Span(from.start, to.end, from.source.toNull());
+		return new Span(from.start, to.end, from.source);
 	}
 
 	function contains(pos) {
@@ -42,10 +42,10 @@ class Span {
 	}
 
 	function display() {
-		return (switch source {
-			case None: "(Unknown)";
-			case Some(src): src.path;
-		})+':${start.line + 1}:${start.column}';
+		return source._match(
+			at(null) => "(Unknown)",
+			at(src!!) => src.path
+		)+':${start.line + 1}:${start.column}';
 	}
 
 	/*function toString() {

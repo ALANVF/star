@@ -16,7 +16,7 @@ function span(self: Label) return switch self {
 
 
 enum Message<T> {
-	Single(category: Option<Type>, _: Span, name: String);
-	Multi(category: Option<Type>, labels: Array<Label>);
-	Cast(category: Option<Type>, type: Type): Message<Expr>;
+	Single(category: Null<Type>, _: Span, name: String);
+	Multi(category: Null<Type>, labels: Array<Label>);
+	Cast(category: Null<Type>, type: Type): Message<Expr>;
 }

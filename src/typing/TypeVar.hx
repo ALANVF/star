@@ -43,11 +43,11 @@ class TypeVar extends AnyFullTypeDecl {
 			name: ast.name,
 			params: null,  // hack for partial initialization
 			parents: null, // hack for partial initialization
-			rule: ast.rule.toNull()._and(r => TypeRule.fromAST(cast lookup, r.rule))
+			rule: ast.rule._and(r => TypeRule.fromAST(cast lookup, r.rule))
 		});
 
-		typevar.params = ast.params.doOrElse(p => p.of.map(x -> typevar.makeTypePath(x)), []);
-		typevar.parents = ast.parents.doOrElse(p => p.parents.map(x -> typevar.makeTypePath(x)), []);
+		typevar.params = ast.params._andOr(p => p.of.map(x -> typevar.makeTypePath(x)), []);
+		typevar.parents = ast.parents._andOr(p => p.parents.map(x -> typevar.makeTypePath(x)), []);
 		
 		for(attr => span in ast.attrs) switch attr {
 			case IsNative(_, _, _) if(typevar.native != null): typevar.errors.push(Type_DuplicateAttribute(typevar, ast.name.name, "native", span));
@@ -89,8 +89,8 @@ class TypeVar extends AnyFullTypeDecl {
 			case IsUncounted: typevar._isUncounted = true;
 		}
 
-		if(ast.body.isSome()) {
-			for(decl in ast.body.value().of) switch decl {
+		ast.body._and(body => {
+			for(decl in body.of) switch decl {
 				case DMember(m) if(m.attrs.exists(IsStatic)): typevar.staticMembers.push(Member.fromAST(typevar, m));
 				case DMember(m): typevar.members.push(Member.fromAST(typevar, m));
 
@@ -114,7 +114,7 @@ class TypeVar extends AnyFullTypeDecl {
 				
 				default: typevar.errors.push(Type_UnexpectedDecl(typevar, decl));
 			}
-		}
+		});
 
 		return typevar;
 	}
@@ -653,7 +653,7 @@ class TypeVar extends AnyFullTypeDecl {
 				);
 
 				tcase.assoc._match(
-					at(Some(Single(_, _, sname)), when(sname == name)) => return SSFromTypevar(this, name, getter, SSTaggedCaseAlias(tcase)),
+					at(Single(_, _, sname), when(sname == name)) => return SSFromTypevar(this, name, getter, SSTaggedCaseAlias(tcase)),
 					_ => {}
 				);
 			}
@@ -794,7 +794,7 @@ class TypeVar extends AnyFullTypeDecl {
 				);
 	
 				tcase.assoc._match(
-					at(Some(Multi(_, labels)), when(
+					at(Multi(_, labels), when(
 						labels.every2Strict(names, (l, n) -> switch l {
 							case Named(_, name, _) | Punned(_, name): name == n;
 							case Anon(_): n == "_";

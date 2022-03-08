@@ -13,7 +13,7 @@ class SingleInit extends Init {
 				case Single(name): name;
 				default: throw "Error!";
 			},
-			body: ast.body.toNull()._and(body => body.stmts())
+			body: ast.body._and(body => body.stmts())
 		});
 
 		for(attr => span in ast.attrs) switch attr {

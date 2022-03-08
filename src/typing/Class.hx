@@ -24,15 +24,15 @@ class Class extends ClassLike {
 			cls.typevars.add(typevar.name.name, typevar);
 		}
 
-		if(ast.params.isSome()) {
-			cls.params = ast.params.value().of.map(param -> cls.makeTypePath(param));
-		}
+		ast.params._and(params => {
+			cls.params = params.of.map(param -> cls.makeTypePath(param));
+		});
 
-		if(ast.parents.isSome()) {
-			for(parent in ast.parents.value().parents) {
+		ast.parents._and(parents => {
+			for(parent in parents.parents) {
 				cls.parents.push(cls.makeTypePath(parent));
 			}
-		}
+		});
 
 		for(attr => span in ast.attrs) switch attr {
 			case IsHidden(_) if(cls.hidden.isSome()): cls.errors.push(Type_DuplicateAttribute(cls, ast.name.name, "hidden", span));

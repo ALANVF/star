@@ -19,6 +19,8 @@ enum LoopStop {
 	LoopTimes;
 }
 
+typedef MatchCase = {span: Span, pattern: Expr, when: Null<Tuple2<Span, Expr>>, then: Then}
+
 enum Stmt {
 	SExpr(expr: Expr);
 	SIf(
@@ -37,7 +39,7 @@ enum Stmt {
 		_: Span,
 		value: Expr,
 		_begin: Span,
-		cases: Array<{span: Span, pattern: Expr, when: Option<Tuple2<Span, Expr>>, then: Then}>,
+		cases: Array<MatchCase>,
 		otherwise: Null<Tuple2<Span, Then>>,
 		_end: Span
 	);
@@ -54,12 +56,12 @@ enum Stmt {
 	SWhile(
 		_: Span,
 		cond: Expr,
-		label: Option<Tuple2<Span, Ident>>,
+		label: Null<Tuple2<Span, Ident>>,
 		body: Then
 	);
 	SDoWhile(
 		_1: Span,
-		label: Option<Tuple2<Span, Ident>>,
+		label: Null<Tuple2<Span, Ident>>,
 		block: Block,
 		_2: Span,
 		cond: Expr
@@ -88,16 +90,16 @@ enum Stmt {
 		label: Null<Tuple2<Span, Ident>>,
 		body: Then
 	);
-	SDo(_: Span, label: Option<Tuple2<Span, Ident>>, block: Block);
-	SReturn(_: Span, value: Option<Expr>);
-	SBreak(_: Span, depth: Option<Tuple2<Span, Either<Int, String>>>);
-	SNext(_: Span, depth: Option<Tuple2<Span, Either<Int, String>>>);
+	SDo(_: Span, label: Null<Tuple2<Span, Ident>>, block: Block);
+	SReturn(_: Span, value: Null<Expr>);
+	SBreak(_: Span, depth: Null<Tuple2<Span, Either<Int, String>>>);
+	SNext(_: Span, depth: Null<Tuple2<Span, Either<Int, String>>>);
 	SThrow(_: Span, value: Expr);
 	STry(
 		_: Span,
 		block: Block,
 		_begin: Span,
-		cases: Array<{span: Span, pattern: Expr, when: Option<Tuple2<Span, Expr>>, then: Then}>,
+		cases: Array<MatchCase>,
 		otherwise: Null<Tuple2<Span, Then>>,
 		_end: Span
 	);

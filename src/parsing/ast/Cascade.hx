@@ -10,8 +10,8 @@ enum Step {
 enum CascadeKind<T> {
 	Member(mem: Ident);
 	Message(msg: Message<T>);
-	AssignMember(mem: Ident, _: Span, op: Option<Infix.Assignable>, expr: Expr);
-	AssignMessage(msg: Message<T>, _: Span, op: Option<Infix.Assignable>, expr: Expr);
+	AssignMember(mem: Ident, _: Span, op: Null<Infix.Assignable>, expr: Expr);
+	AssignMessage(msg: Message<T>, _: Span, op: Null<Infix.Assignable>, expr: Expr);
 	StepMember(mem: Ident, _: Span, step: Step);
 	StepMessage(msg: Message<T>, _: Span, step: Step);
 	Block(blk: Block);

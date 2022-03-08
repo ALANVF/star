@@ -8,8 +8,8 @@ enum Tag {
 }
 
 enum CaseKind {
-	Scalar(name: Ident, value: Option<Expr>);
-	Tagged(tag: Delims<Tag>, assoc: Option<Message<Type>>);
+	Scalar(name: Ident, value: Null<Expr>);
+	Tagged(tag: Delims<Tag>, assoc: Null<Message<Type>>);
 }
 
 @:structInit
@@ -17,5 +17,5 @@ enum CaseKind {
 class Case {
 	final span: Span;
 	final kind: CaseKind;
-	final init: Option<Block>; // Body currently not allowed due to collision with case alias/assoc syntax
+	final init: Null<Block>; // Body currently not allowed due to collision with case alias/assoc syntax
 }
