@@ -33,9 +33,9 @@ class ValueKind extends Kind {
 		});
 
 		for(attr => span in ast.attrs) switch attr {
-			case IsHidden(_) if(kind.hidden.isSome()): kind.errors.push(Type_DuplicateAttribute(kind, ast.name.name, "hidden", span));
-			case IsHidden(None): kind.hidden = Some(None);
-			case IsHidden(Some(outsideOf)): kind.hidden = Some(Some(kind.makeTypePath(outsideOf)));
+			case IsHidden(_) if(kind.hidden != null): kind.errors.push(Type_DuplicateAttribute(kind, ast.name.name, "hidden", span));
+			case IsHidden(None): kind.hidden = None;
+			case IsHidden(Some(outsideOf)): kind.hidden = Some(kind.makeTypePath(outsideOf));
 
 			case IsFriend(_) if(kind.friends.length != 0): kind.errors.push(Type_DuplicateAttribute(kind, ast.name.name, "friend", span));
 			case IsFriend(One(friend)): kind.friends.push(kind.makeTypePath(friend));

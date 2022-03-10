@@ -2034,7 +2034,7 @@ class Dumper {
 		cache += cat.path;
 
 		final attrs: DumpAttrs = [];
-		cat.hidden.toNull()._and(hidden => {
+		cat.hidden._and(hidden => {
 			attrs.push(Right(() -> {
 				hidden._match(
 					at(Some(within)) => {
@@ -2076,7 +2076,7 @@ class Dumper {
 		if(tdecl.refinees.length > 0) {
 			attrs.push(Left("refinement")); // TODO: list refinees
 		}
-		tdecl.hidden.toNull()._and(hidden => {
+		tdecl.hidden._and(hidden => {
 			attrs.push(Right(() -> {
 				hidden._match(
 					at(Some(within)) => {

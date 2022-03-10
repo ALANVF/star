@@ -8,7 +8,7 @@ import typing.Traits;
 @:autoBuild(util.Auto.build())
 abstract class TypeDecl extends AnyFullTypeDecl {
 	@ignore final typevars = new MultiMap<String, TypeVar>();
-	var hidden: Option<Option<Type>> = None;
+	var hidden: Null<Option<Type>> = null;
 	final friends: Array<Type> = [];
 	@ignore final refinements = new Array<TypeDecl>();
 	@ignore final refinees = new Array<TypeDecl>();

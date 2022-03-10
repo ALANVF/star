@@ -15,7 +15,7 @@ class Category extends AnyTypeDecl {
 	final methods: Array<Method> = [];
 	final inits: Array<Init> = [];
 	final operators: Array<Operator> = [];
-	var hidden: Option<Option<Type>> = None;
+	var hidden: Null<Option<Type>> = null;
 	final friends: Array<Type> = [];
 
 	static function fromAST(lookup: ITypeLookup, ast: parsing.ast.decls.Category) {
@@ -41,9 +41,9 @@ class Category extends AnyTypeDecl {
 		}
 
 		for(attr => span in ast.attrs) switch attr {
-			case IsHidden(_) if(category.hidden.isSome()): category.errors.push(Type_DuplicateAttribute(category, category.name.name, "hidden", span));
-			case IsHidden(None): category.hidden = Some(None);
-			case IsHidden(Some(outsideOf)): category.hidden = Some(Some(category.makeTypePath(outsideOf)));
+			case IsHidden(_) if(category.hidden != null): category.errors.push(Type_DuplicateAttribute(category, category.name.name, "hidden", span));
+			case IsHidden(None): category.hidden = None;
+			case IsHidden(Some(outsideOf)): category.hidden = Some(category.makeTypePath(outsideOf));
 
 			case IsFriend(_) if(category.friends.length != 0): category.errors.push(Type_DuplicateAttribute(category, category.name.name, "friend", span));
 			case IsFriend(One(friend)): category.friends.push(category.makeTypePath(friend));

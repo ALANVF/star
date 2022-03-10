@@ -246,7 +246,7 @@ static function resolveBasicType(source: ITypeLookup, type: Type, cache: Cache =
 
 static function resolveDecl(decl: TypeDecl) {
 	decl.friends.forEach(f -> resolveBasicType(decl, f));
-	decl.hidden.forEach(h -> h.forEach(t -> resolveBasicType(decl, t)));
+	decl.hidden._and(h => h.forEach(t -> resolveBasicType(decl, t)));
 
 	for(typevar in decl.typevars) resolveTypeVar(typevar);
 	decl.params.forEach(p -> resolveBasicType(decl, p));
@@ -315,7 +315,7 @@ static function resolveDecl(decl: TypeDecl) {
 
 static function resolveCategory(category: Category) {
 	category.friends.forEach(f -> resolveBasicType(category, f));
-	category.hidden.forEach(h -> h.forEach(t -> resolveBasicType(category, t)));
+	category.hidden._and(h => h.forEach(t -> resolveBasicType(category, t)));
 
 	for(typevar in category.typevars) resolveTypeVar(typevar);
 	

@@ -30,9 +30,9 @@ class Module extends Namespace {
 		});
 
 		for(attr => span in ast.attrs) switch attr {
-			case IsHidden(_) if(module.hidden.isSome()): module.errors.push(Type_DuplicateAttribute(module, ast.name.name, "hidden", span));
-			case IsHidden(None): module.hidden = Some(None);
-			case IsHidden(Some(outsideOf)): module.hidden = Some(Some(module.makeTypePath(outsideOf)));
+			case IsHidden(_) if(module.hidden != null): module.errors.push(Type_DuplicateAttribute(module, ast.name.name, "hidden", span));
+			case IsHidden(None): module.hidden = None;
+			case IsHidden(Some(outsideOf)): module.hidden = Some(module.makeTypePath(outsideOf));
 
 			case IsSealed(_) if(module.sealed.isSome()): module.errors.push(Type_DuplicateAttribute(module, ast.name.name, "sealed", span));
 			case IsSealed(None): module.sealed = Some(None);

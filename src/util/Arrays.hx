@@ -44,32 +44,32 @@ class Arrays {
 	}
 	
 	static function everyi<T>(array: Array<T>, callback: (currentValue: T, index: Int) -> Bool) {
-		for(i => value in array)
+		for(i in 0...array.length) { final value = array[i];
 			if(!callback(value, i))
-				return false;
+				return false;}
 		return true;
 	}
 
 	static function everyia<T>(array: Array<T>, callback: (currentValue: T, index: Int, array: Array<T>) -> Bool) {
-		for(i => value in array)
+		for(i in 0...array.length) { final value = array[i];
 			if(!callback(value, i, array))
-				return false;
+				return false;}
 		return true;
 	}
 
 	static function every2<T, U>(array1: Array<T>, array2: Array<U>, callback: (value1: T, value2: U) -> Bool) {
-		for(i => value in array1)
+		for(i in 0...array1.length) { final value = array1[i];
 			if(!callback(value, array2[i]))
-				return false;
+				return false;}
 		return true;
 	}
 	
 	static function every2Strict<T, U>(array1: Array<T>, array2: Array<U>, callback: (value1: T, value2: U) -> Bool) {
 		if(array1.length != array2.length) return false;
 		
-		for(i => value in array1)
+		for(i in 0...array1.length) { final value = array1[i];
 			if(!callback(value, array2[i]))
-				return false;
+				return false;}
 		return true;
 	}
 
@@ -84,16 +84,16 @@ class Arrays {
 	}
 	
 	static function somei<T>(array: Array<T>, callback: (currentValue: T, index: Int) -> Bool) {
-		for(i => value in array)
+		for(i in 0...array.length) { final value = array[i];
 			if(callback(value, i))
-				return true;
+				return true;}
 		return false;
 	}
 	
 	static function someia<T>(array: Array<T>, callback: (currentValue: T, index: Int, array: Array<T>) -> Bool) {
-		for(i => value in array)
+		for(i in 0...array.length) { final value = array[i];
 			if(callback(value, i, array))
-				return true;
+				return true;}
 		return false;
 	}
 
@@ -105,16 +105,16 @@ class Arrays {
 	}
 	
 	static function nonei<T>(array: Array<T>, callback: (currentValue: T, index: Int) -> Bool) {
-		for(i => value in array)
+		for(i in 0...array.length) { final value = array[i];
 			if(callback(value, i))
-				return false;
+				return false;}
 		return true;
 	}
 	
 	static function noneia<T>(array: Array<T>, callback: (currentValue: T, index: Int, array: Array<T>) -> Bool) {
-		for(i => value in array)
+		for(i in 0...array.length) { final value = array[i];
 			if(callback(value, i, array))
-				return false;
+				return false;}
 		return true;
 	}
 
@@ -144,38 +144,38 @@ class Arrays {
 	}
 	
 	static function findi<T>(array: Array<T>, callback: (element: T, index: Int) -> Bool): Null<T> {
-		for(i => value in array)
+		for(i in 0...array.length) { final value = array[i];
 			if(callback(value, i))
-				return array[i];
+				return array[i];}
 		return null;
 	}
 
 	static function findia<T>(array: Array<T>, callback: (element: T, index: Int, array: Array<T>) -> Bool): Null<T> {
-		for(i => value in array)
+		for(i in 0...array.length) { final value = array[i];
 			if(callback(value, i, array))
-				return array[i];
+				return array[i];}
 		return null;
 	}
 
 
 	static function findIndex<T>(array: Array<T>, callback: (element: T) -> Bool) {
-		for(i => value in array)
+		for(i in 0...array.length) { final value = array[i];
 			if(callback(value))
-				return i;
+				return i;}
 		return -1;
 	}
 	
 	static function findIndexi<T>(array: Array<T>, callback: (element: T, index: Int) -> Bool) {
-		for(i => value in array)
+		for(i in 0...array.length) { final value = array[i];
 			if(callback(value, i))
-				return i;
+				return i;}
 		return -1;
 	}
 
 	static function findIndexia<T>(array: Array<T>, callback: (element: T, index: Int, array: Array<T>) -> Bool) {
-		for(i => value in array)
+		for(i in 0...array.length) { final value = array[i];
 			if(callback(value, i, array))
-				return i;
+				return i;}
 		return -1;
 	}
 
@@ -228,15 +228,15 @@ class Arrays {
 	}
 
 	static function filteri<T>(array: Array<T>, callback: (element: T, index: Int) -> Bool): Array<T> {
-		return [for(i => value in array)
+		return [for(i in 0...array.length) { final value = array[i];
 			if(callback(value, i))
-				value];
+				value;}];
 	}
 
 	static function filteria<T>(array: Array<T>, callback: (element: T, index: Int, array: Array<T>) -> Bool): Array<T> {
-		return [for(i => value in array)
+		return [for(i in 0...array.length) { final value = array[i];
 			if(callback(value, i, array))
-				value];
+				value;}];
 	}
 
 	static function reduce<T>(array: Array<T>, callback: (prev: T, curr: T) -> T): Null<T> {
@@ -268,7 +268,7 @@ class Arrays {
 			throw "error!";
 		}
 
-		return [for(i => e1 in a1) callback(e1, a2[i])];
+		return [for(i in 0...a1.length) callback(a1[i], a2[i])];
 	}
 
 	static function findMap<T, U>(array: Array<T>, callback: (element: T) -> Null<U>) {
@@ -351,7 +351,7 @@ class Arrays {
 	@:noUsing @:generic private static function _uniqueEnumValue<T: EnumValue>(array: Array<T>) {
 		final res = [];
 
-		for(i => value in array) {
+		for(i in 0...array.length) { final value = array[i];
 			if(i > 0) {
 				var found = false;
 				for(j in 0...i) {
@@ -373,7 +373,7 @@ class Arrays {
 	@:noUsing @:generic private static function _unique<T>(array: Array<T>) {
 		final res = [];
 
-		for(i => value in array) {
+		for(i in 0...array.length) { final value = array[i];
 			if(i > 0) {
 				var found = false;
 				for(j in 0...i) {
@@ -394,7 +394,7 @@ class Arrays {
 
 	@:generic static extern inline overload function isUnique<T: EnumValue>(array: Array<T>) return _isUniqueEnumValue(array);
 	@:noUsing @:generic private static function _isUniqueEnumValue<T: EnumValue>(array: Array<T>) {
-		for(i => value in array) {
+		for(i in 0...array.length) { final value = array[i];
 			if(i > 0) {
 				for(j in 0...i) {
 					if(array[j].equals(value)) {
@@ -409,7 +409,7 @@ class Arrays {
 	
 	@:generic static extern inline overload function isUnique<T>(array: Array<T>) return _isUnique(array);
 	@:noUsing @:generic private static function _isUnique<T>(array: Array<T>) {
-		for(i => value in array) {
+		for(i in 0...array.length) { final value = array[i];
 			if(i > 0) {
 				for(j in 0...i) {
 					if(array[j] == value) {

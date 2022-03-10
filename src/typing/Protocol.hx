@@ -30,9 +30,9 @@ class Protocol extends ClassLike {
 		});
 
 		for(attr => span in ast.attrs) switch attr {
-			case IsHidden(_) if(protocol.hidden.isSome()): protocol.errors.push(Type_DuplicateAttribute(protocol, ast.name.name, "hidden", span));
-			case IsHidden(None): protocol.hidden = Some(None);
-			case IsHidden(Some(outsideOf)): protocol.hidden = Some(Some(protocol.makeTypePath(outsideOf)));
+			case IsHidden(_) if(protocol.hidden != null): protocol.errors.push(Type_DuplicateAttribute(protocol, ast.name.name, "hidden", span));
+			case IsHidden(None): protocol.hidden = None;
+			case IsHidden(Some(outsideOf)): protocol.hidden = Some(protocol.makeTypePath(outsideOf));
 
 			case IsFriend(_) if(protocol.friends.length != 0): protocol.errors.push(Type_DuplicateAttribute(protocol, ast.name.name, "friend", span));
 			case IsFriend(One(friend)): protocol.friends.push(protocol.makeTypePath(friend));

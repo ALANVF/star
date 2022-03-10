@@ -35,9 +35,9 @@ class Class extends ClassLike {
 		});
 
 		for(attr => span in ast.attrs) switch attr {
-			case IsHidden(_) if(cls.hidden.isSome()): cls.errors.push(Type_DuplicateAttribute(cls, ast.name.name, "hidden", span));
-			case IsHidden(None): cls.hidden = Some(None);
-			case IsHidden(Some(outsideOf)): cls.hidden = Some(Some(cls.makeTypePath(outsideOf)));
+			case IsHidden(_) if(cls.hidden != null): cls.errors.push(Type_DuplicateAttribute(cls, ast.name.name, "hidden", span));
+			case IsHidden(None): cls.hidden = None;
+			case IsHidden(Some(outsideOf)): cls.hidden = Some(cls.makeTypePath(outsideOf));
 
 			case IsFriend(_) if(cls.friends.length != 0): cls.errors.push(Type_DuplicateAttribute(cls, ast.name.name, "friend", span));
 			case IsFriend(One(friend)): cls.friends.push(cls.makeTypePath(friend));
