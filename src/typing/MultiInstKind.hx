@@ -31,6 +31,10 @@ typedef InstOverload = {
 	complete: Bool
 };
 
+inline function simplify(overloads: Array<InstOverload>) {
+	return overloads.map(ov -> {kind: ov.kind, tctx: ov.tctx});
+}
+
 function reduceOverloads(kinds: Array<MultiInstKind>, ctx: Ctx, sender: Type, args: Array<TExpr>) {
 	if(kinds.length == 0) return [];
 

@@ -13,7 +13,7 @@ kind Maybe[T] of Iterable[T] {
 	}
 
 	on [length] (Int) is getter {
-		return [this != Maybe[none] Int]
+		return [this != This[none] Int]
 	}
 
 	
@@ -64,11 +64,11 @@ kind Maybe[T] of Iterable[T] {
 	; ...
 	
 
-	operator `!` (Bool) => return this ?= Maybe[none]
-	operator `?` (Bool) => return this != Maybe[none]
+	operator `!` (Bool) => return this ?= This[none]
+	operator `?` (Bool) => return this != This[none]
 
 
-	on [Bool] => return this != Maybe[none]
+	on [Bool] => return this != This[none]
 
 	on [Iterator[T]] {
 		match this at Maybe[the: my value] {

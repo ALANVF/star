@@ -10,6 +10,8 @@ typedef Suffix = parsing.ast.Suffix;
 typedef Infix = parsing.ast.Infix;
 typedef AssignInfix = parsing.ast.Infix.Assignable;
 
+typedef BinaryOpCandidate = {kind: BinaryOpKind, ?tctx: TypeVarCtx}
+
 enum StrPart {
 	PStr(str: String);
 	PCode(code: TExpr);
@@ -50,9 +52,9 @@ enum Expr {
 		ELazyPrefix(op: Prefix, right: TExpr);
 	ESuffix(left: TExpr, kind: UnaryOpKind);
 		ELazySuffix(left: TExpr, op: Suffix);
-	EInfix(left: TExpr, kinds: Array<BinaryOpKind>, right: TExpr);
+	EInfix(left: TExpr, kinds: Array<BinaryOpCandidate>, right: TExpr);
 		ELazyInfix(left: TExpr, op: Infix, right: TExpr);
-	EInfixChain(left: TExpr, chain: List2</*kinds:*/ Array<BinaryOpKind>, /*right:*/ TExpr>);
+	EInfixChain(left: TExpr, chain: List2</*kinds:*/ Array<BinaryOpCandidate>, /*right:*/ TExpr>);
 
 	EVarDecl(name: String, ?type: Type, ?value: TExpr);
 

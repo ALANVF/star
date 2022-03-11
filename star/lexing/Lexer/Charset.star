@@ -86,7 +86,8 @@ class Charset is hidden Lexer {
 		return out
 	}
 
-	operator `|` [chars (Iterable[Char])] (Charset) {
+	type T of Iterable[Char]
+	operator `|` [chars (T)] (Charset) {
 		return this[new]
 		-> [addAll: chars]
 	}

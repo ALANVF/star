@@ -1,7 +1,7 @@
 package typing;
 
 enum CastKind {
-	CMethod(m: CastMethod);
+	CMethod(m: CastMethod, ?tctx: TypeVarCtx);
 	CUpcast(parent: Type);
 	CDowncast(child: Type);
 	CNative(t: Type);
@@ -9,7 +9,7 @@ enum CastKind {
 	CFromTypevar(tvar: TypeVar, target: Type, kind: CastKind);
 }
 
-function reduceOverloads(kinds: Array<CastKind>) {
+function reduceOverloads(kinds: Array<CastKind>, sender: Type, target: Type) {
 	if(kinds.length == 0) return [];
 
 	function loop(kind: CastKind) return kind._match(
@@ -22,7 +22,22 @@ function reduceOverloads(kinds: Array<CastKind>) {
 	final kinds2 = kinds.map(k -> loop(k));
 
 	if(kinds2.some(k -> k.match(CMethod(_)))) {
-		return kinds.filteri((k, i) -> kinds2[i].match(CMethod(_)));
+		return kinds.filteriMap((k, i) -> kinds2[i]._match(
+			at(k = CMethod(m)) => {
+				final mtype = m.type.getFrom(sender);
+				if(mtype.hasTypevars()) {
+					final tctx: TypeVarCtx = [];
+					if(target.bindTo(mtype, tctx) != null) {
+						CMethod(m, tctx);
+					} else {
+						null;
+					}
+				} else {
+					k;
+				}
+			},
+			_ => null
+		));
 	} else {
 		return kinds;
 	}

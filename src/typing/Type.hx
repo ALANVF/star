@@ -1187,6 +1187,14 @@ class Type implements ITypeable {
 					}
 				);
 			},
+			// TODO: make this smarter
+			at([TThis(decl1), TConcrete(decl2)]) => {
+				if(decl1 == decl2) {
+					onto;
+				} else {
+					null;
+				}
+			},
 			at([TThis(decl), _]) => {
 				if(decl.hasParentType(onto) || onto.hasChildType(decl.thisType)) {
 					decl.thisType.t._match(
@@ -1234,6 +1242,11 @@ class Type implements ITypeable {
 				} else {
 					null;
 				}
+			},
+
+			// TODO: make this smarter
+			at([TConcrete(decl1), TThis(decl2)]) => {
+				onto.getFrom(this);
 			},
 
 			// TODO: account for generic typevars and HKTs

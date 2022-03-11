@@ -175,18 +175,9 @@ class Dumper {
 			write(getTypePath(decl));
 			write(" [");
 			write(params, " ", p -> dump(p, cache));
-			write("] {");
-			level++;
-			for(tvar => subst in ctx) {
-				nextLine();
-				write(":");
-				write(tvar.name.name);
-				write(" ");
-				dump(subst, cache);
-			}
-			level--;
-			nextLine();
-			write("})");
+			write("] ");
+			dump(ctx, cache);
+			write(")");
 		},
 		at(TThis(source)) => {
 			write("(type :this ");
@@ -250,6 +241,21 @@ class Dumper {
 		},
 		at(TModular(ty, _)) => dump(ty, cache)
 	);
+
+	overload function dump(ctx: TypeVarCtx, cache: Cache) {
+		write("{");
+		level++;
+		for(tvar => subst in ctx) {
+			nextLine();
+			write(":");
+			write(tvar.name.name);
+			write(" ");
+			dump(subst, cache);
+		}
+		level--;
+		nextLine();
+		write("}");
+	}
 
 	overload function dump(kind: SingleStaticKind) kind._match(
 		at(SSMethod(mth)) => {
@@ -482,14 +488,20 @@ class Dumper {
 	);
 
 	overload function dump(kind: CastKind) kind._match(
-		at(CMethod(mth)) => {
+		at(CMethod(mth, ctx)) => {
+			var cache = Cache.empty;
 			mth.decl._match(at(cat is Category) => {
 				write(":category ");
-				dump(cat.path, Cache.empty + cat);
+				cache += cat;
+				dump(cat.path, cache);
 				nextLine();
 			}, _ => {});
 			write(":cast-method ");
-			dump(mth.type, Nil);
+			dump(mth.type, cache);
+			ctx._and(tctx => if(tctx.size() > 0) {
+				write(" ");
+				dump(tctx, cache);
+			});
 		},
 		at(CUpcast(parent)) => {
 			write(":upcast ");
@@ -548,7 +560,11 @@ class Dumper {
 		at(Multi([c], labels, args)) => {
 			write(":multi { ");
 			level++;
-			dump(c);
+			dump(c.kind);
+			c.tctx._and(tctx => if(tctx.size() > 0) {
+				write(" ");
+				dump(tctx, Nil);
+			});
 			level--;
 			write(" }");
 			for(i => label in labels) {
@@ -562,7 +578,11 @@ class Dumper {
 			writeLines(candidates, c -> {
 				write("{ ");
 				level++;
-				dump(c);
+				dump(c.kind);
+				c.tctx._and(tctx => if(tctx.size() > 0) {
+					write(" ");
+					dump(tctx, Nil);
+				});
 				level--;
 				write(" }");
 			});
@@ -591,7 +611,11 @@ class Dumper {
 		at(Multi([c], labels, args)) => {
 			write(":multi { ");
 			level++;
-			dump(c);
+			dump(c.kind);
+			c.tctx._and(tctx => if(tctx.size() > 0) {
+				write(" ");
+				dump(tctx, Nil);
+			});
 			level--;
 			write(" }");
 			for(i => label in labels) {
@@ -606,7 +630,11 @@ class Dumper {
 			writeLines(candidates, c -> {
 				write("{ ");
 				level++;
-				dump(c);
+				dump(c.kind);
+				c.tctx._and(tctx => if(tctx.size() > 0) {
+					write(" ");
+					dump(tctx, Nil);
+				});
 				level--;
 				write(" }");
 			});
@@ -1084,7 +1112,12 @@ class Dumper {
 			if(kinds.length == 1) {
 				write(":infix { ");
 				level++;
-				dump(kinds[0]);
+				final kind = kinds[0];
+				dump(kind.kind);
+				kind.tctx._and(tctx => if(tctx.size() > 0) {
+					write(" ");
+					dump(tctx, Nil);
+				});
 				level--;
 				write(" }");
 			} else {
@@ -1092,7 +1125,11 @@ class Dumper {
 				writeLines(kinds, kind -> {
 					write("{ ");
 					level++;
-					dump(kind);
+					dump(kind.kind);
+					kind.tctx._and(tctx => if(tctx.size() > 0) {
+						write(" ");
+						dump(tctx, Nil);
+					});
 					level--;
 					write(" }");
 				});

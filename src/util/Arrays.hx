@@ -291,6 +291,14 @@ class Arrays {
 				(result : U);
 		}];
 	}
+	static inline function filteriMap<T, U>(array: Array<T>, callback: (element: T, index: Int) -> Null<U>) {
+		return [for(i in 0...array.length) { final value = array[i];
+			final result = callback(value, i);
+
+			if(result != null)
+				(result : U);
+		}];
+	}
 
 	static inline function flatMap<T, U>(array: Array<T>, callback: (element: T) -> Array<U>) {
 		var result = [];

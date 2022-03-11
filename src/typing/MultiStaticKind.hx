@@ -38,6 +38,10 @@ typedef StaticOverload = {
 	complete: Bool
 };
 
+inline function simplify(overloads: Array<StaticOverload>) {
+	return overloads.map(ov -> {kind: ov.kind, tctx: ov.tctx});
+}
+
 function reduceOverloads(kinds: Array<MultiStaticKind>, sender: Type, names: Array<String>, args: Array<TExpr>) {
 	if(kinds.length == 0) return [];
 
