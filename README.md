@@ -77,8 +77,13 @@ module Main {
 ### Running Star
 
 Things you'll need in order to run Star (or rather, the parser. the compiler and runtime don't exist yet):
-- Haxe (4.2.1 or later)
+- Haxe (4.2.3 or later)
 - [My fork of HashLink](https://github.com/ALANVF/hashlink/tree/star)
+
+If you are on windows, you'll want to run this (recursively, somehow) on the contents of `src`, `star`, and `stdlib`:
+```powershell
+fsutil.exe file setCaseSensitiveInfo <path> enable
+```
 
 
 ### Thinking ahead
