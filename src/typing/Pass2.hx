@@ -1712,21 +1712,26 @@ static function sendTypeMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: 
 				at([found]) => found.findMultiStatic(ctx, names, ctx.typeDecl).unique().reduceBySender()._match(
 					at([]) => throw 'error: type `${t.fullName()}` does not respond to method `[${names.joinMap(" ", n -> '$n:')}]` in category `${tcat.fullName()}`! ${begin.display()}',
 					at(kinds) => {
-						final overloads = kinds.reduceOverloads(t, names, args);
-						{
-							_1: Multi(overloads.simplify(), names, args),
-							_2: overloads.map(ov -> {
-								final res = ov.ret.getFrom(t);
-								ov.tctx._andOr(
-									tctx => res.getInTCtx(tctx),
-									res
-								);
-							}).unique()._match(
-								at([]) => null,
-								at([ret]) => ret,
-								at(rets) => {t: TMulti(rets), span: null}
-							)
-						};
+						kinds.reduceOverloads(t, names, args)._match(
+							at([]) => {
+								ctx.addError(Type_UnknownMethod(ctx, t, Multi(Static, names, args), labels[0].span(), [found]));
+								null;
+							},
+							at(overloads) => {
+								_1: Multi(overloads.simplify(), names, args),
+								_2: overloads.map(ov -> {
+									final res = ov.ret.getFrom(t);
+									ov.tctx._andOr(
+										tctx => res.getInTCtx(tctx),
+										res
+									);
+								}).unique()._match(
+									at([]) => null,
+									at([ret]) => ret,
+									at(rets) => {t: TMulti(rets), span: null}
+								)
+							}
+						);
 					}
 				),
 				at(found) => Type.mostSpecificBy(
@@ -1743,21 +1748,26 @@ static function sendTypeMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: 
 					)
 				)._match(
 					at([kinds]) => {
-						final overloads = kinds.mth.reduceOverloads(t, names, args);
-						{
-							_1: Multi(overloads.simplify(), names, args),
-							_2: overloads.map(ov -> {
-								final res = ov.ret.getFrom(t);
-								ov.tctx._andOr(
-									tctx => res.getInTCtx(tctx),
-									res
-								);
-							}).unique()._match(
-								at([]) => null,
-								at([ret]) => ret,
-								at(rets) => {t: TMulti(rets), span: null}
-							)
-						};
+						kinds.mth.reduceOverloads(t, names, args)._match(
+							at([]) => {
+								ctx.addError(Type_UnknownMethod(ctx, t, Multi(Static, names, args), labels[0].span(), found));
+								null;
+							},
+							at(overloads) => {
+								_1: Multi(overloads.simplify(), names, args),
+								_2: overloads.map(ov -> {
+									final res = ov.ret.getFrom(t);
+									ov.tctx._andOr(
+										tctx => res.getInTCtx(tctx),
+										res
+									);
+								}).unique()._match(
+									at([]) => null,
+									at([ret]) => ret,
+									at(rets) => {t: TMulti(rets), span: null}
+								)
+							}
+						);
 					},
 					at([]) => throw 'error: type `${t.fullName()}` does not respond to method `[${names.joinMap(" ", n -> '$n:')}]` in any categories of: `${found.map(f -> f.fullName()).join(", ")}`! ${begin.display()}',
 					at(kinds) => if(kinds.every(k -> k.mth.length == 0)) {
@@ -1906,22 +1916,27 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 				tparent.findMultiInst(ctx, names, ctx.typeDecl).reduceBySender()._match(
 					at([]) => throw 'error: value of type `${t.fullName()}` does not have a supertype `${tparent.fullName()}` that responds to method `[${names.joinMap(" ", n -> '$n:')}]`! ${begin.display()}',
 					at(kinds) => {
-						final overloads = kinds.reduceOverloads(ctx, tparent, args);
-						{
-							_1: Super(tparent, Multi(overloads.simplify(), names, args)),
-							// TODO
-							_2: overloads.map(ov -> {
-								final res = ov.ret.getFrom(t);
-								ov.tctx._andOr(
-									tctx => res.getInTCtx(tctx),
-									res
-								);
-							}).unique()._match(
-								at([]) => null,
-								at([ret]) => ret,
-								at(rets) => {t: TMulti(rets), span: null}
-							)
-						};
+						kinds.reduceOverloads(ctx, tparent, args)._match(
+							at([]) => {
+								ctx.addError(Type_UnknownMethod(ctx, t, Multi(Instance, names, args), labels[0].span(), null, tparent));
+								null;
+							},
+							at(overloads) => {
+								_1: Super(tparent, Multi(overloads.simplify(), names, args)),
+								// TODO
+								_2: overloads.map(ov -> {
+									final res = ov.ret.getFrom(t);
+									ov.tctx._andOr(
+										tctx => res.getInTCtx(tctx),
+										res
+									);
+								}).unique()._match(
+									at([]) => null,
+									at([ret]) => ret,
+									at(rets) => {t: TMulti(rets), span: null}
+								)
+							}
+						);
 					}
 				);
 			} else {
@@ -2275,7 +2290,7 @@ static function typeObjCascade(ctx: Ctx, type: Null<Type>, cascade: UCascade<UEx
 							at(kinds) => kinds.reduceOverloads(ctx, t, args)._match(
 								at([]) => {
 									ctx.addError(Type_UnknownMethod(ctx, t, Multi(Instance, names, args), labels[0].span()));
-									null;
+									return null;
 								},
 								at(overloads) => Multi(overloads.simplify(), names, args)
 							)
@@ -2308,7 +2323,7 @@ static function typeObjCascade(ctx: Ctx, type: Null<Type>, cascade: UCascade<UEx
 								at(kinds) => kinds.reduceOverloads(ctx, t, args)._match(
 									at([]) => {
 										ctx.addError(Type_UnknownMethod(ctx, t, Multi(Instance, names, args), labels[0].span(), categories));
-										null;
+										return null;
 									},
 									at(overloads) => Multi(overloads.simplify(), names, args)
 								)
@@ -2322,7 +2337,7 @@ static function typeObjCascade(ctx: Ctx, type: Null<Type>, cascade: UCascade<UEx
 								at([kinds]) => kinds.mth.reduceOverloads(ctx, t, args)._match(
 									at([]) => {
 										ctx.addError(Type_UnknownMethod(ctx, t, Multi(Instance, names, args), labels[0].span(), categories));
-										null;
+										return null;
 									},
 									at(overloads) => Multi(overloads.simplify(), names, args)
 								),
@@ -2347,11 +2362,18 @@ static function typeObjCascade(ctx: Ctx, type: Null<Type>, cascade: UCascade<UEx
 				)),
 
 
-				at(AssignMember({name: name}, _, null, rhs)) => t.findMultiInst(ctx, [name], ctx.typeDecl, true)._match(
+				at(AssignMember({name: name, span: span}, _, null, rhs)) => t.findMultiInst(ctx, [name], ctx.typeDecl, true)._match(
 					at(kinds!) => {
 						final trhs = typeExpr(ctx, rhs);
-						final overloads = kinds.reduceOverloads(ctx, t, [trhs]);
-						Member(Multi(overloads.simplify(), [name], [trhs]));
+						kinds.reduceOverloads(ctx, t, [trhs])._match(
+							at([]) => {
+								ctx.addError(Type_UnknownSetter(ctx, Instance, t, name, span, trhs));
+								return null;
+							},
+							at(overloads) => {
+								Member(Multi(overloads.simplify(), [name], [trhs]));
+							}
+						);
 					},
 					_ => throw 'error: value of type `${t.fullName()}` does not have member/setter `$name`!'
 				),
@@ -2367,8 +2389,15 @@ static function typeObjCascade(ctx: Ctx, type: Null<Type>, cascade: UCascade<UEx
 							at(kinds) => {
 								final trhs = typeExpr(ctx, rhs);
 								final args2 = args.concat([trhs]);
-								final overloads = kinds.reduceOverloads(ctx, t, args2);
-								AssignMessage(Multi(overloads.simplify(), names, args2), null, trhs);
+								kinds.reduceOverloads(ctx, t, args2)._match(
+									at([]) => {
+										ctx.addError(Type_UnknownMethod(ctx, t, Multi(Instance, names, args2), labels[0].span()));
+										return null;
+									},
+									at(overloads) => {
+										AssignMessage(Multi(overloads.simplify(), names, args2), null, trhs);
+									}
+								);
 							}
 						);
 					},

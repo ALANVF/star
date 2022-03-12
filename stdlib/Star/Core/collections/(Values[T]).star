@@ -258,7 +258,8 @@ protocol Values[T] of Positional[T] {
 		return value
 	}
 
-	on [addAll: values (This)] (This) {
+	type V of Values[T]
+	on [addAll: values (V)] (V) {
 		this[resizeBy: values.length]
 		values[copyInto: buffer + length]
 		length += values.length
@@ -278,7 +279,8 @@ protocol Values[T] of Positional[T] {
 		return value
 	}
 
-	on [prependAll: values (This)] (This) {
+	type V of Values[T]
+	on [prependAll: values (V)] (V) {
 		this[resizeBy: values.length]
 		this[from: 0 moveBy: length]
 		values[copyInto: buffer]

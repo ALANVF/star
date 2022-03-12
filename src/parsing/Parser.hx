@@ -3314,7 +3314,10 @@ class Parser {
 						AssignMember({span: _2, name: name}, _3, op, expr);
 					case err: return cast err;
 				},
-				_ => return Fatal(tokens, rest)
+				_ => {
+					rest = rest2;
+					Member({span: _2, name: name});
+				}
 			),
 			_ => return Fatal(tokens, null)
 		);
@@ -3387,7 +3390,10 @@ class Parser {
 						AssignMember({span: _2, name: name}, _3, op, expr);
 					case err: return cast err;
 				},
-				_ => return Fatal(tokens, rest)
+				_ => {
+					rest = rest2;
+					Member({span: _2, name: name});
+				}
 			),
 			_ => return Fatal(tokens, null)
 		);

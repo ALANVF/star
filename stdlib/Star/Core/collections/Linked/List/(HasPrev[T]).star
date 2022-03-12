@@ -9,7 +9,7 @@ protocol HasPrev[T] of Link[T] is hidden List is sealed List {
 		-> rawNext = this
 	}
 
-	on [insertPrev: newPrev (HasNext[T])] {
+	on [insertPrev: newPrev (Value[T])] {
 		newPrev
 		-> prev = this.prev
 		-> next = this

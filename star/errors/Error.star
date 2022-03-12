@@ -1093,7 +1093,13 @@ kind TypeError of Error {
 		]
 	}
 
-	has [ctx: (Ctx) sender: (Type) unknownMethod: kind (MethodKind), span (Span) categories: (Array[Category]) = #[]] {
+	has [
+		ctx: (Ctx)
+		sender: (Type)
+		unknownMethod: kind (MethodKind), span (Span)
+		categories: (Array[Category]) = #[]
+		super: (Maybe[Type]) = Maybe[none]
+	] {
 		diag = Diagnostic[
 			severity: Severity.error
 			message: "Unknown method"
@@ -1102,7 +1108,13 @@ kind TypeError of Error {
 					:span
 					message: {
 						#{my access, my methodName} = kind[accessAndName]
-						my msg = "\(access.desc) `\(sender.fullName)` does not respond to method \(methodName)"
+						my msg = "\(access.desc) `\(sender.fullName)`"
+						
+						match super at Maybe[the: my super'] {
+							msg[add: " does not have a supertype `\(super'.fullName)` that responds to method \(methodName)"]
+						} else {
+							msg[add: " does not respond to method \(methodName)"]
+						}
 						
 						if categories? {
 							msg[add: " in any categories of:"]

@@ -337,7 +337,8 @@ enum Error {
 		type: Type,
 		kind: MethodKind,
 		span: Span,
-		?categories: Array<Category>
+		?categories: Array<Category>,
+		?superType: Type
 	);
 
 	Type_UnknownCast(
@@ -1362,7 +1363,7 @@ function asDiagnostic(self: Error) { return new Diagnostic(self._match(
 		]
 	},
 
-	at(Type_UnknownMethod(ctx, type, kind, span, categories)) => {
+	at(Type_UnknownMethod(ctx, type, kind, span, categories, tsuper)) => {
 		severity: Severity.ERROR,
 		message: "Unknown method",
 		info: [
@@ -1397,7 +1398,13 @@ function asDiagnostic(self: Error) { return new Diagnostic(self._match(
 						}
 					);
 
-					var msg = '${access.desc()} `${type.fullName()}` does not respond to method $methodName';
+					var msg = '${access.desc()} `${type.fullName()}`';
+
+					tsuper._andOr(s => {
+						msg += ' does not have a supertype `${s.fullName()}` that responds to method $methodName';
+					}, {
+						msg += ' does not respond to method $methodName';
+					});
 					
 					categories._and(cats => {
 						msg += " in any categories of:";

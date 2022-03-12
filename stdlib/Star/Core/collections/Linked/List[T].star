@@ -269,7 +269,8 @@ class List[T] of Positional[T] {
 
 		if 0 <= index < length {
 			my link = this[linkAt: index]
-			-> prev = link.next
+			-> prev
+			--> next = link.next
 			
 			length--
 
@@ -572,7 +573,8 @@ category Unsafe for List[T] {
 
 	on [removeAt: index (Int)] (T) {
 		my link = this[linkAt: index]
-		-> prev = link.next
+		-> prev
+		--> next = link.next
 		
 		length--
 
