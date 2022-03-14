@@ -793,7 +793,7 @@ class Lexer {
 		
 		final n = reader.substring(start);
 
-		return if(reader.eat(':')) {
+		return if(reader.eat(':'.code)) {
 			final end = here();
 
 			throw Lex_NoUppercaseLabel(
@@ -864,11 +864,12 @@ class Lexer {
 					case 'o'.code: readOctEsc();
 					case c:
 						final end = here();
+						final preEnd = end.advance(-2);
 						reader.next();
 						throw Lex_InvalidCharEscape(
-							new Span(begin, end.advance(-2), source),
+							new Span(begin, preEnd, source),
 							c,
-							new Span(end.advance(-2), end, source),
+							new Span(preEnd, end, source),
 							Span.at(end, source)
 						);
 				}
@@ -1008,10 +1009,10 @@ class Lexer {
 						case 'u'.code: readUniEsc();
 						case 'o'.code: readOctEsc();
 						case c:
-							final end = here().advance(-1);
+							final end = here();
 							throw Lex_InvalidStrEscape(
 								c,
-								new Span(end.advance(-1), end.advance(), source) // off by 1 error?
+								new Span(end.advance(-2), end, source) // off by 1 error?
 							);
 					};
 					
