@@ -3,7 +3,7 @@ package typing;
 import typing.EmptyMethod;
 import parsing.ast.Ident;
 import text.Span;
-import Util.detuple2;
+import Util.detuple;
 import parsing.ast.Expr as UExpr;
 import parsing.ast.Stmt as UStmt;
 import parsing.ast.Type as UType;
@@ -732,7 +732,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 			} else {
 				var tkey: Null<Type> = null;
 				var tvalue: Null<Type> = null;
-				for(p in tpairs) { detuple2(@var k, @var v, p);
+				for(p in tpairs) { detuple(@var [k, v] = p);
 					tkey._match(
 						at(tk1!) => {
 							k.t._and(tk2 => {
@@ -1601,7 +1601,7 @@ static function sendTypeMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: 
 		},
 		
 		at(Multi(null, labels)) => {
-			detuple2(@var names, @var args, getNamesArgs(ctx, labels));
+			detuple(@var [names, args] = getNamesArgs(ctx, labels));
 			
 			t.findMultiStatic(ctx, names, ctx.typeDecl).unique()/*.reduceBySender()*/._match(
 				at([]) => {
@@ -1635,7 +1635,7 @@ static function sendTypeMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: 
 				),
 				at(c) => c
 			);
-			detuple2(@var names, @var args, getNamesArgs(ctx, labels));
+			detuple(@var [names, args] = getNamesArgs(ctx, labels));
 
 			var categories = t.t._match(
 				at(TThis(td is TypeDecl)) => ({t: td.thisType.t, span: t.span} : Type),
@@ -1789,7 +1789,7 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 		},
 		
 		at(Multi(null, labels)) => {
-			detuple2(@var names, @var args, getNamesArgs(ctx, labels));
+			detuple(@var [names, args] = getNamesArgs(ctx, labels));
 
 			t.t._match(
 				at(TThis(td is TypeDecl)) => ({t: td.thisType.t, span: t.span} : Type),
@@ -1815,7 +1815,7 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 			final tparent = ctx.getType(parent)._or(return null).simplify();
 
 			if(tparent.hasChildType(t)) {
-				detuple2(@var names, @var args, getNamesArgs(ctx, labels));
+				detuple(@var [names, args] = getNamesArgs(ctx, labels));
 
 				tparent.findMultiInst(ctx, names, ctx.typeDecl).reduceBySender()._match(
 					at([]) => throw 'error: value of type `${t.fullName()}` does not have a supertype `${tparent.fullName()}` that responds to method `[${names.joinMap(" ", n -> '$n:')}]`! ${begin.display()}',
@@ -1851,7 +1851,7 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 				),
 				at(c) => c
 			);
-			detuple2(@var names, @var args, getNamesArgs(ctx, labels));
+			detuple(@var [names, args] = getNamesArgs(ctx, labels));
 
 			var categories = t.t._match(
 				at(TThis(td is TypeDecl)) => td.thisType,
@@ -2102,7 +2102,7 @@ static function typeMessage(ctx: Ctx, msg: UMessage<UExpr>): Message<TExpr> {
 		case Single(cat, _, name): Single(cat._and(c => ctx.getType(c)), name);
 
 		case Multi(cat, labels):
-			detuple2(@var names, @var args, getNamesArgs(ctx, labels));
+			detuple(@var [names, args] = getNamesArgs(ctx, labels));
 			Multi(cat._and(c => ctx.getType(c)), names, args);
 
 		case Cast(cat, type): Cast(cat._and(c => ctx.getType(c)), ctx.getType(type));
@@ -2114,7 +2114,7 @@ static function typeTMessage(ctx: Ctx, msg: UMessage<UType>): Message<Type> {
 		case Single(cat, _, name): Single(cat._and(c => ctx.getType(c)), name);
 
 		case Multi(cat, labels):
-			detuple2(@var names, @var args, getNamesArgs(ctx, labels));
+			detuple(@var [names, args] = getNamesArgs(ctx, labels));
 			Multi(cat._and(c => ctx.getType(c)), names, args);
 	}
 }
@@ -2185,7 +2185,7 @@ static function typeObjCascade(ctx: Ctx, type: Null<Type>, cascade: UCascade<UEx
 				},
 
 				at(Multi(null, labels)) => {
-					detuple2(@var names, @var args, getNamesArgs(ctx, labels));
+					detuple(@var [names, args] = getNamesArgs(ctx, labels));
 					t.findMultiInst(ctx, names, ctx.typeDecl)._match(
 						at([]) => {
 							ctx.addError(Type_UnknownMethod(ctx, t, Multi(Instance, names), labels[0].span()));
@@ -2218,7 +2218,7 @@ static function typeObjCascade(ctx: Ctx, type: Null<Type>, cascade: UCascade<UEx
 						),
 						at(c) => c
 					);
-					detuple2(@var names, @var args, getNamesArgs(ctx, labels));
+					detuple(@var [names, args] = getNamesArgs(ctx, labels));
 
 					var categories = t.t._match(
 						at(TThis(td is TypeDecl)) => td.thisType,
@@ -2293,7 +2293,7 @@ static function typeObjCascade(ctx: Ctx, type: Null<Type>, cascade: UCascade<UEx
 			at(AssignMessage(msg, _, null, rhs)) => msg._match(
 				at(Single(cat, _, name)) => throw "todo",
 				at(Multi(null, labels)) => {
-					detuple2(@var names, @var args, getNamesArgs(ctx, labels));
+					detuple(@var [names, args] = getNamesArgs(ctx, labels));
 					names = names.concat(["="]);
 					t.findMultiInst(ctx, names, ctx.typeDecl)._match(
 						at([]) => throw 'error: value of type ${t.fullName()} does not respond to method `[${names.joinMap(" ", n -> '$n:')}]`!',
@@ -2451,7 +2451,7 @@ static function typePattern(ctx: Ctx, expectType: Type, expr: UExpr): Pattern {
 					);
 				},
 				at(Multi(null, labels)) => {
-					detuple2(@var names, @var args, getNamesUntypedArgs(ctx, labels));
+					detuple(@var [names, args] = getNamesUntypedArgs(ctx, labels));
 					ttype.findMultiStatic(ctx, names, ctx.typeDecl)._match(
 						at([MSMemberwiseInit(ms)]) => {
 							// TODO: fix this to work with generic subtypes

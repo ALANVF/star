@@ -7,7 +7,7 @@ import lexing.Lexer;
 import parsing.ast.Program;
 import text.SourceFile;
 import typing.Traits;
-import Util.detuple2;
+import Util.detuple;
 
 @:build(util.Auto.build())
 class File implements ITypeLookup implements IErrors {
@@ -43,7 +43,7 @@ class File implements ITypeLookup implements IErrors {
 	}
 
 	function parse() {
-		detuple2(@var diags, @var tokens, new Lexer(source).tokenize());
+		detuple(@var [diags, tokens] = new Lexer(source).tokenize());
 		diags.forEach(diag -> errors.push(diag));
 		final result = Parser.parse(tokens);
 		
