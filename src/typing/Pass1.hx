@@ -138,7 +138,7 @@ static function resolveFileContents(file: File) {
 		}
 	}
 
-	for(decl in file.decls) resolveDecl(decl);
+	for(decl in file.sortedDecls) resolveDecl(decl);
 	for(cat in file.categories) resolveCategory(cat);
 }
 
@@ -269,7 +269,7 @@ static function resolveDecl(decl: TypeDecl) {
 
 	decl._match(
 		at(ns is Namespace) => {
-			for(decl2 in ns.decls) resolveDecl(decl2);
+			for(decl2 in ns.sortedDecls) resolveDecl(decl2);
 			for(cat in ns.categories) resolveCategory(cat);
 		},
 		_ => {}

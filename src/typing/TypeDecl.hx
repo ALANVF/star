@@ -416,9 +416,9 @@ abstract class TypeDecl extends AnyFullTypeDecl {
 		for(ref in refinees) {
 			ref.findInstMember(ctx, name, allowStatic)._and(kind => {
 				final tctx: TypeVarCtx = [];
-				for(i => p in params) {
+				params._for(i => p, {
 					p.bindTo(ref.params[i], tctx);
-				}
+				});
 				return MKFromRefinee(this, tctx, kind);
 			});
 		}

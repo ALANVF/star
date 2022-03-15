@@ -21,6 +21,7 @@ enum LoopStop {
 
 typedef MatchCase = {span: Span, pattern: Expr, when: Null<Tuple2<Span, Expr>>, then: Then}
 
+@:using(parsing.ast.Stmt)
 enum Stmt {
 	SExpr(expr: Expr);
 	SIf(
@@ -104,3 +105,22 @@ enum Stmt {
 		_end: Span
 	);
 }
+
+inline function mainSpan(self: Stmt) return self._match(
+	at(SExpr(e)) => e.mainSpan(),
+	at(   SIf(s, _, _, _)
+		| SCase(s, _)
+		| SMatch(s, _, _)
+		| SShortMatch(s, _, _, _, _, _, _)
+		| SWhile(s, _, _, _)
+		| SDoWhile(s, _, _)
+		| SForIn(s, _, _, _, _, _, _)
+		| SForRange(s, _, _, _, _, _, _, _, _, _, _)
+		| SDo(s, _, _)
+		| SReturn(s, _)
+		| SBreak(s, _)
+		| SNext(s, _)
+		| SThrow(s, _)
+		| STry(s, _, _, _, _, _)
+	) => s
+);

@@ -54,16 +54,16 @@ class Dumper {
 		for(value in values) write(value);
 	}
 	overload function write(values: Array<String>, sep: String) {
-		for(i => value in values) {
+		values._for(i => value, {
 			if(i != 0) write(sep);
 			write(value);
-		}
+		});
 	}
 	overload function write<T>(values: Array<T>, sep: String, func: (T) -> Void) {
-		for(i => value in values) {
+		values._for(i => value, {
 			if(i != 0) write(sep);
 			func(value);
-		}
+		});
 	}
 
 	overload function write<T, U, V>(values: List3<T, U, V>, sep: String, func: (T, U, V) -> Void) {
@@ -99,6 +99,18 @@ class Dumper {
 			nextLine();
 			func(value);
 		}
+
+		if(newLevel) level--;
+	}
+
+	overload inline function writeLines<T>(values: List<T>, func: (T) -> Void) writeLines(values, func, true);
+	overload function writeLines<T>(values: List<T>, func: (T) -> Void, newLevel: Bool) {
+		if(newLevel) level++;
+		
+		values.forEach(value -> {
+			nextLine();
+			func(value);
+		});
 
 		if(newLevel) level--;
 	}
@@ -567,11 +579,11 @@ class Dumper {
 			});
 			level--;
 			write(" }");
-			for(i => label in labels) {
+			labels._for(i => label, {
 				nextLine();
 				write('$label: ');
 				dump(args[i]);
-			}
+			});
 		},
 		at(Multi(candidates, labels, args)) => {
 			write(":multi [");
@@ -587,11 +599,11 @@ class Dumper {
 				write(" }");
 			});
 			write("]");
-			for(i => label in labels) {
+			labels._for(i => label, {
 				nextLine();
 				write('$label: ');
 				dump(args[i]);
-			}
+			});
 		},
 		at(Super(parent, msg2)) => {
 			write(":super ");
@@ -618,12 +630,12 @@ class Dumper {
 			});
 			level--;
 			write(" }");
-			for(i => label in labels) {
+			labels._for(i => label, {
 				nextLine();
 				write('$label: ');
 				if(args[i]==null) throw '${labels[0]}: ${args[0].orig.mainSpan().display()} $label: $i';
 				dump(args[i]);
-			}
+			});
 		},
 		at(Multi(candidates, labels, args)) => {
 			write(":multi [");
@@ -639,11 +651,11 @@ class Dumper {
 				write(" }");
 			});
 			write("]");
-			for(i => label in labels) {
+			labels._for(i => label, {
 				nextLine();
 				write('$label: ');
 				dump(args[i]);
-			}
+			});
 		},
 		at(Cast(target, [c])) => {
 			write(":cast { ");
@@ -689,11 +701,11 @@ class Dumper {
 				nextLine();
 			});
 			write(":lazy");
-			for(i => label in labels) {
+			labels._for(i => label, {
 				nextLine();
 				write('$label: ');
 				dump(exprs[i]);
-			}
+			});
 		},
 		at(Cast(cat, type)) => {
 			cat._and(c => {
@@ -1447,11 +1459,11 @@ class Dumper {
 			level++;
 			nextLine();
 			dump(type, Nil);
-			for(i => param in taggedCase.params) {
+			taggedCase.params._for(i => param, {
 				nextLine();
 				write('${param.label.name}: ');
 				dump(args[i]);
-			}
+			});
 			level--;
 			write(")");
 		},
@@ -1477,11 +1489,11 @@ class Dumper {
 			level++;
 			nextLine();
 			dump(type, Nil);
-			for(i => param in taggedCase.params) {
+			taggedCase.params._for(i => param, {
 				nextLine();
 				write('${param.label.name}: ');
 				dump(args[i]);
-			}
+			});
 			nextLine();
 			write(":members {");
 			writeLines(members, m -> {
@@ -1801,9 +1813,21 @@ class Dumper {
 		write("]");
 
 		tcase.typedAssoc._and(assoc => {
-			write(" => (");
-			dump(assoc);
-			write(")");
+			write(" => [");
+			assoc._match(
+				at(Single(null, name)) => {
+					write(name);
+				},
+				at(Multi(null, labels, exprs)) => {
+					labels._for(i => label, {
+						nextLine();
+						write('$label: ');
+						dump(exprs[i]);
+					});
+				},
+				_ => throw "error!"
+			);
+			write("]");
 		});
 
 		tcase.typedInit._and(init => {
@@ -2041,7 +2065,8 @@ class Dumper {
 		});
 		dump(attrs);
 		tvar.rule._and(rule => {
-			write(" if ...");
+			write(" if ");
+			dump(rule, cache);
 		});
 
 		writeLines(tvar.valueCases, c -> dump(c));
@@ -2054,6 +2079,70 @@ class Dumper {
 		writeLines(tvar.operators, o -> dump(o));
 		writeLines(tvar.categories, c -> dump(c));
 
+		write(")");
+	}
+
+	overload function dump(rule: TypeRule, cache: Cache) {
+		write("(");
+		level++;
+		rule._match(
+			at(Eq(l, r)) => {
+				write("eq");
+				nextLine();
+				dump(l, cache);
+				nextLine();
+				dump(r, cache);
+			},
+			at(Of(l, r)) => {
+				write("of?");
+				nextLine();
+				dump(l, cache);
+				nextLine();
+				dump(r, cache);
+			},
+			at(Lt(l, r)) => {
+				write("lt");
+				nextLine();
+				dump(l, cache);
+				nextLine();
+				dump(r, cache);
+			},
+			at(Le(l, r)) => {
+				write("le");
+				nextLine();
+				dump(l, cache);
+				nextLine();
+				dump(r, cache);
+			},
+			at(All(rules)) => {
+				write("all");
+				writeLines(rules, r -> dump(r, cache), false);
+			},
+			at(Any(rules)) => {
+				write("any");
+				writeLines(rules, r -> dump(r, cache), false);
+			},
+			at(One(rules)) => {
+				write("one");
+				writeLines(rules, r -> dump(r, cache), false);
+			},
+			at(Not(r)) => {
+				write("not");
+				nextLine();
+				dump(r, cache);
+			},
+			at(Negate(t)) => {
+				write("negate");
+				nextLine();
+				dump(t, cache);
+			},
+			at(Exists(t)) => {
+				write("exists?");
+				nextLine();
+				dump(t, cache);
+			}
+		);
+		level--;
 		write(")");
 	}
 
@@ -2214,7 +2303,7 @@ class Dumper {
 
 						dump(decl.typevars);
 						
-						writeLines(decl.decls.allValues(), d -> dump(d));
+						writeLines(decl.sortedDecls, d -> dump(d));
 						writeLines(decl.staticMembers, m -> dump(m));
 						writeLines(decl.members, m -> dump(m));
 						decl.staticInit.toNull()._and(i => writeLine(() -> dump(i)));
@@ -2237,7 +2326,7 @@ class Dumper {
 
 						dump(decl.typevars);
 						
-						writeLines(decl.decls.allValues(), d -> dump(d));
+						writeLines(decl.sortedDecls, d -> dump(d));
 						writeLines(decl.staticMembers, m -> dump(m));
 						writeLines(decl.members, m -> dump(m));
 						decl.staticInit.toNull()._and(i => writeLine(() -> dump(i)));
@@ -2271,7 +2360,7 @@ class Dumper {
 
 								dump(decl.typevars);
 								
-								writeLines(decl.decls.allValues(), d -> dump(d));
+								writeLines(decl.sortedDecls, d -> dump(d));
 								writeLines(decl.valueCases, c -> dump(c));
 								writeLines(decl.staticMembers, m -> dump(m));
 								writeLines(decl.members, m -> dump(m));
@@ -2293,7 +2382,7 @@ class Dumper {
 
 								dump(decl.typevars);
 								
-								writeLines(decl.decls.allValues(), d -> dump(d));
+								writeLines(decl.sortedDecls, d -> dump(d));
 								writeLines(decl.taggedCases, c -> dump(c));
 								writeLines(decl.staticMembers, m -> dump(m));
 								writeLines(decl.members, m -> dump(m));
@@ -2323,7 +2412,7 @@ class Dumper {
 
 						dump(decl.typevars);
 						
-						writeLines(decl.decls.allValues(), d -> dump(d));
+						writeLines(decl.sortedDecls, d -> dump(d));
 						writeLines(decl.staticMembers, m -> dump(m));
 						decl.staticInit.toNull()._and(i => writeLine(() -> dump(i)));
 						writeLines(decl.staticMethods, m -> dump(m));
@@ -2386,7 +2475,7 @@ class Dumper {
 			nextLine();
 		}
 
-		for(decl in file.decls.allValues().sorted((d1, d2) -> d1.span.start.compare(d2.span.start))) {
+		for(decl in file.sortedDecls.sorted((d1, d2) -> d1.span.start.compare(d2.span.start))) {
 			nextLine();
 
 			dump(decl);

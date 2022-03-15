@@ -50,11 +50,11 @@ function reduceOverloadsBy<T>(overloads: Array<T>, by: (T) -> Type): Array<T> re
 				switch [ty.t, type.t] {
 					case [TApplied({t: TConcrete(d1)}, p1), TApplied({t: TConcrete(d2)}, p2)] if(p1.length == p2.length):
 						if(d1.name.name == d2.name.name && d1.lookup == d2.lookup && d1.declName() == d2.declName()) {
-							for(i => p in p1) {
+							p1._for(i => p, {
 								if(!p.hasChildType(p2[i])) {
 									return true;
 								}
-							}
+							});
 							return false;
 						} else {
 							return true;
@@ -66,11 +66,11 @@ function reduceOverloadsBy<T>(overloads: Array<T>, by: (T) -> Type): Array<T> re
 						if(t1 != t2) {
 							return true;
 						} else {
-							for(i => p in p1) {
+							p1._for(i => p, {
 								if(!p.hasChildType(p2[i])) {
 									return true;
 								}
-							}
+							});
 							return false;
 						}
 					
@@ -78,11 +78,11 @@ function reduceOverloadsBy<T>(overloads: Array<T>, by: (T) -> Type): Array<T> re
 						if(d1.name.name != d2.name.name) {
 							return !d1.hasParentDecl(d2);
 						} else if(d1.params.length == d2.params.length) {
-							for(i => p in d1.params) {
+							d1.params._for(i => p, {
 								if(!p.hasChildType(d2.params[i])) {
 									return true;
 								}
-							}
+							});
 							return false;
 						} else {
 							return false;
@@ -369,6 +369,10 @@ class Type implements ITypeable {
 			}) ? 0 : -1),
 			_ => -1
 		);
+	}
+
+	inline function exactSameAs(other: Type) {
+		return hl.Api.comparePointer(this, other) == 0;
 	}
 
 	function toString() {
@@ -927,7 +931,7 @@ class Type implements ITypeable {
 			at([_, TModular(t2, _)]) => this.unifyWithType(t2),
 			at([TApplied(t1, a1), TApplied(t2, a2)], when(a1.length == a2.length)) => {
 				t1.unifyWithType(t2)._and(t => {
-					{t: TApplied(t, [for(i => a1_ in a1) {
+					{t: TApplied(t, [for(i in 0...a1.length) { final a1_ = a1[i];
 						a1_.unifyWithType(a2[i])._match(
 							at(a!) => a,
 							_ => return null
@@ -1017,7 +1021,7 @@ class Type implements ITypeable {
 			at([_, TModular(t2, _)]) => this.strictUnifyWithType(t2),
 			at([TApplied(t1, a1), TApplied(t2, a2)], when(a1.length == a2.length)) => {
 				t1.strictUnifyWithType(t2)._and(t => {
-					{t: TApplied(t, [for(i => a1_ in a1) {
+					{t: TApplied(t, [for(i in 0...a1.length) { final a1_ = a1[i];
 						a1_.strictUnifyWithType(a2[i])._match(
 							at(a!) => a,
 							_ => return null

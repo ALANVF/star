@@ -5,6 +5,7 @@ import typing.Traits;
 abstract class Namespace extends TypeDecl {
 	final parents: Array<Type> = [];
 	@ignore final decls = new MultiMap<String, TypeDecl>();
+	@ignore final sortedDecls: Array<TypeDecl> = [];
 	final staticMembers: Array<Member> = [];
 	final staticMethods: Array<StaticMethod> = [];
 	var staticInit: Option<StaticInit> = None;
@@ -15,6 +16,7 @@ abstract class Namespace extends TypeDecl {
 
 	inline function addTypeDecl(decl: TypeDecl) {
 		decls.add(decl.name.name, decl);
+		sortedDecls.push(decl);
 	}
 
 	override function findType(path: LookupPath, search: Search, from: Null<AnyTypeDecl>, depth = 0, cache: Cache = Nil): Null<Type> {
@@ -160,7 +162,7 @@ abstract class Namespace extends TypeDecl {
 
 	override function hasErrors() {
 		return super.hasErrors()
-			|| decls.allValues().some(d -> d.hasErrors())
+			|| sortedDecls.some(d -> d.hasErrors())
 			|| staticMembers.some(m -> m.hasErrors())
 			|| staticMethods.some(m -> m.hasErrors())
 			|| categories.some(c -> c.hasErrors());
@@ -169,7 +171,7 @@ abstract class Namespace extends TypeDecl {
 	override function allErrors() {
 		var result = super.allErrors();
 		
-		for(decl in decls) result = result.concat(decl.allErrors());
+		for(decl in sortedDecls) result = result.concat(decl.allErrors());
 		for(member in staticMembers) result = result.concat(member.allErrors());
 		for(method in staticMethods) result = result.concat(method.allErrors());
 		for(category in categories) result = result.concat(category.allErrors());

@@ -1,11 +1,8 @@
 package typing;
 
-import typing.Pattern.PatternKind;
 import typing.EmptyMethod;
 import parsing.ast.Ident;
 import text.Span;
-import errors.Error;
-import typing.Traits;
 import Util.detuple2;
 import parsing.ast.Expr as UExpr;
 import parsing.ast.Stmt as UStmt;
@@ -23,16 +20,14 @@ using typing.BinaryOpKind;
 /* This pass does all the things, including typing statements and expressions (well... most of them).
  *
  * TODO:
- * - typed patterns / destructuring
- * - other typed exprs (operators, members, etc)
  * - enforced visibility
  * - hardcode some macro stuff (will be implemented correctly in bootstrapped compiler)
+ * - finish type inference for type arguments (mainly for refined/overloaded types)
  * 
  * TODO (...eventually):
  * - complex typevars/typeclasses (nested type conditions, structural reqs, existential types, curried HKTs, and anything else that might also exist)
  * - unique typevar/typeclass instances
  * - very specialized type refinement/overloading
- * - type inference for type arguments (mainly for refined/overloaded types)
  * 
  */
 
@@ -214,7 +209,7 @@ static function buildUnitRefinements(unit: Unit) {
 }
 
 static function buildFileRefinements(file: File) {
-	for(decl in file.decls) decl.buildRefinements();
+	for(decl in file.sortedDecls) decl.buildRefinements();
 }
 
 
@@ -235,7 +230,7 @@ static function resolveUnitMembers(unit: Unit) {
 
 static function resolveFileMembers(file: File) {
 	// TODO: make this better
-	for(decl in file.decls.allValues().sorted((d1, d2) -> d1.span.start.compare(d2.span.start))) resolveDeclMembers({
+	for(decl in file.sortedDecls) resolveDeclMembers({
 		where: WDecl(decl),
 		thisType: decl.thisType
 	}, decl);
@@ -244,7 +239,7 @@ static function resolveFileMembers(file: File) {
 static function resolveDeclMembers(ctx: Ctx, decl: TypeDecl) {
 	decl._match(
 		at(ns is Namespace) => {
-			for(decl2 in ns.decls) resolveDeclMembers(ctx.innerDecl(decl2), decl2);
+			for(decl2 in ns.sortedDecls) resolveDeclMembers(ctx.innerDecl(decl2), decl2);
 		},
 		_ => {}
 	);
@@ -291,7 +286,7 @@ static function resolveUnit(unit: Unit) {
 
 static function resolveFile(file: File) {
 	// TODO: make this better
-	for(decl in file.decls.allValues().sorted((d1, d2) -> d1.span.start.compare(d2.span.start))) resolveDecl({
+	for(decl in file.sortedDecls) resolveDecl({
 		where: WDecl(decl),
 		thisType: decl.thisType
 	}, decl);
@@ -309,8 +304,8 @@ static function resolveDecl(ctx: Ctx, decl: TypeDecl) {
 			for(i in 0...ns.parents.length) {
 				ns.parents[i] = ns.parents[i].simplify();
 			}
-			for(decl2 in ns.decls) decl2.buildRefinements();
-			for(decl2 in ns.decls) resolveDecl(ctx.innerDecl(decl2), decl2);
+			for(decl2 in ns.sortedDecls) decl2.buildRefinements();
+			for(decl2 in ns.sortedDecls) resolveDecl(ctx.innerDecl(decl2), decl2);
 			for(cat in ns.categories) resolveCategory(ctx.innerCategory(cat), cat);
 		},
 		_ => {}
@@ -363,7 +358,7 @@ static function resolveDecl(ctx: Ctx, decl: TypeDecl) {
 		},
 		_ => {}
 	);
-
+	
 	//decl.refinements.forEach(r -> resolveDecl(r));
 }
 
@@ -376,42 +371,6 @@ static function resolveCategory(ctx: Ctx, category: Category) {
 	for(i in category.inits) resolveInit(ctx, i);
 	for(o in category.operators) resolveOperator(ctx, o);
 }
-
-
-static function resolveTypeVar(ctx: Ctx, typevar: TypeVar) {
-	//typevar.params.forEach(p -> resolveBasicType(typevar.lookup, p));
-	//typevar.parents.forEach(p -> resolveBasicType(typevar.lookup, p));
-	
-	/*typevar.native._match(
-		at(Some(NPtr(t))) => resolveBasicType(typevar.lookup, t),
-		_ => {}
-	);*/
-
-	//typevar.rule.forEach(r -> resolveTypeRule(typevar.lookup, r));
-	
-	//for(cat in typevar.categories) resolveCategory(cat);
-
-	//for(m in typevar.staticMembers) resolveMember(m);
-	//for(m in typevar.staticMethods) resolveStaticMethod(m);
-	//for(m in typevar.members) resolveMember(m);
-	//for(m in typevar.methods) resolveMethod(m);
-	//for(i in typevar.inits) resolveInit(i);
-	//for(o in typevar.operators) resolveOperator(o);
-	for(c in typevar.valueCases) resolveValueCase(ctx, c);
-	for(c in typevar.taggedCases) resolveTaggedCase(ctx, c);
-}
-
-
-/*static function resolveTypeRule(lookup: ILookupType, rule: TypeRule) rule._match(
-	at(Negate(t) | Exists(t)) => resolveBasicType(lookup, t),
-	at(Eq(l, r) | Of(l, r) | Lt(l, r) | Le(l, r)) => {
-		resolveBasicType(lookup, l);
-		resolveBasicType(lookup, r);
-	},
-
-	at(Not(r)) => resolveTypeRule(lookup, r),
-	at(All(rs) | Any(rs) | One(rs)) => rs.forEach(r -> resolveTypeRule(lookup, r))
-);*/
 
 
 static function resolveEmptyMethod(ctx: Ctx, method: EmptyMethod) {
@@ -613,7 +572,6 @@ static function resolveMember(ctx: Ctx, member: Member) {
 	member.value._and(value => {
 		final texpr = typeExpr(ctx.innerMember(member), value);
 		if(member.type == null) {
-			//trace(member.name.name, texpr.t._and(t=>t.fullName()), member.name.span.display());
 			member.type = texpr.t;
 		}
 		member.typedValue = texpr;
@@ -682,7 +640,7 @@ static function resolveTaggedCase(ctx: Ctx, tcase: TaggedCase) {
 }
 
 
-static function assignType(ctx: Ctx, expr: TExpr, type: Type): TExpr {
+static inline function assignType(ctx: Ctx, expr: TExpr, type: Type): TExpr {
 	expr.t = type;
 	return expr;
 }
@@ -1657,33 +1615,9 @@ static function sendTypeMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: 
 					},
 					at(overloads) => {
 						_1: Multi(overloads.simplify(), names, args),
-						_2: overloads.map(ov -> ov.ret).unique()._match(
-							at([]) => null,
-							at([ret]) => ret,
-							at(rets) => {t: TMulti(rets), span: null}
-						)
+						_2: overloads.retType(t)
 					}
 				)
-				/*{
-					_1: Multi(kinds, names, args),
-					_2: kinds._match(
-						at([MSInit(_) | MSMemberwiseInit(_) | MSTaggedCase(_, _) | MSTaggedCaseAlias(_)]) => t,
-						at(_, when(kinds.every(k -> k.match(MSInit(_) | MSMemberwiseInit(_) | MSTaggedCase(_, _) | MSTaggedCaseAlias(_))))) => t,
-						_ => kinds.filterMap(kind ->
-							(kind._match(
-								at(MSMethod({ret: null, span: s}, _)) => {t: TConcrete(STD_Void), span: s},
-								at(MSMethod({ret: ret!!}, _)) => ret.getFrom(t), // TODO: solve in method ctx
-								at(MSMember({type: type!})) => type.getFrom(t),
-								at(MSInit(_, _) | MSMemberwiseInit(_) | MSTaggedCase(_, _) | MSTaggedCaseAlias(_)) => t,
-								_ => null
-							) : Null<Type>)
-						).unique()._match(
-							at([]) => null,
-							at([ret]) => ret,
-							at(rets) => {t: TMulti(rets), span: null}
-						)
-					)
-				}*/
 			);
 		},
 		// TODO: Super
@@ -1719,17 +1653,7 @@ static function sendTypeMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: 
 							},
 							at(overloads) => {
 								_1: Multi(overloads.simplify(), names, args),
-								_2: overloads.map(ov -> {
-									final res = ov.ret.getFrom(t);
-									ov.tctx._andOr(
-										tctx => res.getInTCtx(tctx),
-										res
-									);
-								}).unique()._match(
-									at([]) => null,
-									at([ret]) => ret,
-									at(rets) => {t: TMulti(rets), span: null}
-								)
+								_2: overloads.retType(t)
 							}
 						);
 					}
@@ -1755,17 +1679,7 @@ static function sendTypeMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: 
 							},
 							at(overloads) => {
 								_1: Multi(overloads.simplify(), names, args),
-								_2: overloads.map(ov -> {
-									final res = ov.ret.getFrom(t);
-									ov.tctx._andOr(
-										tctx => res.getInTCtx(tctx),
-										res
-									);
-								}).unique()._match(
-									at([]) => null,
-									at([ret]) => ret,
-									at(rets) => {t: TMulti(rets), span: null}
-								)
+								_2: overloads.retType(t)
 							}
 						);
 					},
@@ -1892,17 +1806,7 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 					},
 					at(overloads) => {
 						_1: Multi(overloads.simplify(), names, args),
-						_2: overloads.map(ov -> {
-							final res = ov.ret.getFrom(t);
-							ov.tctx._andOr(
-								tctx => res.getInTCtx(tctx),
-								res
-							);
-						}).unique()._match(
-							at([]) => null,
-							at([ret]) => ret,
-							at(rets) => {t: TMulti(rets), span: null}
-						)
+						_2: overloads.retType(t)
 					}
 				)
 			);
@@ -1924,17 +1828,7 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 							at(overloads) => {
 								_1: Super(tparent, Multi(overloads.simplify(), names, args)),
 								// TODO
-								_2: overloads.map(ov -> {
-									final res = ov.ret.getFrom(t);
-									ov.tctx._andOr(
-										tctx => res.getInTCtx(tctx),
-										res
-									);
-								}).unique()._match(
-									at([]) => null,
-									at([ret]) => ret,
-									at(rets) => {t: TMulti(rets), span: null}
-								)
+								_2: overloads.retType(t)
 							}
 						);
 					}
@@ -2226,229 +2120,252 @@ static function typeTMessage(ctx: Ctx, msg: UMessage<UType>): Message<Type> {
 }
 
 static function typeObjCascade(ctx: Ctx, type: Null<Type>, cascade: UCascade<UExpr>): Null<ObjCascade> {
-	final cascadeCtx = ctx.innerCascade();
-	return {
-		ctx: ctx,
-		t: null,
-		depth: cascade.depth,
-		kind: type._match(
-			at(t!) => cascade.kind._match(
-				at(Member({name: name})) => t.findSingleInst(ctx, name, ctx.typeDecl, true)._match(
-					at(kind!) => Member(Single(kind)),
-					_ => throw 'error: value of type `${t.fullName()}` does not have member/getter `$name`!'
+	final cascadeCtx = ctx.innerCascade(type);
+
+	var ret: Null<Type> = null;
+	final kind: ObjCascade.ObjCascadeKind = type._match(
+		at(t!) => cascade.kind._match(
+			at(Member({name: name})) => t.findSingleInst(ctx, name, ctx.typeDecl, true)._match(
+				at(kind!) => {
+					ret = kind.retType()._and(r => r.getFrom(t));
+					Member(Single(kind));
+				},
+				_ => throw 'error: value of type `${t.fullName()}` does not have member/getter `$name`!'
+			),
+			
+			// TODO: replace with sendObjMessage
+			at(Message(msg)) => Message(msg._match(
+				at(Single(null, _, name)) => t.findSingleInst(ctx, name, ctx.typeDecl)._match(
+					at(kind!) => {
+						ret = kind.retType()._and(r => r.getFrom(t));
+						Single(kind);
+					},
+					_ => throw 'error: value of type ${t.fullName()} does not respond to method `[$name]`!'
 				),
-				
-				// TODO: replace with sendObjMessage
-				at(Message(msg)) => Message(msg._match(
-					at(Single(null, _, name)) => t.findSingleInst(ctx, name, ctx.typeDecl)._match(
-						at(kind!) => Single(kind),
-						_ => throw 'error: value of type ${t.fullName()} does not respond to method `[$name]`!'
-					),
-					at(Single(cat!!, span, name)) => {
-						final tcat: Type = ctx.getType(cat)._or(return null)._match(
-							at({t: TThis(source), span: span}) => source._match(
+				at(Single(cat!!, span, name)) => {
+					final tcat: Type = ctx.getType(cat)._or(return null)._match(
+						at({t: TThis(source), span: span}) => source._match(
+							at(td is TypeDecl) => { t: TConcrete(td), span: span },
+							at(tv is TypeVar) => { t: TTypeVar(tv), span: span },
+							at(c is Category) => c.type._or(c.lookup._match(
 								at(td is TypeDecl) => { t: TConcrete(td), span: span },
 								at(tv is TypeVar) => { t: TTypeVar(tv), span: span },
-								at(c is Category) => c.type._or(c.lookup._match(
-									at(td is TypeDecl) => { t: TConcrete(td), span: span },
-									at(tv is TypeVar) => { t: TTypeVar(tv), span: span },
-									_ => throw "bad"
-								)),
 								_ => throw "bad"
-							),
-							at(c) => c
-						);
-						
-						var categories = t.t._match(
-							at(TThis(td is TypeDecl)) => ({t: td.thisType.t, span: t.span} : Type),
-							_ => t
-						).findThisCategory(ctx, tcat, ctx.typeDecl).unique();
-						categories._match(
-							at([]) => throw 'error: value of type `${t.fullName()}` does not have the category `${tcat.fullName()}`! ${cat.span().display()}',
-							at([found]) => found.findSingleInst(ctx, name, ctx.typeDecl)._match(
-								at(kind!) => Single(kind),
-								_ => throw 'error: value of type `${t.fullName()}` does not respond to method `[$name]` in category `${tcat.fullName()}`!'
-							),
-							at(found) => found.filterMap(f -> f.findSingleInst(ctx, name, ctx.typeDecl))._match(
-								at([]) => {
-									ctx.addError(Type_UnknownMethod(ctx, t, Single(Instance, name), span, found));
-									null;
-								},//throw 'error: value of type `${t.fullName()}` does not respond to method `[$name]` in any categories of: `${found.map(f -> f.fullName()).join(", ")}`!',
-								at([kind!]) => Single(kind),
-								at(kinds) => throw "todo"
-							)
-						);
-					},
-
-					at(Multi(null, labels)) => {
-						detuple2(@var names, @var args, getNamesArgs(ctx, labels));
-						t.findMultiInst(ctx, names, ctx.typeDecl)._match(
+							)),
+							_ => throw "bad"
+						),
+						at(c) => c
+					);
+					
+					var categories = t.t._match(
+						at(TThis(td is TypeDecl)) => ({t: td.thisType.t, span: t.span} : Type),
+						_ => t
+					).findThisCategory(ctx, tcat, ctx.typeDecl).unique();
+					categories._match(
+						at([]) => throw 'error: value of type `${t.fullName()}` does not have the category `${tcat.fullName()}`! ${cat.span().display()}',
+						at([found]) => found.findSingleInst(ctx, name, ctx.typeDecl)._match(
+							at(kind!) => {
+								ret = kind.retType()._and(r => r.getFrom(t));
+								Single(kind);
+							},
+							_ => throw 'error: value of type `${t.fullName()}` does not respond to method `[$name]` in category `${tcat.fullName()}`!'
+						),
+						at(found) => found.filterMap(f -> f.findSingleInst(ctx, name, ctx.typeDecl))._match(
 							at([]) => {
-								ctx.addError(Type_UnknownMethod(ctx, t, Multi(Instance, names), labels[0].span()));
+								ctx.addError(Type_UnknownMethod(ctx, t, Single(Instance, name), span, found));
+								null;
+							},//throw 'error: value of type `${t.fullName()}` does not respond to method `[$name]` in any categories of: `${found.map(f -> f.fullName()).join(", ")}`!',
+							at([kind!]) => {
+								ret = kind.retType()._and(r => r.getFrom(t));
+								Single(kind);
+							},
+							at(kinds) => throw "todo"
+						)
+					);
+				},
+
+				at(Multi(null, labels)) => {
+					detuple2(@var names, @var args, getNamesArgs(ctx, labels));
+					t.findMultiInst(ctx, names, ctx.typeDecl)._match(
+						at([]) => {
+							ctx.addError(Type_UnknownMethod(ctx, t, Multi(Instance, names), labels[0].span()));
+							return null;
+						},
+						at(kinds) => kinds.reduceOverloads(ctx, t, args)._match(
+							at([]) => {
+								ctx.addError(Type_UnknownMethod(ctx, t, Multi(Instance, names, args), labels[0].span()));
 								return null;
 							},
+							at(overloads) => {
+								ret = overloads.retType(t);
+								Multi(overloads.simplify(), names, args);
+							}
+						)
+					);
+				},
+				// TODO: ret type for multi category calls
+				at(Multi(cat!!, labels)) => {
+					final tcat: Type = ctx.getType(cat)._or(return null)._match(
+						at({t: TThis(source), span: span}) => source._match(
+							at(td is TypeDecl) => { t: TConcrete(td), span: span },
+							at(tv is TypeVar) => { t: TTypeVar(tv), span: span },
+							at(c is Category) => c.type._or(c.lookup._match(
+								at(td is TypeDecl) => { t: TConcrete(td), span: span },
+								at(tv is TypeVar) => { t: TTypeVar(tv), span: span },
+								_ => throw "bad"
+							)),
+							_ => throw "bad"
+						),
+						at(c) => c
+					);
+					detuple2(@var names, @var args, getNamesArgs(ctx, labels));
+
+					var categories = t.t._match(
+						at(TThis(td is TypeDecl)) => td.thisType,
+						_ => t
+					).findThisCategory(ctx, tcat, ctx.typeDecl).unique();
+					categories._match(
+						at([]) => throw 'error: value of type `${t.fullName()}` does not have the category `${tcat.fullName()}`! ${cat.span().display()}',
+						at([found]) => found.findMultiInst(ctx, names, ctx.typeDecl)._match(
+							at([]) => throw 'error: value of type `${t.fullName()}` does not respond to method `[${names.joinMap(" ", n -> '$n:')}]` in category `${tcat.fullName()}`! ${cat.span().display()}',
 							at(kinds) => kinds.reduceOverloads(ctx, t, args)._match(
 								at([]) => {
-									ctx.addError(Type_UnknownMethod(ctx, t, Multi(Instance, names, args), labels[0].span()));
+									ctx.addError(Type_UnknownMethod(ctx, t, Multi(Instance, names, args), labels[0].span(), categories));
 									return null;
 								},
 								at(overloads) => Multi(overloads.simplify(), names, args)
 							)
-						);
-					},
-					at(Multi(cat!!, labels)) => {
-						final tcat: Type = ctx.getType(cat)._or(return null)._match(
-							at({t: TThis(source), span: span}) => source._match(
-								at(td is TypeDecl) => { t: TConcrete(td), span: span },
-								at(tv is TypeVar) => { t: TTypeVar(tv), span: span },
-								at(c is Category) => c.type._or(c.lookup._match(
-									at(td is TypeDecl) => { t: TConcrete(td), span: span },
-									at(tv is TypeVar) => { t: TTypeVar(tv), span: span },
-									_ => throw "bad"
-								)),
-								_ => throw "bad"
-							),
-							at(c) => c
-						);
-						detuple2(@var names, @var args, getNamesArgs(ctx, labels));
-
-						var categories = t.t._match(
-							at(TThis(td is TypeDecl)) => td.thisType,
-							_ => t
-						).findThisCategory(ctx, tcat, ctx.typeDecl).unique();
-						categories._match(
-							at([]) => throw 'error: value of type `${t.fullName()}` does not have the category `${tcat.fullName()}`! ${cat.span().display()}',
-							at([found]) => found.findMultiInst(ctx, names, ctx.typeDecl)._match(
-								at([]) => throw 'error: value of type `${t.fullName()}` does not respond to method `[${names.joinMap(" ", n -> '$n:')}]` in category `${tcat.fullName()}`! ${cat.span().display()}',
-								at(kinds) => kinds.reduceOverloads(ctx, t, args)._match(
-									at([]) => {
-										ctx.addError(Type_UnknownMethod(ctx, t, Multi(Instance, names, args), labels[0].span(), categories));
-										return null;
-									},
-									at(overloads) => Multi(overloads.simplify(), names, args)
-								)
-							),
-							at(found) => Type.mostSpecificBy(
-								found
-									.map(f -> {cat: f, mth: f.findMultiInst(ctx, names, ctx.typeDecl)})
-									.filter(l -> l.mth.length != 0),
-								f -> f.cat.type.nonNull()
-							)._match(
-								at([kinds]) => kinds.mth.reduceOverloads(ctx, t, args)._match(
-									at([]) => {
-										ctx.addError(Type_UnknownMethod(ctx, t, Multi(Instance, names, args), labels[0].span(), categories));
-										return null;
-									},
-									at(overloads) => Multi(overloads.simplify(), names, args)
-								),
-								at([]) => throw 'error: value of type `${t.fullName()}` does not respond to method `[${names.joinMap(" ", n -> '$n:')}]` in any categories of: `${found.map(f -> f.fullName()).join(", ")}`! ${cat.span().display()}',
-								at(kinds) => if(kinds.every(k -> k.mth.length == 0)) {
-									throw 'error: value of type `${t.fullName()}` does not respond to method `[${names.joinMap(" ", n -> '$n:')}]` in any categories of: `${found.map(f -> f.fullName()).join(", ")}`! ${cat.span().display()}';
-								} else {
-									throw "todo ["+kinds.map(f->f.cat.fullName()+"#"+f.mth).join(", ")+"]";
-								}
-							)
-						);
-					},
-
-					at(Cast(null, ty)) => {
-						final target = ctx.getType(ty)._or(return null);
-						t.findCast(ctx, target, ctx.typeDecl)._match(
-							at([]) => throw 'error: value of type ${t.fullName()} cannot be cast to type `${target.fullName()}`!',
-							at(casts) => Cast(target, casts)
-						);
-					},
-					at(Cast(cat!!, ty)) => throw "todo"
-				)),
-
-
-				at(AssignMember({name: name, span: span}, _, null, rhs)) => t.findMultiInst(ctx, [name], ctx.typeDecl, true)._match(
-					at(kinds!) => {
-						final trhs = typeExpr(ctx, rhs);
-						kinds.reduceOverloads(ctx, t, [trhs])._match(
-							at([]) => {
-								ctx.addError(Type_UnknownSetter(ctx, Instance, t, name, span, trhs));
-								return null;
-							},
-							at(overloads) => {
-								Member(Multi(overloads.simplify(), [name], [trhs]));
-							}
-						);
-					},
-					_ => throw 'error: value of type `${t.fullName()}` does not have member/setter `$name`!'
-				),
-				at(AssignMember({name: name}, _, op!!, rhs)) => throw "todo",
-				
-				at(AssignMessage(msg, _, null, rhs)) => msg._match(
-					at(Single(cat, _, name)) => throw "todo",
-					at(Multi(null, labels)) => {
-						detuple2(@var names, @var args, getNamesArgs(ctx, labels));
-						names = names.concat(["="]);
-						t.findMultiInst(ctx, names, ctx.typeDecl)._match(
-							at([]) => throw 'error: value of type ${t.fullName()} does not respond to method `[${names.joinMap(" ", n -> '$n:')}]`!',
-							at(kinds) => {
-								final trhs = typeExpr(ctx, rhs);
-								final args2 = args.concat([trhs]);
-								kinds.reduceOverloads(ctx, t, args2)._match(
-									at([]) => {
-										ctx.addError(Type_UnknownMethod(ctx, t, Multi(Instance, names, args2), labels[0].span()));
-										return null;
-									},
-									at(overloads) => {
-										AssignMessage(Multi(overloads.simplify(), names, args2), null, trhs);
-									}
-								);
-							}
-						);
-					},
-					at(Multi(cat!!, labels)) => throw "todo",
-					at(Cast(_, _)) => throw "bad"
-				),
-				at(AssignMessage(msg, _, op!!, rhs)) => throw "todo",
-
-
-				at(StepMember({name: name}, span, step)) =>
-					t.findMultiInst(ctx, [name], ctx.typeDecl, true)._match(
-						at([]) => throw "bad",
-						at([setKind]) => t.findSingleInst(ctx, name, ctx.typeDecl, true)._match(
-							at(getKind!) => {
-								final memt = getKind._match(
-									at(SIMethod((_ : Method) => m) | SIMultiMethod(m)) => m.ret.nonNull(),
-									at(SIMember(m)) => m.type.nonNull(),
-									_ => throw "todo"
-								);
-								final op: UnaryOp = step._match(at(Incr) => Incr, at(Decr) => Decr);
-								memt.findUnaryOp(ctx, op, ctx.typeDecl)._match(
-									at(opKind!) => StepMember(setKind, getKind, opKind),
-									_ => {
-										ctx.addError(Type_UnknownMethod(ctx, memt, Unary(op), span));
-										return null;
-									}
-								);
-							},
-							_ => throw "bad"
 						),
-						at(setKinds) => throw "todo"
-					),
+						at(found) => Type.mostSpecificBy(
+							found
+								.map(f -> {cat: f, mth: f.findMultiInst(ctx, names, ctx.typeDecl)})
+								.filter(l -> l.mth.length != 0),
+							f -> f.cat.type.nonNull()
+						)._match(
+							at([kinds]) => kinds.mth.reduceOverloads(ctx, t, args)._match(
+								at([]) => {
+									ctx.addError(Type_UnknownMethod(ctx, t, Multi(Instance, names, args), labels[0].span(), categories));
+									return null;
+								},
+								at(overloads) => Multi(overloads.simplify(), names, args)
+							),
+							at([]) => throw 'error: value of type `${t.fullName()}` does not respond to method `[${names.joinMap(" ", n -> '$n:')}]` in any categories of: `${found.map(f -> f.fullName()).join(", ")}`! ${cat.span().display()}',
+							at(kinds) => if(kinds.every(k -> k.mth.length == 0)) {
+								throw 'error: value of type `${t.fullName()}` does not respond to method `[${names.joinMap(" ", n -> '$n:')}]` in any categories of: `${found.map(f -> f.fullName()).join(", ")}`! ${cat.span().display()}';
+							} else {
+								throw "todo ["+kinds.map(f->f.cat.fullName()+"#"+f.mth).join(", ")+"]";
+							}
+						)
+					);
+				},
 
-				at(StepMessage(msg, _, step)) => throw "todo!",
-				
-				at(Block(blk)) => {
-					final blkCtx = ctx.innerCascade(t);
-					Block(blkCtx, typeBlock(blkCtx, blk));
-				}
+				at(Cast(null, ty)) => {
+					final target = ctx.getType(ty)._or(return null);
+					t.findCast(ctx, target, ctx.typeDecl)._match(
+						at([]) => throw 'error: value of type ${t.fullName()} cannot be cast to type `${target.fullName()}`!',
+						at(casts) => {
+							ret = target;
+							Cast(target, casts);
+						}
+					);
+				},
+				at(Cast(cat!!, ty)) => throw "todo"
+			)),
+
+
+			at(AssignMember({name: name, span: span}, _, null, rhs)) => t.findMultiInst(ctx, [name], ctx.typeDecl, true)._match(
+				at(kinds!) => {
+					final trhs = typeExpr(ctx, rhs);
+					kinds.reduceOverloads(ctx, t, [trhs])._match(
+						at([]) => {
+							ctx.addError(Type_UnknownSetter(ctx, Instance, t, name, span, trhs));
+							return null;
+						},
+						at(overloads) => {
+							Member(Multi(overloads.simplify(), [name], [trhs]));
+						}
+					);
+				},
+				_ => throw 'error: value of type `${t.fullName()}` does not have member/setter `$name`!'
 			),
-			_ => Lazy(switch cascade.kind {
-				case Member(mem): Member(mem.name);
-				case Message(msg): Message(typeMessage(ctx, msg));
-				case AssignMember(mem, _, op, rhs): AssignMember(mem.name, op, typeExpr(ctx, rhs));
-				case AssignMessage(msg, _, op, rhs): AssignMessage(typeMessage(ctx, msg), op, typeExpr(ctx, rhs));
-				case StepMember(mem, _, step): StepMember(mem.name, step);
-				case StepMessage(msg, _, step): StepMessage(typeMessage(ctx, msg), step);
-				case Block(blk): Block(typeBlock(cascadeCtx, blk));
-			})
+			at(AssignMember({name: name}, _, op!!, rhs)) => throw "todo",
+			
+			at(AssignMessage(msg, _, null, rhs)) => msg._match(
+				at(Single(cat, _, name)) => throw "todo",
+				at(Multi(null, labels)) => {
+					detuple2(@var names, @var args, getNamesArgs(ctx, labels));
+					names = names.concat(["="]);
+					t.findMultiInst(ctx, names, ctx.typeDecl)._match(
+						at([]) => throw 'error: value of type ${t.fullName()} does not respond to method `[${names.joinMap(" ", n -> '$n:')}]`!',
+						at(kinds) => {
+							final trhs = typeExpr(ctx, rhs);
+							final args2 = args.concat([trhs]);
+							kinds.reduceOverloads(ctx, t, args2)._match(
+								at([]) => {
+									ctx.addError(Type_UnknownMethod(ctx, t, Multi(Instance, names, args2), labels[0].span()));
+									return null;
+								},
+								at(overloads) => {
+									AssignMessage(Multi(overloads.simplify(), names, args2), null, trhs);
+								}
+							);
+						}
+					);
+				},
+				at(Multi(cat!!, labels)) => throw "todo",
+				at(Cast(_, _)) => throw "bad"
+			),
+			at(AssignMessage(msg, _, op!!, rhs)) => throw "todo",
+
+
+			at(StepMember({name: name}, span, step)) =>
+				t.findMultiInst(ctx, [name], ctx.typeDecl, true)._match(
+					at([]) => throw "bad",
+					at([setKind]) => t.findSingleInst(ctx, name, ctx.typeDecl, true)._match(
+						at(getKind!) => {
+							final memt = getKind._match(
+								at(SIMethod((_ : Method) => m) | SIMultiMethod(m)) => m.ret.nonNull(),
+								at(SIMember(m)) => m.type.nonNull(),
+								_ => throw "todo"
+							);
+							final op: UnaryOp = step._match(at(Incr) => Incr, at(Decr) => Decr);
+							memt.findUnaryOp(ctx, op, ctx.typeDecl)._match(
+								at(opKind!) => StepMember(setKind, getKind, opKind),
+								_ => {
+									ctx.addError(Type_UnknownMethod(ctx, memt, Unary(op), span));
+									return null;
+								}
+							);
+						},
+						_ => throw "bad"
+					),
+					at(setKinds) => throw "todo"
+				),
+
+			at(StepMessage(msg, _, step)) => throw "todo!",
+			
+			at(Block(blk)) => {
+				final blkCtx = ctx.innerCascade(t);
+				Block(blkCtx, typeBlock(blkCtx, blk));
+			}
 		),
-		nested: cascade.nested.filterMap(c -> typeObjCascade(cascadeCtx, null, c))
+		_ => Lazy(switch cascade.kind {
+			case Member(mem): Member(mem.name);
+			case Message(msg): Message(typeMessage(ctx, msg));
+			case AssignMember(mem, _, op, rhs): AssignMember(mem.name, op, typeExpr(ctx, rhs));
+			case AssignMessage(msg, _, op, rhs): AssignMessage(typeMessage(ctx, msg), op, typeExpr(ctx, rhs));
+			case StepMember(mem, _, step): StepMember(mem.name, step);
+			case StepMessage(msg, _, step): StepMessage(typeMessage(ctx, msg), step);
+			case Block(blk): Block(typeBlock(cascadeCtx, blk));
+		})
+	);
+
+	return {
+		ctx: ctx,
+		t: ret,
+		depth: cascade.depth,
+		kind: kind,
+		nested: cascade.nested.filterMap(c -> typeObjCascade(cascadeCtx, ret, c))
 	};
 }
 
@@ -2483,8 +2400,8 @@ static function typePattern(ctx: Ctx, expectType: Type, expr: UExpr): Pattern {
 				final members = expectType.instMembers(ctx.typeDecl);
 				if(members.length == values.length) {
 					PTuple([
-						for(i => mem in members)
-							typePattern(ctx, mem.type.nonNull().getFrom(expectType), values[i])
+						for(i in 0...members.length) { final mem = members[i];
+							typePattern(ctx, mem.type.nonNull().getFrom(expectType), values[i]);}
 					]);
 				} else {
 					throw 'bad ${expectType.fullName()} ${members.length} ${values.length} at '+_begin.display();
@@ -2504,8 +2421,8 @@ static function typePattern(ctx: Ctx, expectType: Type, expr: UExpr): Pattern {
 					final members = ttype.instMembers(ctx.typeDecl);
 					if(members.length == values.length) {
 						PTypeTuple(ttype, [
-							for(i => mem in members)
-								typePattern(ctx, mem.type.nonNull().getFrom(ttype), values[i])
+							for(i in 0...members.length) { final mem = members[i];
+								typePattern(ctx, mem.type.nonNull().getFrom(ttype), values[i]);}
 						]);
 					} else {
 						throw "bad";
@@ -2539,15 +2456,15 @@ static function typePattern(ctx: Ctx, expectType: Type, expr: UExpr): Pattern {
 						at([MSMemberwiseInit(ms)]) => {
 							// TODO: fix this to work with generic subtypes
 							PTypeMembers(ttype, [
-								for(i => m in ms)
-									new Tuple2(m, typePattern(ctx, m.type.nonNull().getFrom(ttype).getFrom(expectType), args[i]))
+								for(i in 0...ms.length) { final m = ms[i];
+									new Tuple2(m, typePattern(ctx, m.type.nonNull().getFrom(ttype).getFrom(expectType), args[i]));}
 							]);
 						},
 						at([MSTaggedCase([], tcase)]) => {
 							final args2 = new Array<Pattern>();
-							for(i => p in tcase.params) {
+							tcase.params._for(i => p, {
 								args2.push(typePattern(ctx, p.type.getFrom(expectType), args[i]));
-							}
+							});
 
 							PTypeTaggedCaseMulti(
 								if(ttype.hasParentType(expectType)) {t: expectType.t, span: ttype.span} else ttype,
@@ -3206,7 +3123,7 @@ static function getReturnType(ctx: Ctx, tstmts: TStmts): {complete: Bool, spans:
 			// TODO: add completion logic for matching on non-refutable patterns
 			at(SMatch(_, cases, orelse)) => {
 				var allComplete = true;
-				for(i => c in cases) {
+				cases._for(i => c, {
 					final res = getReturnType(ctx, c.then);
 					
 					if(allComplete) allComplete = res.complete;
@@ -3222,7 +3139,7 @@ static function getReturnType(ctx: Ctx, tstmts: TStmts): {complete: Bool, spans:
 								_ => throw "bad"
 							));
 					});
-				}
+				});
 				if(!isComplete) isComplete = allComplete;
 				orelse._and(oe => {
 					final res = getReturnType(ctx, oe);

@@ -21,6 +21,7 @@ class File implements ITypeLookup implements IErrors {
 	final imports: Array<Import>;
 	final imported: Array<{from: ITypeLookup, types: Array<Type>}>;
 	final decls: MultiMap<String, TypeDecl>;
+	final sortedDecls: Array<TypeDecl>;
 	final categories: Array<Category>;
 
 	function new(dir, path, ?unit) {
@@ -33,6 +34,7 @@ class File implements ITypeLookup implements IErrors {
 		imports = [];
 		imported = [];
 		decls = new MultiMap();
+		sortedDecls = [];
 		categories = [];
 	}
 
@@ -46,7 +48,7 @@ class File implements ITypeLookup implements IErrors {
 		final result = Parser.parse(tokens);
 		
 		switch result {
-			case Modular([], _) | Script([], _): status = (diags == Nil);
+			case Modular([], _) | Script([], _): status = diags.match(Nil);
 			case Modular(errors, _) | Script(errors, _): errors._for(i => error, {
 				this.errors.push(error);
 				
@@ -134,6 +136,7 @@ class File implements ITypeLookup implements IErrors {
 
 	inline function addTypeDecl(decl: TypeDecl) {
 		decls.add(decl.name.name, decl);
+		sortedDecls.push(decl);
 	}
 
 	function findType(path: LookupPath, search: Search, from: Null<AnyTypeDecl>, depth = 0, cache: Cache = Nil): Null<Type> {
@@ -290,13 +293,13 @@ class File implements ITypeLookup implements IErrors {
 	function hasErrors() {
 		return !status
 			|| errors.length != 0
-			|| decls.allValues().some(d -> d.hasErrors())
+			|| sortedDecls.some(d -> d.hasErrors())
 			|| categories.some(c -> c.hasErrors());
 	}
 
 	function allErrors() {
 		return errors
-			.concat(decls.allValues().flatMap(decl -> decl.allErrors()))
+			.concat(sortedDecls.flatMap(decl -> decl.allErrors()))
 			.concat(categories.flatMap(c -> c.allErrors()));
 	}
 

@@ -18,14 +18,14 @@ class SourceFile {
 	function new(path, text: String) {
 		this.path = path;
 		fullPath = sys.FileSystem.fullPath(path);
-		this.text = text.replaceAll("\r\n", "\n").replaceAll("\r", ""); // LF makes life easier. CRLF does not
+		this.text = text.replaceAll("\r", ""); // LF makes life easier. CRLF does not
 		calculateLineStarts();
 	}
 
 	function line(index) {
 		var startIndex = lineIndexToTextIndex(index);
 		var endIndex = lineIndexToTextIndex(index + 1);
-		return text.substring8(startIndex, endIndex + 1);
+		return inline text.substring8(startIndex, endIndex + 1);
 	}
 
 
@@ -45,7 +45,7 @@ class SourceFile {
 		lineStarts.push(0);
 		
 		for(i in 0...text.length8()) {
-			cursor.append(text.charAt8(i));
+			cursor.append(inline text.charAt8(i));
 
 			if(cursor.column == 0) {
 				if(cursor.line != lastLine) {
@@ -58,7 +58,7 @@ class SourceFile {
 		}
 	}
 
-	public function iterator() return text.iterator();
+	public inline function iterator() return text.iterator();
 
 	public function toString() return path;
 }

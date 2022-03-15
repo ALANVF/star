@@ -42,6 +42,20 @@ inline function simplify(overloads: Array<StaticOverload>) {
 	return overloads.map(ov -> {kind: ov.kind, tctx: ov.tctx});
 }
 
+function retType(overloads: Array<StaticOverload>, sender: Type): Null<Type> {
+	return overloads.map(ov -> {
+		final res = ov.ret.getFrom(sender);
+		ov.tctx._andOr(
+			tctx => res.getInTCtx(tctx),
+			res
+		);
+	}).unique()._match(
+		at([]) => null,
+		at([ret]) => ret,
+		at(rets) => {t: TMulti(rets), span: null}
+	);
+}
+
 function reduceOverloads(kinds: Array<MultiStaticKind>, sender: Type, names: Array<String>, args: Array<TExpr>) {
 	if(kinds.length == 0) return [];
 

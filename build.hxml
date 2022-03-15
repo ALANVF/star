@@ -2,6 +2,7 @@
 --macro Util.setOS()
 -D analyzer-optimize
 --dce full
+-D hl-ver=1.12.0
 --library haxe-strings
 -main Main
 --hl bin/main.hl
