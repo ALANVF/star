@@ -124,6 +124,14 @@ enum Where {
 			thisType: t._or(thisType) // TODO: fix
 		};
 	}
+
+	function innerTypeCascade(t: Type): Ctx {
+		return {
+			where: WTypeCascade,
+			outer: this,
+			thisType: t
+		};
+	}
 	
 	function innerTypevars(typevars: TypeVarCtx): Ctx {
 		return {
@@ -163,7 +171,10 @@ enum Where {
 					_ => outer.findLocal(name, depth)
 				),
 				at(WObjCascade(_)) => outer.findLocal(name, depth),
-				at(WTypeCascade) => throw "todo",
+				at(WTypeCascade) => {
+					// TODO
+					outer.findLocal(name, depth);
+				},
 				at(WBlock) => outer.findLocal(name, depth),
 				at(WPattern) => {
 					// TODO

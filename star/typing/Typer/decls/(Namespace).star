@@ -2,6 +2,7 @@ protocol Namespace of TypeDecl {
 	my parents (Array[Type]) is getter = #[]
 
 	my decls (MultiDict[Str, TypeDecl]) is getter = MultiDict #()
+	my sortedDecls (Array[TypeDecl]) is getter = #[]
 	my categories (Array[Category]) is getter = #[]
 	
 	my staticMembers (Array[Member]) is getter = #[]

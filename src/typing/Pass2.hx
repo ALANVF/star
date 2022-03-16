@@ -240,12 +240,6 @@ static function resolveDeclMembers(ctx: Ctx, decl: TypeDecl) {
 	decl._match(
 		at(ns is Namespace) => {
 			for(decl2 in ns.sortedDecls) resolveDeclMembers(ctx.innerDecl(decl2), decl2);
-		},
-		_ => {}
-	);
-
-	decl._match(
-		at(ns is Namespace) => {
 			//for(m in ns.staticMembers) resolveMember(ctx, m);
 
 			ns._match(
@@ -951,6 +945,14 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 				at({_1: msg2, _2: ret}) => {e: ETypeMessage(t, msg2), t: ret}
 			);
 		},
+
+		at(ETypeCascade(type, cascades)) => {
+			final t = ctx.getType(type)._or(return invalidExpr());
+			{
+				e: ETypeCascade(t, cascades.filterMap(c -> typeTypeCascade(ctx, t, c))),
+				t: {t: STD_Void.thisType.t, span: type.span() }
+			};
+		},
 		
 		at(ETypeMember(type, {name: name, span: s})) => {
 			final t = ctx.getType(type)._or(return invalidExpr());
@@ -1237,54 +1239,6 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 							}
 						)
 					);
-					/*lt = lt.getIn(ctx);
-					final found = lt.findBinaryOp(ctx, op2, ctx.typeDecl);
-					final oldFound = found;
-					final rt = tright.t._match(
-						at(rt0!) => {
-							rt0 = rt0.getIn(ctx);
-							found = found.filter(k -> k.digForMethod()
-								.paramType.getFrom(lt)/*.getIn(ctx)* /.hasChildType(rt0) // TODO: change to use hasStrictChildType when it's finished
-							);
-							found = Type.reduceOverloadsBy(found, k -> k.digForMethod()
-								.paramType.getFrom(lt)/*.getIn(ctx)* / // TODO: change to use hasStrictChildType when it's finished
-							);
-							rt0;
-						},
-						_ => null
-					);
-					found._match(
-						at([]) => {
-							(oldFound.some(k -> k.match(BOMethod(_) | BOFromTypevar(_, _, BOMethod(_)))) ? rt : null)._match(
-								at(rt0!) => ctx.addError(Type_UnknownMethod(ctx, lt, Binary(op2, rt0), span)),
-								_ => ctx.addError(Type_UnknownMethod(ctx, lt, Binary(op2), span))
-							);
-							invalidExpr();
-						},
-						at(kinds) => {
-							e: EInfix(tleft, kinds, tright),
-							t: kinds.filterMap(kind ->
-								(kind.digForMethod()._match(
-									at({ret: ret!}) => ret.t._match(
-										at(TThis(source), when(source.hasChildType(lt))) => lt.t._match(
-											at(TConcrete(decl)) => { t: TThis(decl), span: ret.span },
-											at(TThis(source2)) => { t: TThis(source2), span: ret.span },
-											at(TApplied({t: TConcrete(decl)}, args)) => lt,
-											//at(TTypeVar(_)) => throw "todo (?) "+lt.span._and(s=>s.display()),
-											_ => lt
-										),
-										at(TApplied(_, _) | TTypeVar(_)) => null, // TODO
-										_ => ret
-									),
-									_ => null // TODO
-								) : Null<Type>)._and(ret => ret.getFrom(lt))
-							).unique()._match(
-								at([]) => null,
-								at([ret]) => ret,
-								at(rets) => {t: TMulti(rets), span: null}
-							)
-						}
-					);*/
 				},
 				_ => { e: ELazyInfix(tleft, op, tright) }
 			);
@@ -2117,6 +2071,233 @@ static function typeTMessage(ctx: Ctx, msg: UMessage<UType>): Message<Type> {
 			detuple(@var [names, args] = getNamesArgs(ctx, labels));
 			Multi(cat._and(c => ctx.getType(c)), names, args);
 	}
+}
+
+static function typeTypeCascade(ctx: Ctx, type: Type, cascade: UCascade<UType>): Null<TypeCascade> {
+	final cascadeCtx = ctx.innerTypeCascade(type);
+
+	var ret: Null<Type> = null;
+	final kind: TypeCascade.TypeCascadeKind =
+		cascade.kind._match(
+			at(Member({name: name})) => type.findSingleStatic(ctx, name, ctx.typeDecl, true)._match(
+				at(kind!) => {
+					ret = kind.retType()._and(r => r.getFrom(type));
+					Member(Single(kind));
+				},
+				_ => throw 'error: value of type `${type.fullName()}` does not have member/getter `$name`!'
+			),
+			
+			// TODO: replace with sendObjMessage
+			at(Message(msg)) => Message(msg._match(
+				at(Single(null, _, name)) => type.findSingleStatic(ctx, name, ctx.typeDecl)._match(
+					at(kind!) => {
+						ret = kind.retType()._and(r => r.getFrom(type));
+						Single(kind);
+					},
+					_ => throw 'error: value of type ${type.fullName()} does not respond to method `[$name]`!'
+				),
+				at(Single(cat!!, span, name)) => {
+					final tcat: Type = ctx.getType(cat)._or(return null)._match(
+						at({t: TThis(source), span: span}) => source._match(
+							at(td is TypeDecl) => { t: TConcrete(td), span: span },
+							at(tv is TypeVar) => { t: TTypeVar(tv), span: span },
+							at(c is Category) => c.type._or(c.lookup._match(
+								at(td is TypeDecl) => { t: TConcrete(td), span: span },
+								at(tv is TypeVar) => { t: TTypeVar(tv), span: span },
+								_ => throw "bad"
+							)),
+							_ => throw "bad"
+						),
+						at(c) => c
+					);
+					
+					var categories = type.t._match(
+						at(TThis(td is TypeDecl)) => ({t: td.thisType.t, span: type.span} : Type),
+						_ => type
+					).findThisCategory(ctx, tcat, ctx.typeDecl).unique();
+					categories._match(
+						at([]) => throw 'error: value of type `${type.fullName()}` does not have the category `${tcat.fullName()}`! ${cat.span().display()}',
+						at([found]) => found.findSingleStatic(ctx, name, ctx.typeDecl)._match(
+							at(kind!) => {
+								ret = kind.retType()._and(r => r.getFrom(type));
+								Single(kind);
+							},
+							_ => throw 'error: value of type `${type.fullName()}` does not respond to method `[$name]` in category `${tcat.fullName()}`!'
+						),
+						at(found) => found.filterMap(f -> f.findSingleStatic(ctx, name, ctx.typeDecl))._match(
+							at([]) => {
+								ctx.addError(Type_UnknownMethod(ctx, type, Single(Static, name), span, found));
+								null;
+							},//throw 'error: value of type `${t.fullName()}` does not respond to method `[$name]` in any categories of: `${found.map(f -> f.fullName()).join(", ")}`!',
+							at([kind!]) => {
+								ret = kind.retType()._and(r => r.getFrom(type));
+								Single(kind);
+							},
+							at(kinds) => throw "todo"
+						)
+					);
+				},
+
+				at(Multi(null, labels)) => {
+					detuple(@var [names, args] = getNamesArgs(ctx, labels));
+					type.findMultiStatic(ctx, names, ctx.typeDecl)._match(
+						at([]) => {
+							ctx.addError(Type_UnknownMethod(ctx, type, Multi(Static, names), labels[0].span()));
+							return null;
+						},
+						at(kinds) => kinds.reduceOverloads(type, names, args)._match(
+							at([]) => {
+								ctx.addError(Type_UnknownMethod(ctx, type, Multi(Static, names, args), labels[0].span()));
+								return null;
+							},
+							at(overloads) => {
+								ret = overloads.retType(type);
+								Multi(overloads.simplify(), names, args);
+							}
+						)
+					);
+				},
+				// TODO: ret type for multi category calls
+				at(Multi(cat!!, labels)) => {
+					final tcat: Type = ctx.getType(cat)._or(return null)._match(
+						at({t: TThis(source), span: span}) => source._match(
+							at(td is TypeDecl) => { t: TConcrete(td), span: span },
+							at(tv is TypeVar) => { t: TTypeVar(tv), span: span },
+							at(c is Category) => c.type._or(c.lookup._match(
+								at(td is TypeDecl) => { t: TConcrete(td), span: span },
+								at(tv is TypeVar) => { t: TTypeVar(tv), span: span },
+								_ => throw "bad"
+							)),
+							_ => throw "bad"
+						),
+						at(c) => c
+					);
+					detuple(@var [names, args] = getNamesArgs(ctx, labels));
+
+					var categories = type.t._match(
+						at(TThis(td is TypeDecl)) => td.thisType,
+						_ => type
+					).findThisCategory(ctx, tcat, ctx.typeDecl).unique();
+					categories._match(
+						at([]) => throw 'error: value of type `${type.fullName()}` does not have the category `${tcat.fullName()}`! ${cat.span().display()}',
+						at([found]) => found.findMultiStatic(ctx, names, ctx.typeDecl)._match(
+							at([]) => throw 'error: value of type `${type.fullName()}` does not respond to method `[${names.joinMap(" ", n -> '$n:')}]` in category `${tcat.fullName()}`! ${cat.span().display()}',
+							at(kinds) => kinds.reduceOverloads(type, names, args)._match(
+								at([]) => {
+									ctx.addError(Type_UnknownMethod(ctx, type, Multi(Static, names, args), labels[0].span(), categories));
+									return null;
+								},
+								at(overloads) => Multi(overloads.simplify(), names, args)
+							)
+						),
+						at(found) => Type.mostSpecificBy(
+							found
+								.map(f -> {cat: f, mth: f.findMultiStatic(ctx, names, ctx.typeDecl)})
+								.filter(l -> l.mth.length != 0),
+							f -> f.cat.type.nonNull()
+						)._match(
+							at([kinds]) => kinds.mth.reduceOverloads(type, names, args)._match(
+								at([]) => {
+									ctx.addError(Type_UnknownMethod(ctx, type, Multi(Static, names, args), labels[0].span(), categories));
+									return null;
+								},
+								at(overloads) => Multi(overloads.simplify(), names, args)
+							),
+							at([]) => throw 'error: value of type `${type.fullName()}` does not respond to method `[${names.joinMap(" ", n -> '$n:')}]` in any categories of: `${found.map(f -> f.fullName()).join(", ")}`! ${cat.span().display()}',
+							at(kinds) => if(kinds.every(k -> k.mth.length == 0)) {
+								throw 'error: value of type `${type.fullName()}` does not respond to method `[${names.joinMap(" ", n -> '$n:')}]` in any categories of: `${found.map(f -> f.fullName()).join(", ")}`! ${cat.span().display()}';
+							} else {
+								throw "todo ["+kinds.map(f->f.cat.fullName()+"#"+f.mth).join(", ")+"]";
+							}
+						)
+					);
+				}
+			)),
+
+
+			at(AssignMember({name: name, span: span}, _, null, rhs)) => type.findMultiStatic(ctx, [name], ctx.typeDecl, true)._match(
+				at(kinds!) => {
+					final trhs = typeExpr(ctx, rhs);
+					kinds.reduceOverloads(type, [name], [trhs])._match(
+						at([]) => {
+							ctx.addError(Type_UnknownSetter(ctx, Static, type, name, span, trhs));
+							return null;
+						},
+						at(overloads) => {
+							Member(Multi(overloads.simplify(), [name], [trhs]));
+						}
+					);
+				},
+				_ => throw 'error: value of type `${type.fullName()}` does not have member/setter `$name`!'
+			),
+			at(AssignMember({name: name}, _, op!!, rhs)) => throw "todo",
+			
+			at(AssignMessage(msg, _, null, rhs)) => msg._match(
+				at(Single(cat, _, name)) => throw "todo",
+				at(Multi(null, labels)) => {
+					detuple(@var [names, args] = getNamesArgs(ctx, labels));
+					names = names.concat(["="]);
+					type.findMultiStatic(ctx, names, ctx.typeDecl)._match(
+						at([]) => throw 'error: value of type ${type.fullName()} does not respond to method `[${names.joinMap(" ", n -> '$n:')}]`!',
+						at(kinds) => {
+							final trhs = typeExpr(ctx, rhs);
+							final args2 = args.concat([trhs]);
+							kinds.reduceOverloads(type, names, args2)._match(
+								at([]) => {
+									ctx.addError(Type_UnknownMethod(ctx, type, Multi(Static, names, args2), labels[0].span()));
+									return null;
+								},
+								at(overloads) => {
+									AssignMessage(Multi(overloads.simplify(), names, args2), null, trhs);
+								}
+							);
+						}
+					);
+				},
+				at(Multi(cat!!, labels)) => throw "todo"
+			),
+			at(AssignMessage(msg, _, op!!, rhs)) => throw "todo",
+
+
+			at(StepMember({name: name}, span, step)) =>
+				type.findMultiStatic(ctx, [name], ctx.typeDecl, true)._match(
+					at([]) => throw "bad",
+					at([setKind]) => type.findSingleStatic(ctx, name, ctx.typeDecl, true)._match(
+						at(getKind!) => {
+							final memt = getKind._match(
+								at(SSMethod((_ : StaticMethod) => m) | SSMultiMethod(m)) => m.ret.nonNull(),
+								at(SSMember(m)) => m.type.nonNull(),
+								_ => throw "todo"
+							);
+							final op: UnaryOp = step._match(at(Incr) => Incr, at(Decr) => Decr);
+							memt.findUnaryOp(ctx, op, ctx.typeDecl)._match(
+								at(opKind!) => StepMember(setKind, getKind, opKind),
+								_ => {
+									ctx.addError(Type_UnknownMethod(ctx, memt, Unary(op), span));
+									return null;
+								}
+							);
+						},
+						_ => throw "bad"
+					),
+					at(setKinds) => throw "todo"
+				),
+
+			at(StepMessage(msg, _, step)) => throw "todo!",
+			
+			at(Block(blk)) => {
+				final blkCtx = cascadeCtx.innerBlock();
+				Block(blkCtx, typeBlock(blkCtx, blk));
+			}
+		);
+
+	return {
+		ctx: ctx,
+		t: ret,
+		depth: cascade.depth,
+		kind: kind,
+		nested: cascade.nested.filterMap(c -> typeObjCascade(cascadeCtx, ret, c))
+	};
 }
 
 static function typeObjCascade(ctx: Ctx, type: Null<Type>, cascade: UCascade<UExpr>): Null<ObjCascade> {

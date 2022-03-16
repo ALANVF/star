@@ -794,6 +794,59 @@ class Dumper {
 		}
 	);
 
+	overload function dump(cascades: Array<TypeCascade>) {
+		write("[");
+		writeLines(cascades, cascade -> {
+			dump(cascade.kind);
+			if(cascade.nested.length > 0) {
+				write(" -> ");
+				dump(cascade.nested);
+			}
+		});
+		write("]");
+	}
+
+	overload function dump(kind: TypeCascade.TypeCascadeKind) kind._match(
+		at(Lazy(kind2)) => {
+			write("(lazy ");
+			dump(kind2);
+			write(")");
+		},
+
+		at(Member(msg) | Message(msg)) => {
+			write("(send");
+			level++;
+			nextLine();
+			dump(msg);
+			level--;
+			write(")");
+		},
+
+		at(AssignMember(setMsg, _, _) | AssignMessage(setMsg, _, _)) => {
+			write("(send");
+			level++;
+			nextLine();
+			dump(setMsg);
+			level--;
+			write(")");
+		},
+
+		at(StepMember(setMsg, _, _) | StepMessage(setMsg, _, _)) => {
+			write("(send");
+			level++;
+			nextLine();
+			dump(setMsg);
+			level--;
+			write(")");
+		},
+
+		at(Block(_, stmts)) => {
+			write("(block");
+			writeLines(stmts, s -> dump(s));
+			write(")");
+		}
+	);
+
 	overload function dump(cascades: Array<ObjCascade>) {
 		write("[");
 		writeLines(cascades, cascade -> {

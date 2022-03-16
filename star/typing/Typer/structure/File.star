@@ -7,5 +7,6 @@ class File of TypeLookup {
 	;my imports (Array[Import]) is getter = #[]
 	;my imported (Array[TImport]) is getter = #[]
 	my decls (MultiDict[Str, TypeDecl]) is getter = MultiDict #()
+	my sortedDecls (Array[TypeDecl]) is getter = #[]
 	my categories (Array[Category]) is getter = #[]
 }
