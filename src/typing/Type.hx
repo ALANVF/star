@@ -1529,14 +1529,14 @@ class Type implements ITypeable {
 			at(TApplied(type, params)) => type.applyArgs(params)._and(ty => {
 				ty.iterAssocType()._match(
 					at(null) => null,
-					at({_1: k, _2: v}) => new Tuple2(k.getFrom(ty), v.getFrom(ty))
+					at({_1: k, _2: v}) => tuple(k.getFrom(ty), v.getFrom(ty))
 				);
 			}),
 			at(TTypeVar(typevar)) => typevar.iterAssocType(),
 			at(TModular(type, unit)) => type.iterAssocType()
 		)._match(
 			at(null) => null,
-			at({_1: k, _2: v}) => {_1: k.getFrom(this), _2: v.getFrom(this)}
+			at({_1: k, _2: v}) => tuple(k.getFrom(this), v.getFrom(this))
 		);
 	}
 
@@ -1607,16 +1607,16 @@ class Type implements ITypeable {
 				}
 				*/
 			},
-			at(TBlank) => {
-				_1: {t: TApplied(this, args), span: span},
-				_2: Effects.empty
-			},
+			at(TBlank) => tuple(
+				{t: TApplied(this, args), span: span},
+				Effects.empty
+			),
 			at(TMulti(types)) => {
 				// TODO
-				{
-					_1: {t: TApplied(this, args), span: span},
-					_2: Effects.empty
-				};
+				tuple(
+					{t: TApplied(this, args), span: span},
+					Effects.empty
+				);
 			},
 			at(TApplied(type, args2)) => {
 				// This theoretically shouldn't happen unless the type is curried
@@ -1624,10 +1624,10 @@ class Type implements ITypeable {
 			},
 			at(TTypeVar(typevar)) => {
 				// TODO:
-				{
-					_1: {t: TApplied(this, args), span: span},
-					_2: Effects.empty
-				};
+				tuple(
+					{t: TApplied(this, args), span: span},
+					Effects.empty
+				);
 			},
 			at(TModular(type, _)) => {
 				type.applyArgsTrackEffects(args, ctx);

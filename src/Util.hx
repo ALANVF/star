@@ -44,6 +44,55 @@ class Util {
 	}
 
 	@:noUsing
+	static macro function tuple(exprs: Array<Expr>) {
+		final ty = Context.getExpectedType();
+
+		return switch exprs {
+			case [v1, v2]:
+				if(ty != null) {
+					var t = Context.toComplexType(ty);
+					switch t {
+						case (macro: StdTypes.Null<$t2>): t = t2;
+						default:
+					}
+					switch t {
+						case (macro: util.Tuple2<$p1, $p2>):
+							macro new Tuple2<$p1, $p2>($v1, $v2);
+						case null:
+							macro new Tuple2($v1, $v2);
+						case TPath(tp):
+							macro new $tp($v1, $v2);
+						default:
+							throw "???";
+					}
+				} else {
+					macro new Tuple2($v1, $v2);
+				}
+			case [v1, v2, v3]:
+				if(ty != null) {
+					var t = Context.toComplexType(ty);
+					switch t {
+						case (macro: StdTypes.Null<$t2>): t = t2;
+						default:
+					}
+					switch t {
+						case (macro: util.Tuple3<$p1, $p2, $p3>):
+							macro new Tuple3<$p1, $p2, $p3>($v1, $v2, $v3);
+						case null:
+							macro new Tuple3($v1, $v2, $v3);
+						case TPath(tp):
+							macro new $tp($v1, $v2, $v3);
+						default:
+							throw "???";
+					}
+				} else {
+					macro new Tuple3($v1, $v2, $v3);
+				}
+			default: throw "NYI!";
+		}
+	}
+
+	@:noUsing
 	static macro function detuple(expr) {
 		return switch expr {
 			case macro @var [$i{n1}, $i{n2}] = $rhs: macro @:mergeBlock {

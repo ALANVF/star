@@ -528,7 +528,7 @@ class Parser {
 			
 			rest._match(
 				at([T_Label(_2, "as"), ...rest2]) => switch parseUseTree(rest2) {
-					case Success(tree, rest3): Success(DUse({generics: generics, span: _1, kind: Import(spec, from, new Tuple2(_2, tree))}), rest3);
+					case Success(tree, rest3): Success(DUse({generics: generics, span: _1, kind: Import(spec, from, tuple(_2, tree))}), rest3);
 					case err: fatalIfBad(tokens, cast err);
 				},
 				_ => Success(DUse({generics: generics, span: _1, kind: Import(spec, from)}), rest)
@@ -1833,7 +1833,7 @@ class Parser {
 				parseThenStmt(rest2)._match(
 					at(Success(then = ThenBlock(_), Cons(T_Else(_2), rest3))) => switch parseBlock(rest3) {
 						case Success(elseBlk, rest4):
-							Success(SIf(_1, trueCond, then, new Tuple2(_2, elseBlk)), rest4);
+							Success(SIf(_1, trueCond, then, tuple(_2, elseBlk)), rest4);
 						case err: return cast err;
 					},
 					at(Success(then, rest3)) => Success(SIf(_1, trueCond, then, null), rest3),
@@ -1860,7 +1860,7 @@ class Parser {
 					case err: return fatalIfFailed(cast err);
 				},
 				at([T_Else(_2), ...rest2]) => switch parseThenStmt(rest2) {
-					case Success(then, Cons(T_RBrace(end), rest3)): return Success(SCase(Span.range(_1, begin), cases, new Tuple2(_2, then), end), rest3);
+					case Success(then, Cons(T_RBrace(end), rest3)): return Success(SCase(Span.range(_1, begin), cases, tuple(_2, then), end), rest3);
 					case Success(_, rest3): return Fatal(tokens, rest3);
 					case err: return fatalIfFailed(cast err);
 				},
@@ -1892,7 +1892,7 @@ class Parser {
 						case err: return fatalIfFailed(cast err);
 					},
 					at([T_Else(_2), ...rest3]) => switch parseThenStmt(rest3) {
-						case Success(then, Cons(T_RBrace(end), rest4)): return Success(SMatch(_1, expr, begin, cases, new Tuple2(_2, then), end), rest4);
+						case Success(then, Cons(T_RBrace(end), rest4)): return Success(SMatch(_1, expr, begin, cases, tuple(_2, then), end), rest4);
 						case Success(_, rest4): return Fatal(tokens, rest4);
 						case err: return fatalIfFailed(cast err);
 					},
@@ -1911,7 +1911,7 @@ class Parser {
 								case Success(made, rest5):
 									made = reparseExpr(made);
 									rest3 = rest5;
-									new Tuple2(_3, made);
+									tuple(_3, made);
 								case err: return fatalIfFailed(cast err);
 							},
 							_ => null
@@ -1920,7 +1920,7 @@ class Parser {
 						parseThenStmt(rest3)._match(
 							at(Success(then = ThenBlock(_), Cons(T_Else(_3), rest4))) => switch parseBlock(rest4) {
 								case Success(elseBlk, rest5):
-									Success(SShortMatch(_1, expr, _2, pattern, cond, then, new Tuple2(_3, elseBlk)), rest5);
+									Success(SShortMatch(_1, expr, _2, pattern, cond, then, tuple(_3, elseBlk)), rest5);
 								case err: fatalIfFailed(cast err);
 							},
 							at(Success(then, rest4)) => {
@@ -1941,7 +1941,7 @@ class Parser {
 				final label = rest2._match(
 					at([T_Label(_2, "label"), T_Litsym(_3, name), ...rest3]) => {
 						rest2 = rest3;
-						new Tuple2(_2, new Ident(_3, name));
+						tuple(_2, new Ident(_3, name));
 					},
 					_ => null
 				);
@@ -1956,7 +1956,7 @@ class Parser {
 			final label = rest._match(
 				at([T_Label(_2, "label"), T_Litsym(_3, name), ...rest2]) => {
 					rest = rest2;
-					new Tuple2(_2, new Ident(_3, name));
+					tuple(_2, new Ident(_3, name));
 				},
 				_ => null
 			);
@@ -1993,14 +1993,14 @@ class Parser {
 			case err: cast err;
 		},
 		
-		at([T_Break(_1), T_Int(_2, depth, null), ...rest]) => Success(SBreak(_1, new Tuple2(_2, Left(depth.parseInt()))), rest),
-		at([T_Break(_1), T_Int(_2, depth, exp!!), ...rest]) => Success(SBreak(_1, new Tuple2(_2, Left('${depth}e$exp'.parseInt()))), rest),
-		at([T_Break(_1), T_Litsym(_2, label), ...rest]) => Success(SBreak(_1, new Tuple2(_2, Right(label))), rest),
+		at([T_Break(_1), T_Int(_2, depth, null), ...rest]) => Success(SBreak(_1, tuple(_2, Left(depth.parseInt()))), rest),
+		at([T_Break(_1), T_Int(_2, depth, exp!!), ...rest]) => Success(SBreak(_1, tuple(_2, Left('${depth}e$exp'.parseInt()))), rest),
+		at([T_Break(_1), T_Litsym(_2, label), ...rest]) => Success(SBreak(_1, tuple(_2, Right(label))), rest),
 		at([T_Break(_1), ...rest]) => Success(SBreak(_1, null), rest),
 
-		at([T_Next(_1), T_Int(_2, depth, null), ...rest]) => Success(SNext(_1, new Tuple2(_2, Left(depth.parseInt()))), rest),
-		at([T_Next(_1), T_Int(_2, depth, exp!!), ...rest]) => Success(SNext(_1, new Tuple2(_2, Left('${depth}e$exp'.parseInt()))), rest),
-		at([T_Next(_1), T_Litsym(_2, label), ...rest]) => Success(SNext(_1, new Tuple2(_2, Right(label))), rest),
+		at([T_Next(_1), T_Int(_2, depth, null), ...rest]) => Success(SNext(_1, tuple(_2, Left(depth.parseInt()))), rest),
+		at([T_Next(_1), T_Int(_2, depth, exp!!), ...rest]) => Success(SNext(_1, tuple(_2, Left('${depth}e$exp'.parseInt()))), rest),
+		at([T_Next(_1), T_Litsym(_2, label), ...rest]) => Success(SNext(_1, tuple(_2, Right(label))), rest),
 		at([T_Next(_1), ...rest]) => Success(SNext(_1, null), rest),
 
 		at([T_Throw(_1), ...rest]) => switch parseFullExpr(rest) {
@@ -2029,7 +2029,7 @@ class Parser {
 						case err: return fatalIfFailed(cast err);
 					},
 					at([T_Else(_2), ...rest3]) => switch parseThenStmt(rest3) {
-						case Success(then, Cons(T_RBrace(end), rest4)): return Success(STry(_1, block, begin, cases, new Tuple2(_2, then), end), rest4);
+						case Success(then, Cons(T_RBrace(end), rest4)): return Success(STry(_1, block, begin, cases, tuple(_2, then), end), rest4);
 						case Success(_, rest4): return Fatal(tokens, rest4);
 						case err: return fatalIfFailed(cast err);
 					},
@@ -2079,7 +2079,7 @@ class Parser {
 			case Success(cond, rest2):
 				cond = reparseExpr(cond);
 				switch parseThenStmt(rest2) {
-					case Success(then, rest3): Success({span: _1, pattern: pattern, when: new Tuple2(_2, cond), then: then}, rest3);
+					case Success(then, rest3): Success({span: _1, pattern: pattern, when: tuple(_2, cond), then: then}, rest3);
 					case err: fatalIfFailed(cast err);
 				}
 			case err: fatalIfFailed(cast err);
@@ -2102,7 +2102,7 @@ class Parser {
 						case Success(expr, rest4):
 							expr = reparseExpr(expr);
 							rest2 = rest4;
-							new Tuple2(_2, expr);
+							tuple(_2, expr);
 						case err: return fatalIfFailed(cast err);
 					},
 					_ => null
@@ -2111,7 +2111,7 @@ class Parser {
 				final label = rest2._match(
 					at([T_Label(_2, "label"), T_Litsym(_3, name), ...rest3]) => {
 						rest2 = rest3;
-						new Tuple2(_2, new Ident(_3, name));
+						tuple(_2, new Ident(_3, name));
 					},
 					_ => null
 				);
@@ -2162,7 +2162,7 @@ class Parser {
 							case Success(expr, rest4):
 								expr = reparseExpr(expr);
 								rest2 = rest4;
-								new Tuple2(_2, expr);
+								tuple(_2, expr);
 							case err: return fatalIfFailed(cast err);
 						},
 						_ => null
@@ -2172,7 +2172,7 @@ class Parser {
 							case Success(expr, rest4):
 								expr = reparseExpr(expr);
 								rest2 = rest4;
-								new Tuple2(_2, expr);
+								tuple(_2, expr);
 							case err: return fatalIfFailed(cast err);
 						},
 						_ => null
@@ -2181,7 +2181,7 @@ class Parser {
 					final label = rest2._match(
 						at([T_Label(_2, "label"), T_Litsym(_3, name), ...rest3]) => {
 							rest2 = rest3;
-							new Tuple2(_2, new Ident(_3, name));
+							tuple(_2, new Ident(_3, name));
 						},
 						_ => null
 					);

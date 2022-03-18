@@ -259,11 +259,11 @@ abstract class Namespace extends TypeDecl {
 
 	override function iterAssocType(): Null<Tuple2<Type, Type>> {
 		if(this == Pass2.STD_Iterable2) {
-			return {_1: params[0], _2: params[1]};
+			return tuple(params[0], params[1]);
 		} else {
 			return parents.findMap(p -> p.iterAssocType())._match(
 				at(null) => super.iterAssocType(),
-				at({_1: k, _2: v}) => {_1: k.getFrom(thisType), _2: v.getFrom(thisType)}
+				at({_1: k, _2: v}) => tuple(k.getFrom(thisType), v.getFrom(thisType))
 			);
 		}
 	}

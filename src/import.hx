@@ -15,6 +15,7 @@ import util.Either;
 import util.Tuple2;
 import util.Tuple3;
 import util.errors.*;
+import Util.tuple;
 
 using util.Maps;
 using util.ERegs;

@@ -142,7 +142,7 @@ class StrongAlias extends Alias {
 	override function iterAssocType() {
 		return type.iterAssocType()._match(
 			at(null) => null,
-			at({_1: k, _2: v}) => new Tuple2(k.getFrom(thisType), v.getFrom(thisType))
+			at({_1: k, _2: v}) => tuple(k.getFrom(thisType), v.getFrom(thisType))
 		);
 	}
 

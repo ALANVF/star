@@ -43,7 +43,7 @@ class Lexer {
 			}
 		}
 
-		return new Tuple2(
+		return tuple(
 			errors.rev(),
 			retoken(Nil, tokens._match(
 				at([T_LSep(_), ...rest]) => rest,
