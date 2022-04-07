@@ -34,6 +34,7 @@ class Lexer {
 		var tokens = Nil;
 		while(true) {
 			try {
+				// TODO: inline this so that we can keep tokens before error
 				tokens = nextToken(this, reader, tokens);
 				break;
 			} catch(eof: Eof) {
@@ -830,7 +831,6 @@ class Lexer {
 	}
 
 	inline function readChar(): Token {
-		
 		final char = switch reader.unsafePeek() {
 			case '"'.code:
 				final end = here();

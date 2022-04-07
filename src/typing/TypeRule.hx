@@ -246,7 +246,7 @@ ctx: Ctx, target: Type, from: AnyTypeDecl, cache: TypeCache = Nil): Array<CastKi
 
 
 function findBinaryOp(self: TypeRule, tvar: TypeVar,
-ctx: Ctx, op: BinaryOp, from: AnyTypeDecl, cache: TypeCache = Nil): Array<BinaryOpKind> return self._match(
+ctx: Ctx, op: BinaryOp, from: Type, cache: TypeCache = Nil): Array<BinaryOpKind> return self._match(
 	at(Eq(left, right)) => {
 		if(left == tvar.thisType) {
 			right.findBinaryOp(ctx, op, from, cache);

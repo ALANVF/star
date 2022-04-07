@@ -1440,6 +1440,21 @@ class Type implements ITypeable {
 		);
 	}
 
+	function getNative() {
+		return t._match(
+			at(TPath(depth, lookup, source)) => throw "todo",
+			at(TLookup(type, lookup, source)) => throw "todo",
+			at(TConcrete(decl) | TInstance(decl, _, _)) => decl.getNative(),
+			at(TThis(decl is TypeDecl)) => decl.getNative(),
+			at(TThis(_)) => throw "todo",
+			at(TBlank) => throw "bad",
+			at(TMulti(types)) => types.findMap(ty -> ty.getNative()), // TODO
+			at(TApplied(type, params)) => type.getNative(),
+			at(TTypeVar(typevar)) => typevar.getNative(),
+			at(TModular(type, unit)) => type.getNative()
+		);
+	}
+
 	function isFlags() {
 		return t._match(
 			at(TPath(depth, lookup, source)) => throw "todo",
@@ -1643,7 +1658,7 @@ class Type implements ITypeable {
 			at(TPath(depth, lookup, source)) => throw "todo",
 			at(TLookup(type, lookup, source)) => throw "todo",
 			at(TConcrete(decl) | TInstance(decl, _, _)) => decl.canSeeMember(member),
-			at(TThis(source)) => throw "todo",
+			at(TThis(source)) => source.canSeeMember(member), // TODO
 			at(TBlank) => throw "bad",
 			at(TMulti(types)) => types.every(ty -> ty.canSeeMember(member)),
 			at(TApplied(type, args)) => type.canSeeMember(member),
@@ -1657,12 +1672,75 @@ class Type implements ITypeable {
 			at(TPath(depth, lookup, source)) => throw "todo",
 			at(TLookup(type, lookup, source)) => throw "todo",
 			at(TConcrete(decl) | TInstance(decl, _, _)) => decl.canSeeMethod(method),
-			at(TThis(source)) => throw "todo",
+			at(TThis(source)) => source.canSeeMethod(method), // TODO
 			at(TBlank) => throw "bad",
 			at(TMulti(types)) => types.every(ty -> ty.canSeeMethod(method)),
 			at(TApplied(type, args)) => type.canSeeMethod(method),
 			at(TTypeVar(typevar)) => throw "todo",
 			at(TModular(type, unit)) => type.canSeeMethod(method)
+		);
+	}
+
+
+	// Cases
+
+	function allValueCases(): Array<ValueCase> {
+		return t._match(
+			at(TPath(depth, lookup, source)) => throw "todo",
+			at(TLookup(type, lookup, source)) => throw "todo",
+			at(TConcrete(decl) | TInstance(decl, _, _)) => decl.allValueCases(),
+			at(TThis(source)) => source._match(
+				at(td is TypeDecl) => td.allValueCases(),
+				_ => throw "todo"
+			),
+			at(TBlank) => throw "bad",
+			at(TMulti(types)) => {
+				leastSpecific(types)
+					.flatMap(type -> type.allValueCases())
+					.unique();
+			},
+			at(TApplied({t: TMulti(types)}, args)) => {
+				leastSpecific(types.filter(type -> type.acceptsArgs(args)))
+					.flatMap(type -> type.allValueCases())
+					.unique();
+			},
+			at(TApplied(type, args)) => {
+				type.allValueCases();
+			},
+			at(TTypeVar(typevar)) => {
+				typevar.allValueCases();
+			},
+			at(TModular(type, unit)) => type.allValueCases()
+		);
+	}
+	
+	function allTaggedCases(): Array<TaggedCase> {
+		return t._match(
+			at(TPath(depth, lookup, source)) => throw "todo",
+			at(TLookup(type, lookup, source)) => throw "todo",
+			at(TConcrete(decl) | TInstance(decl, _, _)) => decl.allTaggedCases(),
+			at(TThis(source)) => source._match(
+				at(td is TypeDecl) => td.allTaggedCases(),
+				_ => throw "todo"
+			),
+			at(TBlank) => throw "bad",
+			at(TMulti(types)) => {
+				leastSpecific(types)
+					.flatMap(type -> type.allTaggedCases())
+					.unique();
+			},
+			at(TApplied({t: TMulti(types)}, args)) => {
+				leastSpecific(types.filter(type -> type.acceptsArgs(args)))
+					.flatMap(type -> type.allTaggedCases())
+					.unique();
+			},
+			at(TApplied(type, args)) => {
+				type.allTaggedCases();
+			},
+			at(TTypeVar(typevar)) => {
+				typevar.allTaggedCases();
+			},
+			at(TModular(type, unit)) => type.allTaggedCases()
 		);
 	}
 
@@ -1749,14 +1827,14 @@ class Type implements ITypeable {
 
 	// Method lookup
 
-	function findSingleStatic(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {
+	function findSingleStatic(ctx: Ctx, name: String, from: Type, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {
 		return t._match(
 			at(TPath(depth, lookup, source)) => throw "todo",
 			at(TLookup(type, lookup, source)) => throw "todo",
 			at(TConcrete(decl) | TInstance(decl, _, _)) => decl.findSingleStatic(ctx, name, from, getter, cache),
 			at(TThis(source)) => source._match(
 				at(td is TypeDecl) => {
-					if(td == from) {
+					if(td.thisType == from) {
 						td.findSingleStatic(ctx, name, from, getter, cache);
 					} else {
 						//throw "???";
@@ -1865,7 +1943,7 @@ class Type implements ITypeable {
 	}
 
 
-	function findMultiInst(ctx: Ctx, names: Array<String>, from: AnyTypeDecl, setter = false, cache: TypeCache = Nil): Array<MultiInstKind> {
+	function findMultiInst(ctx: Ctx, names: Array<String>, from: Type, setter = false, cache: TypeCache = Nil): Array<MultiInstKind> {
 		return t._match(
 			at(TPath(depth, lookup, source)) => throw "todo",
 			at(TLookup(type, lookup, source)) => throw "todo",
@@ -1949,7 +2027,7 @@ class Type implements ITypeable {
 	}
 
 
-	function findBinaryOp(ctx: Ctx, op: BinaryOp, from: AnyTypeDecl, cache: TypeCache = Nil): Array<BinaryOpKind> {
+	function findBinaryOp(ctx: Ctx, op: BinaryOp, from: Type, cache: TypeCache = Nil): Array<BinaryOpKind> {
 		return t._match(
 			at(TPath(depth, lookup, source)) => throw "todo "+lookup+" "+lookup.span().display()+" "+this.span._and(s=>s.display()),
 			at(TLookup(type, lookup, source)) => throw "todo",

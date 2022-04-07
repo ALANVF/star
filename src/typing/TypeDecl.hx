@@ -299,6 +299,8 @@ abstract class TypeDecl extends AnyFullTypeDecl {
 
 	function isNative(kind: NativeKind) return false;
 
+	function getNative() return null;
+
 	function isFlags() return false;
 	
 	function isStrong() return false;
@@ -406,6 +408,17 @@ abstract class TypeDecl extends AnyFullTypeDecl {
 	}
 
 
+	// Cases
+
+	/*override function allValueCases(): Array<ValueCase> {
+		return refinees.flatMap(ref -> ref.allValueCases());
+	}
+	
+	override function allTaggedCases(): Array<TaggedCase> {
+		return refinees.flatMap(ref -> ref.allTaggedCases());
+	}*/
+
+
 	// Members
 
 	function instMembers(from: AnyTypeDecl): Array<Member> {
@@ -431,7 +444,7 @@ abstract class TypeDecl extends AnyFullTypeDecl {
 
 	// TODO: make sure parent methods don't collide with overridden or refined methods
 
-	function findSingleStatic(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {
+	function findSingleStatic(ctx: Ctx, name: String, from: Type, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {
 		return null;
 	}
 
@@ -446,7 +459,7 @@ abstract class TypeDecl extends AnyFullTypeDecl {
 	}
 
 
-	function findMultiInst(ctx: Ctx, names: Array<String>, from: AnyTypeDecl, setter = false, cache: TypeCache = Nil): Array<MultiInstKind> {
+	function findMultiInst(ctx: Ctx, names: Array<String>, from: Type, setter = false, cache: TypeCache = Nil): Array<MultiInstKind> {
 		return [];
 	}
 
@@ -471,7 +484,7 @@ abstract class TypeDecl extends AnyFullTypeDecl {
 	}
 
 
-	function findBinaryOp(ctx: Ctx, op: BinaryOp, from: AnyTypeDecl, cache: TypeCache = Nil): Array<BinaryOpKind> {
+	function findBinaryOp(ctx: Ctx, op: BinaryOp, from: Type, cache: TypeCache = Nil): Array<BinaryOpKind> {
 		return [];
 	}
 

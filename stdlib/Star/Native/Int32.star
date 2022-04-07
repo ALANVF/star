@@ -1,11 +1,9 @@
 class Int32 of Core.Ordered is native[repr: `int` bits: 32 signed: true] is strong {
-	on [next] (This) is native `i32_succ`
-	on [previous] (This) is native `i32_pred`
-	
-
 	operator `?` (Core.Bool) is native `i32_truthy`
 	operator `-` (This) is native `i32_neg`
 	operator `~` (This) is native `i32_compl`
+	operator `++` (This) is native `i32_succ`
+	operator `--` (This) is native `i32_pred`
 	
 	operator `+` [int (This)] (This) is native `i32_add`
 	operator `-` [int (This)] (This) is native `i32_sub`

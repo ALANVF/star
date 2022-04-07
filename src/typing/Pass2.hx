@@ -942,7 +942,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 			final t = ctx.getType(type)._or(return invalidExpr());
 			sendTypeMessage(ctx, t, begin, end, msg)._match(
 				at(null) => invalidExpr(),
-				at({_1: msg2, _2: ret}) => {e: ETypeMessage(t, msg2), t: ret}
+				at({_1: msg2, _2: ret}) => {e: ETypeMessage(t.simplify(), msg2), t: ret}
 			);
 		},
 
@@ -956,7 +956,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 		
 		at(ETypeMember(type, {name: name, span: s})) => {
 			final t = ctx.getType(type)._or(return invalidExpr());
-			t.findSingleStatic(ctx, name, ctx.typeDecl, true)._match(
+			t.findSingleStatic(ctx, name, ctx.typeDecl.thisType, true)._match(
 				at(kind!) => {
 					e: ETypeMember(t, kind),
 					t: kind.retType()._and(ret => ret.getFrom(t))
@@ -1045,7 +1045,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 									e: EPrefix(kind, {
 										e: EName(name, loc),
 										t: loc.type,
-										orig: expr
+										orig: right
 									}),
 									t: kind.digForMethod().ret.nonNull().simplify().getFrom(t),
 									orig: expr
@@ -1129,7 +1129,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 									e: ESuffix({
 										e: EName(name, loc),
 										t: loc.type,
-										orig: expr
+										orig: left
 									}, kind),
 									t: kind.digForMethod().ret.nonNull().simplify().getFrom(t),
 									orig: expr
@@ -1240,7 +1240,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 				at(t!) => {
 					final tright = typeExpr(ctx, right);
 					t = t.getIn(ctx);
-					t.findMultiInst(ctx, [name], ctx.typeDecl, true)._match(
+					t.findMultiInst(ctx, [name], ctx.typeDecl.thisType, true)._match(
 						at([]) => {
 							ctx.addError(Type_UnknownSetter(ctx, Instance, t, name, span1));
 							invalidExpr();
@@ -1319,7 +1319,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 					lt.t._match(
 						at(TThis(td is TypeDecl)) => ({t: td.thisType.t, span: lt.span} : Type),
 						_ => lt
-					).findBinaryOp(ctx, op2, ctx.typeDecl)._match(
+					).findBinaryOp(ctx, op2, ctx.typeDecl.thisType)._match(
 						at([]) => {
 							ctx.addError(Type_UnknownMethod(ctx, lt, Binary(op2, null), span));
 							invalidExpr();
@@ -1562,7 +1562,7 @@ static function getNamesUntypedArgs(ctx: Ctx, labels: Array<parsing.ast.Message.
 static function sendTypeMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: UMessage<UType>): Null<Tuple2<TypeMessage, Null<Type>>> {
 	return msg._match(
 		at(Single(null, span, name)) => {
-			t.findSingleStatic(ctx, name, ctx.typeDecl)._match(
+			t.findSingleStatic(ctx, name, ctx.typeDecl.thisType)._match(
 				at(kind!) => tuple(
 					Single(kind),
 					kind.retType()._and(ret => ret.getFrom(t))
@@ -1576,7 +1576,7 @@ static function sendTypeMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: 
 		at(Single(cat = TSegs(Nil, Cons(NameParams(_, "Super", {of: [parent]}), Nil)), _, name)) => {
 			final tparent: Type = ctx.getType(parent)._or(return null);
 			if(t.hasParentType(tparent)||tparent.hasChildType(t)) {
-				tparent.findSingleStatic(ctx, name, ctx.typeDecl)._match(
+				tparent.findSingleStatic(ctx, name, ctx.typeDecl.thisType)._match(
 					at(kind!) => tuple(
 						Super(tparent, Single(kind)),
 						(kind._match(
@@ -1626,7 +1626,7 @@ static function sendTypeMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: 
 					ctx.addError(Type_UnknownCategory(ctx, Static, t, tcat, cat.span()));
 					null;
 				},
-				at([found]) => found.findSingleStatic(ctx, name, ctx.typeDecl)._match(
+				at([found]) => found.findSingleStatic(ctx, name, ctx.typeDecl.thisType)._match(
 					at(kind!) => tuple(
 						Single(kind),
 						kind._match(
@@ -1641,7 +1641,7 @@ static function sendTypeMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: 
 					),
 					_ => throw 'error: type `${t.fullName()}` does not respond to method `[$name]` in category `${tcat.fullName()}`! ${begin.display()}'
 				),
-				at(found) => found.filterMap(f -> f.findSingleStatic(ctx, name, ctx.typeDecl))._match(
+				at(found) => found.filterMap(f -> f.findSingleStatic(ctx, name, ctx.typeDecl.thisType))._match(
 					at([]) => throw 'error: type `${t.fullName()}` does not respond to method `[$name]` in any categories of: `${found.map(f -> f.fullName()).join(", ")}`!',
 					at([kind!]) => tuple(
 						Single(kind),
@@ -1668,7 +1668,7 @@ static function sendTypeMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: 
 					ctx.addError(Type_UnknownMethod(ctx, t, Multi(Static, names), labels[0].span()));
 					null;
 				},
-				at(kinds) => kinds.reduceOverloads(t, names, args)._match(
+				at(kinds) => kinds.reduceOverloads(t, args)._match(
 					at([]) => {
 						ctx.addError(Type_UnknownMethod(ctx, t, Multi(Static, names, args), labels[0].span()));
 						null;
@@ -1706,7 +1706,7 @@ static function sendTypeMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: 
 				at([found]) => found.findMultiStatic(ctx, names, ctx.typeDecl).unique().reduceBySender()._match(
 					at([]) => throw 'error: type `${t.fullName()}` does not respond to method `[${names.joinMap(" ", n -> '$n:')}]` in category `${tcat.fullName()}`! ${begin.display()}',
 					at(kinds) => {
-						kinds.reduceOverloads(t, names, args)._match(
+						kinds.reduceOverloads(t, args)._match(
 							at([]) => {
 								ctx.addError(Type_UnknownMethod(ctx, t, Multi(Static, names, args), labels[0].span(), [found]));
 								null;
@@ -1732,7 +1732,7 @@ static function sendTypeMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: 
 					)
 				)._match(
 					at([kinds]) => {
-						kinds.mth.reduceOverloads(t, names, args)._match(
+						kinds.mth.reduceOverloads(t, args)._match(
 							at([]) => {
 								ctx.addError(Type_UnknownMethod(ctx, t, Multi(Static, names, args), labels[0].span(), found));
 								null;
@@ -1840,7 +1840,7 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 			t.t._match(
 				at(TThis(td is TypeDecl)) => ({t: td.thisType.t, span: t.span} : Type),
 				_ => t
-			).findMultiInst(ctx, names, ctx.typeDecl)._match(
+			).findMultiInst(ctx, names, ctx.typeDecl.thisType)._match(
 				at([]) => {
 					ctx.addError(Type_UnknownMethod(ctx, t, Multi(Instance, names), labels[0].span()));
 					null;
@@ -1863,7 +1863,7 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 			if(tparent.hasChildType(t)) {
 				detuple(@var [names, args] = getNamesArgs(ctx, labels));
 
-				tparent.findMultiInst(ctx, names, ctx.typeDecl).reduceBySender()._match(
+				tparent.findMultiInst(ctx, names, ctx.typeDecl.thisType).reduceBySender()._match(
 					at([]) => throw 'error: value of type `${t.fullName()}` does not have a supertype `${tparent.fullName()}` that responds to method `[${names.joinMap(" ", n -> '$n:')}]`! ${begin.display()}',
 					at(kinds) => {
 						kinds.reduceOverloads(ctx, tparent, args)._match(
@@ -1919,7 +1919,7 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 					ctx.addError(Type_UnknownCategory(ctx, Instance, t, tcat, cat.span()));
 					null;
 				},
-				at([found]) => found.findMultiInst(ctx, names, ctx.typeDecl)._match(
+				at([found]) => found.findMultiInst(ctx, names, ctx.typeDecl.thisType)._match(
 					at([]) => {
 						ctx.addError(Type_UnknownMethod(ctx, t, Multi(Instance, names), labels[0].span(), categories));
 						null;
@@ -1961,7 +1961,7 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 				_ => Type.mostSpecificBy(
 					Type.reduceOverloadsBy(
 						categories
-							.map(f -> {cat: f, mth: f.findMultiInst(ctx, names, ctx.typeDecl)})
+							.map(f -> {cat: f, mth: f.findMultiInst(ctx, names, ctx.typeDecl.thisType)})
 							.filter(l -> l.mth.length != 0),
 						f -> f.cat.thisType.getMostSpecific()
 					),
@@ -2171,7 +2171,7 @@ static function typeTypeCascade(ctx: Ctx, type: Type, cascade: UCascade<UType>):
 	var ret: Null<Type> = null;
 	final kind: TypeCascade.TypeCascadeKind =
 		cascade.kind._match(
-			at(Member({name: name})) => type.findSingleStatic(ctx, name, ctx.typeDecl, true)._match(
+			at(Member({name: name})) => type.findSingleStatic(ctx, name, ctx.typeDecl.thisType, true)._match(
 				at(kind!) => {
 					ret = kind.retType()._and(r => r.getFrom(type));
 					Member(Single(kind));
@@ -2181,7 +2181,7 @@ static function typeTypeCascade(ctx: Ctx, type: Type, cascade: UCascade<UType>):
 			
 			// TODO: replace with sendObjMessage
 			at(Message(msg)) => Message(msg._match(
-				at(Single(null, _, name)) => type.findSingleStatic(ctx, name, ctx.typeDecl)._match(
+				at(Single(null, _, name)) => type.findSingleStatic(ctx, name, ctx.typeDecl.thisType)._match(
 					at(kind!) => {
 						ret = kind.retType()._and(r => r.getFrom(type));
 						Single(kind);
@@ -2209,14 +2209,14 @@ static function typeTypeCascade(ctx: Ctx, type: Type, cascade: UCascade<UType>):
 					).findThisCategory(ctx, tcat, ctx.typeDecl).unique();
 					categories._match(
 						at([]) => throw 'error: value of type `${type.fullName()}` does not have the category `${tcat.fullName()}`! ${cat.span().display()}',
-						at([found]) => found.findSingleStatic(ctx, name, ctx.typeDecl)._match(
+						at([found]) => found.findSingleStatic(ctx, name, ctx.typeDecl.thisType)._match(
 							at(kind!) => {
 								ret = kind.retType()._and(r => r.getFrom(type));
 								Single(kind);
 							},
 							_ => throw 'error: value of type `${type.fullName()}` does not respond to method `[$name]` in category `${tcat.fullName()}`!'
 						),
-						at(found) => found.filterMap(f -> f.findSingleStatic(ctx, name, ctx.typeDecl))._match(
+						at(found) => found.filterMap(f -> f.findSingleStatic(ctx, name, ctx.typeDecl.thisType))._match(
 							at([]) => {
 								ctx.addError(Type_UnknownMethod(ctx, type, Single(Static, name), span, found));
 								null;
@@ -2237,7 +2237,7 @@ static function typeTypeCascade(ctx: Ctx, type: Type, cascade: UCascade<UType>):
 							ctx.addError(Type_UnknownMethod(ctx, type, Multi(Static, names), labels[0].span()));
 							return null;
 						},
-						at(kinds) => kinds.reduceOverloads(type, names, args)._match(
+						at(kinds) => kinds.reduceOverloads(type, args)._match(
 							at([]) => {
 								ctx.addError(Type_UnknownMethod(ctx, type, Multi(Static, names, args), labels[0].span()));
 								return null;
@@ -2274,7 +2274,7 @@ static function typeTypeCascade(ctx: Ctx, type: Type, cascade: UCascade<UType>):
 						at([]) => throw 'error: value of type `${type.fullName()}` does not have the category `${tcat.fullName()}`! ${cat.span().display()}',
 						at([found]) => found.findMultiStatic(ctx, names, ctx.typeDecl)._match(
 							at([]) => throw 'error: value of type `${type.fullName()}` does not respond to method `[${names.joinMap(" ", n -> '$n:')}]` in category `${tcat.fullName()}`! ${cat.span().display()}',
-							at(kinds) => kinds.reduceOverloads(type, names, args)._match(
+							at(kinds) => kinds.reduceOverloads(type, args)._match(
 								at([]) => {
 									ctx.addError(Type_UnknownMethod(ctx, type, Multi(Static, names, args), labels[0].span(), categories));
 									return null;
@@ -2288,7 +2288,7 @@ static function typeTypeCascade(ctx: Ctx, type: Type, cascade: UCascade<UType>):
 								.filter(l -> l.mth.length != 0),
 							f -> f.cat.type.nonNull()
 						)._match(
-							at([kinds]) => kinds.mth.reduceOverloads(type, names, args)._match(
+							at([kinds]) => kinds.mth.reduceOverloads(type, args)._match(
 								at([]) => {
 									ctx.addError(Type_UnknownMethod(ctx, type, Multi(Static, names, args), labels[0].span(), categories));
 									return null;
@@ -2310,7 +2310,7 @@ static function typeTypeCascade(ctx: Ctx, type: Type, cascade: UCascade<UType>):
 			at(AssignMember({name: name, span: span}, _, null, rhs)) => type.findMultiStatic(ctx, [name], ctx.typeDecl, true)._match(
 				at(kinds!) => {
 					final trhs = typeExpr(ctx, rhs);
-					kinds.reduceOverloads(type, [name], [trhs])._match(
+					kinds.reduceOverloads(type, [trhs])._match(
 						at([]) => {
 							ctx.addError(Type_UnknownSetter(ctx, Static, type, name, span, trhs));
 							return null;
@@ -2334,7 +2334,7 @@ static function typeTypeCascade(ctx: Ctx, type: Type, cascade: UCascade<UType>):
 						at(kinds) => {
 							final trhs = typeExpr(ctx, rhs);
 							final args2 = args.concat([trhs]);
-							kinds.reduceOverloads(type, names, args2)._match(
+							kinds.reduceOverloads(type, args2)._match(
 								at([]) => {
 									ctx.addError(Type_UnknownMethod(ctx, type, Multi(Static, names, args2), labels[0].span()));
 									return null;
@@ -2354,7 +2354,7 @@ static function typeTypeCascade(ctx: Ctx, type: Type, cascade: UCascade<UType>):
 			at(StepMember({name: name}, span, step)) =>
 				type.findMultiStatic(ctx, [name], ctx.typeDecl, true)._match(
 					at([]) => throw "bad",
-					at([setKind]) => type.findSingleStatic(ctx, name, ctx.typeDecl, true)._match(
+					at([setKind]) => type.findSingleStatic(ctx, name, ctx.typeDecl.thisType, true)._match(
 						at(getKind!) => {
 							final memt = getKind._match(
 								at(SSMethod((_ : StaticMethod) => m) | SSMultiMethod(m)) => m.ret.nonNull(),
@@ -2459,7 +2459,7 @@ static function typeObjCascade(ctx: Ctx, type: Null<Type>, cascade: UCascade<UEx
 
 				at(Multi(null, labels)) => {
 					detuple(@var [names, args] = getNamesArgs(ctx, labels));
-					t.findMultiInst(ctx, names, ctx.typeDecl)._match(
+					t.findMultiInst(ctx, names, ctx.typeDecl.thisType)._match(
 						at([]) => {
 							ctx.addError(Type_UnknownMethod(ctx, t, Multi(Instance, names), labels[0].span()));
 							return null;
@@ -2499,7 +2499,7 @@ static function typeObjCascade(ctx: Ctx, type: Null<Type>, cascade: UCascade<UEx
 					).findThisCategory(ctx, tcat, ctx.typeDecl).unique();
 					categories._match(
 						at([]) => throw 'error: value of type `${t.fullName()}` does not have the category `${tcat.fullName()}`! ${cat.span().display()}',
-						at([found]) => found.findMultiInst(ctx, names, ctx.typeDecl)._match(
+						at([found]) => found.findMultiInst(ctx, names, ctx.typeDecl.thisType)._match(
 							at([]) => throw 'error: value of type `${t.fullName()}` does not respond to method `[${names.joinMap(" ", n -> '$n:')}]` in category `${tcat.fullName()}`! ${cat.span().display()}',
 							at(kinds) => kinds.reduceOverloads(ctx, t, args)._match(
 								at([]) => {
@@ -2511,7 +2511,7 @@ static function typeObjCascade(ctx: Ctx, type: Null<Type>, cascade: UCascade<UEx
 						),
 						at(found) => Type.mostSpecificBy(
 							found
-								.map(f -> {cat: f, mth: f.findMultiInst(ctx, names, ctx.typeDecl)})
+								.map(f -> {cat: f, mth: f.findMultiInst(ctx, names, ctx.typeDecl.thisType)})
 								.filter(l -> l.mth.length != 0),
 							f -> f.cat.type.nonNull()
 						)._match(
@@ -2546,7 +2546,7 @@ static function typeObjCascade(ctx: Ctx, type: Null<Type>, cascade: UCascade<UEx
 			)),
 
 
-			at(AssignMember({name: name, span: span}, _, null, rhs)) => t.findMultiInst(ctx, [name], ctx.typeDecl, true)._match(
+			at(AssignMember({name: name, span: span}, _, null, rhs)) => t.findMultiInst(ctx, [name], ctx.typeDecl.thisType, true)._match(
 				at(kinds!) => {
 					final trhs = typeExpr(ctx, rhs);
 					kinds.reduceOverloads(ctx, t, [trhs])._match(
@@ -2568,7 +2568,7 @@ static function typeObjCascade(ctx: Ctx, type: Null<Type>, cascade: UCascade<UEx
 				at(Multi(null, labels)) => {
 					detuple(@var [names, args] = getNamesArgs(ctx, labels));
 					names = names.concat(["="]);
-					t.findMultiInst(ctx, names, ctx.typeDecl)._match(
+					t.findMultiInst(ctx, names, ctx.typeDecl.thisType)._match(
 						at([]) => throw 'error: value of type ${t.fullName()} does not respond to method `[${names.joinMap(" ", n -> '$n:')}]`!',
 						at(kinds) => {
 							final trhs = typeExpr(ctx, rhs);
@@ -2592,7 +2592,7 @@ static function typeObjCascade(ctx: Ctx, type: Null<Type>, cascade: UCascade<UEx
 
 
 			at(StepMember({name: name}, span, step)) =>
-				t.findMultiInst(ctx, [name], ctx.typeDecl, true)._match(
+				t.findMultiInst(ctx, [name], ctx.typeDecl.thisType, true)._match(
 					at([]) => throw "bad",
 					at([setKind]) => t.findSingleInst(ctx, name, ctx.typeDecl, true)._match(
 						at(getKind!) => {
@@ -2711,7 +2711,7 @@ static function typePattern(ctx: Ctx, expectType: Type, expr: UExpr): Pattern {
 			final ttype = ctx.getType(type).nonNull();
 			msg._match(
 				at(Single(null, _, name)) => {
-					ttype.findSingleStatic(ctx, name, ctx.typeDecl)._match(
+					ttype.findSingleStatic(ctx, name, ctx.typeDecl.thisType)._match(
 						at(SSValueCase(vcase)) => PTypeValueCase(ttype, vcase),
 						at(SSTaggedCase(tcase)) => PTypeTaggedCaseSingle(ttype, tcase),
 						at(SSTaggedCaseAlias(tcase is SingleTaggedCase)) =>
@@ -2733,7 +2733,7 @@ static function typePattern(ctx: Ctx, expectType: Type, expr: UExpr): Pattern {
 									tuple(m, typePattern(ctx, m.type.nonNull().getFrom(ttype).getFrom(expectType), args[i]));}
 							]);
 						},
-						at([MSTaggedCase([], tcase)]) => {
+						at([MSTaggedCase([], tcase, [])]) => {
 							final args2 = new Array<Pattern>();
 							tcase.params._for(i => p, {
 								args2.push(typePattern(ctx, p.type.getFrom(expectType), args[i]));
@@ -2745,28 +2745,26 @@ static function typePattern(ctx: Ctx, expectType: Type, expr: UExpr): Pattern {
 								args2
 							);
 						},
-						at([MSTaggedCase(ms, tcase)]) => {
-							final ms2: Array<Tuple2<Member, Pattern>> = [];
+						at([MSTaggedCase(ms1, tcase, ms2)]) => {
+							final ms3: Array<Tuple2<Member, Pattern>> = [];
 							var i = 0;
-							while(i < ms.length && ms[i].name.name == names[i]) {
-								ms2.push(tuple(ms[i], typePattern(ctx, ms[i].type.nonNull().getFrom(expectType), args[i])));
+							for(mem in ms1) {
+								ms3.push(tuple(mem, typePattern(ctx, mem.type.nonNull().getFrom(expectType), args[i])));
 								i++;
 							}
 
 							final args2 = new Array<Pattern>();
-							var i2 = i;
 							for(p in tcase.params) {
-								args2.push(typePattern(ctx, p.type.getFrom(expectType), args[i2]));
-								i2++;
+								args2.push(typePattern(ctx, p.type.getFrom(expectType), args[i]));
+								i++;
 							}
 							
-							while(i2 < args.length && i < ms.length) {
-								ms2.push(tuple(ms[i], typePattern(ctx, ms[i].type.nonNull().getFrom(expectType), args[i2])));
+							for(mem in ms2) {
+								ms3.push(tuple(mem, typePattern(ctx, mem.type.nonNull().getFrom(expectType), args[i])));
 								i++;
-								i2++;
 							}
 
-							PTypeTaggedCaseMembersMulti(ttype, tcase, args2, ms2);
+							PTypeTaggedCaseMembersMulti(ttype, tcase, args2, ms3);
 						},
 						at([MSTaggedCaseAlias(tcase)]) => {
 							throw "todo!";
@@ -2781,7 +2779,7 @@ static function typePattern(ctx: Ctx, expectType: Type, expr: UExpr): Pattern {
 		
 		at(ETypeMember(type, {name: name})) => {
 			final ttype = ctx.getType(type).nonNull();
-			ttype.findSingleStatic(ctx, name, ctx.typeDecl, true)._match(
+			ttype.findSingleStatic(ctx, name, ctx.typeDecl.thisType, true)._match(
 				at(SSValueCase(vcase)) => PTypeValueCase(ttype, vcase),
 				_ => PExpr(typeExpr(ctx, expr))
 			);

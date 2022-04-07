@@ -246,6 +246,10 @@ abstract class Namespace extends TypeDecl {
 		return parents.some(p -> p.isNative(kind));
 	}
 
+	override function getNative() {
+		return parents.findMap(p -> p.getNative());
+	}
+
 
 	// Iterating
 
@@ -310,11 +314,11 @@ abstract class Namespace extends TypeDecl {
 
 	// Method lookup
 
-	function defaultSingleStatic(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false): Null<SingleStaticKind> {
+	function defaultSingleStatic(ctx: Ctx, name: String, from: Type, getter = false): Null<SingleStaticKind> {
 		return null;
 	}
 
-	override function findSingleStatic(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {
+	override function findSingleStatic(ctx: Ctx, name: String, from: Type, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {
 		if(cache.contains(thisType)) return null;
 		
 		for(mem in staticMembers) {

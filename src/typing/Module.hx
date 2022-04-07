@@ -51,7 +51,11 @@ class Module extends Namespace {
 		}
 
 		for(decl in ast.body.of) switch decl {
-			case DMember(m): module.staticMembers.push(Member.fromAST(module, m));
+			case DMember(m): module.staticMembers.push({
+								final mem = Member.fromAST(module, m);
+								mem.isStatic = true;
+								mem;
+							});
 
 			case DModule(m): module.addTypeDecl(Module.fromAST(module, m));
 

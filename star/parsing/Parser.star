@@ -286,7 +286,7 @@ module Parser {
 	on [parseGenericRule: tokens (Tokens)] (Result[Generic.Rule]) {
 		match This[parseGenericRuleTerm: tokens] {
 			at Result[success: my left, my rest] => return This[parseGenericRuleCond: left, rest][updateIfBad: rest]
-			at my fail => return fail[Result[Generic.Rule] updateIfBad: tokens]
+			at my fail => return fail[updateIfBad: tokens]
 		}
 	}
 	

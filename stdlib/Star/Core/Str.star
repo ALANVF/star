@@ -73,7 +73,7 @@ class Str of Values[Char], Ordered is strong {
 	;== Chars
 
 	on [chars] (Array[Char]) {
-		my chars = Array[fill: length with: #"\0"]
+		my chars = Array[Char][fill: length with: #"\0"]
 
 		for my i from: 0 upto: length {
 			chars[at: i] = buffer[at: i]

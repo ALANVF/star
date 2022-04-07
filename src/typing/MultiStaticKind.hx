@@ -5,7 +5,7 @@ enum MultiStaticKind {
 	MSInit(i: MultiInit, ?partial: Array<Int>);
 	MSMemberwiseInit(ms: Array<Member>);
 	MSMember(m: Member);
-	MSTaggedCase(ms: Array<Member>, c: MultiTaggedCase, ?partial: Array<Int>);
+	MSTaggedCase(ms1: Array<Member>, c: MultiTaggedCase, ms2: Array<Member>, ?partial: Array<Int>);
 	MSTaggedCaseAlias(c: TaggedCase);
 
 	MSFromTypevar(tvar: TypeVar, names: Array<String>, setter: Bool, kind: MultiStaticKind);
@@ -56,7 +56,7 @@ function retType(overloads: Array<StaticOverload>, sender: Type): Null<Type> {
 	);
 }
 
-function reduceOverloads(kinds: Array<MultiStaticKind>, sender: Type, names: Array<String>, args: Array<TExpr>) {
+function reduceOverloads(kinds: Array<MultiStaticKind>, sender: Type, args: Array<TExpr>) {
 	if(kinds.length == 0) return [];
 
 	function loop(kind: MultiStaticKind) return kind._match(
@@ -243,7 +243,7 @@ function reduceOverloads(kinds: Array<MultiStaticKind>, sender: Type, names: Arr
 				return null;
 			}
 		),
-		at(MSTaggedCase([], tcase, null)) => {
+		at(MSTaggedCase([], tcase, [], null)) => {
 			final argTypes: Array<Null<Type>> = [];
 			final tctx: TypeVarCtx = [];
 			var complete = true;
@@ -269,7 +269,7 @@ function reduceOverloads(kinds: Array<MultiStaticKind>, sender: Type, names: Arr
 				complete: complete
 			};
 		},
-		at(MSTaggedCase([], tcase, indexes!!)) => {
+		at(MSTaggedCase([], tcase, [], indexes!!)) => {
 			final argTypes: Array<Null<Type>> = [];
 			final tctx: TypeVarCtx = [];
 			var complete = true;
@@ -296,14 +296,13 @@ function reduceOverloads(kinds: Array<MultiStaticKind>, sender: Type, names: Arr
 				complete: complete
 			};
 		},
-		at(MSTaggedCase(members, tcase, null)) => {
+		at(MSTaggedCase(members1, tcase, members2, null)) => {
 			final argTypes: Array<Null<Type>> = [];
 			final tctx: TypeVarCtx = [];
 			var complete = true;
 
 			var i = 0;
-			while(i < members.length && members[i].name.name == names[i]) {
-				final mem = members[i];
+			for(mem in members1) {
 				mem.type._andOr(mtype => {
 					args[i].t._andOr(atype => {
 						atype.getFrom(sender).bindTo(mtype.getInTCtx(tctx).getFrom(sender), tctx)._andOr(atype2 => {
@@ -322,9 +321,8 @@ function reduceOverloads(kinds: Array<MultiStaticKind>, sender: Type, names: Arr
 				i++;
 			}
 
-			var i2 = i;
 			for(p in tcase.params) {
-				args[i2].t._andOr(atype => {
+				args[i].t._andOr(atype => {
 					atype.getFrom(sender).bindTo(p.type.getInTCtx(tctx).getFrom(sender), tctx)._andOr(atype2 => {
 						argTypes.push(atype2);
 					}, {
@@ -334,13 +332,12 @@ function reduceOverloads(kinds: Array<MultiStaticKind>, sender: Type, names: Arr
 					complete = false;
 					argTypes.push(null);
 				});
-				i2++;
+				i++;
 			}
 			
-			while(i2 < args.length && i < members.length) {
-				final mem = members[i];
+			for(mem in members2) {
 				mem.type._andOr(mtype => {
-					args[i2].t._andOr(atype => {
+					args[i].t._andOr(atype => {
 						atype.getFrom(sender).bindTo(mtype.getInTCtx(tctx).getFrom(sender), tctx)._andOr(atype2 => {
 							argTypes.push(atype2);
 						}, {
@@ -355,7 +352,6 @@ function reduceOverloads(kinds: Array<MultiStaticKind>, sender: Type, names: Arr
 					argTypes.push(null);
 				});
 				i++;
-				i2++;
 			}
 
 			return {
@@ -366,7 +362,7 @@ function reduceOverloads(kinds: Array<MultiStaticKind>, sender: Type, names: Arr
 				complete: complete
 			};
 		},
-		at(MSTaggedCase(members, tcase, indexes!!)) => {
+		at(MSTaggedCase(members1, tcase, members2, indexes!!)) => {
 			// TODO: implement
 			throw "PLEASE DON'T DO THIS";
 		},

@@ -96,47 +96,47 @@ class Dec of Num is native[repr: `dec` bits: 64] is strong {
 	operator `?` (Bool) is native `d64_truthy`
 	operator `-` (This) is native `d64_neg`
 	
-	operator `+` [other (Num)] (This) => return this + other[Dec]
 	operator `+` [other (This)] (This) is native `d64_add`
+	operator `+` [other (Num)] (This) => return this + other[Dec]
 	
-	operator `-` [other (Num)] (This) => return this - other[Dec]
 	operator `-` [other (This)] (This) is native `d64_sub`
+	operator `-` [other (Num)] (This) => return this - other[Dec]
 	
-	operator `*` [other (Num)] (This) => return this * other[Dec]
 	operator `*` [other (This)] (This) is native `d64_mult`
+	operator `*` [other (Num)] (This) => return this * other[Dec]
 	
-	operator `**` [other (Num)] (This) => return this ** other[Dec]
 	operator `**` [other (This)] (This) is native `d64_pow`
+	operator `**` [other (Num)] (This) => return this ** other[Dec]
 	
-	operator `/` [other (Num)] (This) => return this / other[Dec]
 	operator `/` [other (This)] (This) is native `d64_div`
+	operator `/` [other (Num)] (This) => return this / other[Dec]
 	
-	operator `//` [other (Num)] (Int) => return this // other[Dec]
 	operator `//` [other (This)] (Int) is native `d64_idiv`
+	operator `//` [other (Num)] (Int) => return this // other[Dec]
 	
-	operator `%` [other (Num)] (This) => return this % other[Dec]
 	operator `%` [other (This)] (This) is native `d64_mod`
+	operator `%` [other (Num)] (This) => return this % other[Dec]
 	
-	operator `%%` [other (Num)] (Bool) => return this %% other[Dec]
 	operator `%%` [other (This)] (Bool) is native `d64_mod0`
+	operator `%%` [other (Num)] (Bool) => return this %% other[Dec]
 	
-	operator `?=` [other (Num)] (Bool) => return this ?= other[Dec]
 	operator `?=` [other (This)] (Bool) is native `d64_eq`
+	operator `?=` [other (Num)] (Bool) => return this ?= other[Dec]
 	
-	operator `!=` [other (Num)] (Bool) => return this != other[Dec]
 	operator `!=` [other (This)] (Bool) is native `d64_ne`
+	operator `!=` [other (Num)] (Bool) => return this != other[Dec]
 	
-	operator `>` [other (Num)] (Bool) => return this > other[Dec]
 	operator `>` [other (This)] (Bool) is native `d64_gt`
+	operator `>` [other (Num)] (Bool) => return this > other[Dec]
 	
-	operator `>=` [other (Num)] (Bool) => return this >= other[Dec]
 	operator `>=` [other (This)] (Bool) is native `d64_ge`
+	operator `>=` [other (Num)] (Bool) => return this >= other[Dec]
 	
-	operator `<` [other (Num)] (Bool) => return this < other[Dec]
 	operator `<` [other (This)] (Bool) is native `d64_lt`
+	operator `<` [other (Num)] (Bool) => return this < other[Dec]
 	
-	operator `<=` [other (Num)] (Bool) => return this <= other[Dec]
 	operator `<=` [other (This)] (Bool) is native `d64_le`
+	operator `<=` [other (Num)] (Bool) => return this <= other[Dec]
 
 
 
@@ -151,5 +151,6 @@ class Dec of Num is native[repr: `dec` bits: 64] is strong {
 	on [Int64] is native `cast_d64_i64`
 	on [UInt64] is native `cast_d64_u64`
 	on [Int] is native `cast_d64_i32`
+	on [Dec] is inline => return this
 	on [Str] is native `cast_d64_str`
 }

@@ -94,7 +94,7 @@ abstract class ClassLike extends Namespace {
 	}
 
 
-	override function findMultiInst(ctx: Ctx, names: Array<String>, from: AnyTypeDecl, setter = false, cache: TypeCache = Nil) {
+	override function findMultiInst(ctx: Ctx, names: Array<String>, from: Type, setter = false, cache: TypeCache = Nil) {
 		if(cache.contains(thisType)) return [];
 		
 		final candidates: Array<MultiInstKind> = [];
@@ -216,11 +216,11 @@ abstract class ClassLike extends Namespace {
 	}
 
 
-	function defaultBinaryOp(ctx: Ctx, op: BinaryOp, from: AnyTypeDecl): Array<BinaryOpKind> {
+	function defaultBinaryOp(ctx: Ctx, op: BinaryOp, from: Type): Array<BinaryOpKind> {
 		return [];
 	}
 
-	override function findBinaryOp(ctx: Ctx, op: BinaryOp, from: AnyTypeDecl, cache: TypeCache = Nil) {
+	override function findBinaryOp(ctx: Ctx, op: BinaryOp, from: Type, cache: TypeCache = Nil) {
 		final candidates: Array<BinaryOpKind> = [];
 
 		for(oper in operators) oper._match(

@@ -291,6 +291,10 @@ class Category extends AnyTypeDecl {
 		throw "NYI!";
 	}
 
+	function getNative(): Null<NativeKind> {
+		throw "NYI!";
+	}
+
 	function isFlags(): Bool {
 		throw "NYI!";
 	}
@@ -359,7 +363,7 @@ class Category extends AnyTypeDecl {
 
 	// Method lookup
 
-	function findSingleStatic(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {
+	function findSingleStatic(ctx: Ctx, name: String, from: Type, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {
 		//if(type.exists(t -> cache.contains(t)) || lookup._match(at(d is TypeDecl) => cache.contains(d.thisType), _ => false)) return null;
 
 		for(mem in staticMembers) {
@@ -445,7 +449,7 @@ class Category extends AnyTypeDecl {
 		return null;
 	}
 
-	function findMultiInst(ctx: Ctx, names: Array<String>, from: AnyTypeDecl, setter = false, cache: TypeCache = Nil): Array<MultiInstKind> {
+	function findMultiInst(ctx: Ctx, names: Array<String>, from: Type, setter = false, cache: TypeCache = Nil): Array<MultiInstKind> {
 		//if(type.exists(t -> cache.contains(t)) || lookup._match(at(d is TypeDecl) => cache.contains(d.thisType), _ => false)) return null;
 
 		final candidates: Array<MultiInstKind> = [];
@@ -497,7 +501,7 @@ class Category extends AnyTypeDecl {
 	}
 
 
-	function findBinaryOp(ctx: Ctx, op: BinaryOp, from: AnyTypeDecl, cache: TypeCache = Nil): Array<BinaryOpKind> {
+	function findBinaryOp(ctx: Ctx, op: BinaryOp, from: Type, cache: TypeCache = Nil): Array<BinaryOpKind> {
 		return [];
 	}
 

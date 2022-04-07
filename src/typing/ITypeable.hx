@@ -35,6 +35,7 @@ interface ITypeable extends ITypeLookup {
 	// Attributes
 
 	function isNative(kind: NativeKind): Bool;
+	function getNative(): Null<NativeKind>;
 
 	function isFlags(): Bool;
 
@@ -64,6 +65,14 @@ interface ITypeable extends ITypeLookup {
 	function canSeeMethod(method: AnyMethod): Bool;
 
 
+	// Cases
+
+	function allValueCases(): Array<ValueCase>;
+	
+	function allTaggedCases(): Array<TaggedCase>;
+
+
+
 	// Members
 
 	function instMembers(from: AnyTypeDecl): Array<Member>;
@@ -81,7 +90,7 @@ interface ITypeable extends ITypeLookup {
 	function findSingleStatic(
 		ctx: Ctx,
 		name: String,
-		from: AnyTypeDecl,
+		from: Type,
 		getter: Bool = false,
 		cache: TypeCache = Nil
 	): Null<SingleStaticKind>;
@@ -105,7 +114,7 @@ interface ITypeable extends ITypeLookup {
 	function findMultiInst(
 		ctx: Ctx,
 		names: Array<String>,
-		from: AnyTypeDecl,
+		from: Type,
 		setter: Bool = false,
 		cache: TypeCache = Nil
 	): Array<MultiInstKind>;
@@ -127,7 +136,7 @@ interface ITypeable extends ITypeLookup {
 	function findBinaryOp(
 		ctx: Ctx,
 		op: BinaryOp,
-		from: AnyTypeDecl,
+		from: Type,
 		cache: TypeCache = Nil
 	): Array<BinaryOpKind>;
 

@@ -109,5 +109,6 @@ class Int of Native.Int32, Num {
 	operator `<=` [char (Char)] (Bool) is inline => return this <= char[Int]
 
 
+	on [Int] is inline => return this
 	on [Char] is native `cast_i32_u8`
 }

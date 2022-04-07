@@ -120,6 +120,10 @@ class StrongAlias extends Alias {
 		return !noInherit && type.isNative(kind);
 	}
 
+	override function getNative() {
+		return type.getNative();
+	}
+
 	override function isFlags() {
 		return !noInherit && type.isFlags();
 	}
@@ -160,6 +164,17 @@ class StrongAlias extends Alias {
 	}
 
 
+	// Cases
+
+	override function allValueCases(): Array<ValueCase> {
+		return type.allValueCases();
+	}
+	
+	override function allTaggedCases(): Array<TaggedCase> {
+		return type.allTaggedCases();
+	}
+
+
 	// Members
 
 	override function instMembers(from: AnyTypeDecl) {
@@ -194,7 +209,7 @@ class StrongAlias extends Alias {
 
 	// Method lookup
 
-	override function findSingleStatic(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {
+	override function findSingleStatic(ctx: Ctx, name: String, from: Type, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {
 		if(cache.contains(thisType)) return null;
 		
 		for(mem in staticMembers) {
@@ -293,7 +308,7 @@ class StrongAlias extends Alias {
 	}
 
 
-	override function findMultiInst(ctx: Ctx, names: Array<String>, from: AnyTypeDecl, setter = false, cache: TypeCache = Nil) {
+	override function findMultiInst(ctx: Ctx, names: Array<String>, from: Type, setter = false, cache: TypeCache = Nil) {
 		if(cache.contains(thisType)) return [];
 		
 		final candidates: Array<MultiInstKind> = [];
@@ -410,7 +425,7 @@ class StrongAlias extends Alias {
 	}
 
 
-	override function findBinaryOp(ctx: Ctx, op: BinaryOp, from: AnyTypeDecl, cache: TypeCache = Nil) {
+	override function findBinaryOp(ctx: Ctx, op: BinaryOp, from: Type, cache: TypeCache = Nil) {
 		final candidates: Array<BinaryOpKind> = [];
 
 		for(oper in operators) oper._match(

@@ -27,7 +27,7 @@ using util.List2.List2Helper;
 using util.List3.List3Helper;
 using util.Strings;
 using util.Chars;
-using util.Math;
+using util.MathTools;
 
 #if !macro
 using compiler.Type.TypeTools;

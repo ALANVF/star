@@ -2,10 +2,14 @@ alias TypeVarCtx (Dict[TypeVar, Type])
 
 kind Ctx {
 	;-- A type decl
-	has [decl: (TypeDecl)]
+	has [decl: (TypeDecl)] {
+		thisType = decl.thisType
+	}
 
 	;-- A category
-	has [category: (Category)]
+	has [category: (Category)] {
+		thisType = category.thisType
+	}
 	
 	;-- An empty method
 	has [emptyMethod: (EmptyMethod)]
@@ -81,7 +85,6 @@ kind Ctx {
 	on [innerDecl: decl (TypeDecl)] (This) {
 		return This[
 			outer: Maybe[the: this]
-			thisType: decl.thisType
 			:decl
 		]
 	}
@@ -89,7 +92,6 @@ kind Ctx {
 	on [innerCategory: cat (Category)] (This) {
 		return This[
 			outer: Maybe[the: this]
-			thisType: cat.thisType
 			category: cat
 		]
 	}
@@ -138,12 +140,18 @@ kind Ctx {
 		-> thisType = thisType
 	}
 
-	on [innerObjCascade: type (Type)] (This) {
+	on [innerObjCascade: type (Maybe[Type])] (This) {
 		return This[
 			outer: Maybe[the: this]
-			thisType: type
-			objCascade: Maybe[the: type]
+			thisType: type[orElse: thisType] ;@@ TODO: fix
+			objCascade: type
 		]
+	}
+
+	on [innerTypeCascade: type (Type)] (This) {
+		return This[typeCascade]
+		-> outer = Maybe[the: this]
+		-> thisType = type
 	}
 
 	on [innerTypevars: typevars (TypeVarCtx)] (This) {

@@ -156,7 +156,7 @@ class Array[T] of Values[T] {
 	on [zip: other (Array[U])] (Array[Tuple[T, U]]) {
 		if length != other.length => throw "Zip error: arrays must be of the same length!"
 
-		my result = #[]
+		my result = Array[Tuple[T, U]] #[]
 
 		for my i from: 0 upto: length {
 			result[add: #{buffer[at: i], other[Unsafe at: i]}]
@@ -168,9 +168,9 @@ class Array[T] of Values[T] {
 	type U
 	type V
 	on [zip: other (Array[U]) collect: func (Func[V, T, U])] (Array[V]) {
-		my result = This[V][new: length]
+		my result = Array[V][new: length]
 
-		for my i from: 0 upto: _.length {
+		for my i from: 0 upto: length {
 			result[add: func[call: buffer[at: i], other[Unsafe at: i]]]
 		}
 		

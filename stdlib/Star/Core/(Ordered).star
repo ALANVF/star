@@ -1,7 +1,7 @@
 protocol Ordered of Comparable {
-    on [next] (This)
-    on [previous] (This)
+    on [next] (This) is inline => return ++(this)
+    on [previous] (This) is inline => return --(this)
 
-	operator `++` (This) is inline => return this[next]
-	operator `--` (This) is inline => return this[previous]
+	operator `++` (This)
+	operator `--` (This)
 }

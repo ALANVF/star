@@ -384,10 +384,11 @@ class Dumper {
 			}, _ => {});
 			write(':member #${mem.name.name}:');
 		},
-		at(MSTaggedCase(ms, tcase, partial)) => {
-			if(ms.length > 0) {
+		at(MSTaggedCase(ms1, tcase, ms2, partial)) => {
+			if(ms1.length > 0 || ms2.length > 0) {
 				write(":members [");
-				write(ms, " ", m -> write("#"+m.name.name+":"));
+				write(ms1, " ", m -> write("#"+m.name.name+":"));
+				write(ms2, " ", m -> write("#"+m.name.name+":"));
 				write("]");
 				nextLine();
 			}
@@ -831,11 +832,13 @@ class Dumper {
 			write(")");
 		},
 
-		at(StepMember(setMsg, _, _) | StepMessage(setMsg, _, _)) => {
+		at(StepMember(setMsg, _, step) | StepMessage(setMsg, _, step)) => {
 			write("(send");
 			level++;
 			nextLine();
 			dump(setMsg);
+			nextLine();
+			write(step.digForMethod().op.symbol()); // TODO
 			level--;
 			write(")");
 		},
@@ -884,11 +887,13 @@ class Dumper {
 			write(")");
 		},
 
-		at(StepMember(setMsg, _, _) | StepMessage(setMsg, _, _)) => {
+		at(StepMember(setMsg, _, step) | StepMessage(setMsg, _, step)) => {
 			write("(send");
 			level++;
 			nextLine();
 			dump(setMsg);
+			nextLine();
+			write(step.digForMethod().op.symbol()); // TODO
 			level--;
 			write(")");
 		},

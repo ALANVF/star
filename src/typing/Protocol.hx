@@ -122,7 +122,7 @@ class Protocol extends ClassLike {
 	}
 
 
-	override function defaultSingleStatic(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false) {
+	override function defaultSingleStatic(ctx: Ctx, name: String, from: Type, getter = false) {
 		if(this != Pass2.STD_Value && !getter) {
 			return Pass2.STD_Value.findSingleStatic(ctx, name, from, getter);
 		} else {
@@ -130,7 +130,7 @@ class Protocol extends ClassLike {
 		}
 	}
 
-	override function findSingleStatic(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {
+	override function findSingleStatic(ctx: Ctx, name: String, from: Type, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {
 		if(cache.contains(thisType)) return null;
 		
 		if(!getter) {
@@ -258,7 +258,7 @@ class Protocol extends ClassLike {
 	}
 
 
-	override function defaultBinaryOp(ctx: Ctx, op: BinaryOp, from: AnyTypeDecl) {
+	override function defaultBinaryOp(ctx: Ctx, op: BinaryOp, from: Type) {
 		if(this != Pass2.STD_Value) {
 			return Pass2.STD_Value.findBinaryOp(ctx, op, from);
 		} else {

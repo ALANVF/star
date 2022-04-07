@@ -78,7 +78,7 @@ class OpaqueAlias extends Alias {
 
 	// Method lookup
 
-	override function findSingleStatic(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {
+	override function findSingleStatic(ctx: Ctx, name: String, from: Type, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {
 		if(cache.contains(thisType)) return null;
 		
 		for(mth in staticMethods) mth._match(
@@ -150,7 +150,7 @@ class OpaqueAlias extends Alias {
 	}
 
 
-	override function findMultiInst(ctx: Ctx, names: Array<String>, from: AnyTypeDecl, setter = false, cache: TypeCache = Nil) {
+	override function findMultiInst(ctx: Ctx, names: Array<String>, from: Type, setter = false, cache: TypeCache = Nil) {
 		if(cache.contains(thisType)) return [];
 		
 		final candidates: Array<MultiInstKind> = [];
@@ -242,7 +242,7 @@ class OpaqueAlias extends Alias {
 	}
 
 	
-	override function findBinaryOp(ctx: Ctx, op: BinaryOp, from: AnyTypeDecl, cache: TypeCache = Nil) {
+	override function findBinaryOp(ctx: Ctx, op: BinaryOp, from: Type, cache: TypeCache = Nil) {
 		final candidates: Array<BinaryOpKind> = [];
 
 		for(oper in operators) oper._match(

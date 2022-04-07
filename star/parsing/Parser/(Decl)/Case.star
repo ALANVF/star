@@ -10,6 +10,9 @@ kind Case of Decl {
 	has [tag: (Delims[Tag]) assoc: (Maybe[Message[Type]])]
 
 	on [displayName] (Str) is getter {
-		return "case"
+		match this {
+			at This[name: _ value: _] => return "value case"
+			at This[tag: _ assoc: _] => return "tagged case"
+		}
 	}
 }

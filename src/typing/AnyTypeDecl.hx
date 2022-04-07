@@ -24,6 +24,20 @@ abstract class AnyTypeDecl implements ITypeable implements ITypeLookupDecl {
 		throw null;
 	}
 
+
+	// Cases
+
+	function allValueCases(): Array<ValueCase> {
+		return [];
+	}
+	
+	function allTaggedCases(): Array<TaggedCase> {
+		return [];
+	}
+
+
+	// Categories
+
 	function findThisCategory(
 		ctx: Ctx,
 		cat: Type,

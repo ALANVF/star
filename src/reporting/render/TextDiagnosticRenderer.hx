@@ -274,24 +274,24 @@ class TextDiagnosticRenderer implements IDiagnosticRenderer {
 		final sourceFile = infos[0].span.source.nonNull();
 
 		// Now we collect each line primitive
-		var lastLineIndex = None;
+		var lastLineIndex: Null<Int> = null;
 
 		for(j in 0...groupedInfos.length) {
 			final infoGroup = groupedInfos[j];
 			
 			// First we determine the range we need to print for this info
 			final currentLineIndex = infoGroup.key;
-			final minLineIndex = util.Math.max(lastLineIndex.orElse(0), currentLineIndex - surroundingLines);
-			var maxLineIndex = util.Math.min(sourceFile.lineCount, currentLineIndex + surroundingLines + 1);
+			final minLineIndex = lastLineIndex._or(0).max(currentLineIndex - surroundingLines);
+			var maxLineIndex = sourceFile.lineCount.min(currentLineIndex + surroundingLines + 1);
 			
 			if(j < groupedInfos.length - 1) {
 				// There's a chance we step over to the next annotation
 				final nextGroupLineIndex = groupedInfos[j + 1].key;
-				maxLineIndex = util.Math.min(maxLineIndex, nextGroupLineIndex);
+				maxLineIndex = maxLineIndex.min(nextGroupLineIndex);
 			}
 			
 			// Determine if we need dotting or a line in between
-			lastLineIndex.forEach(index -> {
+			lastLineIndex._and(index => {
 				final difference = minLineIndex - index;
 				if(difference <= connectUpLines) {
 					// Difference is negligible, connect them up, no reason to dot it out
@@ -303,7 +303,7 @@ class TextDiagnosticRenderer implements IDiagnosticRenderer {
 					result.push(Dot);
 				}
 			});
-			lastLineIndex = Some(maxLineIndex);
+			lastLineIndex = maxLineIndex;
 			
 			// Now we need to print all the relevant lines
 			for(i in minLineIndex...maxLineIndex) {

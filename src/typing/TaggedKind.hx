@@ -108,9 +108,28 @@ class TaggedKind extends Kind {
 	}
 
 
+	// Cases
+
+	override function allTaggedCases(): Array<TaggedCase> {
+		var res = [];
+
+		for(parent in parents) {
+			res = res.concat(parent.allTaggedCases());
+		}
+
+		for(ref in refinees) {
+			res = res.concat(ref.allTaggedCases());
+		}
+
+		res = res.concat(taggedCases);
+
+		return res;
+	}
+
+
 	// Method lookup
 
-	override function findSingleStatic(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {
+	override function findSingleStatic(ctx: Ctx, name: String, from: Type, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {
 		if(cache.contains(thisType)) return null;
 		
 		if(!getter) for(tcase in taggedCases) {
@@ -137,12 +156,13 @@ class TaggedKind extends Kind {
 			tcase._match(
 				at(mcase is MultiTaggedCase) => {
 					if(mcase.params.every2Strict(names, (l, n) -> l.label.name == n)) {
-						candidates = [MSTaggedCase(/*[] HAXE DUMB DON'T DO THIS */ EMPTY_ARRAY, mcase)]; break;
+						candidates = [MSTaggedCase(/*[] HAXE DUMB DON'T DO THIS */ EMPTY_ARRAY, mcase, EMPTY_ARRAY)]; break;
 					} else {
 						// BAD
 						if(/*!names.contains("_") &&*/ names.isUnique()) {
 							final mems = instMembers(this);
-							final found = [];
+							final found1 = [];
+							final found2 = [];
 							var bad = false;
 
 							var begin = 0;
@@ -151,7 +171,7 @@ class TaggedKind extends Kind {
 
 								mems.find(mem -> mem.name.name == name)._match(
 									at(mem!) => if(from.canSeeMember(mem)) {
-										found.push(mem);
+										found1.push(mem);
 									} else {
 										bad = true;
 										break;
@@ -171,7 +191,7 @@ class TaggedKind extends Kind {
 
 								mems.find(mem -> mem.name.name == name)._match(
 									at(mem!) => if(from.canSeeMember(mem)) {
-										found.push(mem);
+										found2.unshift(mem);
 									} else {
 										bad = true;
 										break;
@@ -190,10 +210,10 @@ class TaggedKind extends Kind {
 
 								mcase.params.matchesNames(subNames)._match(
 									at(Yes) => {
-										candidates = [MSTaggedCase(found, mcase)]; break;
+										candidates = [MSTaggedCase(found1, mcase, found2)]; break;
 									},
 									at(Partial(indexes)) => {
-										candidates = [MSTaggedCase(found, mcase, indexes)]; break;
+										candidates = [MSTaggedCase(found1, mcase, found2, indexes)]; break;
 									},
 									at(No) => {}
 								);
@@ -236,7 +256,7 @@ class TaggedKind extends Kind {
 	*/
 
 
-	override function findBinaryOp(ctx: Ctx, op: BinaryOp, from: AnyTypeDecl, cache: TypeCache = Nil) {
+	override function findBinaryOp(ctx: Ctx, op: BinaryOp, from: Type, cache: TypeCache = Nil) {
 		final res = super.findBinaryOp(ctx, op, from, cache);
 
 		if(_isFlags) {

@@ -16,9 +16,9 @@ module Pass1 {
 		for my unit in: dir.units => This[resolve: unit]
 	}
 
-	on [resolve: proj (Project)] {
-		This[resolve: proj[Dir]]
-		match proj.main at Maybe[the: my main] => This[resolve: main]
+	on [resolve: project (Project)] {
+		This[resolve: project[Dir]]
+		match project.main at Maybe[the: my main] => This[resolve: main]
 	}
 
 	on [resolve: unit (Unit)] {

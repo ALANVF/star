@@ -100,9 +100,28 @@ class ValueKind extends Kind {
 	}
 
 
+	// Cases
+
+	override function allValueCases(): Array<ValueCase> {
+		var res = [];
+
+		for(parent in parents) {
+			res = res.concat(parent.allValueCases());
+		}
+
+		for(ref in refinees) {
+			res = res.concat(ref.allValueCases());
+		}
+
+		res = res.concat(valueCases);
+
+		return res;
+	}
+
+
 	// Method lookup
 
-	override function findSingleStatic(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {
+	override function findSingleStatic(ctx: Ctx, name: String, from: Type, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {
 		if(cache.contains(thisType)) return null;
 		
 		for(vcase in valueCases) {
@@ -133,7 +152,7 @@ class ValueKind extends Kind {
 	}
 
 
-	override function findBinaryOp(ctx: Ctx, op: BinaryOp, from: AnyTypeDecl, cache: TypeCache = Nil) {
+	override function findBinaryOp(ctx: Ctx, op: BinaryOp, from: Type, cache: TypeCache = Nil) {
 		final res = super.findBinaryOp(ctx, op, from, cache);
 
 		if(_isFlags) {

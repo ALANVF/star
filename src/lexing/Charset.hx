@@ -85,7 +85,7 @@ abstract Charset(_Charset) {
 
 	@:op(A | B)
 	function union(other: Charset) {
-		final out = new Charset(util.Math.max(this.size, other.size));
+		final out = new Charset(this.size.max(other.size));
 
 		out.bytes.blit(0, this.bytes, 0, this.size);
 

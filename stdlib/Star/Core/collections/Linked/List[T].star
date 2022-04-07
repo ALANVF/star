@@ -59,7 +59,7 @@ class List[T] of Positional[T] {
 
 	on [at: index (Int) set: value (T)] is setter {
 		if index < 0 => index += length
-
+		
 		if 0 <= index < length {
 			this[linkAt: index].value = value
 		} else {

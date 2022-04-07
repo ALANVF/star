@@ -3,6 +3,9 @@ kind Use of Decl, Generic {
 	has [pragma: (Ident)]
 
 	on [displayName] (Str) is getter {
-		return "import"
+		match this {
+			at This[import: _ from: _ as: _] => return "import"
+			at This[pragma: _] => return "pragma"
+		}
 	}
 }

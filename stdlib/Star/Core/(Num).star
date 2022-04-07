@@ -68,4 +68,7 @@ protocol Num of Ordered {
 	operator `>=` [int (Num)] (Bool)
 	operator `<` [int (Num)] (Bool)
 	operator `<=` [int (Num)] (Bool)
+
+	on [Int]
+	on [Dec]
 }

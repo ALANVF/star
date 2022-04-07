@@ -65,7 +65,7 @@ abstract class Kind extends ClassLike {
 
 
 	// TODO: add multi-kind stuff
-	override function defaultBinaryOp(ctx: Ctx, op: BinaryOp, from: AnyTypeDecl): Array<BinaryOpKind> {
+	override function defaultBinaryOp(ctx: Ctx, op: BinaryOp, from: Type): Array<BinaryOpKind> {
 		return Pass2.STD_Value.findBinaryOp(ctx, op, from);
 	}
 }

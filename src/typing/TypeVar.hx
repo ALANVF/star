@@ -485,6 +485,11 @@ class TypeVar extends AnyFullTypeDecl {
 		return false;
 	}
 
+	function getNative() {
+		// TODO
+		return native;
+	}
+
 	function isFlags() {
 		if(_isFlags) return true;
 
@@ -572,6 +577,17 @@ class TypeVar extends AnyFullTypeDecl {
 	}
 
 
+	// Cases
+
+	override function allValueCases(): Array<ValueCase> {
+		return valueCases.copy(); // TODO
+	}
+	
+	override function allTaggedCases(): Array<TaggedCase> {
+		return taggedCases.copy(); // TODO
+	}
+
+
 	// Members
 
 	function instMembers(from: AnyTypeDecl) {
@@ -610,7 +626,7 @@ class TypeVar extends AnyFullTypeDecl {
 
 	// Method lookup
 	
-	function findSingleStatic(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {
+	function findSingleStatic(ctx: Ctx, name: String, from: Type, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {
 		for(mem in staticMembers) {
 			if(mem.matchesGetter(name) && from.canSeeMember(mem)) {
 				return SSFromTypevar(this, name, getter, SSMember(mem));
@@ -736,12 +752,13 @@ class TypeVar extends AnyFullTypeDecl {
 				tcase._match(
 					at(mcase is MultiTaggedCase) => {
 						if(mcase.params.every2Strict(names, (l, n) -> l.label.name == n)) {
-							candidates.push(MSFromTypevar(this, names, setter, MSTaggedCase([], mcase)));
+							candidates.push(MSFromTypevar(this, names, setter, MSTaggedCase([], mcase, [])));
 						} else {
 							// BAD
 							if(!names.contains("_") && names.isUnique()) {
 								final mems = instMembers(this);
-								final found = [];
+								final found1 = [];
+								final found2 = [];
 								var bad = false;
 	
 								var begin = 0;
@@ -750,7 +767,7 @@ class TypeVar extends AnyFullTypeDecl {
 
 								mems.find(mem -> mem.name.name == name)._match(
 									at(mem!) => if(from.canSeeMember(mem)) {
-										found.push(mem);
+										found1.push(mem);
 									} else {
 										bad = true;
 										break;
@@ -770,7 +787,7 @@ class TypeVar extends AnyFullTypeDecl {
 
 								mems.find(mem -> mem.name.name == name)._match(
 									at(mem!) => if(from.canSeeMember(mem)) {
-										found.push(mem);
+										found2.unshift(mem);
 									} else {
 										bad = true;
 										break;
@@ -785,7 +802,7 @@ class TypeVar extends AnyFullTypeDecl {
 							}
 
 							if(!bad && mcase.params.every2Strict(names.slice(begin, end + 1), (l, n) -> l.label.name == n)) {
-									candidates.push(MSFromTypevar(this, names, setter, MSTaggedCase(found, mcase)));
+									candidates.push(MSFromTypevar(this, names, setter, MSTaggedCase(found1, mcase, found2)));
 								}
 							}
 						}
@@ -875,7 +892,7 @@ class TypeVar extends AnyFullTypeDecl {
 	}
 
 
-	function findMultiInst(ctx: Ctx, names: Array<String>, from: AnyTypeDecl, setter = false, cache: TypeCache = Nil) {
+	function findMultiInst(ctx: Ctx, names: Array<String>, from: Type, setter = false, cache: TypeCache = Nil) {
 		if(cache.contains(thisType)) return [];
 		
 		final candidates: Array<MultiInstKind> = [];
@@ -991,7 +1008,7 @@ class TypeVar extends AnyFullTypeDecl {
 	}
 
 
-	function findBinaryOp(ctx: Ctx, op: BinaryOp, from: AnyTypeDecl, cache: TypeCache = Nil) {
+	function findBinaryOp(ctx: Ctx, op: BinaryOp, from: Type, cache: TypeCache = Nil) {
 		final candidates: Array<BinaryOpKind> = [];
 
 		for(oper in operators) oper._match(

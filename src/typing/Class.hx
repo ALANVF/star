@@ -144,7 +144,11 @@ class Class extends ClassLike {
 
 
 	override function isNative(kind: NativeKind) {
-		return native.exists(nat -> nat.matches(kind));
+		return native.exists(nat -> nat.matches(kind)) || super.isNative(kind);
+	}
+
+	override function getNative() {
+		return native.toNull()._or(super.getNative());
 	}
 
 	override function isStrong() {
@@ -164,7 +168,7 @@ class Class extends ClassLike {
 	}
 
 
-	override function defaultSingleStatic(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false) {
+	override function defaultSingleStatic(ctx: Ctx, name: String, from: Type, getter = false) {
 		if(!native.match(Some(NVoid | NBool))) {
 			return Pass2.STD_Value.findSingleStatic(ctx, name, from, getter);
 		} else {
@@ -172,7 +176,7 @@ class Class extends ClassLike {
 		}
 	}
 
-	override function findSingleStatic(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {
+	override function findSingleStatic(ctx: Ctx, name: String, from: Type, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {
 		if(cache.contains(thisType)) return null;
 		
 		if(!getter) {
@@ -307,7 +311,7 @@ class Class extends ClassLike {
 	}
 
 
-	override function defaultBinaryOp(ctx: Ctx, op: BinaryOp, from: AnyTypeDecl) {
+	override function defaultBinaryOp(ctx: Ctx, op: BinaryOp, from: Type) {
 		if(!native.match(Some(NVoid))) {
 			return Pass2.STD_Value.findBinaryOp(ctx, op, from);
 		} else {
