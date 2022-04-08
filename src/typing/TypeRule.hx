@@ -200,7 +200,7 @@ function evalWithType(self: TypeRule, type: Type, tvar: TypeVar) return self._ma
 
 
 function findCast(self: TypeRule, tvar: TypeVar,
-ctx: Ctx, target: Type, from: AnyTypeDecl, cache: TypeCache = Nil): Array<CastKind> return self._match(
+ctx: Ctx, target: Type, from: Type, cache: TypeCache = Nil): Array<CastKind> return self._match(
 	at(Eq(left, right)) => {
 		if(left == tvar.thisType) {
 			right.findCast(ctx, target, from, cache);

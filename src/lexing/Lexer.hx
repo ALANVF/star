@@ -21,21 +21,15 @@ class Lexer {
 		reader = new Reader(source.text);
 	}
 
-	static function nextToken(lex: Lexer, rdr: Reader, tokens: Tokens) {
-		return if(rdr.hasNext()) {
-			nextToken(lex, rdr, Cons(lex.readToken(), tokens));
-		} else {
-			tokens;
-		}
-	}
 	
 	public function tokenize() {
 		var errors = Nil;
 		var tokens = Nil;
 		while(true) {
 			try {
-				// TODO: inline this so that we can keep tokens before error
-				tokens = nextToken(this, reader, tokens);
+				while(reader.hasNext()) {
+					tokens = tokens.prepend(readToken());
+				}
 				break;
 			} catch(eof: Eof) {
 				break;

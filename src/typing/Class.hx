@@ -282,7 +282,7 @@ class Class extends ClassLike {
 		}
 	}
 
-	override function findCast(ctx: Ctx, target: Type, from: AnyTypeDecl, cache: TypeCache = Nil): Array<CastKind> {
+	override function findCast(ctx: Ctx, target: Type, from: Type, cache: TypeCache = Nil): Array<CastKind> {
 		final res = super.findCast(ctx, target, from, cache);
 
 		native._match(

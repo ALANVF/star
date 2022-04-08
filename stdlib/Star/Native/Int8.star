@@ -1,11 +1,9 @@
 class Int8 of Core.Ordered is native[repr: `int` bits: 8 signed: true] is strong {
-	on [next] (This) is native `i8_succ`
-	on [previous] (This) is native `i8_pred`
-
-
 	operator `?` (Core.Bool) is native `i8_truthy`
 	operator `-` (This) is native `i8_neg`
 	operator `~` (This) is native `i8_compl`
+	operator `++` (This) is native `i8_succ`
+	operator `--` (This) is native `i8_pred`
 	
 	operator `+` [int (This)] (This) is native `i8_add`
 	operator `-` [int (This)] (This) is native `i8_sub`

@@ -1,11 +1,9 @@
 class UInt16 of Core.Ordered is native[repr: `int` bits: 16 signed: false] {
-	on [next] (This) is native `u16_succ`
-	on [previous] (This) is native `u16_pred`
-
-	
 	operator `?` (Core.Bool) is native `u16_truthy`
 	operator `-` (This) is native `u16_neg`
 	operator `~` (This) is native `u16_compl`
+	operator `++` (This) is native `u16_succ`
+	operator `--` (This) is native `u16_pred`
 	
 	operator `+` [int (This)] (This) is native `u16_add`
 	operator `-` [int (This)] (This) is native `u16_sub`

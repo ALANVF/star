@@ -1,11 +1,9 @@
 class UInt64 of Core.Ordered is native[repr: `int` bits: 64 signed: false] is strong {
-	on [next] (This) is native `u64_succ`
-	on [previous] (This) is native `u64_pred`
-	
-
 	operator `?` (Core.Bool) is native `u64_truthy`
 	operator `-` (This) is native `u64_neg`
 	operator `~` (This) is native `u64_compl`
+	operator `++` (This) is native `u32_succ`
+	operator `--` (This) is native `u32_pred`
 	
 	operator `+` [int (This)] (This) is native `u64_add`
 	operator `-` [int (This)] (This) is native `u64_sub`

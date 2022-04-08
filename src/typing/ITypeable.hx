@@ -122,7 +122,7 @@ interface ITypeable extends ITypeLookup {
 	function findCast(
 		ctx: Ctx,
 		target: Type,
-		from: AnyTypeDecl,
+		from: Type,
 		cache: TypeCache = Nil
 	): Array<CastKind>;
 

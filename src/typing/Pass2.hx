@@ -113,6 +113,8 @@ var STD_Iterable: Type;
 var STD_Iterable1: TypeDecl;
 var STD_Iterable2: TypeDecl;
 var STD_Iterator: Type;
+var STD_Iterator1: TypeDecl;
+var STD_Iterator2: TypeDecl;
 
 function initSTD(std: Project) {
 	final t: Type = {t: TBlank, span: null};
@@ -183,6 +185,23 @@ function initSTD(std: Project) {
 		_ => throw "internal error: bad Iterable type!"
 	);
 	STD_Iterator = std.findType(List3.of([null, "Star", []], [null, "Core", []], [null, "Iterator", []]), Inside, null).nonNull();
+	STD_Iterator._match(
+		at({t: TMulti([
+			{t: TConcrete(decl1) | TModular({t: TConcrete(decl1)}, _)},
+			{t: TConcrete(decl2) | TModular({t: TConcrete(decl2)}, _)}
+		])}) => {
+			if(decl1.params.length == 1 && decl2.params.length == 2) {
+				STD_Iterator1 = decl1;
+				STD_Iterator2 = decl2;
+			} else if(decl1.params.length == 2 && decl2.params.length == 1) {
+				STD_Iterator1 = decl2;
+				STD_Iterator2 = decl1;
+			} else {
+				throw "internal error: bad Iterator type!";
+			}
+		},
+		_ => throw "internal error: bad Iterator type!"
+	);
 }
 
 typedef PatternBindings = Map<String, Tuple2<Span, Type>>;
@@ -2066,7 +2085,7 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 
 		at(Cast(null, type)) => {
 			final target = ctx.getType(type)._or(return null).getLeastSpecific();
-			t.findCast(ctx, target, ctx.typeDecl)._match(
+			t.findCast(ctx, target, ctx.typeDecl.thisType)._match(
 				at([]) => {
 					ctx.addError(Type_UnknownCast(ctx, t, target, begin.union(end)));
 					null;
@@ -2082,7 +2101,7 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 
 			if(tparent.hasChildType(t)) {
 				final target = ctx.getType(type)._or(return null).getLeastSpecific();
-				tparent.findCast(ctx, target, ctx.typeDecl)._match(
+				tparent.findCast(ctx, target, ctx.typeDecl.thisType)._match(
 					at([]) => {
 						throw 'error: value of type `${t.fullName()}` does not have a supertype `${tparent.fullName()}` that can be cast to type `${target.fullName()}`! ${begin.display()}';
 					},
@@ -2118,7 +2137,7 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 			).unique();
 			categories._match(
 				at([]) => throw 'error: value of type `${t.fullName()}` does not have the category `${tcat.fullName()}`! ${cat.span().display()}',
-				at([found]) => found.findCast(ctx, target, ctx.typeDecl)._match(
+				at([found]) => found.findCast(ctx, target, ctx.typeDecl.thisType)._match(
 					at([]) => {
 						throw 'error: value of type `${t.fullName()}` cannot be cast to type `${target.fullName()}` in category `${found.fullName()}`! ${begin.display()}';
 					},
@@ -2128,7 +2147,7 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 					)
 				),
 				at(found) => found
-					.filterMap(f -> f.findCast(ctx, target, ctx.typeDecl).unique().reduceOverloads(t, target))
+					.filterMap(f -> f.findCast(ctx, target, ctx.typeDecl.thisType).unique().reduceOverloads(t, target))
 					.filter(c -> c.length != 0)
 				._match(
 					at([]) => throw 'error: value of type `${t.fullName()}` cannot be cast to type `${target.fullName()}` in any categories of: `${found.map(f -> f.fullName()).join(", ")}`! ${begin.display()}',
@@ -2534,7 +2553,7 @@ static function typeObjCascade(ctx: Ctx, type: Null<Type>, cascade: UCascade<UEx
 
 				at(Cast(null, ty)) => {
 					final target = ctx.getType(ty)._or(return null);
-					t.findCast(ctx, target, ctx.typeDecl)._match(
+					t.findCast(ctx, target, ctx.typeDecl.thisType)._match(
 						at([]) => throw 'error: value of type ${t.fullName()} cannot be cast to type `${target.fullName()}`!',
 						at(casts) => {
 							ret = target;

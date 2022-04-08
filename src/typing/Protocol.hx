@@ -236,7 +236,7 @@ class Protocol extends ClassLike {
 	}
 
 
-	override function findCast(ctx: Ctx, target: Type, from: AnyTypeDecl, cache: TypeCache = Nil) {
+	override function findCast(ctx: Ctx, target: Type, from: Type, cache: TypeCache = Nil) {
 		if(cache.contains(thisType)) return [];
 		
 		final candidates = super.findCast(ctx, target, from, cache);

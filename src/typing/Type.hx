@@ -1662,7 +1662,7 @@ class Type implements ITypeable {
 			at(TBlank) => throw "bad",
 			at(TMulti(types)) => types.every(ty -> ty.canSeeMember(member)),
 			at(TApplied(type, args)) => type.canSeeMember(member),
-			at(TTypeVar(typevar)) => throw "todo",
+			at(TTypeVar(typevar)) => typevar.canSeeMember(member),
 			at(TModular(type, unit)) => type.canSeeMember(member)
 		);
 	}
@@ -1676,7 +1676,7 @@ class Type implements ITypeable {
 			at(TBlank) => throw "bad",
 			at(TMulti(types)) => types.every(ty -> ty.canSeeMethod(method)),
 			at(TApplied(type, args)) => type.canSeeMethod(method),
-			at(TTypeVar(typevar)) => throw "todo",
+			at(TTypeVar(typevar)) => typevar.canSeeMethod(method),
 			at(TModular(type, unit)) => type.canSeeMethod(method)
 		);
 	}
@@ -1970,7 +1970,7 @@ class Type implements ITypeable {
 	}
 
 	
-	function findCast(ctx: Ctx, target: Type, from: AnyTypeDecl, cache: TypeCache = Nil): Array<CastKind> {
+	function findCast(ctx: Ctx, target: Type, from: Type, cache: TypeCache = Nil): Array<CastKind> {
 		return t._match(
 			at(TPath(depth, lookup, source)) => throw "todo",
 			at(TLookup(type, lookup, source)) => throw "todo",

@@ -1,11 +1,9 @@
 class Int64 of Core.Ordered is native[repr: `int` bits: 64 signed: true] is strong {
-	on [next] (This) is native `i64_succ`
-	on [previous] (This) is native `i64_pred`
-	
-
 	operator `?` (Core.Bool) is native `i64_truthy`
 	operator `-` (This) is native `i64_neg`
 	operator `~` (This) is native `i64_compl`
+	operator `++` (This) is native `i64_succ`
+	operator `--` (This) is native `i64_pred`
 	
 	operator `+` [int (This)] (This) is native `i64_add`
 	operator `-` [int (This)] (This) is native `i64_sub`

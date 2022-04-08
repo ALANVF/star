@@ -87,4 +87,11 @@ package codegen;
 			at([label, ..._]) => label
 		);
 	}
+
+	function popLoop(label: Null<String>) {
+		loopStack = loopStack.tail();
+		if(label == null) {
+			labels--;
+		}
+	}
 }

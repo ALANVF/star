@@ -259,7 +259,7 @@ class Main {
 					for(mth in cls.methods) {
 						mth._match(
 							at(
-								( {fuzzyName: "collect:" | "collectIf:" | "collectWhile:"} is typing.MultiMethod)
+								( {fuzzyName: "collect:" | "collectIf:" | "collectWhile:" | "addAll:"} is typing.MultiMethod)
 								| {name: {name: "chars" | "hash" |
 								  				"lowercase" | "uppercase" | "titlecase" | "capitalize"}} is typing.SingleMethod) => {
 								gen.write(mth);

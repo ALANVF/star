@@ -478,7 +478,7 @@ class Category extends AnyTypeDecl {
 	}
 
 
-	function findCast(ctx: Ctx, target: Type, from: AnyTypeDecl, cache: TypeCache = Nil) {
+	function findCast(ctx: Ctx, target: Type, from: Type, cache: TypeCache = Nil) {
 		//if(type.exists(t -> cache.contains(t)) || lookup._match(at(d is TypeDecl) => cache.contains(d.thisType), _ => false)) return null;
 
 		final candidates: Array<CastKind> = [];

@@ -217,7 +217,7 @@ class DirectAlias extends Alias {
 	}
 
 
-	override function findCast(ctx: Ctx, target: Type, from: AnyTypeDecl, cache: TypeCache = Nil) {
+	override function findCast(ctx: Ctx, target: Type, from: Type, cache: TypeCache = Nil) {
 		if(cache.contains(thisType)) return [];
 		
 		return type.findCast(ctx, target, from, cache + thisType);

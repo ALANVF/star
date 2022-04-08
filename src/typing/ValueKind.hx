@@ -134,7 +134,7 @@ class ValueKind extends Kind {
 	}
 
 
-	override function findCast(ctx: Ctx, target: Type, from: AnyTypeDecl, cache: TypeCache = Nil): Array<CastKind> {
+	override function findCast(ctx: Ctx, target: Type, from: Type, cache: TypeCache = Nil): Array<CastKind> {
 		return super.findCast(ctx, target, from, cache).concat(repr._match(
 			at(Some(r), when(!_isFlags && r.strictUnifyWithType(target) != null)) => [CUpcast(target)],
 			at(Some(r), when(_isFlags)) => target._match(

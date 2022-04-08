@@ -100,16 +100,23 @@ class Util {
 				var $n1 = __anon__Tuple2._1;
 				var $n2 = __anon__Tuple2._2;
 			};
+			case macro @final [$i{n1}, $i{n2}] = $rhs: macro @:mergeBlock {
+				final __anon__Tuple2 = $rhs;
+				final $n1 = __anon__Tuple2._1;
+				final $n2 = __anon__Tuple2._2;
+			};
 			case macro [$v1, $v2] = $rhs: macro @:mergeBlock {
 				final __anon__Tuple2 = $rhs;
 				${switch v1 {
 					case macro _: macro @:mergeBlock {};
 					case macro @var $i{n}: macro var $n = __anon__Tuple2._1;
+					case macro @final $i{n}: macro final $n = __anon__Tuple2._1;
 					default: macro $v1 = __anon__Tuple2._1;
 				}};
 				${switch v2 {
 					case macro _: macro @:mergeBlock {};
 					case macro @var $i{n}: macro var $n = __anon__Tuple2._2;
+					case macro @final $i{n}: macro final $n = __anon__Tuple2._2;
 					default: macro $v2 = __anon__Tuple2._2;
 				}};
 			};
@@ -120,21 +127,30 @@ class Util {
 				var $n2 = __anon__Tuple3._2;
 				var $n3 = __anon__Tuple3._3;
 			};
+			case macro @final [$i{n1}, $i{n2}, $i{n3}] = $rhs: macro @:mergeBlock {
+				final __anon__Tuple3 = $rhs;
+				final $n1 = __anon__Tuple3._1;
+				final $n2 = __anon__Tuple3._2;
+				final $n3 = __anon__Tuple3._3;
+			};
 			case macro [$v1, $v2, $v3] = $rhs: macro @:mergeBlock {
 				final __anon__Tuple3 = $rhs;
 				${switch v1 {
 					case macro _: macro @:mergeBlock {};
 					case macro @var $i{n}: macro var $n = __anon__Tuple3._1;
+					case macro @final $i{n}: macro final $n = __anon__Tuple3._1;
 					default: macro $v1 = __anon__Tuple3._1;
 				}};
 				${switch v2 {
 					case macro _: macro @:mergeBlock {};
 					case macro @var $i{n}: macro var $n = __anon__Tuple3._2;
+					case macro @final $i{n}: macro final $n = __anon__Tuple3._2;
 					default: macro $v2 = __anon__Tuple3._2;
 				}};
 				${switch v3 {
 					case macro _: macro @:mergeBlock {};
 					case macro @var $i{n}: macro var $n = __anon__Tuple3._3;
+					case macro @final $i{n}: macro final $n = __anon__Tuple3._3;
 					default: macro $v3 = __anon__Tuple3._3;
 				}};
 			};

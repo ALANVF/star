@@ -464,7 +464,7 @@ abstract class TypeDecl extends AnyFullTypeDecl {
 	}
 
 
-	function findCast(ctx: Ctx, target: Type, from: AnyTypeDecl, cache: TypeCache = Nil): Array<CastKind> {
+	function findCast(ctx: Ctx, target: Type, from: Type, cache: TypeCache = Nil): Array<CastKind> {
 		// TODO: fully implement
 		target.t._match(
 			at(TConcrete(sa is StrongAlias)) => {

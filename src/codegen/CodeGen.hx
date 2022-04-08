@@ -82,12 +82,13 @@ overload static function compile(ctx: GenCtx, stmt: TStmt): Opcodes return stmt.
 				OBreak(caseLabel)
 			]);
 
+			// TODO: fix leaky stack
 			res.push({
 				final matchCtx = ctx2.inner();
 				final captures = new Map<String, Capture>();
 				final pat = compile(matchCtx, exitCase, captures, value.t.nonNull(), pattern, false, true, true);
 	
-				var case_: Opcodes = [];
+				var case_: Opcodes = [ODup];
 	
 				compileCapturesPre(matchCtx, case_, captures);
 				case_ = case_.concat(pat);
@@ -191,23 +192,162 @@ overload static function compile(ctx: GenCtx, stmt: TStmt): Opcodes return stmt.
 	},
 
 	at(SForIn(lpat, lpat2, inExpr, cond, label, body)) => {
-		[];
+		final label2 = ctx.loop(label);
+		final exitLoop = OIfNot([
+			OBreak(label2)
+		]);
+		var res = compile(ctx, inExpr);
+
+		var kpat: Null<Pattern>, vpat: Pattern;
+		lpat2._andOr(lpat2 => {
+			kpat = lpat;
+			vpat = lpat2;
+		}, {
+			kpat = null;
+			vpat = lpat;
+		});
+
+		final etype = inExpr.t.nonNull();
+
+		if(etype.hasParentType(Pass2.STD_Array) || etype.hasParentType(Pass2.STD_Str)) {
+			final length = etype.findInstMember(/*BAD*/null, "length", false).nonNull();
+			final buffer = etype.findInstMember(/*BAD*/null, "buffer", false).nonNull();
+
+			final lenName = ctx.anon();
+			final bufName = ctx.anon();
+			final iname = kpat._andOr(kp => kp.p._match(
+				at(PMy(name)) => name,
+				at(PIgnore) => ctx.anon(),
+				_ => throw "NYI"
+			), {
+				ctx.anon();
+			});
+
+			final intref = world.getTypeRef(Pass2.STD_Int);
+			
+			res.push(ODup);
+			res.push(ONewLocal(lenName, intref));
+			res.push(OGetMember(world.getInstID(length.getMember())));
+			res.push(OSetLocal(lenName));
+
+			res.push(ONewLocal(bufName, world.getTypeRef(buffer.retType().nonNull())));
+			res.push(OGetMember(world.getInstID(buffer.getMember())));
+			res.push(OSetLocal(bufName));
+
+			res.push(ONewLocal(iname, intref));
+			res.push(OInt32(0, true));
+			res.push(OSetLocal(iname));
+
+			final ctx2 = ctx.inner();
+			var loop = [
+				OGetLocal(iname),
+				OGetLocal(lenName),
+				ONative("i32_lt"),
+				exitLoop
+			];
+
+			loop.push(OGetLocal(bufName));
+			loop.push(OGetLocal(iname));
+			loop.push(ONative("ptr_get_at"));
+			
+			final captures = new Map<String, Capture>();
+			final pat = compile(ctx2, exitLoop, captures, /*TODO: cache this or smth*/ etype.iterElemType().nonNull(), vpat, true, true, true);
+
+			compileCapturesPre(ctx2, loop, captures);
+			loop = loop.concat(pat);
+			cond._and(cond => {
+				loop = loop.concat(compile(ctx2, cond));
+				loop.push(exitLoop);
+			});
+			compileCapturesPost(ctx2, loop, captures);
+			
+			loop = loop.concat(compile(ctx2, body));
+
+			res.push(OLoopThen(label2, loop, [
+				OGetLocal(iname),
+				ONative("i32_succ"),
+				OSetLocal(iname)
+			]));
+		} else {
+			final iterName = ctx.anon();
+
+			kpat._andOr(kpat => {
+				throw "TODO";
+			}, {
+				final elemType = etype.iterElemType().nonNull(); // TODO: cache this or smth
+				final iterType = Pass2.STD_Iterator1.applyArgs([elemType]).nonNull();
+
+				final casts = CastKind.reduceOverloads(
+					etype.findCast(null, iterType, etype),
+					etype,
+					iterType
+				)._match(
+					at([]) => throw 'Cannot iterate on type `${etype.fullName()}`!',
+					at(kinds = [_]) => kinds,
+					at(kinds) => throw 'Cannot find specific iterator for type `${etype.fullName()}`!'
+				);
+
+				final iterNext = iterType.findSingleInst(/*BAD*/null, "next", Pass2.STD_Iterator1).nonNull();
+				final iterRet = iterNext.retType().nonNull();
+				final noneCase = iterRet.allTaggedCases().find(c -> c is SingleTaggedCase).nonNull();
+				final noneCaseID = world.getID(noneCase);
+
+				res = res.concat(compile(iterType, casts));
+				res.push(ONewLocal(iterName, world.getTypeRef(iterType)));
+				res.push(OSetLocal(iterName));
+
+				final ctx2 = ctx.inner();
+				var loop = [
+					OGetLocal(iterName)
+				];
+
+				loop = loop.concat(compile(ctx2, iterNext, true));
+				
+				loop.push(ODup);
+				loop.push(OKindID);
+				loop.push(OTCaseID(world.getTypeRef(iterRet), noneCaseID));
+				loop.push(ONative("tcaseid_eq"));
+				loop.push(OIf([
+					OBreak(label2)
+				]));
+
+				loop.push(OKindSlot(0));
+
+				final captures = new Map<String, Capture>();
+				final pat = compile(ctx2, exitLoop, captures, elemType, vpat, true, true, true);
+
+				compileCapturesPre(ctx2, loop, captures);
+				loop = loop.concat(pat);
+				cond._and(cond => {
+					loop = loop.concat(compile(ctx2, cond));
+					loop.push(exitLoop);
+				});
+				compileCapturesPost(ctx2, loop, captures);
+
+				loop = loop.concat(compile(ctx2, body));
+
+				res.push(OLoop(label2, loop));
+			});
+		}
+
+		ctx.popLoop(label);
+
+		res;
 	},
 
 	at(SForRange(lvar, start, stop, by, cond, label, body)) => {
-		final ctx2 = ctx.inner();
-		final label2 = ctx2.loop(label);
+		final label2 = ctx.loop(label);
 		var res: Opcodes = [];
 
 		final lname = lvar._andOr(lv => lv.e._match(
 			at(EVarDecl(name, _, _)) => name,
 			_ => throw "NYI"
 		), {
-			ctx2.anon();
+			ctx.anon();
 		});
 
-		detuple(@var [startKind, startExpr] = start);
-		detuple(@var [stopKind, stopExpr] = stop);
+		detuple(@final [startKind, startExpr] = start);
+		detuple(@final [stopKind, stopExpr] = stop);
 
 		final startType = startExpr.t._or(throw "bad");
 		final stopType = stopExpr.t._or(throw "bad");
@@ -219,25 +359,25 @@ overload static function compile(ctx: GenCtx, stmt: TStmt): Opcodes return stmt.
 
 		if(startType.isNative(NInt32)) {
 			// Initialize loop var
-			res = res.concat(compile(ctx2, startExpr));
+			res = res.concat(compile(ctx, startExpr));
 			if(startKind == LoopAfter) {
 				res.push(ONative(downwards? "i32_pred" : "i32_succ"));
 			}
 			res.push(OSetLocal(lname));
 
 			var stopOps = stopExpr.e._match(
-				at(EName(_, _)) => compile(ctx2, stopExpr),
+				at(EName(_, _)) => compile(ctx, stopExpr),
 				_ => {
-					final name = ctx2.anon();
+					final name = ctx.anon();
 					
 					res.push(ONewLocal(name, world.getTypeRef(stopType)));
 					if(stopKind == LoopTimes) {
 						res.push(OGetLocal(lname));
 						if(by != null) throw "NYI!";
-						res = res.concat(compile(ctx2, stopExpr));
+						res = res.concat(compile(ctx, stopExpr));
 						res.push(ONative("i32_add"));
 					} else {
-						res = res.concat(compile(ctx2, stopExpr));
+						res = res.concat(compile(ctx, stopExpr));
 					}
 					res.push(OSetLocal(name));
 
@@ -246,11 +386,11 @@ overload static function compile(ctx: GenCtx, stmt: TStmt): Opcodes return stmt.
 			);
 
 			var byOp = by._and(e => {
-				final byName = ctx2.anon();
+				final byName = ctx.anon();
 				final byType = e.t._or(throw "bad");
 
 				res.push(ONewLocal(byName, world.getTypeRef(byType)));
-				res = res.concat(compile(ctx2, e));
+				res = res.concat(compile(ctx, e));
 				res.push(OSetLocal(byName));
 
 				OGetLocal(byName);
@@ -270,13 +410,13 @@ overload static function compile(ctx: GenCtx, stmt: TStmt): Opcodes return stmt.
 				OBreak(label2)
 			]));
 			cond._and(cond => {
-				loop = loop.concat(compile(ctx2, cond));
+				loop = loop.concat(compile(ctx, cond));
 				loop.push(OIfNot([
 					OBreak(label2)
 				]));
 			});
 
-			loop = loop.concat(compile(ctx2, body));
+			loop = loop.concat(compile(ctx, body));
 
 			// Loop tail
 			final then = byOp._andOr(op => [
@@ -295,6 +435,8 @@ overload static function compile(ctx: GenCtx, stmt: TStmt): Opcodes return stmt.
 		} else {
 			throw "todo"+startType.getNative();
 		}
+
+		ctx.popLoop(label);
 
 		res;
 	},
@@ -327,7 +469,52 @@ overload static function compile(ctx: GenCtx, stmt: TStmt): Opcodes return stmt.
 	},
 
 	at(STry(body, cases, orelse)) => {
-		[];
+		final tryOps = compile(ctx.inner(), body);
+		var catchOps: Opcodes = [];
+
+		final ctx2 = ctx.inner();
+		final catchLabel = ctx2.label();
+		final exitCatch = OBreak(catchLabel);
+
+		for(c in cases) { final pattern = c.pattern, cond = c.cond, then = c.then;
+			final caseLabel = ctx2.label();
+			final exitCase = OIfNot([
+				OBreak(caseLabel)
+			]);
+
+			catchOps.push({
+				final catchCtx = ctx2.inner();
+				final captures = new Map<String, Capture>();
+				final pat = compile(catchCtx, exitCase, captures, {t: TBlank, span: null}, pattern, false, true, true);
+	
+				var case_: Opcodes = [ODup];
+	
+				compileCapturesPre(catchCtx, case_, captures);
+				case_ = case_.concat(pat);
+				cond._and(cond => {
+					case_ = case_.concat(compile(catchCtx, cond));
+					case_.push(exitCase);
+				});
+				compileCapturesPost(catchCtx, case_, captures);
+				
+				case_ = case_.concat(compile(catchCtx, then));
+	
+				if(!case_.last().match(ORet | ORetVoid | OBreak(_) | ONext(_) | OThrow(_) | ORethrow)) {
+					case_.push(exitCatch);
+				}
+	
+				ODo(caseLabel, case_);
+			});
+		}
+
+		orelse._andOr(orelse => {
+			// maybe ban this? idk
+			catchOps = catchOps.concat(compile(ctx2, orelse));
+		}, {
+			catchOps.push(ORethrow);
+		});
+
+		[OTry(tryOps, catchOps)];
 	}
 );
 
@@ -824,6 +1011,7 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 	at(EPatternType(type)) => throw "bad"
 );
 
+// TODO: fix leaky stack
 overload static function compile(
 	ctx: GenCtx, exitCase: Opcode, captures: Map<String, Capture>, target: Type, pattern: Pattern,
 	isRhs: Bool, allowCaptures: Bool, uniqueCaptures: Bool
@@ -1007,13 +1195,33 @@ overload static function compile(
 					res.push(exitCase);
 				},
 				at(PTypeValueCase(type, valueCase)) => {
-					throw "TODO";
+					res.push(OKindID);
+					res.push(OVCaseID(world.getTypeRef(type), world.getID(valueCase)));
+					res.push(ONative(bound._match(
+						at(Inclusive) => "vcaseid_ge",
+						at(Exclusive) => "vcaseid_gt"
+					)));
+					res.push(exitCase);
 				},
 				at(PTypeTaggedCaseSingle(type, taggedCase)) => {
-					throw "TODO";
+					res.push(OKindID);
+					res.push(OTCaseID(world.getTypeRef(type), world.getID(taggedCase)));
+					res.push(ONative(bound._match(
+						at(Inclusive) => "tcaseid_ge",
+						at(Exclusive) => "tcaseid_gt"
+					)));
+					res.push(exitCase);
 				},
 				at(PTypeTaggedCaseMulti(type, taggedCase, args)) => {
-					throw "TODO";
+					if(!args.every(a -> a.p.match(PIgnore))) throw "bad";
+					
+					res.push(OKindID);
+					res.push(OTCaseID(world.getTypeRef(type), world.getID(taggedCase)));
+					res.push(ONative(bound._match(
+						at(Inclusive) => "tcaseid_ge",
+						at(Exclusive) => "tcaseid_gt"
+					)));
+					res.push(exitCase);
 				},
 				_ => throw "TODO"
 			);
@@ -1042,13 +1250,33 @@ overload static function compile(
 					res.push(exitCase);
 				},
 				at(PTypeValueCase(type, valueCase)) => {
-					throw "TODO";
+					res.push(OKindID);
+					res.push(OVCaseID(world.getTypeRef(type), world.getID(valueCase)));
+					res.push(ONative(bound._match(
+						at(Inclusive) => "vcaseid_le",
+						at(Exclusive) => "vcaseid_lt"
+					)));
+					res.push(exitCase);
 				},
 				at(PTypeTaggedCaseSingle(type, taggedCase)) => {
-					throw "TODO";
+					res.push(OKindID);
+					res.push(OTCaseID(world.getTypeRef(type), world.getID(taggedCase)));
+					res.push(ONative(bound._match(
+						at(Inclusive) => "tcaseid_le",
+						at(Exclusive) => "tcaseid_lt"
+					)));
+					res.push(exitCase);
 				},
 				at(PTypeTaggedCaseMulti(type, taggedCase, args)) => {
-					throw "TODO";
+					if(!args.every(a -> a.p.match(PIgnore))) throw "bad";
+					
+					res.push(OKindID);
+					res.push(OTCaseID(world.getTypeRef(type), world.getID(taggedCase)));
+					res.push(ONative(bound._match(
+						at(Inclusive) => "tcaseid_le",
+						at(Exclusive) => "tcaseid_lt"
+					)));
+					res.push(exitCase);
 				},
 				_ => throw "TODO"
 			);
@@ -1077,13 +1305,33 @@ overload static function compile(
 					res.push(exitCase);
 				},
 				at(PTypeValueCase(type, valueCase)) => {
-					throw "TODO";
+					res.push(OKindID);
+					res.push(OVCaseID(world.getTypeRef(type), world.getID(valueCase)));
+					res.push(ONative(minBound._match(
+						at(Inclusive) => "vcaseid_ge",
+						at(Exclusive) => "vcaseid_gt"
+					)));
+					res.push(exitCase);
 				},
 				at(PTypeTaggedCaseSingle(type, taggedCase)) => {
-					throw "TODO";
+					res.push(OKindID);
+					res.push(OTCaseID(world.getTypeRef(type), world.getID(taggedCase)));
+					res.push(ONative(minBound._match(
+						at(Inclusive) => "tcaseid_ge",
+						at(Exclusive) => "tcaseid_gt"
+					)));
+					res.push(exitCase);
 				},
 				at(PTypeTaggedCaseMulti(type, taggedCase, args)) => {
-					throw "TODO";
+					if(!args.every(a -> a.p.match(PIgnore))) throw "bad";
+					
+					res.push(OKindID);
+					res.push(OTCaseID(world.getTypeRef(type), world.getID(taggedCase)));
+					res.push(ONative(minBound._match(
+						at(Inclusive) => "tcaseid_ge",
+						at(Exclusive) => "tcaseid_gt"
+					)));
+					res.push(exitCase);
 				},
 				_ => throw "TODO"
 			);
@@ -1102,13 +1350,33 @@ overload static function compile(
 					res.push(exitCase);
 				},
 				at(PTypeValueCase(type, valueCase)) => {
-					throw "TODO";
+					res.push(OKindID);
+					res.push(OVCaseID(world.getTypeRef(type), world.getID(valueCase)));
+					res.push(ONative(maxBound._match(
+						at(Inclusive) => "vcaseid_le",
+						at(Exclusive) => "vcaseid_lt"
+					)));
+					res.push(exitCase);
 				},
 				at(PTypeTaggedCaseSingle(type, taggedCase)) => {
-					throw "TODO";
+					res.push(OKindID);
+					res.push(OTCaseID(world.getTypeRef(type), world.getID(taggedCase)));
+					res.push(ONative(maxBound._match(
+						at(Inclusive) => "tcaseid_le",
+						at(Exclusive) => "tcaseid_lt"
+					)));
+					res.push(exitCase);
 				},
 				at(PTypeTaggedCaseMulti(type, taggedCase, args)) => {
-					throw "TODO";
+					if(!args.every(a -> a.p.match(PIgnore))) throw "bad";
+					
+					res.push(OKindID);
+					res.push(OTCaseID(world.getTypeRef(type), world.getID(taggedCase)));
+					res.push(ONative(maxBound._match(
+						at(Inclusive) => "tcaseid_le",
+						at(Exclusive) => "tcaseid_lt"
+					)));
+					res.push(exitCase);
 				},
 				_ => throw "TODO"
 			);
@@ -1139,7 +1407,34 @@ overload static function compile(
 		},
 
 		at(PTuple(patterns)) => {
-			throw "TODO";
+			var res: Opcodes = [];
+			
+			if(target.unifyWithType(Pass2.STD_Tuple) == null) throw "bad";
+
+			final members = target.instMembers(target.t._match(
+				at(TConcrete(decl) | TInstance(decl, _, _)) => decl,
+				_ => throw "bad"
+			)).filter(mem -> !mem.isStatic);
+
+			if(members.length != patterns.length) throw "bad";
+
+			patterns._for(i => pat, { final mem = members[i];
+				pat.p._match(
+					at(PIgnore) => continue,
+					_ => {
+						final memID = world.getInstID(mem);
+						res.push(ODup);
+						res.push(OGetMember(memID));
+						res = res.concat(
+							compile(ctx, exitCase, captures, /* TODO */ mem.type.nonNull().getFrom(target), pat, isRhs, allowCaptures, uniqueCaptures)
+						);
+					}
+				);
+			});
+
+			if(!isRhs) res.push(OPop);
+
+			return res;
 		},
 
 		at(PTypeTuple(type, patterns)) => {
@@ -1147,7 +1442,29 @@ overload static function compile(
 		},
 
 		at(PTypeMembers(type, members)) => {
-			throw "TODO";
+			if(members.length == 0) throw "bad";
+
+			var res: Opcodes = [];
+
+			if(target.strictUnifyWithType(type) == null) {
+				final typeref = world.getTypeRef(type);
+
+				res.push(ODup);
+				res.push(OOfType(typeref));
+				res.push(exitCase);
+				res.push(if(type.hasParentType(target)) ODowncast(typeref) else OUpcast(typeref));
+			}
+
+			for(m in members) { detuple(@final [mem, pat] = m);
+				res.push(ODup);
+				res = res.concat(
+					compile(ctx, exitCase, captures, /* TODO */ mem.type.nonNull().getFrom(target).getFrom(type), pat, isRhs, allowCaptures, uniqueCaptures)
+				);
+			}
+
+			if(!isRhs) res.push(OPop);
+			
+			return res;
 		},
 
 		at(PTypeValueCase(type, valueCase)) => {
@@ -1477,13 +1794,15 @@ overload static function compile(ctx: GenCtx, type: Type, kind: SingleStaticKind
 		[OGetStaticMember(world.getTypeRef(type), id)];
 	},
 	at(SSTaggedCase(c)) => {
-		[];
+		final id = world.getID(c);
+		[OInitTKind(world.getTypeRef(type), id)];
 	},
 	at(SSTaggedCaseAlias(c)) => {
 		[];
 	},
 	at(SSValueCase(c)) => {
-		[];
+		final id = world.getID(c);
+		[OInitVKind(world.getTypeRef(type), id)];
 	},
 	at(SSFromTypevar(_, _, _, _)) => {
 		[];
@@ -1841,10 +2160,19 @@ overload static function compile(target: Type, candidates: Array<CastKind>): Opc
 				}
 			));
 
-			tctx._and(tctx => if(tctx.size() > 0) throw "NYI");
+			final ictx = tctx._andOr(tctx => (
+				if(tctx.size() > 0) {
+					final _ictx = new TVarInstCtx();
+					for(tv => t in tctx) {
+						_ictx[world.getTVar(tv)] = world.getTypeRef(t);
+					}
+					_ictx;
+				} else
+					null
+			), null);
 
 			final id = world.getID(mth);
-			[mth.typedBody != null ? OSend_C(id) : OSendDynamic_C(id)];
+			[mth.typedBody != null ? OSend_C(id, ictx) : OSendDynamic_C(id, ictx)];
 		},
 		at([CUpcast(parent)]) => {
 			final tref = world.getTypeRef(parent);
