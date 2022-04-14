@@ -231,7 +231,7 @@ typedef CaseMap<T: {}> = AccessMap<T, KindTag>;
 			at(TApplied(_, _)) => this.getTypeRef(type.simplify()), // TODO
 			at(TTypeVar(tvar)) => TTypeVar(this.getTVar(tvar)),
 			at(TModular(type2, _)) => this.getTypeRef(type2),
-			_ => throw "bad! "+type.fullName()
+			_ => throw "bad! "+type.fullName()+" "+type.span._andOr(s => s.display(), "???")
 		);
 	}
 }

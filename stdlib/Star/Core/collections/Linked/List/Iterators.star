@@ -10,7 +10,7 @@ class ListIterator[T] of Iterator[T] is hidden List {
 			;Value[value: my value next: link] = link[Unsafe Value[T]]
 			;return value
 			match link[Unsafe Value[T]] at Value[value: my value next: link = _] {
-				return value
+				return Maybe[the: value]
 			}
 		}
 	}
@@ -29,7 +29,7 @@ class LinkIterator[T] of Iterator[Value[T]] is hidden List {
 		} else {
 			my vlink = link'[Unsafe Value[T]]
 			link = vlink
-			return vlink
+			return Maybe[the: vlink]
 		}
 	}
 }

@@ -50,27 +50,27 @@ class Char of Ordered is native[repr: `int` bits: 8 signed: false] is strong {
 	;== Ranges
 
 	on [to: (This)] (Range[This]) is inline {
-		return Range[from: this :to]
+		return Range[This][from: this :to]
 	}
 
 	on [to: (This) by: (Int)] (Range[This]) is inline {
-		return Range[from: this :to :by]
+		return Range[This][from: this :to :by]
 	}
 
 	on [upto: (This)] (Range[This]) is inline {
-		return Range[from: this :upto]
+		return Range[This][from: this :upto]
 	}
 
 	on [upto: (This) by: (Int)] (Range[This]) is inline {
-		return Range[from: this :upto :by]
+		return Range[This][from: this :upto :by]
 	}
 
 	on [downto: (This)] (Range[This]) is inline {
-		return Range[from: this :downto]
+		return Range[This][from: this :downto]
 	}
 	
 	on [downto: (This) by: (Int)] (Range[This]) is inline {
-		return Range[from: this :downto :by]
+		return Range[This][from: this :downto :by]
 	}
 
 
@@ -111,6 +111,6 @@ class Char of Ordered is native[repr: `int` bits: 8 signed: false] is strong {
 	on [UInt32] is native `cast_u8_u32`
 	on [Int64] is native `cast_u8_i64`
 	on [UInt64] is native `cast_u8_u64`
-	on [Int] is native `cast_u8_i32`
+	;on [Int] is native `cast_u8_i32`
 	on [Str] is inline => return Str[new: this]
 }

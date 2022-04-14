@@ -247,7 +247,7 @@ kind Token {
 
 	on [maybeAssignableOp] (Maybe[Tuple[Span, Maybe[Assignable]]]) {
 		match this {
-			at This[eq] => return Maybe[the: #{span, Maybe[none]}]
+			at This[eq] => return Maybe[the: #{span, Maybe[Assignable][none]}]
 			at This[plusEq] => return Maybe[the: #{span, Maybe[the: Assignable[plus]]}]
 			at This[minusEq] => return Maybe[the: #{span, Maybe[the: Assignable[minus]]}]
 			at This[starEq] => return Maybe[the: #{span, Maybe[the: Assignable[times]]}]

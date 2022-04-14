@@ -180,7 +180,7 @@ overload static function compile(ctx: GenCtx, stmt: TStmt): Opcodes return stmt.
 	at(SDoWhile(body, label, cond)) => {
 		final ctx2 = ctx.inner();
 		final label2 = ctx2.loop(label);
-		[OLoopThen(label, (
+		[OLoopThen(label2, (
 			compile(ctx2, body)
 		), (
 			compile(ctx2, cond).concat([
@@ -2187,6 +2187,10 @@ overload static function compile(target: Type, candidates: Array<CastKind>): Opc
 			[ONativeCast(tref)];
 		},
 		_ => {
+			trace("TODO: ", candidates.map(c -> c._match(
+				at(CMethod(m, _)) => m.span.display(),
+				_ => Std.string(c)
+			)));
 			[];
 		}
 	);

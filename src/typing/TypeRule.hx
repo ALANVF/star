@@ -140,6 +140,19 @@ function hasParentDecl(self: TypeRule, decl: TypeDecl, tvar: TypeVar) return sel
 
 	at(Not(rule)) => !hasParentDecl(rule, decl, tvar),
 
+	at(Exists(t)) => {
+		final ctx: Ctx = {
+			where: WTypevars([]),
+			thisType: tvar.thisType // pretend that this works
+		};
+		t.trackEffectsIn(ctx)._andOr(effects => {
+			//trace(tvar, t, effects);
+			true;
+		}, {
+			false;
+		});
+	},
+
 	_ => throw "todo "+self+" "+decl.fullName()+" "+tvar.fullName()
 );
 

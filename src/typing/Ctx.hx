@@ -13,6 +13,7 @@ enum Where {
 	WMember(m: Member);
 	WTaggedCase(c: TaggedCase);
 	WBlock;
+	WBlockExpr;
 	WPattern;
 	WObjCascade(t: Null<Type>);
 	WTypeCascade;
@@ -52,6 +53,19 @@ enum Where {
 			_ => throw "bad"
 		)
 	);
+
+	var expectedReturnType(get, never): Null<Type>; private function get_expectedReturnType(): Null<Type> {
+		return where._match(
+			at(WDecl(_) | WCategory(_) | WBlockExpr) => null,
+			at(WEmptyMethod(_) | WTaggedCase(_) | WObjCascade(_) | WTypeCascade) => STD_Void.thisType,
+			at(WMember(mem)) => mem.type,
+			at(WMethod(_ is Init)) => STD_Void.thisType,
+			at(WMethod({type: ret} is CastMethod)) => ret,
+			at(WMethod({ret: ret} is Method | {ret: ret} is StaticMethod | {ret: ret} is Operator)) => ret,
+			at(WMethod(_)) => throw "bad",
+			at(WBlock | WPattern | WTypevars(_)) => outer._and(ctx => ctx.expectedReturnType)
+		);
+	}
 
 	function innerDecl(decl: TypeDecl): Ctx {
 		return {
@@ -104,6 +118,14 @@ enum Where {
 	function innerBlock(): Ctx {
 		return {
 			where: WBlock,
+			outer: this,
+			thisType: thisType
+		};
+	}
+
+	function innerBlockExpr(): Ctx {
+		return {
+			where: WBlockExpr,
 			outer: this,
 			thisType: thisType
 		};
@@ -175,7 +197,7 @@ enum Where {
 					// TODO
 					outer.findLocal(name, depth);
 				},
-				at(WBlock) => outer.findLocal(name, depth),
+				at(WBlock | WBlockExpr) => outer.findLocal(name, depth),
 				at(WPattern) => {
 					// TODO
 					outer.findLocal(name, depth);
@@ -273,7 +295,7 @@ enum Where {
 			case WMethod(m): !(m is StaticMethod) && outer.allowsThis();
 			case WMember(m): !m.isStatic && outer.allowsThis();
 			case WTaggedCase(_): true;
-			case WBlock | WPattern: outer.allowsThis();
+			case WBlock | WBlockExpr | WPattern: outer.allowsThis();
 			case WObjCascade(_): true;
 			case WTypeCascade: outer.allowsThis();
 			case WTypevars(_): outer.allowsThis();
@@ -305,7 +327,7 @@ enum Where {
 			at(WCategory(_)) => throw "bad",
 			at(WMember(m)) => "member `"+m.name.name+"` for "+outer.description(),
 			at(WTaggedCase(c)) => "tagged case [...] for "+outer.description(),
-			at(WBlock) => "{ ... } in " + {
+			at(WBlock | WBlockExpr) => "{ ... } in " + {
 				final lookup = cast(this.thisLookup, IDecl);
 				lookup.declName() + " " + lookup._match(
 					at(mth is AnyMethod) =>"["+mth.methodName()+"] for "+mth.decl.declName()+" "+mth.decl.fullName(),

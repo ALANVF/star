@@ -894,7 +894,22 @@ class Type implements ITypeable {
 
 	function unifyWithType(type: Type): Null<Type> {
 		return this.t == type.t ? this : Util._match([this.t, type.t],
-			at([TConcrete(d1), TConcrete(d2)]) => if(d1 == d2) this else null,
+			at([TConcrete(d1), TConcrete(d2)]) =>
+				if(d1 == d2) this
+				else if(d1.hasParentDecl(d2)) type
+				else if(d2.hasParentDecl(d1)) this
+				else null,
+
+			at([TModular(ty1, _), _]) => ty1.unifyWithType(type),
+			at([_, TModular(ty2, _)]) => this.unifyWithType(ty2),
+
+			at([TInstance(decl1 is DirectAlias, _, tctx1), _]) => {
+				decl1.type.getInTCtx(tctx1).unifyWithType(type);
+			},
+			at([_, TInstance(decl2 is DirectAlias, _, tctx2)]) => {
+				this.unifyWithType(decl2.type.getInTCtx(tctx2));
+			},
+
 			at([TConcrete(decl1), TInstance(decl2, params2, _)]) => {
 				if(decl2.hasParentDecl(decl1)) {
 					type;
@@ -924,11 +939,20 @@ class Type implements ITypeable {
 				}
 			},
 			at([TInstance(decl1, params1, _), TInstance(decl2, params2, _)]) => {
-				if(decl1 == decl2
-				&& params1.every2Strict(params2, (p1, p2) -> p1.unifyWithType(p2) != null)) this else null;
+				if(decl1 == decl2 && params1.every2Strict(params2, (p1, p2) -> p1.unifyWithType(p2) != null)) this
+				else if(this.hasParentType(type)) type
+				else if(type.hasParentType(this)) this
+				else null;
 			},
-			at([TModular(t1, _), _]) => t1.unifyWithType(type),
-			at([_, TModular(t2, _)]) => this.unifyWithType(t2),
+			at([TInstance(decl1, params1, _), TThis(decl2)]) => {
+				if(decl1.hasParentType(decl2.thisType)) this else null;
+			},
+			at([TThis(decl1), TInstance(decl2, _, _)]) => {
+				if(decl2.hasParentType(decl1.thisType)) type else null;
+			},
+
+			//at([TModular(t1, _), _]) => t1.unifyWithType(type),
+			//at([_, TModular(t2, _)]) => this.unifyWithType(t2),
 			at([TApplied(t1, a1), TApplied(t2, a2)], when(a1.length == a2.length)) => {
 				t1.unifyWithType(t2)._and(t => {
 					{t: TApplied(t, [for(i in 0...a1.length) { final a1_ = a1[i];
@@ -2180,7 +2204,8 @@ class Type implements ITypeable {
 			},
 			at(TApplied({t: TMulti(types)}, args)) => {
 				final args2 = args.map(a -> a.simplify());
-				final types2=types.filter(ty->ty.acceptsArgs(args2)&&ty.applyArgs(args2)!=null);
+				var types2 = types.filter(ty->ty.acceptsArgs(args2)&&ty.applyArgs(args2)!=null);
+				if(types2.length > 1 && args.every(a -> a.t.match(TTypeVar(_)))) types2 = mostSpecific(types2);
 				/*({
 					final res = types.filter(ty -> ty.acceptsArgs(args));
 					if(args.some(a -> a.hasTypevars())) {
@@ -2197,11 +2222,11 @@ class Type implements ITypeable {
 					}
 				})*/types2._match(
 					at([]) => throw "bad",
-					at([{t: TConcrete(decl)}]) => decl.applyArgs(args)._match(
+					at([{t: TConcrete(decl)}]) => decl.applyArgs(args2)._match(
 						at(res!) => { res.span = span; res; },
 						_ => throw 'error: type `${decl.fullName()}` does not accept provided arguments [${args.joinMap(", ", a -> a.fullName())}] ${span._and(s=>s.display())}'
 					),
-					at([ty]) => {t: TApplied(ty, args), span: span},
+					at([ty]) => ({t: TApplied(ty, args2), span: span}:Type).simplify(),
 					_ => if(types2.length == types.length && args.equals(args2)) this else {t: TApplied({t: TMulti(types2), span: span}, args), span: span}
 				);
 			},
@@ -2223,7 +2248,32 @@ class Type implements ITypeable {
 				);
 			},
 			at(TApplied(ty, args)) => {t: TApplied(ty.simplify(), args.map(a -> a.simplify())), span: span},
+			at(TModular(ty, _)) => ty.simplify(),
 			_ => this
 		);
 	}
+
+	function simplifyAlias(): Type return t._match(
+		at(TConcrete(decl is DirectAlias)) => {
+			final res = decl.type.simplifyAlias();
+			{t: res.t, span: span};
+		},
+		at(TInstance(decl is DirectAlias, _, tctx)) => {
+			final res = decl.type.getInTCtx(tctx).simplifyAlias();
+			{t: res.t, span: span};
+		},
+		_ => this
+	);
+
+	function fullSimplify(): Type return this.simplify()._match(
+		at({t: TConcrete(decl is DirectAlias)}) => {
+			final res = decl.type.fullSimplify();
+			{t: res.t, span: span};
+		},
+		at({t: TInstance(decl is DirectAlias, _, tctx)}) => {
+			final res = decl.type.getInTCtx(tctx).fullSimplify();
+			{t: res.t, span: span};
+		},
+		at(res) => res
+	);
 }

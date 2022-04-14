@@ -204,7 +204,7 @@ kind Ctx {
 
 	on [findLocal: name (Str) depth: (Int) = 0] (Maybe[Local]) {
 		match locals[maybeAt: name] at Maybe[the: my local] if depth ?= 0 || (depth--, false) {
-			return local
+			return Maybe[the: local]
 		} else {
 			match outer at Maybe[the: my outer'] {
 				match this {
@@ -215,7 +215,7 @@ kind Ctx {
 							from: outer'.typeDecl
 							isGetter: true
 						] at SingleInst[member: my member] if depth ?= 0 || (depth--, false) {
-							return Local.Field[ctx: this :member]
+							return Maybe[the: Local.Field[ctx: this :member]]
 						} else {
 							return outer'[findLocal: name :depth]
 						}
@@ -251,7 +251,7 @@ kind Ctx {
 
 						match allMembers[Type mostSpecific: Member$0.type.value] {
 							at #[] => return Maybe[none]
-							at #[my member] => return locals[at: name] = Local.Field[ctx: this :member]
+							at #[my member] => return Maybe[the: locals[at: name] = Local.Field[ctx: this :member]]
 							at my members => throw "todo"
 						}
 					}
@@ -350,7 +350,7 @@ kind Ctx {
 				my typeDecl = this.typeDecl
 				my typeLookup = this.typeLookup
 				
-				return Type[
+				return Maybe[the: Type[
 					type: type'
 					args: args[collect: {|arg (Type)|
 						match arg at Type[depth: my depth lookup: my lookup source: _] {
@@ -376,9 +376,9 @@ kind Ctx {
 							return type'.span
 						}
 					}
-				]
+				]]
 			} else {
-				return type
+				return Maybe[the: type]
 			}
 		} else {
 			match outer at Maybe[the: my outer'] {

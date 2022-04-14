@@ -826,7 +826,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 			// TODO
 
 			if(params.every(p -> p.type != null)) {
-				final closureCtx = ctx.innerBlock();
+				final closureCtx = ctx.innerBlockExpr();
 				final params2: Array<{name: String, ?type: Type}> = [];
 				final atypes: Array<Type> = [];
 				for(p in params) {
@@ -876,7 +876,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 		at(EAnonFunc(depth, nparams, types, expr)) => {
 			// TODO
 			final exprSpan = expr.mainSpan();
-			final anonCtx = ctx.innerBlock();
+			final anonCtx = ctx.innerBlockExpr();
 			final params: Array<{name: String, ?type: Type}> = [];
 			for(i in 0...nparams) {
 				final name = '$depth@$i';
@@ -928,7 +928,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 			{ e: EParen(texprs), t: texprs.last().t };
 		},
 		at(EBlock(blk)) => {
-			final tstmts = typeBlock(ctx, blk);
+			final tstmts = typeBlockExpr(ctx, blk);
 			final res = getReturnType(ctx, tstmts);
 			for(span in res.incomplete) {
 				trace("warning: this branch does not return a value "+span.display());
@@ -958,10 +958,10 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 		},
 
 		at(ETypeMessage(type, begin, msg, end)) => {
-			final t = ctx.getType(type)._or(return invalidExpr());
+			final t = ctx.getType(type)._or(return invalidExpr()).fullSimplify();
 			sendTypeMessage(ctx, t, begin, end, msg)._match(
 				at(null) => invalidExpr(),
-				at({_1: msg2, _2: ret}) => {e: ETypeMessage(t.simplify(), msg2), t: ret}
+				at({_1: msg2, _2: ret}) => {e: ETypeMessage(t, msg2), t: ret.getFrom(t)}
 			);
 		},
 
@@ -1040,10 +1040,22 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 		
 		//case EPrefix(_, PNeg, EInt(_, int, exp)): { e: EInt(-int, exp.toNull()), t: STD_Int };
 		at(EPrefix(span, op, right)) => {
-			final rhs = typeExpr(ctx, op.match(PIncr | PDecr) ? EInfix(right, span, Assign(null), right) : right);
+			final rhs = typeExpr(
+				ctx,
+				if(op.match(PIncr | PDecr) && right.match(
+					EName(_, _)
+					| ETypeMessage(_, _, _, _)
+					| ETypeMember(_, _)
+					| EObjMessage(_, _, _, _)
+					| EObjMember(_, _)
+				))
+					EInfix(right, span, Assign(null), right)
+				else
+					right
+			);
 			rhs.t._match(
 				at(t!) => {
-					t = t.getIn(ctx);
+					//t = t.getIn(ctx);
 					final op2: UnaryOp = op._match(
 						at(PIncr) => Incr,
 						at(PDecr) => Decr,
@@ -1066,7 +1078,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 										t: loc.type,
 										orig: right
 									}),
-									t: kind.digForMethod().ret.nonNull().simplify().getFrom(t),
+									t: kind.retType().getFrom(t),
 									orig: expr
 								}),
 								t: rhs.t
@@ -1078,7 +1090,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 										at(Multi(candidates, labels, args)) => {
 											args.setLast({
 												e: EPrefix(kind, args.last()),
-												t: kind.digForMethod().ret.nonNull().simplify().getFrom(t),
+												t: kind.retType().getFrom(t),
 												orig: args.last().orig
 											});
 										},
@@ -1095,7 +1107,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 										at(Multi(candidates, labels, args)) => {
 											args.setLast({
 												e: EPrefix(kind, args.last()),
-												t: kind.digForMethod().ret.nonNull().simplify().getFrom(t),
+												t: kind.retType().getFrom(t),
 												orig: args.last().orig
 											});
 										},
@@ -1109,11 +1121,11 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 							},
 							_ => {
 								e: EPrefix(kind, rhs),
-								t: kind.digForMethod().ret.nonNull().simplify().getFrom(t)
+								t: kind.retType().getFrom(t)
 							}
 						) else {
 							e: EPrefix(kind, rhs),
-							t: kind.digForMethod().ret.nonNull().simplify().getFrom(t)//.getIn(ctx)
+							t: kind.retType().getFrom(t)
 						},
 						_ => if(ctx.isPattern()) {
 							{ e: ELazyPrefix(op, rhs) };
@@ -1715,7 +1727,7 @@ static function sendTypeMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: 
 				at(c) => c
 			);
 			detuple(@var [names, args] = getNamesArgs(ctx, labels));
-
+			
 			var categories = t.t._match(
 				at(TThis(td is TypeDecl)) => ({t: td.thisType.t, span: t.span} : Type),
 				_ => t
@@ -1730,10 +1742,30 @@ static function sendTypeMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: 
 								ctx.addError(Type_UnknownMethod(ctx, t, Multi(Static, names, args), labels[0].span(), [found]));
 								null;
 							},
-							at(overloads) => tuple(
-								Multi(overloads.simplify(), names, args),
-								overloads.retType(t)
-							)
+							at(overloads) => {
+								if(found.path.hasTypevars()) {
+									final ctctx: TypeVarCtx = [];
+									tcat.bindTo(found.path, ctctx);
+									trace(found.path.fullName(), ctctx.display());
+									if(ctctx.size() > 0) {
+										for(ov in overloads) {
+											ov.tctx._andOr(tctx => {
+												for(tv => ty in ctctx) {
+													tctx[tv] = ty;
+												}
+											}, {
+												ov.tctx = ctctx.copy();
+											});
+											ov.ret = ov.ret.getInTCtx(ctctx);
+										}
+									}
+								}
+
+								tuple(
+									Multi(overloads.simplify(), names, args),
+									overloads.retType(t)
+								);
+							}
 						);
 					}
 				),
@@ -1756,10 +1788,31 @@ static function sendTypeMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: 
 								ctx.addError(Type_UnknownMethod(ctx, t, Multi(Static, names, args), labels[0].span(), found));
 								null;
 							},
-							at(overloads) => tuple(
-								Multi(overloads.simplify(), names, args),
-								overloads.retType(t)
-							)
+							at(overloads) => {
+								final cat = kinds.cat;
+								if(true||cat.path.hasTypevars()) {
+									final ctctx: TypeVarCtx = [];
+									tcat.bindTo(cat.path, ctctx);
+									
+									if(ctctx.size() > 0) {
+										for(ov in overloads) {
+											ov.tctx._andOr(tctx => {
+												for(tv => ty in ctctx) {
+													tctx[tv] = ty;
+												}
+											}, {
+												ov.tctx = ctctx.copy();
+											});
+											ov.ret = ov.ret.getInTCtx(ctctx);
+										}
+									}
+								}
+
+								tuple(
+									Multi(overloads.simplify(), names, args),
+									overloads.retType(t)
+								);
+							}
 						);
 					},
 					at([]) => throw 'error: type `${t.fullName()}` does not respond to method `[${names.joinMap(" ", n -> '$n:')}]` in any categories of: `${found.map(f -> f.fullName()).join(", ")}`! ${begin.display()}',
@@ -1948,24 +2001,44 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 							ctx.addError(Type_UnknownMethod(ctx, t, Multi(Instance, names, args), labels[0].span(), categories));
 							null;
 						},
-						at(overloads) => tuple(
-							Multi(overloads.simplify(), names, args),
-							overloads.map(ov -> {
-								final res = ov.ret.getFrom(t);
-								final tctx: TypeVarCtx = ov.tctx._or(new TypeVarCtx());
-								/*trace(
-									tctx.display(),
-									t.bindTo(ov.kind.getMethodOwner(), tctx)._and(ty=>ty.fullName()),
-									tctx.display()
-								);*/
-								t.bindTo(ov.kind.getMethodOwner(), tctx);
-								res.getInTCtx(tctx).getFrom(t.getInTCtx(tctx));
-							}).unique()._match(
-								at([]) => null,
-								at([ret]) => ret,
-								at(rets) => {t: TMulti(rets), span: null}
-							)
-						)
+						at(overloads) => {
+							if(found.path.hasTypevars()) {
+								final ctctx: TypeVarCtx = [];
+								tcat.bindTo(found.path, ctctx);
+								
+								if(ctctx.size() > 0) {
+									for(ov in overloads) {
+										ov.tctx._andOr(tctx => {
+											for(tv => ty in ctctx) {
+												tctx[tv] = ty;
+											}
+										}, {
+											ov.tctx = ctctx.copy();
+										});
+										ov.ret = ov.ret.getInTCtx(ctctx);
+									}
+								}
+							}
+
+							tuple(
+								Multi(overloads.simplify(), names, args),
+								overloads.map(ov -> {
+									final res = ov.ret.getFrom(t);
+									final tctx: TypeVarCtx = ov.tctx._or(new TypeVarCtx());
+									/*trace(
+										tctx.display(),
+										t.bindTo(ov.kind.getMethodOwner(), tctx)._and(ty=>ty.fullName()),
+										tctx.display()
+									);*/
+									t.bindTo(ov.kind.getMethodOwner(), tctx);
+									res.getInTCtx(tctx).getFrom(t.getInTCtx(tctx));
+								}).unique()._match(
+									at([]) => null,
+									at([ret]) => ret,
+									at(rets) => {t: TMulti(rets), span: null}
+								)
+							);
+						}
 					)
 				)/*found.findMultiInst(ctx, names, ctx.typeDecl).reduceBySender()._match(
 					at([]) => {
@@ -2004,75 +2077,96 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 							ctx.addError(Type_UnknownMethod(ctx, t, Multi(Instance, names, args), labels[0].span(), categories));
 							null;
 						},
-						at(overloads) => tuple(
-							Multi(overloads.simplify(), names, args),
-							overloads.map(ov -> {
-								var res = ov.ret.getFrom(t);
-								var tcat = kinds.cat.thisType.getLeastSpecific().simplify();
-								final tctx:TypeVarCtx = ov.tctx._or(new TypeVarCtx());
-								res = res.getInTCtx(tctx);
-								//trace(t.fullName());
-								//trace(tcat.fullName());
-								var t2=t.bindTo(tcat, tctx);
-								t2._match(
-									at(null) => {},//null,
-									at(res={t: TInstance(decl, params, tctx2)}) => {
-										final rs = [for(ref in decl.refinees) {
-											ref.applyArgs(params).nonNull()._match(
-												at({t: TInstance(_, _, tctx3)}) => tctx3,
-												_ => throw "bad"
-											);
-										}];
-
-										for(r in rs) {
-											//trace(r.display());
-											for(k => v in r) {
-												tctx2[k] = v;
-											}
-										}
-										for(k => v in tctx) {
-											var v2 = v.getInTCtx(tctx2);
-											//for(r in rs) v2 = v2.getInTCtx(r);
-											tctx[k] = v2;
-										}
-										for(k=>v in tctx2) {
-											tctx[k]=v;
-										}
-										//res.fullName() + " " + tctx2.display();
-									},
-									at(res) => {}//res.fullName()
-								);
+						at(overloads) => {
+							final cat = kinds.cat;
+							if(cat.path.hasTypevars()) {
+								final ctctx: TypeVarCtx = [];
+								tcat.bindTo(cat.path, ctctx);
 								
-								//res = res.getInTCtx(tctx);
-								t2._and(ty2 => {
-									tcat = tcat.getFrom(ty2);
-									res = res.getFrom(ty2).getFrom(tcat);
-								});
-								res=res.getFrom(t.getInTCtx(tctx));
-								res.t._match(
-									at(TTypeVar(tv)) => {
-										tctx[tv]._and(t => {
-											t.t._match(
-												at(TTypeVar({lookup: _ is Category})) => {
-													trace("?!?!?!?!?!?!?!");
-												},
-												_ => {}
-											);
-											//trace("!!!", t);
-											res = t;
+								if(ctctx.size() > 0) {
+									for(ov in overloads) {
+										ov.tctx._andOr(tctx => {
+											for(tv => ty in ctctx) {
+												tctx[tv] = ty;
+											}
+										}, {
+											ov.tctx = ctctx.copy();
 										});
-									},
-									_ => {}
-								);
-								//trace(res.fullName());
-								//Sys.println("");
-								res;
-							}).unique()._match(
-								at([]) => null,
-								at([ret]) => ret,
-								at(rets) => {t: TMulti(rets), span: null}
-							)
-						)
+										ov.ret = ov.ret.getInTCtx(ctctx);
+									}
+								}
+							}
+
+							tuple(
+								Multi(overloads.simplify(), names, args),
+								overloads.map(ov -> {
+									var res = ov.ret.getFrom(t);
+									var tcat = kinds.cat.thisType.getLeastSpecific().simplify();
+									final tctx:TypeVarCtx = ov.tctx._or(new TypeVarCtx());
+									res = res.getInTCtx(tctx);
+									//trace(t.fullName());
+									//trace(tcat.fullName());
+									var t2=t.bindTo(tcat, tctx);
+									t2._match(
+										at(null) => {},//null,
+										at(res={t: TInstance(decl, params, tctx2)}) => {
+											final rs = [for(ref in decl.refinees) {
+												ref.applyArgs(params).nonNull()._match(
+													at({t: TInstance(_, _, tctx3)}) => tctx3,
+													_ => throw "bad"
+												);
+											}];
+
+											for(r in rs) {
+												//trace(r.display());
+												for(k => v in r) {
+													tctx2[k] = v;
+												}
+											}
+											for(k => v in tctx) {
+												var v2 = v.getInTCtx(tctx2);
+												//for(r in rs) v2 = v2.getInTCtx(r);
+												tctx[k] = v2;
+											}
+											for(k=>v in tctx2) {
+												tctx[k]=v;
+											}
+											//res.fullName() + " " + tctx2.display();
+										},
+										at(res) => {}//res.fullName()
+									);
+									
+									//res = res.getInTCtx(tctx);
+									t2._and(ty2 => {
+										tcat = tcat.getFrom(ty2);
+										res = res.getFrom(ty2).getFrom(tcat);
+									});
+									res=res.getFrom(t.getInTCtx(tctx));
+									res.t._match(
+										at(TTypeVar(tv)) => {
+											tctx[tv]._and(t => {
+												t.t._match(
+													at(TTypeVar({lookup: _ is Category})) => {
+														trace("?!?!?!?!?!?!?!");
+													},
+													_ => {}
+												);
+												//trace("!!!", t);
+												res = t;
+											});
+										},
+										_ => {}
+									);
+									//trace(res.fullName());
+									//Sys.println("");
+									res;
+								}).unique()._match(
+									at([]) => null,
+									at([ret]) => ret,
+									at(rets) => {t: TMulti(rets), span: null}
+								)
+							);
+						}
 					),
 					at(kinds) => if(kinds.every(k -> k.mth.length == 0)) {
 						throw 'error: value of type `${t.fullName()}` does not respond to method `[${names.joinMap(" ", n -> '$n:')}]` in any categories of: `${categories.map(f -> f.fullName()).join(", ")}`! ${begin.display()}';
@@ -3275,9 +3369,33 @@ static function typeStmt(ctx: Ctx, stmt: UStmt): TStmt {
 					typeBlock(ctx, blk)
 				);
 			
-			case SReturn(_, value):
+			case SReturn(s, value):
 				SReturn(
-					value._and(v => typeExpr(ctx, v))
+					value._and(v => {
+						final tv = typeExpr(ctx, v);
+
+						ctx.expectedReturnType._andOr(ret => {
+							final t = tv.t._andOr(tvt => {
+								tvt.fullSimplify().unifyWithType(ret.fullSimplify())._andOr(ut => {
+									if(ut.span == null) ut.span = tvt.span;
+									tv.t = ut;
+									ut;
+								}, {
+									//throw 'Error: expression type `${tvt.fullSimplify().fullName()}` does not match return type `${ret.fullSimplify().fullName()}`! ${s.display()}';
+									ctx.addError(Type_DoesNotMatchReturnType(ctx, ret.fullSimplify(), tvt.fullSimplify(), s));
+									tvt.fullSimplify();
+								});
+							}, {
+								trace("???", tv.e, tv.orig.mainSpan().display());
+								tv.t = ret;
+								ret;
+							});
+
+							tv;
+						}, {
+							tv;
+						});
+					})
 				);
 			
 			case SBreak(_, null): SBreak(null);
@@ -3342,6 +3460,11 @@ static function shouldBeLogical(ctx: Ctx, texpr: TExpr) {
 
 static function typeBlock(ctx: Ctx, blk: UBlock): TStmts {
 	final newCtx = ctx.innerBlock();
+	return cast blk.stmts.map(stmt -> typeStmt(newCtx, stmt));
+}
+
+static function typeBlockExpr(ctx: Ctx, blk: UBlock): TStmts {
+	final newCtx = ctx.innerBlockExpr();
 	return cast blk.stmts.map(stmt -> typeStmt(newCtx, stmt));
 }
 

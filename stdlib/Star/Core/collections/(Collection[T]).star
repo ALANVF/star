@@ -39,12 +39,12 @@ protocol Collection[T] of Iterable[T] {
 	on [removeAll: value (T)] (Int)
 	
 	on [removeValues: values (Iterable[T])] (Bool)
-	on [removeValues: (Iterable[T]) times: (Int)] (This) => return this[This :removeValues :times]
-	on [removeAllValues: (Iterable[T])] (This) => return this[This :removeAllValues]
+	on [removeValues: (Iterable[T]) times: (Int)] (This) => return this[This :removeValues :times] [Unsafe This] ;@@ TODO: fix
+	on [removeAllValues: (Iterable[T])] (This) => return this[This :removeAllValues] [Unsafe This] ;@@ TODO: fix
 	
 	on [removeWhere: func (Func[Bool, T])] (Bool)
-	on [removeWhere: (Func[Bool, T]) times: (Int)] (This) => return this[This :removeWhere :times]
-	on [removeAllWhere: (Func[Bool, T])] (This) => return this[This :removeAllWhere]
+	on [removeWhere: (Func[Bool, T]) times: (Int)] (This) => return this[This :removeWhere :times] [Unsafe This] ;@@ TODO: fix
+	on [removeAllWhere: (Func[Bool, T])] (This) => return this[This :removeAllWhere] [Unsafe This] ;@@ TODO: fix
 
 
 	;== Clearing

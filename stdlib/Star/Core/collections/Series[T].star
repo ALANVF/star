@@ -145,7 +145,7 @@ class Series[T] of Ordered, Iterable[T] {
 	;== Iterating
 
 	on [Iterator[T]] is inline {
-		return ValuesIterator[Unsafe newWithoutCopying: buffer[from: offset]]
+		return ValuesIterator[T][Unsafe newWithoutCopying: buffer[from: offset]]
 	}
 
 

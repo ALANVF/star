@@ -26,27 +26,27 @@ protocol Num of Ordered {
 	; lcm
 
 	on [to: (This)] (Range[This]) is inline {
-		return Range[from: this :to]
+		return Range[This][from: this :to]
 	}
 
 	on [to: (This) by: (This)] (Range[This]) is inline {
-		return Range[from: this :to :by]
+		return Range[This][from: this :to :by]
 	}
 
 	on [upto: (This)] (Range[This]) is inline {
-		return Range[from: this :upto]
+		return Range[This][from: this :upto]
 	}
 
 	on [upto: (This) by: (This)] (Range[This]) is inline {
-		return Range[from: this :upto :by]
+		return Range[This][from: this :upto :by]
 	}
 
 	on [downto: (This)] (Range[This]) is inline {
-		return Range[from: this :downto]
+		return Range[This][from: this :downto]
 	}
 
 	on [downto: (This) by: (This)] (Range[This]) is inline {
-		return Range[from: this :downto :by]
+		return Range[This][from: this :downto :by]
 	}
 
 

@@ -74,7 +74,7 @@ kind Maybe[T] of Iterable[T] {
 		match this at Maybe[the: my value] {
 			return OnceIterator[new: value]
 		} else {
-			return EmptyIterator[new]
+			return EmptyIterator[T][new]
 		}
 	}
 	
@@ -92,7 +92,7 @@ type T
 kind Maybe[Maybe[T]] {
 	on [flatten] (Maybe[T]) {
 		match this at Maybe[the: my maybe] {
-			return maybe
+			return maybe [Unsafe Maybe[T]] ;@@ TODO
 		} else {
 			return Maybe[none]
 		}

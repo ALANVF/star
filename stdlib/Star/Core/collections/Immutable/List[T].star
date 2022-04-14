@@ -162,7 +162,7 @@ kind List[T] of Iterable[T] {
 	
 	;== Iterating
 	
-	on [Iterator[T]] is inline => return ListIterator[list: this]
+	on [Iterator[T]] is inline => return ListIterator[T][list: this]
 	
 	on [each: func (Func[Void, T, Int])] {
 		my i = 0
@@ -209,7 +209,7 @@ kind List[T] of Iterable[T] {
 	on [collect: func (Func[U, T, Int])] (This[U]) {
 		my i = 0
 		my list = this
-		my result = This[nil]
+		my result = This[U][nil]
 		
 		while true {
 			match list at This[head: my head tail: my tail] {

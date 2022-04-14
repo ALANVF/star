@@ -1,6 +1,7 @@
 package codegen;
 
 import typing.*;
+import Util.detuple;
 
 @:publicFields
 @:build(util.Overload.build())
@@ -38,25 +39,252 @@ class Gen {
 	}
 
 
-	overload function writeMVar(tvar: TypeVar) {
+	function writeDVar(tvar: TypeVar) {
+		final id = CodeGen.world.getDVarID(tvar);
+		write('type $id ');
+		write(tvar.name.name);
+		// NO HKTS YET PLS
+		// ...
+	}
+	overload function writeDVars(tvars: MultiMap<String, TypeVar>) {
+		if(tvars.size > 0) {
+			write("given ");
+			writeBlock(tvars.allValues(), tvar -> {
+				writeDVar(tvar);
+			});
+			newline();
+		}
+	}
+
+	overload function write(native: NativeKind) native._match(
+		at(NVoid) => write("void"),
+		at(NBool) => write("bool"),
+		at(NInt8) => write("int8"),
+		at(NUInt8) => write("uint8"),
+		at(NInt16) => write("int16"),
+		at(NUInt16) => write("uint16"),
+		at(NInt32) => write("int32"),
+		at(NUInt32) => write("uint32"),
+		at(NInt64) => write("int64"),
+		at(NUInt64) => write("uint64"),
+		at(NDec32) => write("dec32"),
+		at(NDec64) => write("dec64"),
+		at(NVoidPtr) => write("voidptr"),
+		at(NPtr(t)) => {
+			write("ptr ");
+			write(CodeGen.world.getTypeRef(t));
+		}
+	);
+
+	overload function write(cls: Class) {
+		writeDVars(cls.typevars);
+		
+		final id = CodeGen.world.getID(cls);
+		write('class $id ${Type.getFullPath(cls).value()}');
+
+		if(cls.params.length > 0) {
+			write("[_");
+			for(_ in 0...(cls.params.length - 1)) write(", _");
+			write("] ");
+		} else {
+			write(" ");
+		}
+		
+		if(cls.parents.length > 0) {
+			writeBlock(cls.parents, "of #[", "] ", p -> write(CodeGen.world.getTypeRef(p)));
+		}
+
+		cls.refinees._match(
+			at([]) => {},
+			at([ref]) => {
+				write('is refinement ${CodeGen.world.getID(ref)} ');
+			},
+			at(refinees) => {
+				writeBlock(refinees, "is refinement #[", "] ", r -> write('${CodeGen.world.getID(r)}'));
+			}
+		);
+
+		if(cls.friends.length > 0) {
+			writeBlock(cls.friends, "is friend #[", "] ", f -> write(CodeGen.world.getTypeRef(f)));
+		}
+
+		cls.hidden._and(hidden => hidden._match(
+			at(None) => write("is hidden "),
+			at(Some(within)) => {
+				write("is hidden ");
+				write(CodeGen.world.getTypeRef(within));
+				write(" ");
+			}
+		));
+
+		cls.sealed.forEach(sealed -> sealed._match(
+			at(None) => write("is sealed "),
+			at(Some(within)) => {
+				write("is sealed ");
+				write(CodeGen.world.getTypeRef(within));
+				write(" ");
+			}
+		));
+
+		if(cls._isStrong) write("is strong ");
+		if(cls._isUncounted) write("is uncounted ");
+
+		cls.native.forEach(nat -> {
+			write("is native ");
+			write(nat);
+			write(" ");
+		});
+
+		level++;
+		write("{");
+
+		if(cls.sortedDecls.length > 0 || cls.categories.length > 0) throw "TODO";
+		
+		final staticMemberInits: Array<Tuple2<Member, TExpr>> = [];
+		for(mem in cls.staticMembers) {
+			newline();
+			write(mem, true, staticMemberInits);
+			newline();
+		}
+
+		final instMemberInits: Array<Tuple2<Member, TExpr>> = [];
+		for(mem in cls.members) {
+			newline();
+			write(mem, false, instMemberInits);
+			newline();
+		}
+
+		cls.staticInit.doOrElse(init => {
+			newline();
+			write(init, staticMemberInits);
+			newline();
+		}, {
+			if(staticMemberInits.length > 0) {
+				// TODO: lazy
+				newline();
+				final init: StaticInit = untyped $new(typing.StaticInit);
+				init.typedBody = [];
+				write(init, staticMemberInits);
+				newline();
+			}
+		});
+
+		cls.defaultInit.doOrElse(init => {
+			newline();
+			write(init, instMemberInits);
+			newline();
+		}, {
+			if(instMemberInits.length > 0) {
+				// TODO: lazy
+				newline();
+				final init: DefaultInit = untyped $new(typing.DefaultInit);
+				init.typedBody = [];
+				write(init, instMemberInits);
+				newline();
+			}
+		});
+
+		for(init in cls.inits) {
+			newline();
+			write(init);
+			newline();
+		}
+
+		for(mth in cls.staticMethods) {
+			newline();
+			write(mth);
+			newline();
+		}
+
+		for(mth in cls.methods) {
+			newline();
+			write(mth);
+			newline();
+		}
+
+		for(oper in cls.operators) {
+			newline();
+			write(oper);
+			newline();
+		}
+
+		cls.deinit.forEach(deinit -> {
+			newline();
+			write(deinit, null);
+			newline();
+		});
+
+		cls.staticDeinit.forEach(deinit -> {
+			newline();
+			write(deinit, null);
+			newline();
+		});
+
+		level--;
+		newline();
+		write("}");
+	}
+
+
+	overload function write(mem: Member, isStatic: Bool, inits: Array<Tuple2<Member, TExpr>>) {
+		final id = isStatic? CodeGen.world.getStaticID(mem) : CodeGen.world.getInstID(mem);
+
+		write('my $id ${mem.name.name} (');
+		write(CodeGen.world.getTypeRef(mem.type._or(throw "Member does not have a type: "+mem.name.name)));
+		write(")");
+
+		if(isStatic) write(" is static");
+		
+		mem.hidden._and(hidden => hidden._match(
+			at(None) => write(" is hidden"),
+			at(Some(within)) => {
+				write(" is hidden ");
+				write(CodeGen.world.getTypeRef(within));
+			}
+		));
+
+		if(mem.isReadonly) write(" is readonly");
+
+		// TODO
+		mem.getter._and(getter => getter._match(
+			at(None) => write(' is getter `${mem.name.name}`'),
+			at(Some({name: name})) => write(' is getter `${name}`')
+		));
+		mem.setter._and(setter => setter._match(
+			at(None) => write(' is setter `${mem.name.name}`'),
+			at(Some({name: name})) => write(' is setter `${name}`')
+		));
+
+		if(mem.noInherit) write(" is noinherit");
+
+		mem.typedValue._and(tvalue => {
+			inits.push(tuple(mem, tvalue));
+		});
+	}
+
+
+	function writeMVar(tvar: TypeVar) {
 		final id = CodeGen.world.getMVarID(tvar);
 		write('type $id ');
 		write(tvar.name.name);
 		// NO HKTS YET PLS
 		// ...
 	}
+	overload function writeMVars(tvars: MultiMap<String, TypeVar>) {
+		if(tvars.size > 0) {
+			write("given ");
+			writeBlock(tvars.allValues(), tvar -> {
+				writeMVar(tvar);
+			});
+			newline();
+		}
+	}
 
 	overload function write(init: Init) {
 		if(init.isMacro) return;
 
 		init._match(
-			at({typevars: tvars} is MultiInit, when(tvars.size > 0)) => {
-				write("given ");
-				writeBlock(tvars.allValues(), tvar -> {
-					writeMVar(tvar);
-				});
-				newline();
-			},
+			at({typevars: tvars} is MultiInit) => writeMVars(tvars),
 			_ => {}
 		);
 
@@ -124,13 +352,7 @@ class Gen {
 		if(mth.isMacro) return;
 
 		mth._match(
-			at({typevars: tvars} is MultiStaticMethod, when(tvars.size > 0)) => {
-				write("given ");
-				writeBlock(tvars.allValues(), tvar -> {
-					writeMVar(tvar);
-				});
-				newline();
-			},
+			at({typevars: tvars} is MultiStaticMethod) => writeMVars(tvars),
 			_ => {}
 		);
 
@@ -205,13 +427,7 @@ class Gen {
 		if(mth.isMacro) return;
 
 		mth._match(
-			at({typevars: tvars} is MultiMethod | {typevars: tvars} is CastMethod, when(tvars.size > 0)) => {
-				write("given ");
-				writeBlock(tvars.allValues(), tvar -> {
-					writeMVar(tvar);
-				});
-				newline();
-			},
+			at({typevars: tvars} is MultiMethod | {typevars: tvars} is CastMethod) => writeMVars(tvars),
 			_ => {}
 		);
 
@@ -289,13 +505,7 @@ class Gen {
 		if(oper.isMacro) return;
 		
 		oper._match(
-			at({typevars: tvars} is BinaryOperator, when(tvars.size > 0)) => {
-				write("given ");
-				writeBlock(tvars.allValues(), tvar -> {
-					writeMVar(tvar);
-				});
-				newline();
-			},
+			at({typevars: tvars} is BinaryOperator) => writeMVars(tvars),
 			_ => {}
 		);
 
@@ -357,18 +567,36 @@ class Gen {
 		});
 	}
 
-	overload function write(mth: EmptyMethod) {
+	overload function write(mth: EmptyMethod, memberInits: Null<Array<Tuple2<Member, TExpr>>>) {
+		var isStaticInit = false;
+		var isDefaultInit = false;
 		mth._match(
-			at(_ is DefaultInit) => write("defaultinit "),
-			at(_ is StaticInit) => write("defaultinit is static "),
+			at(_ is DefaultInit) => { isDefaultInit = true; write("default-init "); },
+			at(_ is StaticInit) => { isStaticInit = true; write("static-init "); },
 			at(_ is Deinit) => write("deinit "),
-			at(_ is StaticDeinit) => write("deinit is static "),
+			at(_ is StaticDeinit) => write("static-deinit "),
 			_ => throw "bad"
 		);
 
 		mth.typedBody._andOr(tb => {
-			// TODO: init members with default values
-			writeBlock(CodeGen.compile(new GenCtx(), tb));
+			var ops: Opcodes = [];
+			final ctx = new GenCtx();
+
+			if(isStaticInit) {
+				for(mi in memberInits.nonNull()) { detuple(@final [mem, expr] = mi);
+					ops = ops.concat(CodeGen.compile(ctx, expr));
+					ops.push(OSetStaticField(mem.name.name));
+				}
+			} else if(isDefaultInit) {
+				for(mi in memberInits.nonNull()) { detuple(@final [mem, expr] = mi);
+					ops = ops.concat(CodeGen.compile(ctx, expr));
+					ops.push(OSetField(mem.name.name));
+				}
+			}
+
+			ops = ops.concat(CodeGen.compile(ctx, tb));
+			
+			writeBlock(ops);
 		}, {
 			throw "bad";
 		});
@@ -393,6 +621,17 @@ class Gen {
 		level--;
 		newline();
 		write("}");
+	}
+	overload inline function writeBlock<T>(values: Iterable<T>, begin: String, end: String, fn: (value: T) -> Void) {
+		write(begin);
+		level++;
+			for(value in values) {
+				newline();
+				fn(value);
+			}
+		level--;
+		newline();
+		write(end);
 	}
 	overload inline function writeBlock<K, V>(values: KeyValueIterable<K, V>, fn: (key: K, value: V) -> Void) {
 		write("{");
@@ -684,14 +923,14 @@ class Gen {
 		);
 	}
 
-	function writeDVars(inst: TypeInstCtx) {
+	overload function writeDVars(inst: TypeInstCtx) {
 		writeBlock(inst, (id, t) -> {
 			write('dvar#$id => ');
 			write(t);
 		});
 	}
 
-	function writeMVars(inst: TypeInstCtx) {
+	overload function writeMVars(inst: TypeInstCtx) {
 		writeBlock(inst, (id, t) -> {
 			write('mvar#$id => ');
 			write(t);

@@ -1,3 +1,3 @@
-protocol AnyMethod of Decl, TypeLookup {
+protocol AnyMethod of TypeLookupDecl {
 	my decl (AnyTypeDecl)
 }

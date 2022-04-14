@@ -313,14 +313,14 @@ module Parser {
 	}
 	
 	alias GenericOpChain is hidden = Array[Tuple[Span, Type]]
-	on [parseGenericOpChain: tokens (Tokens), op (Token)] (Result[Array[Tuple[Span, Type]]]) is inline {
-		my chain = #[]
+	on [parseGenericOpChain: tokens (Tokens), op (Token)] (Result[GenericOpChain]) is inline {
+		my chain = GenericOpChain #[]
 		
 		while true {
 			match tokens at #[my op', ...my rest] if #asm (#kind_id op' ?= #kind_id op) {
 				match This[parseType: rest, true] {
 					at Result[success: my right, tokens = _] => chain[add: #{op'.span, right}]
-					at my fail => return fail[Result[GenericCmpChain]]
+					at my fail => return fail[Result[GenericOpChain]]
 				}
 			} else {
 				break
@@ -332,7 +332,7 @@ module Parser {
 	
 	alias GenericCmpChain is hidden = Array[Tuple[Span, Generic.Cmp, Type]]
 	on [parseGenericCmpChain: tokens (Tokens)] (Result[GenericCmpChain]) is inline {
-		my chain = #[]
+		my chain = GenericCmpChain #[]
 		
 		while true {
 			my span (Span), my op = {
@@ -638,7 +638,7 @@ module Parser {
 				match This[parseTypeParents: rest] {
 					at Result[success: my parents', rest = _] => parents = Maybe[the: parents']
 					at Result[failure: _, _] => parents = Maybe[none]
-					at my fail => return fail
+					at my fail => return fail[Result[Decl]]
 				}
 				
 				my attrs = Module.Attrs[empty]
@@ -2124,7 +2124,7 @@ module Parser {
 	
 	on [parseLoopLabel: tokens (Tokens)] (Tuple[Maybe[Tuple[Span, Ident]], Tokens]) is inline {
 		match tokens at #[Token[span: my span label: "label"], Token[span: my span' litsym: my name], ...my rest] {
-			return #{Maybe[the: Ident[span: span' :name]], rest}
+			return #{Maybe[the: #{span, Ident[span: span' :name]}], rest}
 		} else {
 			return #{Maybe[none], tokens}
 		}
@@ -2938,7 +2938,7 @@ module Parser {
 			return Result[success: cascades, rest]
 		}
 
-		on [parseExpr4CascadeContents: tokens (Tokens), span (Span), level (Int)] (Result[Cascades[T]]) is static {
+		on [parseExpr4CascadeContents: tokens (Tokens), span (Span), level (Int)] (Result[Cascade[T]]) is static {
 			my rest = tokens
 			my cascade ;[(Cascade[T])], match tokens {
 				at #[Token[lBracket], ...my rest'] => match This[T finishMsg: rest'] {
@@ -2954,7 +2954,7 @@ module Parser {
 								at Result[success: my expr, rest = _] {
 									cascade = Cascade[T][:span :level :message :assign :op :expr]
 								}
-								at my fail => return fail[Result[Cascades[T]]]
+								at my fail => return fail[Result[Cascade[T]]]
 							}
 						}
 						else {
@@ -2962,12 +2962,12 @@ module Parser {
 							cascade = Cascade[T][:span :level :message]
 						}
 					}
-					at my fail => return fail[Result[Cascades[T]]]
+					at my fail => return fail[Result[Cascade[T]]]
 				}
 
 				at #[Token[lBrace], ..._] => match This[parseBlock: tokens] {
 					at Result[success: my block, rest = _] => cascade = Cascade[T][:span :level :block]
-					at my fail => return fail[Result[Cascades[T]]]
+					at my fail => return fail[Result[Cascade[T]]]
 				}
 
 				at #[Token[span: my span' name: my name] = _[asAnyName], ...my rest'] {
@@ -2985,7 +2985,7 @@ module Parser {
 								at Result[success: my expr, rest = _] {
 									cascade = Cascade[T][:span :level :member :assign :op :expr]
 								}
-								at my fail => return fail[Result[Cascades[T]]]
+								at my fail => return fail[Result[Cascade[T]]]
 							}
 						}
 						else {
@@ -3321,7 +3321,7 @@ module Parser {
 			return Result[success: cascades, rest]
 		}
 
-		on [parseExprCascadeContents: tokens (Tokens), span (Span), level (Int)] (Result[Cascades[T]]) is static {
+		on [parseExprCascadeContents: tokens (Tokens), span (Span), level (Int)] (Result[Cascade[T]]) is static {
 			my rest = tokens
 			my cascade ;[(Cascade[T])], match tokens {
 				at #[Token[lBracket], ...my rest'] => match This[T finishMsg: rest'] {
@@ -3337,7 +3337,7 @@ module Parser {
 								at Result[success: my expr, rest = _] {
 									cascade = Cascade[T][:span :level :message :assign :op :expr]
 								}
-								at my fail => return fail[Result[Cascades[T]]]
+								at my fail => return fail[Result[Cascade[T]]]
 							}
 						}
 						else {
@@ -3345,12 +3345,12 @@ module Parser {
 							cascade = Cascade[T][:span :level :message]
 						}
 					}
-					at my fail => return fail[Result[Cascades[T]]]
+					at my fail => return fail[Result[Cascade[T]]]
 				}
 
 				at #[Token[lBrace], ..._] => match This[parseBlock: tokens] {
 					at Result[success: my block, rest = _] => cascade = Cascade[T][:span :level :block]
-					at my fail => return fail[Result[Cascades[T]]]
+					at my fail => return fail[Result[Cascade[T]]]
 				}
 
 				at #[Token[span: my span' name: my name] = _[asAnyName], ...my rest'] {
@@ -3368,7 +3368,7 @@ module Parser {
 								at Result[success: my expr, rest = _] {
 									cascade = Cascade[T][:span :level :member :assign :op :expr]
 								}
-								at my fail => return fail[Result[Cascades[T]]]
+								at my fail => return fail[Result[Cascade[T]]]
 							}
 						}
 						else {

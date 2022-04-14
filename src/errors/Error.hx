@@ -401,6 +401,13 @@ enum Error {
 		origSpan: Span,
 		dupSpan: Span
 	);
+
+	Type_DoesNotMatchReturnType(
+		ctx: Ctx,
+		expected: Type,
+		got: Type,
+		gotSpan: Span
+	);
 }
 
 
@@ -1597,6 +1604,23 @@ function asDiagnostic(self: Error) { return new Diagnostic(self._match(
 			Spanned({
 				span: ctx.thisLookup.span,
 				message: 'In ${ctx.description()}',
+				isSecondary: true
+			})
+		]
+	},
+
+	at(Type_DoesNotMatchReturnType(ctx, expected, got, gotSpan)) => {
+		severity: Severity.ERROR,
+		message: "Invalid return type",
+		info: [
+			Spanned({
+				span: gotSpan,
+				message: 'Expression type `${got.fullName()}`',
+				isPrimary: true
+			}),
+			Spanned({
+				span: expected.span.nonNull(),
+				message: 'Does not match return type `${expected.fullName()}`',
 				isSecondary: true
 			})
 		]

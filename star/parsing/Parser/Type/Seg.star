@@ -25,8 +25,8 @@ kind Seg {
 
 	on [simpleName] (Str) is getter {
 		match this {
-			at Seg[name: my name] => return name[new]
-			at Seg[name: my name args: my args] => return "\(name)[\("..., " * (args.of.length - 1))...]"
+			at Seg[name: Ident[name: my name]] => return name[new]
+			at Seg[name: Ident[name: my name] args: my args] => return "\(name)[\("..., " * (args.of.length - 1))...]"
 		}
 	}
 }

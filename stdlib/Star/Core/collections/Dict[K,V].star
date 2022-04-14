@@ -208,7 +208,7 @@ class Dict[K, V] of Mapped[K, V] is friend #[DictIterator[K], DictIterator[K, V]
 		}
 	}
 	
-	on [maybeRemoveValue: value (V)] (K) {
+	on [maybeRemoveValue: value (V)] (Maybe[K]) {
 		match this[indexForValue: value] at Maybe[the: my index] {
 			return Maybe[the: pairs[Unsafe removeAt: index].key]
 		} else {

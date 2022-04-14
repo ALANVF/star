@@ -71,7 +71,7 @@ kind Type of TypeLookup, Typeable {
 			}
 
 			at This[types: my types] {
-				my types' = #[]
+				my types' = Array[Type] #[]
 
 				for my type in: types {
 					match type[maybeIn: ctx] at Maybe[the: my type'] {
@@ -87,7 +87,7 @@ kind Type of TypeLookup, Typeable {
 			}
 
 			at This[type: This[types: my types] args: my args] {
-				my types' = #[]
+				my types' = Array[Type] #[]
 				my args' = args[collect: Type$0[in: ctx]]
 
 				for my type in: types {

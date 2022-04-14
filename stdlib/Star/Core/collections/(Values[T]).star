@@ -292,7 +292,7 @@ protocol Values[T] of Positional[T] {
 
 	;== Iterating
 
-	on [Iterator[T]] is inline => return ValuesIterator[new: this]
+	on [Iterator[T]] is inline => return ValuesIterator[T][new: this]
 }
 
 

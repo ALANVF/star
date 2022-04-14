@@ -16,6 +16,13 @@ function getMethodOwner(kind: MultiInstKind) return kind._match(
 	at(MIFromParent(parent, _)) => parent.simplify()
 );
 
+function isSetter(kind: MultiInstKind) return kind._match(
+	at(MIMethod(mth, _)) => mth.isSetter,
+	at(MIMember(mem)) => (!mem.isReadonly && (mem.getter == null || mem.setter != null)),
+	at(MIFromTypevar(_, _, _, kind2)) => isSetter(kind2),
+	at(MIFromParent(_, kind2)) => isSetter(kind2)
+);
+
 function reduceBySender(kinds: Array<MultiInstKind>) {
 	if(kinds.length < 2) return kinds;
 
@@ -37,11 +44,15 @@ inline function simplify(overloads: Array<InstOverload>) {
 
 function retType(overloads: Array<InstOverload>, sender: Type): Null<Type> {
 	return overloads.map(ov -> {
-		final res = ov.ret.getFrom(sender);
-		ov.tctx._andOr(
-			tctx => res.getInTCtx(tctx),
-			res
-		);
+		if(ov.ret == Pass2.STD_Void.thisType && isSetter(ov.kind)) {
+			(ov.ret = ov.argTypes.last());
+		} else {
+			final res = ov.ret.getFrom(sender);
+			ov.tctx._andOr(
+				tctx => res.getInTCtx(tctx),
+				res
+			);
+		}
 	}).unique()._match(
 		at([]) => null,
 		at([ret]) => ret,

@@ -257,7 +257,7 @@ protocol TypeDecl of AnyTypeDecl {
 					at Maybe[none] => return lookup[findType: path search: Search.outside :from :depth :cache]
 					at _ if finished || !rest => return res
 					at Maybe[the: Type[decl: my decl]] => return decl[findType: rest search: Search.inside :from :cache]
-					at Maybe[the: my type] => return Type[:type lookup: rest :span]
+					at Maybe[the: my type] => return Maybe[the: Type[:type lookup: rest :span]]
 				}
 			}
 		}

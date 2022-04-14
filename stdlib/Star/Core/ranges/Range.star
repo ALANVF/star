@@ -38,7 +38,7 @@ protocol Range[T, S] of Iterable[T] {
 	;== Observing
 
 	on [extent] (T) is getter is inline {
-		return this[max] - this[min]
+		return [this[max][Unsafe Int] - this[min][Unsafe Int] Unsafe T] ;@@ TODO
 	}
 
 	on [length] (Int) is getter {
@@ -64,7 +64,7 @@ protocol Range[T, S] of Iterable[T] {
 
 	on [at: index (Int)] (T) {
 		if 0 <= index <= this.length {
-			return from + step * index
+			return [from + step * index Unsafe T] ;@@ TODO
 		} else {
 			throw IndexError[at: index]
 		}

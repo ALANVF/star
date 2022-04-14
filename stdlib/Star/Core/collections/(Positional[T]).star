@@ -302,7 +302,7 @@ protocol Positional[T] of Collection[T] {
 		throw NotFound[new]
 	}
 
-	on [maybeIndexOf: value (T)] (Int) {
+	on [maybeIndexOf: value (T)] (Maybe[Int]) {
 		for my i, my value' in: this {
 			if value' ?= value {
 				return Maybe[the: i]

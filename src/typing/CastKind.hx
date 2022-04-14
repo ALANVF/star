@@ -22,6 +22,10 @@ function reduceOverloads(kinds: Array<CastKind>, sender: Type, target: Type) {
 	final kinds2 = kinds.map(k -> loop(k));
 
 	if(kinds2.some(k -> k.match(CMethod(_)))) {
+		if(kinds2.some(k -> k.match(CMethod({native: _ != null => true})))) {
+			return kinds.filter(k -> k.match(CMethod({native: _ != null => true})));
+		}
+
 		return kinds.filteriMap((k, i) -> kinds2[i]._match(
 			at(k = CMethod(m)) => {
 				final mtype = m.type.getFrom(sender);

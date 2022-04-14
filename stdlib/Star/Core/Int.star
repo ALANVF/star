@@ -41,7 +41,7 @@ class Int of Native.Int32, Num {
 	
 	on [log] (Dec) is inline => return this[Dec][log]
 
-	on [log: (Int)] (This) is inline => return this[Dec][:log]
+	on [log: (Int)] (Dec) is inline => return this[Dec][:log]
 
 	on [gcd: other (This)] (This) {
 		my u = this[abs]
