@@ -13,7 +13,7 @@ protocol TypeLookup of HasErrors {
 		in: ctx (Ctx)
 		findCategory: cat (Type)
 		forType: (Type)
-		from: (AnyTypeDecl)
+		from: (Type)
 		cache: (Cache) = Cache[new]
 	] (Array[Category])
 }

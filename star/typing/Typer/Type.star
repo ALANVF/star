@@ -551,7 +551,7 @@ kind Type of TypeLookup, Typeable {
 	on [
 		in: ctx (Ctx)
 		findStatic: name (Str)
-		from: (AnyTypeDecl)
+		from: (Type)
 		isGetter: (Bool)
 		cache: (TypeCache)
 	] (Maybe[SingleStatic])
@@ -559,7 +559,7 @@ kind Type of TypeLookup, Typeable {
 	on [
 		in: ctx (Ctx)
 		findStatic: names (Array[Str])
-		from: (AnyTypeDecl)
+		from: (Type)
 		isSetter: (Bool)
 		cache: (TypeCache)
 	] (MultiStatics)
@@ -567,7 +567,7 @@ kind Type of TypeLookup, Typeable {
 	on [
 		in: ctx (Ctx)
 		findInstance: name (Str)
-		from: (AnyTypeDecl)
+		from: (Type)
 		isGetter: (Bool)
 		cache: (TypeCache)
 	] (Maybe[SingleInst])
@@ -575,7 +575,7 @@ kind Type of TypeLookup, Typeable {
 	on [
 		in: ctx (Ctx)
 		findInstance: names (Array[Str])
-		from: (AnyTypeDecl)
+		from: (Type)
 		isSetter: (Bool)
 		cache: (TypeCache)
 	] (MultiInsts)
@@ -583,21 +583,21 @@ kind Type of TypeLookup, Typeable {
 	on [
 		in: ctx (Ctx)
 		findCast: target (Type)
-		from: (AnyTypeDecl)
+		from: (Type)
 		cache: (TypeCache)
 	] (Casts)
 
 	on [
 		in: ctx (Ctx)
 		findUnaryOp: op (UnaryOperator.Op)
-		from: (AnyTypeDecl)
+		from: (Type)
 		cache: (TypeCache)
 	] (Maybe[UnaryOp])
 
 	on [
 		in: ctx (Ctx)
 		findBinaryOp: op (BinaryOperator.Op)
-		from: (AnyTypeDecl)
+		from: (Type)
 		cache: (TypeCache)
 	] (BinaryOps)
 
@@ -607,13 +607,13 @@ kind Type of TypeLookup, Typeable {
 	on [
 		findCategory: cat (Type)
 		forType: (Type)
-		from: (AnyTypeDecl)
+		from: (Type)
 		cache: (Cache)
 	] (Array[Category])
 
 	on [
 		findThisCategory: cat (Type)
-		from: (AnyTypeDecl)
+		from: (Type)
 		cache: (Cache)
 	] (Array[Category])
 }

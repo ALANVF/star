@@ -72,7 +72,7 @@ protocol Typeable of TypeLookup {
 	on [
 		in: ctx (Ctx)
 		findStatic: name (Str)
-		from: (AnyTypeDecl)
+		from: (Type)
 		isGetter: (Bool) = false
 		cache: (TypeCache) = TypeCache[new]
 	] (Maybe[SingleStatic])
@@ -80,7 +80,7 @@ protocol Typeable of TypeLookup {
 	on [
 		in: ctx (Ctx)
 		findStatic: names (Array[Str])
-		from: (AnyTypeDecl)
+		from: (Type)
 		isSetter: (Bool) = false
 		cache: (TypeCache) = TypeCache[new]
 	] (MultiStatics)
@@ -88,7 +88,7 @@ protocol Typeable of TypeLookup {
 	on [
 		in: ctx (Ctx)
 		findInstance: name (Str)
-		from: (AnyTypeDecl)
+		from: (Type)
 		isGetter: (Bool) = false
 		cache: (TypeCache) = TypeCache[new]
 	] (Maybe[SingleInst])
@@ -96,7 +96,7 @@ protocol Typeable of TypeLookup {
 	on [
 		in: ctx (Ctx)
 		findInstance: names (Array[Str])
-		from: (AnyTypeDecl)
+		from: (Type)
 		isSetter: (Bool) = false
 		cache: (TypeCache) = TypeCache[new]
 	] (MultiInsts)
@@ -104,21 +104,21 @@ protocol Typeable of TypeLookup {
 	on [
 		in: ctx (Ctx)
 		findCast: target (Type)
-		from: (AnyTypeDecl)
+		from: (Type)
 		cache: (TypeCache) = TypeCache[new]
 	] (Casts)
 
 	on [
 		in: ctx (Ctx)
 		findUnaryOp: op (UnaryOperator.Op)
-		from: (AnyTypeDecl)
+		from: (Type)
 		cache: (TypeCache) = TypeCache[new]
 	] (Maybe[UnaryOp])
 
 	on [
 		in: ctx (Ctx)
 		findBinaryOp: op (BinaryOperator.Op)
-		from: (AnyTypeDecl)
+		from: (Type)
 		cache: (TypeCache) = TypeCache[new]
 	] (BinaryOps)
 
@@ -128,7 +128,7 @@ protocol Typeable of TypeLookup {
 	on [
 		in: ctx (Ctx)
 		findThisCategory: cat (Type)
-		from: (AnyTypeDecl)
+		from: (Type)
 		cache: (Cache) = Cache[new]
 	] (Array[Category])
 }

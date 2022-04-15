@@ -482,7 +482,7 @@ protocol TypeDecl of AnyTypeDecl {
 	on [
 		in: ctx (Ctx)
 		findStatic: name (Str)
-		from: (AnyTypeDecl)
+		from: (Type)
 		isGetter: (Bool)
 		cache: (TypeCache)
 	] (Maybe[SingleStatic]) => return Maybe[none]
@@ -490,7 +490,7 @@ protocol TypeDecl of AnyTypeDecl {
 	on [
 		in: ctx (Ctx)
 		findStatic: names (Array[Str])
-		from: (AnyTypeDecl)
+		from: (Type)
 		isSetter: (Bool)
 		cache: (TypeCache)
 	] (MultiStatics) => return #[]
@@ -498,7 +498,7 @@ protocol TypeDecl of AnyTypeDecl {
 	on [
 		in: ctx (Ctx)
 		findInstance: name (Str)
-		from: (AnyTypeDecl)
+		from: (Type)
 		isGetter: (Bool)
 		cache: (TypeCache)
 	] (Maybe[SingleInst]) => return Maybe[none]
@@ -506,7 +506,7 @@ protocol TypeDecl of AnyTypeDecl {
 	on [
 		in: ctx (Ctx)
 		findInstance: names (Array[Str])
-		from: (AnyTypeDecl)
+		from: (Type)
 		isSetter: (Bool)
 		cache: (TypeCache)
 	] (MultiInsts) => return #[]
@@ -514,21 +514,21 @@ protocol TypeDecl of AnyTypeDecl {
 	on [
 		in: ctx (Ctx)
 		findCast: target (Type)
-		from: (AnyTypeDecl)
+		from: (Type)
 		cache: (TypeCache)
 	] (Casts) => return #[]
 
 	on [
 		in: ctx (Ctx)
 		findUnaryOp: op (UnaryOperator.Op)
-		from: (AnyTypeDecl)
+		from: (Type)
 		cache: (TypeCache)
 	] (Maybe[UnaryOp]) => return Maybe[none]
 
 	on [
 		in: ctx (Ctx)
 		findBinaryOp: op (BinaryOperator.Op)
-		from: (AnyTypeDecl)
+		from: (Type)
 		cache: (TypeCache)
 	] (BinaryOps) => return #[]
 
@@ -538,13 +538,13 @@ protocol TypeDecl of AnyTypeDecl {
 	on [
 		findCategory: cat (Type)
 		forType: (Type)
-		from: (AnyTypeDecl)
+		from: (Type)
 		cache: (Cache)
 	] (Array[Category])
 
 	on [
 		findThisCategory: cat (Type)
-		from: (AnyTypeDecl)
+		from: (Type)
 		cache: (Cache)
 	] (Array[Category])
 }

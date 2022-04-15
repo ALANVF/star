@@ -609,8 +609,40 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 	at(EStr([])) => if(wantValue) [OStr("")] else [],
 	at(EStr([PStr(str)])) => if(wantValue) [OStr(str)] else [],
 	at(EStr(parts)) => {
-		trace("TODO");
-		[];
+		var offset: Int;
+		var res: Opcodes = parts[0]._match(
+			at(PStr(str)) => {
+				offset = 1;
+				[OStr(str)];
+			},
+			at(PCode(_)) => {
+				offset = 0;
+				[OStr("")];
+			}
+		);
+
+		for(i in offset...parts.length) {
+			parts[i]._match(
+				at(PStr(str)) => {
+					final overloads = BinaryOpKind.reduceOverloads(
+						Pass2.STD_Str.findBinaryOp(null, Plus, Pass2.STD_Str),
+						Pass2.STD_Str,
+						{e: /*BAD*/null, orig: null, t: Pass2.STD_Str}
+					);
+					res = res.concat(compile(ctx, overloads, expr, true));
+				},
+				at(PCode(expr)) => {
+					final overloads = BinaryOpKind.reduceOverloads(
+						Pass2.STD_Str.findBinaryOp(null, Plus, Pass2.STD_Str),
+						Pass2.STD_Str,
+						expr
+					);
+					res = res.concat(compile(ctx, overloads, expr, true));
+				}
+			);
+		}
+
+		res;
 	},
 
 	at(EBool(true)) => if(wantValue) [OTrue] else [],
@@ -675,6 +707,7 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 	at(EWildcard) => throw "bad",
 
 	at(EFunc(params, ret, body)) => {
+		trace("TODO");
 		[];
 	},
 
@@ -714,12 +747,54 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 			)
 		)];
 	},
+	// TODO: make this less ugly
+	at(ELiteralCtor(type, {e: EPrefix(UOMethod({op: Neg, native: Some({name: _.endsWith("_neg") => true})}), {e: EInt(int, exp)})})) => {
+		// TODO: properly support 64-bit ints;
+		inline function intVal() {
+			return exp._andOr(
+				e => {
+					if(e < 0) throw "integer exponent cannot be under 0";
+					int * Std.int(Math.pow(10, e));
+				},
+				int
+			);
+		}
+		[type.getNative()._match(
+			at(null) => throw "Cannot construct int literal from non-native type!",
+			at(kind!!) => kind._match(
+				at(NBool) => throw "Cannot construct bool literal using a negative number!",
+				at(NInt8) => OInt8(-intVal(), kind == NInt8),
+				at(NInt16) => OInt16(-intVal(), kind == NInt16),
+				at(NInt32) => OInt32(-intVal(), kind == NInt32),
+				at(NInt64) => {
+					OInt64(exp._andOr(
+						e => haxe.Int64.parseString('-${int}e$e'), // TODO: improve
+						-haxe.Int64.ofInt(int)
+					), kind == NInt64);
+				},
+				at(NUInt8 | NUInt16 | NUInt32 | NUInt64) => throw "Cannot construct unsigned int literal using a negative number!",
+				at(NDec32) => ODec32(-int, "0", exp),
+				at(NDec64) => ODec64(-int, "0", exp),
+				_ => throw "Cannot construct int literal from non-numeric type!"
+			)
+		)];
+	},
 	at(ELiteralCtor(type, {e: EDec(int, dec, exp)})) => {
 		[type.getNative()._match(
 			at(null) => throw "Cannot construct dec literal from non-native type!",
 			at(kind!!) => kind._match(
 				at(NDec32) => ODec32(int, dec, exp),
 				at(NDec64) => ODec64(int, dec, exp),
+				_ => throw "Cannot construct dec literal from non-numeric type!"
+			)
+		)];
+	},
+	at(ELiteralCtor(type, {e: EPrefix(UOMethod({op: Neg, native: Some({name: _.endsWith("_neg") => true})}), {e: EDec(int, dec, exp)})})) => {
+		[type.getNative()._match(
+			at(null) => throw "Cannot construct dec literal from non-native type!",
+			at(kind!!) => kind._match(
+				at(NDec32) => ODec32(-int, dec, exp),
+				at(NDec64) => ODec64(-int, dec, exp),
 				_ => throw "Cannot construct dec literal from non-numeric type!"
 			)
 		)];
@@ -968,6 +1043,7 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 				res;
 			},
 			_ => {
+				trace("TODO");
 				[];
 			}
 		);
@@ -1798,6 +1874,7 @@ overload static function compile(ctx: GenCtx, type: Type, kind: SingleStaticKind
 		[OInitTKind(world.getTypeRef(type), id)];
 	},
 	at(SSTaggedCaseAlias(c)) => {
+		trace("TODO");
 		[];
 	},
 	at(SSValueCase(c)) => {
@@ -1805,6 +1882,7 @@ overload static function compile(ctx: GenCtx, type: Type, kind: SingleStaticKind
 		[OInitVKind(world.getTypeRef(type), id)];
 	},
 	at(SSFromTypevar(_, _, _, _)) => {
+		trace("TODO");
 		[];
 	},
 	at(SSFromParent(parent, kind2)) => {
@@ -1864,9 +1942,11 @@ overload static function compile(ctx: GenCtx, kind: SingleInstKind, wantValue: B
 		[OGetMember(id)];
 	},
 	at(SIFromTypevar(_, _, _, _)) => {
+		trace("TODO");
 		[];
 	},
 	at(SIFromParent(parent, kind)) => {
+		trace("TODO");
 		[];
 	}
 );
@@ -1920,6 +2000,7 @@ overload static function compile(ctx: GenCtx, type: Type, candidates: Array<Type
 					res;
 				},
 				at(MSInit(init, partial!!)) => {
+					trace("TODO");
 					[];
 				},
 				
@@ -1952,17 +2033,81 @@ overload static function compile(ctx: GenCtx, type: Type, candidates: Array<Type
 
 					final id = world.getID(mth);
 					var res = [];
+					
 					for(arg in args) {
 						res = res.concat(compile(ctx, arg));
 					}
+					
 					res.push(OSend_MS(typeref, id, ictx));
+					
 					if(!wantValue && mth.ret._andOr(ret => ret != Pass2.STD_Void.thisType, false)) {
 						res.push(OPop);
 					}
+
 					res;
 				},
 				at(MSMethod(mth, partial!!)) => {
-					[];
+					mth.native._and(native => native._match(
+						at(None) => throw "bad",
+						at(Some({name: name})) => {
+							throw "I'm too lazy for this";
+							/*var res = [];
+							for(arg in args) {
+								res = res.concat(compile(ctx, arg));
+							}
+							res.push(ONative(name));
+							return res;*/
+						}
+					));
+
+					final ictx = tctx._andOr(tctx => (
+						if(tctx.size() > 0) {
+							final _ictx = new TVarInstCtx();
+							for(tv => t in tctx) {
+								_ictx[world.getTVar(tv)] = world.getTypeRef(t);
+							}
+							_ictx;
+						} else
+							null
+					), null);
+
+					final id = world.getID(mth);
+					var res = [];
+
+					for(i in 0...mth.params.length) {
+						partial.indexOf(i)._match(
+							at(-1) => {
+								// TODO: figure out how to make this easily work with generics
+								var tvalue = mth.params[i].tvalue._or(throw "bad");
+								tvalue.t = tvalue.t.nonNull().getInTCtx(tctx).getFrom(type);
+								tvalue.e._match(
+									at(ELiteralCtor(type2, literal)) => {
+										if(type2.hasTypevars()) {
+											tvalue.e = ELiteralCtor(
+												type2.getInTCtx(tctx).getFrom(type),
+												literal
+											);
+										}
+									},
+									_ => {}
+								);
+
+								res = res.concat(compile(ctx, tvalue));
+							},
+							at(iarg) => {
+								final arg = args[iarg];
+								res = res.concat(compile(ctx, arg));
+							}
+						);
+					}
+
+					res.push(OSend_MS(typeref, id, ictx));
+					
+					if(!wantValue && mth.ret._andOr(ret => ret != Pass2.STD_Void.thisType, false)) {
+						res.push(OPop);
+					}
+					
+					res;
 				},
 
 				at(MSMember(mem)) => {
@@ -2053,22 +2198,27 @@ overload static function compile(ctx: GenCtx, type: Type, candidates: Array<Type
 					res;
 				},
 				at(MSTaggedCase(ms1, c, ms2, partial!!)) => {
+					trace("TODO");
 					[];
 				},
 
 				at(MSTaggedCaseAlias(c)) => {
+					trace("TODO");
 					[];
 				},
 
 				at(MSFromTypevar(_, _, _, _)) => {
+					trace("TODO");
 					[];
 				},
 				at(MSFromParent(parent, kind)) => {
+					trace("TODO");
 					[];
 				}
 			);
 		},
 		_ => {
+			trace("TODO");
 			[];
 		} 
 	);
@@ -2119,17 +2269,81 @@ overload static function compile(ctx: GenCtx, candidates: Array<ObjMessage.ObjMu
 
 				final id = world.getID(mth);
 				var res = [];
+
 				for(arg in args) {
 					res = res.concat(compile(ctx, arg));
 				}
+				
 				res.push(mth.typedBody != null ? OSend_MI(id, ictx) : OSendDynamic_MI(id, ictx));
+				
 				if(!wantValue && mth.ret._andOr(ret => ret != Pass2.STD_Void.thisType, false)) {
 					res.push(OPop);
 				}
+				
 				res;
 			},
 			at(MIMethod(mth, partial!!)) => {
-				[];
+				mth.native._and(native => native._match(
+					at(None) => throw "bad",
+					at(Some({name: name})) => {
+						throw "I'm too lazy for this";
+						/*var res = [];
+						for(arg in args) {
+							res = res.concat(compile(ctx, arg));
+						}
+						res.push(ONative(name));
+						return res;*/
+					}
+				));
+
+				final ictx = tctx._andOr(tctx => (
+					if(tctx.size() > 0) {
+						final _ictx = new TVarInstCtx();
+						for(tv => t in tctx) {
+							_ictx[world.getTVar(tv)] = world.getTypeRef(t);
+						}
+						_ictx;
+					} else
+						null
+				), null);
+
+				final id = world.getID(mth);
+				var res = [];
+
+				for(i in 0...mth.params.length) {
+					partial.indexOf(i)._match(
+						at(-1) => {
+							// Imma just hope we don't need generics here yet
+							var tvalue = mth.params[i].tvalue._or(throw "bad");
+							tvalue.t = tvalue.t.nonNull().getInTCtx(tctx);//.getFrom(type);
+							tvalue.e._match(
+								at(ELiteralCtor(type2, literal)) => {
+									if(type2.hasTypevars()) {
+										tvalue.e = ELiteralCtor(
+											type2.getInTCtx(tctx),//.getFrom(type),
+											literal
+										);
+									}
+								},
+								_ => {}
+							);
+
+							res = res.concat(compile(ctx, tvalue));
+						},
+						at(iarg) => {
+							final arg = args[iarg];
+							res = res.concat(compile(ctx, arg));
+						}
+					);
+				}
+
+				res.push(mth.typedBody != null ? OSend_MI(id, ictx) : OSendDynamic_MI(id, ictx));
+				
+				if(!wantValue && mth.ret._andOr(ret => ret != Pass2.STD_Void.thisType, false)) {
+					res.push(OPop);
+				}
+				
+				res;
 			},
 			at(MIMember(mem)) => {
 				final id = world.getInstID(mem);
@@ -2138,13 +2352,16 @@ overload static function compile(ctx: GenCtx, candidates: Array<ObjMessage.ObjMu
 				res;
 			},
 			at(MIFromTypevar(_, _, _, _)) => {
+				trace("TODO");
 				[];
 			},
 			at(MIFromParent(parent, kind)) => {
+				trace("TODO");
 				[];
 			}
 		),
 		_ => {
+			trace("TODO");
 			[];
 		} 
 	);

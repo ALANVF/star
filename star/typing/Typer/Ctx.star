@@ -212,7 +212,7 @@ kind Ctx {
 						match objType[
 							in: this
 							findInstance: name
-							from: outer'.typeDecl
+							from: outer'.typeDecl.thisType
 							isGetter: true
 						] at SingleInst[member: my member] if depth ?= 0 || (depth--, false) {
 							return Maybe[the: Local.Field[ctx: this :member]]

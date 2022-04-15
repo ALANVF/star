@@ -11,7 +11,7 @@ protocol AnyTypeDecl of Typeable, TypeLookupDecl {
 	on [
 		in: (Ctx)
 		findThisCategory: cat (Type)
-		from: (AnyTypeDecl)
+		from: (Type)
 		cache: (Cache)
 	] (Array[Category]) {
 		return this[:in findCategory: cat forType: thisType :from :cache]
