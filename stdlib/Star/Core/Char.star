@@ -1,14 +1,6 @@
 use Native
 
 class Char of Ordered is native[repr: `int` bits: 8 signed: false] is strong {
-	;== Stepping
-	
-	;-- what to do about underflow/overflow...?
-	on [next] (This) => return this + 1
-
-	on [previous] (This) => return this - 1
-
-
 	;== Casing
 
 	on [lowercase] (This) {
@@ -72,6 +64,13 @@ class Char of Ordered is native[repr: `int` bits: 8 signed: false] is strong {
 	on [downto: (This) by: (Int)] (Range[This]) is inline {
 		return Range[This][from: this :downto :by]
 	}
+
+
+	;== Stepping
+
+	;-- what to do about underflow/overflow...?
+	operator `++` (This) => return this + 1
+	operator `--` (This) => return this - 1
 
 
 	;== Math

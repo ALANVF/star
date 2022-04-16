@@ -98,7 +98,7 @@ interface ITypeable extends ITypeLookup {
 	function findMultiStatic(
 		ctx: Ctx,
 		names: Array<String>,
-		from: AnyTypeDecl,
+		from: Type,
 		setter: Bool = false,
 		cache: TypeCache = Nil
 	): Array<MultiStaticKind>;

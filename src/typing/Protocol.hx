@@ -153,7 +153,7 @@ class Protocol extends ClassLike {
 	}
 
 
-	override function findMultiStatic(ctx: Ctx, names: Array<String>, from: AnyTypeDecl, setter = false, cache: TypeCache = Nil) {
+	override function findMultiStatic(ctx: Ctx, names: Array<String>, from: Type, setter = false, cache: TypeCache = Nil) {
 		if(cache.contains(thisType)) return [];
 		
 		final candidates: Array<MultiStaticKind> = [];
@@ -241,7 +241,7 @@ class Protocol extends ClassLike {
 		
 		final candidates = super.findCast(ctx, target, from, cache);
 
-		return if(target.hasParentDecl(this)) {
+		return if(target.hasParentDecl(this) && /*TODO: fix*/ target.getNative() == null) {
 			candidates.concat([CDowncast(target)]);
 		} else {
 			candidates;

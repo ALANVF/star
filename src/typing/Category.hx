@@ -384,7 +384,7 @@ class Category extends AnyTypeDecl {
 		return null;
 	}
 
-	function findMultiStatic(ctx: Ctx, names: Array<String>, from: AnyTypeDecl, setter = false, cache: TypeCache = Nil): Array<MultiStaticKind> {
+	function findMultiStatic(ctx: Ctx, names: Array<String>, from: Type, setter = false, cache: TypeCache = Nil): Array<MultiStaticKind> {
 		//if(type.exists(t -> cache.contains(t)) || lookup._match(at(d is TypeDecl) => cache.contains(d.thisType), _ => false)) return null;
 
 		final candidates: Array<MultiStaticKind> = [];

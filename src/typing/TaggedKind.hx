@@ -148,7 +148,7 @@ class TaggedKind extends Kind {
 	}
 
 	
-	override function findMultiStatic(ctx: Ctx, names: Array<String>, from: AnyTypeDecl, setter = false, cache: TypeCache = Nil) {
+	override function findMultiStatic(ctx: Ctx, names: Array<String>, from: Type, setter = false, cache: TypeCache = Nil) {
 		if(cache.contains(thisType)) return [];
 		
 		var candidates: Array<MultiStaticKind> = [];

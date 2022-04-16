@@ -196,7 +196,7 @@ class DirectAlias extends Alias {
 	}
 
 
-	override function findMultiStatic(ctx: Ctx, names: Array<String>, from: AnyTypeDecl, setter = false, cache: TypeCache = Nil) {
+	override function findMultiStatic(ctx: Ctx, names: Array<String>, from: Type, setter = false, cache: TypeCache = Nil) {
 		if(cache.contains(thisType)) return [];
 		
 		return type.findMultiStatic(ctx, names, from, setter, cache + thisType);

@@ -1896,19 +1896,14 @@ class Type implements ITypeable {
 	}
 
 
-	function findMultiStatic(ctx: Ctx, names: Array<String>, from: AnyTypeDecl, setter = false, cache: TypeCache = Nil): Array<MultiStaticKind> {
+	function findMultiStatic(ctx: Ctx, names: Array<String>, from: Type, setter = false, cache: TypeCache = Nil): Array<MultiStaticKind> {
 		return t._match(
 			at(TPath(depth, lookup, source)) => throw "todo",
 			at(TLookup(type, lookup, source)) => throw "todo",
 			at(TConcrete(decl) | TInstance(decl, _, _)) => decl.findMultiStatic(ctx, names, from, setter, cache),
 			at(TThis(source)) => source._match(
 				at(td is TypeDecl) => {
-					if(td == from) {
-						td.findMultiStatic(ctx, names, from, setter, cache);
-					} else {
-						//throw "???";
-						td.findMultiStatic(ctx, names, from, setter, cache);
-					}
+					td.findMultiStatic(ctx, names, from, setter, cache);
 				},
 				_ => throw "todo"
 			),

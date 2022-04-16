@@ -449,7 +449,7 @@ abstract class TypeDecl extends AnyFullTypeDecl {
 	}
 
 
-	function findMultiStatic(ctx: Ctx, names: Array<String>, from: AnyTypeDecl, setter = false, cache: TypeCache = Nil): Array<MultiStaticKind> {
+	function findMultiStatic(ctx: Ctx, names: Array<String>, from: Type, setter = false, cache: TypeCache = Nil): Array<MultiStaticKind> {
 		return [];
 	}
 

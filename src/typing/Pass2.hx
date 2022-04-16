@@ -1694,7 +1694,7 @@ static function sendTypeMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: 
 		at(Multi(null, labels)) => {
 			detuple(@var [names, args] = getNamesArgs(ctx, labels));
 			
-			t.findMultiStatic(ctx, names, ctx.typeDecl).unique()/*.reduceBySender()*/._match(
+			t.findMultiStatic(ctx, names, ctx.typeDecl.thisType).unique()/*.reduceBySender()*/._match(
 				at([]) => {
 					ctx.addError(Type_UnknownMethod(ctx, t, Multi(Static, names), labels[0].span()));
 					null;
@@ -1734,7 +1734,7 @@ static function sendTypeMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: 
 			).findThisCategory(ctx, tcat, ctx.typeDecl).unique();
 			categories._match(
 				at([]) => throw 'error: type `${t.fullName()}` does not have the category `${tcat.fullName()}`!',
-				at([found]) => found.findMultiStatic(ctx, names, ctx.typeDecl).unique().reduceBySender()._match(
+				at([found]) => found.findMultiStatic(ctx, names, ctx.typeDecl.thisType).unique().reduceBySender()._match(
 					at([]) => throw 'error: type `${t.fullName()}` does not respond to method `[${names.joinMap(" ", n -> '$n:')}]` in category `${tcat.fullName()}`! ${begin.display()}',
 					at(kinds) => {
 						kinds.reduceOverloads(t, args)._match(
@@ -1772,7 +1772,7 @@ static function sendTypeMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: 
 				at(found) => Type.mostSpecificBy(
 					Type.reduceOverloadsBy(
 						found
-							.map(f -> {cat: f, mth: f.findMultiStatic(ctx, names, ctx.typeDecl).unique().reduceBySender()})
+							.map(f -> {cat: f, mth: f.findMultiStatic(ctx, names, ctx.typeDecl.thisType).unique().reduceBySender()})
 							.filter(l -> l.mth.length != 0),
 						f -> f.cat.thisType.getMostSpecific()
 					),
@@ -2345,7 +2345,7 @@ static function typeTypeCascade(ctx: Ctx, type: Type, cascade: UCascade<UType>):
 
 				at(Multi(null, labels)) => {
 					detuple(@var [names, args] = getNamesArgs(ctx, labels));
-					type.findMultiStatic(ctx, names, ctx.typeDecl)._match(
+					type.findMultiStatic(ctx, names, ctx.typeDecl.thisType)._match(
 						at([]) => {
 							ctx.addError(Type_UnknownMethod(ctx, type, Multi(Static, names), labels[0].span()));
 							return null;
@@ -2385,7 +2385,7 @@ static function typeTypeCascade(ctx: Ctx, type: Type, cascade: UCascade<UType>):
 					).findThisCategory(ctx, tcat, ctx.typeDecl).unique();
 					categories._match(
 						at([]) => throw 'error: value of type `${type.fullName()}` does not have the category `${tcat.fullName()}`! ${cat.span().display()}',
-						at([found]) => found.findMultiStatic(ctx, names, ctx.typeDecl)._match(
+						at([found]) => found.findMultiStatic(ctx, names, ctx.typeDecl.thisType)._match(
 							at([]) => throw 'error: value of type `${type.fullName()}` does not respond to method `[${names.joinMap(" ", n -> '$n:')}]` in category `${tcat.fullName()}`! ${cat.span().display()}',
 							at(kinds) => kinds.reduceOverloads(type, args)._match(
 								at([]) => {
@@ -2397,7 +2397,7 @@ static function typeTypeCascade(ctx: Ctx, type: Type, cascade: UCascade<UType>):
 						),
 						at(found) => Type.mostSpecificBy(
 							found
-								.map(f -> {cat: f, mth: f.findMultiStatic(ctx, names, ctx.typeDecl)})
+								.map(f -> {cat: f, mth: f.findMultiStatic(ctx, names, ctx.typeDecl.thisType)})
 								.filter(l -> l.mth.length != 0),
 							f -> f.cat.type.nonNull()
 						)._match(
@@ -2420,7 +2420,7 @@ static function typeTypeCascade(ctx: Ctx, type: Type, cascade: UCascade<UType>):
 			)),
 
 
-			at(AssignMember({name: name, span: span}, _, null, rhs)) => type.findMultiStatic(ctx, [name], ctx.typeDecl, true)._match(
+			at(AssignMember({name: name, span: span}, _, null, rhs)) => type.findMultiStatic(ctx, [name], ctx.typeDecl.thisType, true)._match(
 				at(kinds!) => {
 					final trhs = typeExpr(ctx, rhs);
 					kinds.reduceOverloads(type, [trhs])._match(
@@ -2442,7 +2442,7 @@ static function typeTypeCascade(ctx: Ctx, type: Type, cascade: UCascade<UType>):
 				at(Multi(null, labels)) => {
 					detuple(@var [names, args] = getNamesArgs(ctx, labels));
 					names = names.concat(["="]);
-					type.findMultiStatic(ctx, names, ctx.typeDecl)._match(
+					type.findMultiStatic(ctx, names, ctx.typeDecl.thisType)._match(
 						at([]) => throw 'error: value of type ${type.fullName()} does not respond to method `[${names.joinMap(" ", n -> '$n:')}]`!',
 						at(kinds) => {
 							final trhs = typeExpr(ctx, rhs);
@@ -2465,7 +2465,7 @@ static function typeTypeCascade(ctx: Ctx, type: Type, cascade: UCascade<UType>):
 
 
 			at(StepMember({name: name}, span, step)) =>
-				type.findMultiStatic(ctx, [name], ctx.typeDecl, true)._match(
+				type.findMultiStatic(ctx, [name], ctx.typeDecl.thisType, true)._match(
 					at([]) => throw "bad",
 					at([setKind]) => type.findSingleStatic(ctx, name, ctx.typeDecl.thisType, true)._match(
 						at(getKind!) => {
@@ -2838,7 +2838,7 @@ static function typePattern(ctx: Ctx, expectType: Type, expr: UExpr): Pattern {
 				},
 				at(Multi(null, labels)) => {
 					detuple(@var [names, args] = getNamesUntypedArgs(ctx, labels));
-					ttype.findMultiStatic(ctx, names, ctx.typeDecl)._match(
+					ttype.findMultiStatic(ctx, names, ctx.typeDecl.thisType)._match(
 						at([MSMemberwiseInit(ms)]) => {
 							// TODO: fix this to work with generic subtypes
 							PTypeMembers(ttype, [

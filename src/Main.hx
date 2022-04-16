@@ -213,22 +213,13 @@ class Main {
 				_ => throw "internal error: Star.Core.Dec should be a concrete type!"
 			);
 
-			gen.write("Star.Core.Char:");
-			gen.newline();
+			//gen.write("Star.Core.Char:");
+			//gen.newline();
 			typing.Pass2.STD_Char._match(
 				at({t: TConcrete(decl) | TModular({t: TConcrete(decl)}, _)}) => {
 					final cls = cast(decl, typing.Class);
-					for(mth in cls.methods) {
-						mth._match(
-							at(
-								//( {fuzzyName: "rootOf:" | "round:" | "log:"} is typing.MultiMethod)
-								  {name: {name: "escape"}} is typing.SingleMethod) => {
-								gen.write(mth);
-								gen.newline();
-							},
-							_ => {}
-						);
-					}
+					gen.write(cls);
+					gen.newline();
 				},
 				_ => throw "internal error: Star.Core.Char should be a concrete type!"
 			);

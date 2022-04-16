@@ -651,10 +651,30 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 	at(EArray(values)) => {
 		final type = expr.t.nonNull();
 		if(type.t.match(TMulti(_))) throw "type inference is not currently available for arrays!";
-		var res = {
+		var res: Opcodes;
+		do {
+			if(values.length > 0) {
+				final sizeExpr: TExpr = {
+					e: EInt(values.length, null),
+					t: Pass2.STD_Int
+				};
+
+				MultiStaticKind.reduceOverloads(
+					type.findMultiStatic(/*BAD*/null, ["new"], type),
+					type,
+					[sizeExpr]
+				)._match(
+					at([]) => {},
+					at(overloads) => {
+						res = compile(ctx, type, overloads, [sizeExpr], true);
+						break;
+					}
+				);
+			}
+			
 			final kind = type.findSingleStatic(/*BAD*/null, "new", type).nonNull();
-			compile(ctx, type, kind, true);
-		};
+			res = compile(ctx, type, kind, true);
+		} while(false);
 
 		for(value in values) {
 			final overloads = MultiInstKind.reduceOverloads(
@@ -672,8 +692,46 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 	},
 
 	at(EHash(pairs)) => {
-		trace("TODO");
-		[];
+		final type = expr.t.nonNull();
+		//if(type.t.match(TMulti(_))) throw "type inference is not currently available for dictionaries!";
+		var res: Opcodes;
+		do {
+			if(pairs.length > 0) {
+				final sizeExpr: TExpr = {
+					e: EInt(pairs.length, null),
+					t: Pass2.STD_Int
+				};
+
+				MultiStaticKind.reduceOverloads(
+					type.findMultiStatic(/*BAD*/null, ["new"], type),
+					type,
+					[sizeExpr]
+				)._match(
+					at([]) => {},
+					at(overloads) => {
+						res = compile(ctx, type, overloads, [sizeExpr], true);
+						break;
+					}
+				);
+			}
+			
+			final kind = type.findSingleStatic(/*BAD*/null, "new", type).nonNull();
+			res = compile(ctx, type, kind, true);
+		} while(false);
+
+		for(pair in pairs) { detuple(@final [key, value] = pair);
+			final overloads = MultiInstKind.reduceOverloads(
+				type.findMultiInst(/*BAD*/null, ["atNew", "set"], type),
+				/*BAD*/null,
+				type,
+				[key, value]
+			);
+
+			res.push(ODup);
+			res = res.concat(compile(ctx, overloads, [key, value], false));
+		}
+		
+		res;
 	},
 
 	at(ETuple(values)) => {
@@ -800,10 +858,30 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 		)];
 	},
 	at(ELiteralCtor(type, {e: EArray(values)})) => {
-		var res = {
+		var res: Opcodes;
+		do {
+			if(values.length > 0) {
+				final sizeExpr: TExpr = {
+					e: EInt(values.length, null),
+					t: Pass2.STD_Int
+				};
+
+				MultiStaticKind.reduceOverloads(
+					type.findMultiStatic(/*BAD*/null, ["new"], type),
+					type,
+					[sizeExpr]
+				)._match(
+					at([]) => {},
+					at(overloads) => {
+						res = compile(ctx, type, overloads, [sizeExpr], true);
+						break;
+					}
+				);
+			}
+			
 			final kind = type.findSingleStatic(/*BAD*/null, "new", type).nonNull();
-			compile(ctx, type, kind, true);
-		};
+			res = compile(ctx, type, kind, true);
+		} while(false);
 
 		for(value in values) {
 			final overloads = MultiInstKind.reduceOverloads(
@@ -815,6 +893,50 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 
 			res.push(ODup);
 			res = res.concat(compile(ctx, overloads, [value], false));
+		}
+		
+		res;
+	},
+	at(ELiteralCtor(type, {e: EHash(pairs)})) => {
+		var res: Opcodes;
+		do {
+			if(pairs.length > 0) {
+				final sizeExpr: TExpr = {
+					e: EInt(pairs.length, null),
+					t: Pass2.STD_Int
+				};
+
+				MultiStaticKind.reduceOverloads(
+					type.findMultiStatic(/*BAD*/null, ["new"], type),
+					type,
+					[sizeExpr]
+				)._match(
+					at([]) => {},
+					at(overloads) => {
+						res = compile(ctx, type, overloads, [sizeExpr], true);
+						break;
+					}
+				);
+			}
+			
+			final kind = type.findSingleStatic(/*BAD*/null, "new", type).nonNull();
+			res = compile(ctx, type, kind, true);
+		} while(false);
+
+		for(pair in pairs) { detuple(@final [key, value] = pair);
+			final overloads = MultiInstKind.reduceOverloads(
+				// because #atNew:set: is really just there for Dict
+				type.findMultiInst(/*BAD*/null, ["atNew", "set"], type)._match(
+					at([]) => type.findMultiInst(/*BAD*/null, ["at", "set"], type),
+					at(ovs) => ovs
+				),
+				/*BAD*/null,
+				type,
+				[key, value]
+			);
+
+			res.push(ODup);
+			res = res.concat(compile(ctx, overloads, [key, value], false));
 		}
 		
 		res;
