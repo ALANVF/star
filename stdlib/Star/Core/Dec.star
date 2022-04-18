@@ -2,6 +2,10 @@ use Native
 
 class Dec of Num is native[repr: `dec` bits: 64] is strong {
 	;== Constants
+
+	on [nan] (Dec) is static is getter is native `d64_nan`
+	on [inf] (Dec) is static is getter is native `d64_inf`
+	on [neg_inf] (Dec) is static is getter is native `d64_neg_inf`
 	
 	on [pi] (Dec) is static is getter is native `d64_pi`
 

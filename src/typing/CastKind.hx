@@ -23,7 +23,18 @@ function reduceOverloads(kinds: Array<CastKind>, sender: Type, target: Type) {
 
 	if(kinds2.some(k -> k.match(CMethod(_)))) {
 		if(kinds2.some(k -> k.match(CMethod({native: _ != null => true})))) {
-			return kinds.filter(k -> k.match(CMethod({native: _ != null => true})));
+			final res = kinds.filter(k -> k.match(CMethod({native: _ != null => true})));
+			if(res.length > 1) {
+				return res.filter(k -> k.match(CMethod({type: _ == target => true})))._match(
+					at([]) => {
+						trace("???");
+						res;
+					},
+					at(res2) => res2
+				);
+			} else {
+				return res;
+			}
 		}
 
 		return kinds.filteriMap((k, i) -> kinds2[i]._match(

@@ -20,6 +20,36 @@ class Char of Ordered is native[repr: `int` bits: 8 signed: false] is strong {
 	}
 
 
+	;== Traits
+
+	on [isDigit] (Bool) is inline {
+		return #"0" <= this <= #"9"
+	}
+
+	on [isSpace] (Bool) is inline {
+		return (
+			|| this ?= #" "
+			|| #"\t" <= this <= #"\r"
+		)
+	}
+
+	on [isUpper] (Bool) is inline {
+		return #"A" <= this <= #"Z"
+	}
+
+	on [isLower] (Bool) is inline {
+		return #"a" <= this <= #"z"
+	}
+
+	on [isAlpha] (Bool) is inline {
+		return this[isUpper] || this[isLower]
+	}
+
+	on [isAlnum] (Bool) is inline {
+		return this[isAlpha] || this[isDigit]
+	}
+
+
 	;== Escaping
 
 	on [escape] (Str) {
@@ -75,13 +105,11 @@ class Char of Ordered is native[repr: `int` bits: 8 signed: false] is strong {
 
 	;== Math
 
-	operator `+` [value (Int)] (This) {
-		return [this[UInt8] + value[UInt8] This]
-	}
+	operator `+` [value (Int)] (This) => return [this[UInt8] + value[UInt8] This]
+	operator `-` [value (Int)] (This) => return [this[UInt8] - value[UInt8] This]
 
-	operator `-` [value (Int)] (This) {
-		return [this[UInt8] - value[UInt8] This]
-	}
+	operator `+` [char (This)] (This) is native `u8_add`
+	operator `-` [char (This)] (This) is native `u8_sub`
 
 	
 	;== Comparing

@@ -17,3 +17,5 @@ function retType(self: UnaryOpKind): Null<Type> return self._match(
 	at(UOMethod(m)) => m.ret._or(Pass2.STD_Void.thisType),
 	at(UOFromTypevar(_, _, kind)) => kind.retType() // TODO
 );
+
+function isStep(self: UnaryOpKind) return digForMethod(self).op._match(at(Incr | Decr) => true, _ => false);

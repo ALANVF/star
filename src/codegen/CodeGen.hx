@@ -278,7 +278,7 @@ overload static function compile(ctx: GenCtx, stmt: TStmt): Opcodes return stmt.
 				final iterType = Pass2.STD_Iterator1.applyArgs([elemType]).nonNull();
 
 				final casts = CastKind.reduceOverloads(
-					etype.findCast(null, iterType, etype),
+					etype.findCast(/*BAD*/{where:WBlock,thisType:etype}, iterType, etype),
 					etype,
 					iterType
 				)._match(
@@ -292,7 +292,7 @@ overload static function compile(ctx: GenCtx, stmt: TStmt): Opcodes return stmt.
 				final noneCase = iterRet.allTaggedCases().find(c -> c is SingleTaggedCase).nonNull();
 				final noneCaseID = world.getID(noneCase);
 
-				res = res.concat(compile(iterType, casts));
+				res = res.concat(compile(etype, iterType, casts));
 				res.push(ONewLocal(iterName, world.getTypeRef(iterType)));
 				res.push(OSetLocal(iterName));
 
@@ -301,7 +301,7 @@ overload static function compile(ctx: GenCtx, stmt: TStmt): Opcodes return stmt.
 					OGetLocal(iterName)
 				];
 
-				loop = loop.concat(compile(ctx2, iterNext, true));
+				loop = loop.concat(compile(ctx2, iterType, iterNext, true));
 				
 				loop.push(ODup);
 				loop.push(OKindID);
@@ -601,8 +601,8 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 	at(EChar(char)) => if(wantValue) {
 		// TODO: merge with `Type <dec>` compile logic
 		[
-			OInt8(char, false),
-			ONativeCast(world.getTypeRef(Pass2.STD_Char))
+			OInt8(char, false)/*,
+			ONativeCast(world.getTypeRef(Pass2.STD_Char))*/
 		];
 	} else [],
 
@@ -623,13 +623,14 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 
 		for(i in offset...parts.length) {
 			parts[i]._match(
-				at(PStr(str)) => {
+				at(p = PStr(str)) => {
+					final estr: TExpr = {e: EStr([p]), orig: null, t: Pass2.STD_Str};
 					final overloads = BinaryOpKind.reduceOverloads(
 						Pass2.STD_Str.findBinaryOp(null, Plus, Pass2.STD_Str),
 						Pass2.STD_Str,
-						{e: /*BAD*/null, orig: null, t: Pass2.STD_Str}
+						estr
 					);
-					res = res.concat(compile(ctx, overloads, expr, true));
+					res = res.concat(compile(ctx, Pass2.STD_Str, overloads, estr, true));
 				},
 				at(PCode(expr)) => {
 					final overloads = BinaryOpKind.reduceOverloads(
@@ -637,7 +638,7 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 						Pass2.STD_Str,
 						expr
 					);
-					res = res.concat(compile(ctx, overloads, expr, true));
+					res = res.concat(compile(ctx, Pass2.STD_Str, overloads, expr, true));
 				}
 			);
 		}
@@ -666,14 +667,14 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 				)._match(
 					at([]) => {},
 					at(overloads) => {
-						res = compile(ctx, type, overloads, [sizeExpr], true);
+						res = compile(ctx, type, type, overloads, [sizeExpr], true);
 						break;
 					}
 				);
 			}
 			
 			final kind = type.findSingleStatic(/*BAD*/null, "new", type).nonNull();
-			res = compile(ctx, type, kind, true);
+			res = compile(ctx, type, type, kind, true);
 		} while(false);
 
 		for(value in values) {
@@ -685,7 +686,7 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 			);
 
 			res.push(ODup);
-			res = res.concat(compile(ctx, overloads, [value], false));
+			res = res.concat(compile(ctx, type, overloads, [value], false));
 		}
 		
 		res;
@@ -709,14 +710,14 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 				)._match(
 					at([]) => {},
 					at(overloads) => {
-						res = compile(ctx, type, overloads, [sizeExpr], true);
+						res = compile(ctx, type, type, overloads, [sizeExpr], true);
 						break;
 					}
 				);
 			}
 			
 			final kind = type.findSingleStatic(/*BAD*/null, "new", type).nonNull();
-			res = compile(ctx, type, kind, true);
+			res = compile(ctx, type, type, kind, true);
 		} while(false);
 
 		for(pair in pairs) { detuple(@final [key, value] = pair);
@@ -728,7 +729,7 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 			);
 
 			res.push(ODup);
-			res = res.concat(compile(ctx, overloads, [key, value], false));
+			res = res.concat(compile(ctx, type, overloads, [key, value], false));
 		}
 		
 		res;
@@ -873,14 +874,14 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 				)._match(
 					at([]) => {},
 					at(overloads) => {
-						res = compile(ctx, type, overloads, [sizeExpr], true);
+						res = compile(ctx, type, type, overloads, [sizeExpr], true);
 						break;
 					}
 				);
 			}
 			
 			final kind = type.findSingleStatic(/*BAD*/null, "new", type).nonNull();
-			res = compile(ctx, type, kind, true);
+			res = compile(ctx, type, type, kind, true);
 		} while(false);
 
 		for(value in values) {
@@ -892,7 +893,7 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 			);
 
 			res.push(ODup);
-			res = res.concat(compile(ctx, overloads, [value], false));
+			res = res.concat(compile(ctx, type, overloads, [value], false));
 		}
 		
 		res;
@@ -913,14 +914,14 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 				)._match(
 					at([]) => {},
 					at(overloads) => {
-						res = compile(ctx, type, overloads, [sizeExpr], true);
+						res = compile(ctx, type, type, overloads, [sizeExpr], true);
 						break;
 					}
 				);
 			}
 			
 			final kind = type.findSingleStatic(/*BAD*/null, "new", type).nonNull();
-			res = compile(ctx, type, kind, true);
+			res = compile(ctx, type, type, kind, true);
 		} while(false);
 
 		for(pair in pairs) { detuple(@final [key, value] = pair);
@@ -936,7 +937,7 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 			);
 
 			res.push(ODup);
-			res = res.concat(compile(ctx, overloads, [key, value], false));
+			res = res.concat(compile(ctx, type, overloads, [key, value], false));
 		}
 		
 		res;
@@ -957,7 +958,7 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 
 	at(EBlock(stmts)) => [OBlock(compile(ctx, stmts))],
 
-	at(ETypeMessage(type, msg)) => compile(ctx, type, msg, wantValue),
+	at(ETypeMessage(type, msg)) => compile(ctx, expr.t.nonNull(), type, msg, wantValue),
 
 	at(ETypeCascade(type, cascades)) => {
 		var res: Opcodes = [];
@@ -967,24 +968,25 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 			cascade.kind._match(
 				at(Lazy(_)) => throw "bad",
 				at(Member(msg)) => {
-					res.pushAll(compile(ctx, type, msg, wantValue));
+					res.pushAll(compile(ctx, cascade.t.nonNull(), type, msg, wantValue));
 				},
 				at(Message(msg)) => {
-					res.pushAll(compile(ctx, type, msg, wantValue));
+					res.pushAll(compile(ctx, cascade.t.nonNull(), type, msg, wantValue));
 				},
 				at(AssignMember(setMem, op, expr)) => {
 					if(op != null) throw "todo";
-					res.pushAll(compile(ctx, type, setMem, wantValue));
+					res.pushAll(compile(ctx, cascade.t.nonNull(), type, setMem, wantValue));
 				},
 				at(AssignMessage(setMsg, op, expr)) => {
 					if(op != null) throw "todo";
-					res.pushAll(compile(ctx, type, setMsg, wantValue));
+					res.pushAll(compile(ctx, cascade.t.nonNull(), type, setMsg, wantValue));
 				},
 				at(StepMember(setMem, getMem, step)) => {
 					res.push(ODup);
-					res.pushAll(compile(ctx, type, getMem, true));
-					res.pushAll(compilePrefix(step, true));
-					res.pushAll(compile(ctx, type, [{kind: setMem, tctx: null}], [], wantValue));
+					final memType = cascade.t.nonNull();
+					res.pushAll(compile(ctx, memType, type, getMem, true));
+					res.pushAll(compilePrefix(memType, step, true));
+					res.pushAll(compile(ctx, memType, type, [{kind: setMem, tctx: null}], [], wantValue));
 				},
 				at(StepMessage(setMsg, getMsg, step)) => {
 					throw "todo";
@@ -998,9 +1000,11 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 			);
 
 			if(wantValue) {
+				final type2 = cascade.t.nonNull();
+
 				for(c in cascade.nested) {
 					res.push(ODup);
-					compile(ctx, res, c);
+					compile(ctx, res, type2, c);
 				}
 
 				res.push(OPop);
@@ -1010,16 +1014,17 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 		res;
 	},
 
-	at(ETypeMember(type, kind)) => compile(ctx, type, kind, wantValue),
+	at(ETypeMember(type, kind)) => compile(ctx, expr.t.nonNull(), type, kind, wantValue),
 
-	at(EObjMessage(expr, msg)) => compile(ctx, expr).concat(compile(ctx, msg, wantValue)),
+	at(EObjMessage(expr, msg)) => compile(ctx, expr).concat(compile(ctx, expr.t.nonNull(), msg, wantValue)),
 
 	at(EObjCascade(expr, cascades)) => {
+		final type = expr.t.nonNull();
 		final res = compile(ctx, expr);
 
 		for(cascade in cascades) {
 			res.push(ODup);
-			compile(ctx, res, cascade);
+			compile(ctx, res, type, cascade);
 		}
 
 		if(!wantValue) {
@@ -1029,19 +1034,19 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 		res;
 	},
 
-	at(EObjMember(expr, kind)) => compile(ctx, expr).concat(compile(ctx, kind, wantValue)),
+	at(EObjMember(expr, kind)) => compile(ctx, expr).concat(compile(ctx, expr.t.nonNull(), kind, wantValue)),
 
 	at(EObjLazyMember(_, _)) => throw "this should not be here!",
 
-	at(EPrefix(kind, right)) => compile(ctx, right).concat(compilePrefix(kind, wantValue)),
+	at(EPrefix(kind, right)) => compile(ctx, right).concat(compilePrefix(right.t.nonNull(), kind, wantValue)),
 
 	at(ELazyPrefix(_, _)) => throw "this should not be here!",
 
-	at(ESuffix(left, kind)) => compile(ctx, left).concat(compileSuffix(kind, wantValue)),
+	at(ESuffix(left, kind)) => compile(ctx, left).concat(compileSuffix(left.t.nonNull(), kind, wantValue)),
 
 	at(ELazySuffix(_, _)) => throw "this should not be here!",
 
-	at(EInfix(left, kinds, right)) => compile(ctx, left).concat(compile(ctx, kinds, right, wantValue)),
+	at(EInfix(left, kinds, right)) => compile(ctx, left).concat(compile(ctx, left.t.nonNull(), kinds, right, wantValue)),
 
 	at(ELazyInfix(_, _, _)) => throw "this should not be here!",
 
@@ -1061,7 +1066,11 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 	},
 
 	at(ESetName(name, loc, value)) => {
-		compile(ctx, value).concat([
+		final isStep = value.e._match(
+			at(ESuffix({e: EName(_ == name => true, _)}, kind)) => kind.isStep(),
+			_ => false
+		);
+		compile(ctx, value, !isStep).concat([
 			setOrTeeName(name, loc, wantValue)
 		]);
 	},
@@ -1172,7 +1181,7 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 	},
 
 	at(EInitThis(type, msg)) => {
-		final res = compile(ctx, type, msg, true);
+		final res = compile(ctx, type, type, msg, true);
 		res.setLast(res.last()._match(
 			at(OSend_IS(t, id)) => OInitThis_S(t, id),
 			at(OSend_IM(t, id, ctx)) => OInitThis_M(t, id, ctx),
@@ -1220,7 +1229,7 @@ overload static function compile(
 				BinaryOpKind.reduceOverloads(target.findBinaryOp(null, Eq, target), target, expr)
 			);
 			
-			final res = compile(ctx, eq, expr, true);
+			final res = compile(ctx, target, eq, expr, true);
 			res.push(exitCase);
 			return res;
 		},
@@ -1234,7 +1243,7 @@ overload static function compile(
 				throw 'Expected logical value, got `${tpattern.fullName()}` instead';
 			}
 
-			final res = compile(ctx, msg, true);
+			final res = compile(ctx, target, msg, true);
 			if(!isRhs) {
 				res.push(exitCase);
 			}
@@ -1389,7 +1398,7 @@ overload static function compile(
 						BinaryOpKind.reduceOverloads(target.findBinaryOp(null, op, target), target, expr)
 					);
 					
-					res = res.concat(compile(ctx, cmp, expr, true));
+					res = res.concat(compile(ctx, target, cmp, expr, true));
 					res.push(exitCase);
 				},
 				at(PTypeValueCase(type, valueCase)) => {
@@ -1444,7 +1453,7 @@ overload static function compile(
 						BinaryOpKind.reduceOverloads(target.findBinaryOp(null, op, target), target, expr)
 					);
 					
-					res = res.concat(compile(ctx, cmp, expr, true));
+					res = res.concat(compile(ctx, target, cmp, expr, true));
 					res.push(exitCase);
 				},
 				at(PTypeValueCase(type, valueCase)) => {
@@ -1499,7 +1508,7 @@ overload static function compile(
 						BinaryOpKind.reduceOverloads(target.findBinaryOp(null, op, target), target, expr)
 					);
 					
-					res = res.concat(compile(ctx, cmp, expr, true));
+					res = res.concat(compile(ctx, target, cmp, expr, true));
 					res.push(exitCase);
 				},
 				at(PTypeValueCase(type, valueCase)) => {
@@ -1544,7 +1553,7 @@ overload static function compile(
 						BinaryOpKind.reduceOverloads(target.findBinaryOp(null, op, target), target, expr)
 					);
 					
-					res = res.concat(compile(ctx, cmp, expr, true));
+					res = res.concat(compile(ctx, target, cmp, expr, true));
 					res.push(exitCase);
 				},
 				at(PTypeValueCase(type, valueCase)) => {
@@ -1846,29 +1855,29 @@ static function compileCapturesPost(ctx: GenCtx, res: Opcodes, captures: Map<Str
 
 */
 
-overload static function compile(ctx: GenCtx, res: Opcodes, cascade: ObjCascade) {
+overload static function compile(ctx: GenCtx, res: Opcodes, sender: Type, cascade: ObjCascade) {
 	final wantValue = cascade.nested.length > 0;
 	cascade.kind._match(
 		at(Lazy(_)) => throw "bad",
 		at(Member(msg)) => {
-			res.pushAll(compile(ctx, msg, wantValue));
+			res.pushAll(compile(ctx, sender, msg, wantValue));
 		},
 		at(Message(msg)) => {
-			res.pushAll(compile(ctx, msg, wantValue));
+			res.pushAll(compile(ctx, sender, msg, wantValue));
 		},
 		at(AssignMember(setMem, op, expr)) => {
 			if(op != null) throw "todo";
-			res.pushAll(compile(ctx, setMem, wantValue));
+			res.pushAll(compile(ctx, sender, setMem, wantValue));
 		},
 		at(AssignMessage(setMsg, op, expr)) => {
 			if(op != null) throw "todo";
-			res.pushAll(compile(ctx, setMsg, wantValue));
+			res.pushAll(compile(ctx, sender, setMsg, wantValue));
 		},
 		at(StepMember(setMem, getMem, step)) => {
 			res.push(ODup);
-			res.pushAll(compile(ctx, getMem, true));
-			res.pushAll(compilePrefix(step, true));
-			res.pushAll(compile(ctx, [{kind: setMem, tctx: null}], [], wantValue));
+			res.pushAll(compile(ctx, sender, getMem, true));
+			res.pushAll(compilePrefix(getMem.retType().nonNull(), step, true));
+			res.pushAll(compile(ctx, sender, [{kind: setMem, tctx: null}], [], wantValue));
 		},
 		at(StepMessage(setMsg, getMsg, step)) => {
 			throw "todo";
@@ -1889,36 +1898,35 @@ overload static function compile(ctx: GenCtx, res: Opcodes, cascade: ObjCascade)
 	);
 
 	if(wantValue) {
+		final ct = cascade.t.nonNull();
+
 		for(c in cascade.nested) {
 			res.push(ODup);
-			compile(ctx, res, c);
+			compile(ctx, res, ct, c);
 		}
 
 		res.push(OPop);
 	}
 }
 
-overload static function compile(ctx: GenCtx, type: Type, msg: TypeMessage, wantValue: Bool) return msg._match(
-	at(Single(kind)) => compile(ctx, type, kind, wantValue),
-	at(Multi(candidates, labels, args)) => compile(ctx, type, candidates, args, wantValue),
+overload static function compile(ctx: GenCtx, resType: Type, type: Type, msg: TypeMessage, wantValue: Bool) return msg._match(
+	at(Single(kind)) => compile(ctx, resType, type, kind, wantValue),
+	at(Multi(candidates, labels, args)) => compile(ctx, resType, type, candidates, args, wantValue),
 	at(Super(parent, msg)) => {
 		trace(parent);
 		[];
 	}
 );
 
-overload static function compile(ctx: GenCtx, msg: ObjMessage, wantValue: Bool) return msg._match(
+overload static function compile(ctx: GenCtx, sender: Type, msg: ObjMessage, wantValue: Bool) return msg._match(
 	at(Lazy(_)) => throw "bad",
-	at(Single(kind)) => compile(ctx, kind, wantValue),
-	at(Multi(candidates, labels, args)) => compile(ctx, candidates, args, wantValue),
-	at(Cast(target, candidates)) => compile(target, candidates),
-	at(Super(parent, msg)) => {
-		trace(parent);
-		[];
-	}
+	at(Single(kind)) => compile(ctx, sender, kind, wantValue),
+	at(Multi(candidates, labels, args)) => compile(ctx, sender, candidates, args, wantValue),
+	at(Cast(target, candidates)) => compile(target, sender, candidates),
+	at(Super(parent, msg)) => compile(ctx, parent, msg, wantValue)
 );
 
-overload static function compile(ctx: GenCtx, type: Type, kind: SingleStaticKind, wantValue: Bool): Opcodes return kind._match(
+overload static function compile(ctx: GenCtx, resType: Type, type: Type, kind: SingleStaticKind, wantValue: Bool): Opcodes return kind._match(
 	at(SSInit(init)) => {
 		init.native._and(native => native._match(
 			at(None) => throw "bad",
@@ -1928,7 +1936,7 @@ overload static function compile(ctx: GenCtx, type: Type, kind: SingleStaticKind
 		));
 
 		final id = world.getID(init);
-		final res: Opcodes = [OSend_IS(world.getTypeRef(type), id)];
+		final res: Opcodes = [OSend_IS(world.getTypeRef(resType), id)];
 		if(!wantValue) {
 			res.push(OPop);
 		}
@@ -1947,7 +1955,7 @@ overload static function compile(ctx: GenCtx, type: Type, kind: SingleStaticKind
 		}
 
 		final id = world.getID(init);
-		res.push(OSend_IM(world.getTypeRef(type), id));
+		res.push(OSend_IM(world.getTypeRef(resType), id));
 		if(!wantValue) {
 			res.push(OPop);
 		}
@@ -1993,7 +2001,7 @@ overload static function compile(ctx: GenCtx, type: Type, kind: SingleStaticKind
 	},
 	at(SSTaggedCase(c)) => {
 		final id = world.getID(c);
-		[OInitTKind(world.getTypeRef(type), id)];
+		[OInitTKind(world.getTypeRef(resType), id)];
 	},
 	at(SSTaggedCaseAlias(c)) => {
 		trace("TODO");
@@ -2001,7 +2009,7 @@ overload static function compile(ctx: GenCtx, type: Type, kind: SingleStaticKind
 	},
 	at(SSValueCase(c)) => {
 		final id = world.getID(c);
-		[OInitVKind(world.getTypeRef(type), id)];
+		[OInitVKind(world.getTypeRef(resType), id)];
 	},
 	at(SSFromTypevar(_, _, _, _)) => {
 		trace("TODO");
@@ -2010,7 +2018,7 @@ overload static function compile(ctx: GenCtx, type: Type, kind: SingleStaticKind
 	at(SSFromParent(parent, kind2)) => {
 		// TODO
 		type=type.getMostSpecific().simplify(); // FIX
-		final res = compile(ctx, /*parent.getFrom(type)*/type, kind2, wantValue);
+		final res = compile(ctx, type, /*parent.getFrom(type)*/type, kind2, wantValue);
 		/*if(wantValue) {
 			final typeref = world.getTypeRef(type);
 			kind2._match(
@@ -2024,7 +2032,7 @@ overload static function compile(ctx: GenCtx, type: Type, kind: SingleStaticKind
 	}
 );
 
-overload static function compile(ctx: GenCtx, kind: SingleInstKind, wantValue: Bool): Opcodes return kind._match(
+overload static function compile(ctx: GenCtx, sender: Type, kind: SingleInstKind, wantValue: Bool): Opcodes return kind._match(
 	at(SIMethod(mth)) => {
 		mth.native._and(native => native._match(
 			at(None) => throw "bad",
@@ -2033,8 +2041,9 @@ overload static function compile(ctx: GenCtx, kind: SingleInstKind, wantValue: B
 			}
 		));
 
+		final typeref = world.getTypeRef(sender);
 		final id = world.getID(mth);
-		final res: Opcodes = [mth.typedBody != null ? OSend_SI(id) : OSendDynamic_SI(id)];
+		final res: Opcodes = [mth.typedBody != null ? OSend_SI(typeref, id) : OSendDynamic_SI(typeref, id)];
 		if(!wantValue && mth.ret._andOr(ret => ret != Pass2.STD_Void.thisType, false)) {
 			res.push(OPop);
 		}
@@ -2052,8 +2061,9 @@ overload static function compile(ctx: GenCtx, kind: SingleInstKind, wantValue: B
 			});
 		}
 
+		final typeref = world.getTypeRef(sender);
 		final id = world.getID(mth);
-		res.push(mth.typedBody != null ? OSend_MI(id) : OSendDynamic_MI(id));
+		res.push(mth.typedBody != null ? OSend_MI(typeref, id) : OSendDynamic_MI(typeref, id));
 		if(!wantValue && mth.ret._andOr(ret => ret != Pass2.STD_Void.thisType, false)) {
 			res.push(OPop);
 		}
@@ -2063,17 +2073,28 @@ overload static function compile(ctx: GenCtx, kind: SingleInstKind, wantValue: B
 		final id = world.getInstID(mem);
 		[OGetMember(id)];
 	},
-	at(SIFromTypevar(_, _, _, _)) => {
-		trace("TODO");
-		[];
+	at(SIFromTypevar(tvar, _, _, kind2)) => {
+		// TODO?
+		compile(ctx, sender, kind2, wantValue);
 	},
-	at(SIFromParent(parent, kind)) => {
-		trace("TODO");
-		[];
+	at(SIFromParent(parent, kind2)) => {
+		// TODO
+		sender=sender.getMostSpecific().simplify(); // FIX
+		final res = compile(ctx, /*parent.getFrom(sender)*/sender, kind2, wantValue);
+		/*if(wantValue) {
+			final typeref = world.getTypeRef(type);
+			kind2._match(
+				at(SSInit(_) | SSMultiInit(_)) => res.push(ONativeCast(typeref)),
+				at(SSTaggedCase(_) | SSTaggedCaseAlias(_) | SSValueCase(_)) => res.push(ODowncast(typeref)),
+				at(SSFromParent(_, kind3)) => throw "NYI!",
+				_ => {}
+			);
+		}*/
+		res;
 	}
 );
 
-overload static function compile(ctx: GenCtx, type: Type, candidates: Array<TypeMessage.TypeMultiCandidate>, args: Array<TExpr>, wantValue: Bool): Opcodes {
+overload static function compile(ctx: GenCtx, resType: Type, type: Type, candidates: Array<TypeMessage.TypeMultiCandidate>, args: Array<TExpr>, wantValue: Bool): Opcodes {
 	return candidates._match(
 		at([]) => throw "bad",
 		at([{kind: kind, tctx: tctx}]) => {
@@ -2081,7 +2102,15 @@ overload static function compile(ctx: GenCtx, type: Type, candidates: Array<Type
 			/*tctx._and(tctx => {
 				type = type.getInTCtx(tctx);
 			});*/
-			final typeref = world.getTypeRef(type);
+
+			final typeref = world.getTypeRef(
+				kind.match(
+					MSInit(_, _)
+					| MSMemberwiseInit(_)
+					| MSTaggedCase(_, _, _, _)
+					| MSTaggedCaseAlias(_)
+				) ? resType : type
+			);
 			kind._match(
 				at(MSInit(init = {isMacro: true}, _)) => {
 					throw "NYI";
@@ -2241,7 +2270,7 @@ overload static function compile(ctx: GenCtx, type: Type, candidates: Array<Type
 
 				at(MSMemberwiseInit(ms)) => {
 					var res = [OInitClass(typeref)];
-
+					// TODO: this does not actually work correctly
 					ms._for(i => mem, {
 						final id = world.getInstID(mem);
 
@@ -2346,7 +2375,8 @@ overload static function compile(ctx: GenCtx, type: Type, candidates: Array<Type
 	);
 }
 
-overload static function compile(ctx: GenCtx, candidates: Array<ObjMessage.ObjMultiCandidate>, args: Array<TExpr>, wantValue: Bool): Opcodes {
+overload static function compile(ctx: GenCtx, sender: Type, candidates: Array<ObjMessage.ObjMultiCandidate>, args: Array<TExpr>, wantValue: Bool): Opcodes {
+	final typeref = world.getTypeRef(sender);
 	return candidates._match(
 		at([]) => throw "bad",
 		at([{kind: kind, tctx: tctx}]) => kind._match(
@@ -2378,16 +2408,29 @@ overload static function compile(ctx: GenCtx, candidates: Array<ObjMessage.ObjMu
 					}
 				));
 
-				final ictx = tctx._andOr(tctx => (
+				final ictx = tctx._andOr(tctx => {
 					if(tctx.size() > 0) {
 						final _ictx = new TVarInstCtx();
 						for(tv => t in tctx) {
 							_ictx[world.getTVar(tv)] = world.getTypeRef(t);
 						}
-						_ictx;
-					} else
-						null
-				), null);
+						// Check for dup dvars in tvar table (which happens for some reason?)
+						typeref._match(
+							at(TInst(_, inst)) => {
+								for(tv => _ in _ictx) tv._match(
+									at(VDecl(tid), when(inst.exists(tid))) => {
+										_ictx.remove(tv);
+									},
+									_ => {}
+								);
+								if(_ictx.size() > 0) _ictx else null;
+							},
+							_ => _ictx
+						);
+					} else {
+						null;
+					}
+				}, null);
 
 				final id = world.getID(mth);
 				var res = [];
@@ -2396,7 +2439,7 @@ overload static function compile(ctx: GenCtx, candidates: Array<ObjMessage.ObjMu
 					res = res.concat(compile(ctx, arg));
 				}
 				
-				res.push(mth.typedBody != null ? OSend_MI(id, ictx) : OSendDynamic_MI(id, ictx));
+				res.push(mth.typedBody != null ? OSend_MI(typeref, id, ictx) : OSendDynamic_MI(typeref, id, ictx));
 				
 				if(!wantValue && mth.ret._andOr(ret => ret != Pass2.STD_Void.thisType, false)) {
 					res.push(OPop);
@@ -2424,7 +2467,19 @@ overload static function compile(ctx: GenCtx, candidates: Array<ObjMessage.ObjMu
 						for(tv => t in tctx) {
 							_ictx[world.getTVar(tv)] = world.getTypeRef(t);
 						}
-						_ictx;
+						// Check for dup dvars in tvar table (which happens for some reason?)
+						typeref._match(
+							at(TInst(_, inst)) => {
+								for(tv => _ in _ictx) tv._match(
+									at(VDecl(tid), when(inst.exists(tid))) => {
+										_ictx.remove(tv);
+									},
+									_ => {}
+								);
+								if(_ictx.size() > 0) _ictx else null;
+							},
+							_ => _ictx
+						);
 					} else
 						null
 				), null);
@@ -2459,7 +2514,7 @@ overload static function compile(ctx: GenCtx, candidates: Array<ObjMessage.ObjMu
 					);
 				}
 
-				res.push(mth.typedBody != null ? OSend_MI(id, ictx) : OSendDynamic_MI(id, ictx));
+				res.push(mth.typedBody != null ? OSend_MI(typeref, id, ictx) : OSendDynamic_MI(typeref, id, ictx));
 				
 				if(!wantValue && mth.ret._andOr(ret => ret != Pass2.STD_Void.thisType, false)) {
 					res.push(OPop);
@@ -2489,13 +2544,18 @@ overload static function compile(ctx: GenCtx, candidates: Array<ObjMessage.ObjMu
 	);
 }
 
-overload static function compile(target: Type, candidates: Array<CastKind>): Opcodes {
+overload static function compile(sender: Type, target: Type, candidates: Array<CastKind>): Opcodes {
+	final typeref = world.getTypeRef(sender);
 	return candidates._match(
 		at([CMethod(mth, tctx)]) => {
 			mth.native._and(native => native._match(
 				at(None) => throw "bad",
 				at(Some({name: name})) => {
-					return [ONative(name)];
+					if(name == "value_unsafe_cast") {
+						return [ONativeCast(world.getTypeRef(target))];
+					} else {
+						return [ONative(name)];
+					}
 				}
 			));
 
@@ -2511,7 +2571,7 @@ overload static function compile(target: Type, candidates: Array<CastKind>): Opc
 			), null);
 
 			final id = world.getID(mth);
-			[mth.typedBody != null ? OSend_C(id, ictx) : OSendDynamic_C(id, ictx)];
+			[mth.typedBody != null ? OSend_C(typeref, id, ictx) : OSendDynamic_C(typeref, id, ictx)];
 		},
 		at([CUpcast(parent)]) => {
 			final tref = world.getTypeRef(parent);
@@ -2535,7 +2595,7 @@ overload static function compile(target: Type, candidates: Array<CastKind>): Opc
 	);
 }
 
-overload static function compile(ctx: GenCtx, kinds: Array<TExpr.BinaryOpCandidate>, right: TExpr, wantValue: Bool): Opcodes {
+overload static function compile(ctx: GenCtx, sender: Type, kinds: Array<TExpr.BinaryOpCandidate>, right: TExpr, wantValue: Bool): Opcodes {
 	return kinds._match(
 		at([{kind: kind, tctx: tctx}]) => {
 			var res: Opcodes = [];
@@ -2598,15 +2658,17 @@ overload static function compile(ctx: GenCtx, kinds: Array<TExpr.BinaryOpCandida
 							
 							res.push(ONative(name));
 							tctx._and(tctx => if(tctx.size() > 0) {
-								trace("???"+tctx.display());
+								if(name != "value_eq")
+									trace("???", name, tctx.display(), right.orig.nonNull().mainSpan().display());
 							});
 						}
 					);
 				}, {
 					tctx._and(tctx => if(tctx.size() > 0) throw "NYI");
 
+					final typeref = world.getTypeRef(sender);
 					final id = world.getID(mth);
-					res.push(mth.typedBody != null ? OSend_BO(id) : OSendDynamic_BO(id));
+					res.push(mth.typedBody != null ? OSend_BO(typeref, id) : OSendDynamic_BO(typeref, id));
 				});
 			}
 
@@ -2620,7 +2682,7 @@ overload static function compile(ctx: GenCtx, kinds: Array<TExpr.BinaryOpCandida
 	);
 }
 
-static function compilePrefix(kind: UnaryOpKind, wantValue: Bool) {
+static function compilePrefix(sender: Type, kind: UnaryOpKind, wantValue: Bool) {
 	var res: Opcodes = [];
 
 	final mth = kind.digForMethod();
@@ -2633,8 +2695,9 @@ static function compilePrefix(kind: UnaryOpKind, wantValue: Bool) {
 			}
 		);
 	}, {
+		final typeref = world.getTypeRef(sender);
 		final id = world.getID(mth);
-		res.push(mth.typedBody != null ? OSend_UO(id) : OSendDynamic_UO(id));
+		res.push(mth.typedBody != null ? OSend_UO(typeref, id) : OSendDynamic_UO(typeref, id));
 	});
 
 	if(!wantValue) {
@@ -2644,7 +2707,8 @@ static function compilePrefix(kind: UnaryOpKind, wantValue: Bool) {
 	return res;
 }
 
-static function compileSuffix(kind: UnaryOpKind, wantValue: Bool) {
+// TODO: fix incr/decr ops
+static function compileSuffix(sender: Type, kind: UnaryOpKind, wantValue: Bool) {
 	var res: Opcodes = [];
 
 	final mth = kind.digForMethod();
@@ -2662,13 +2726,17 @@ static function compileSuffix(kind: UnaryOpKind, wantValue: Bool) {
 			}
 		);
 	}, {
+		final typeref = world.getTypeRef(sender);
 		final id = world.getID(mth);
-		res.push(mth.typedBody != null ? OSend_UO(id) : OSendDynamic_UO(id));
+		res.push(mth.typedBody != null ? OSend_UO(typeref, id) : OSendDynamic_UO(typeref, id));
 	});
 
-	if(!wantValue || isStep) {
+	if(!wantValue && !isStep) {
 		res.push(OPop);
-	}
+	}/* else if(isStep) {
+		res.push(OSwap);
+		res.push(OPop);
+	}*/
 
 	return res;
 }

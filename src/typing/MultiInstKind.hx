@@ -74,6 +74,17 @@ function reduceOverloads(kinds: Array<MultiInstKind>, ctx: Ctx, sender: Type, ar
 			final tctx: TypeVarCtx = [];
 			var complete = true;
 
+			mth.decl._match(
+				at(cat is Category) => {
+					if(cat.thisType.hasTypevars()) {
+						sender.bindTo(cat.thisType, tctx)._or({
+							trace("???", sender.fullName(), cat.thisType.fullName());
+						});
+					}
+				},
+				_ => {}
+			);
+
 			mth.params._for(i => param, {
 				args[i].t._andOr(atype => {
 					final ptype = param.type/*.getInTCtx(tctx)*/.getFrom(sender);
@@ -276,7 +287,17 @@ function reduceOverloads(kinds: Array<MultiInstKind>, ctx: Ctx, sender: Type, ar
 			// TODO
 			return filterOverload(kind2)._and(res => {
 				// TODO: make this smarter
-				if(!res.ret.t.match(TThis(_))) res.ret = res.ret.getFrom(parent.simplify());
+				//trace(res.ret.t, sender.t, parent.t);
+				if(!res.ret.t.match(TThis(_))) res.ret = res.ret.getFrom(parent);
+				/*res.ret.t._match(
+					at(TTypeVar(tv)) => {
+						trace(tv.lookup, tv.fullName());
+						if(tv.lookup is Category) {
+							trace(res.ret.t, sender.t, parent.t);
+						}
+					},
+					_ => {}
+				);*/
 				res;
 			});
 		}

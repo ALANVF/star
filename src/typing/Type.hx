@@ -1267,6 +1267,28 @@ class Type implements ITypeable {
 			at([TConcrete(decl1), TInstance(decl2, params, tctx)]) => {
 				if(decl1 == decl2) {
 					onto;
+				} else if(decl1.hasParentDecl(decl2)) {
+					// TODO: make this work on aliases, etc / make this less hacky
+					if(params.some(p -> p.hasTypevars())) {
+						decl1._match(
+							at(ns is Namespace) => {
+								for(parent in ns.parents) {
+									if(parent.hasParentDecl(decl2)) {
+										return parent.bindTo(onto, ctx);
+									}
+								}
+								trace("???");
+								null;
+							},
+							_ => {
+								trace("???");
+								null;
+							}
+						);
+					} else {
+						trace("???");
+						null;
+					}
 				} else {
 					null;
 				}

@@ -710,7 +710,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 			}
 		},
 
-		at(EInt(_, int, exp)) => { e: EInt(int, exp), t: STD_Int },
+		at(EInt(_, int, exp)) => { e: EInt(int, exp), t: exp == null ? STD_Int : STD_Dec },
 		at(EDec(_, int, dec, exp)) => { e: EDec(int, dec, exp), t: STD_Dec },
 		at(EChar(_, char)) => { e: EChar(char), t: STD_Char },
 		at(EStr(_, parts)) => { e: EStr(parts.map(p -> switch p {

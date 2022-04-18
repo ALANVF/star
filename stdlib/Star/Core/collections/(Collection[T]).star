@@ -54,8 +54,6 @@ protocol Collection[T] of Iterable[T] {
 
 	;== Iterating
 	
-	on [Iterator[T]]
-	
 	on [each: func (Func[Void, T])] is inline {
 		for my value in: this {
 			func[call: value]

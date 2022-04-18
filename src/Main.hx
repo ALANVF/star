@@ -224,49 +224,36 @@ class Main {
 				_ => throw "internal error: Star.Core.Char should be a concrete type!"
 			);
 
-			gen.write("Star.Core.Str:");
-			gen.newline();
+			//gen.write("Star.Core.Str:");
+			//gen.newline();
 			typing.Pass2.STD_Str._match(
 				at({t: TConcrete(decl) | TModular({t: TConcrete(decl)}, _)}) => {
 					final cls = cast(decl, typing.Class);
-					for(mth in cls.methods) {
-						mth._match(
-							at(
-								( {fuzzyName: "collect:" | "collectIf:" | "collectWhile:" | "addAll:"} is typing.MultiMethod)
-								| {name: {name: "chars" | "hash" |
-								  				"lowercase" | "uppercase" | "titlecase" | "capitalize"}} is typing.SingleMethod) => {
-								gen.write(mth);
-								gen.newline();
-							},
-							_ => {}
-						);
-					}
+					gen.write(cls);
+					gen.newline();
 				},
 				_ => throw "internal error: Star.Core.Str should be a concrete type!"
 			);
 
-			gen.write("Star.Core.Array:");
-			gen.newline();
+			//gen.write("Star.Core.Array:");
+			//gen.newline();
 			typing.Pass2.STD_Array._match(
 				at({t: TMulti([{t: TConcrete(decl) | TModular({t: TConcrete(decl)}, _)}, _, _])}) => {
 					final cls = cast(decl, typing.Class);
-					for(mth in cls.methods) {
-						mth._match(
-							at(
-								( {fuzzyName: "every: by: allowPartial:" | "joinWith:" | "zip:" | "zip: collect:" | "zip: all:"} is typing.MultiMethod)
-								| {name: {name: "join"}} is typing.SingleMethod) => {
-								gen.write(mth);
-								gen.newline();
-							},
-							_ => {}
-						);
+					gen.write(cls);
+					gen.newline();
+
+					for(ref in decl.refinements) {
+						final cls2 = cast(ref, typing.Class);
+						gen.write(cls2);
+						gen.newline();
 					}
 				},
 				_ => throw "internal error: Star.Core.Array should be a multi type!"
 			);
 
-			gen.write("Star.Core.Values:");
-			gen.newline();
+			//gen.write("Star.Core.Values:");
+			//gen.newline();
 			stdlib.findType(
 				List3.of([null, "Star", []], [null, "Core", []], [null, "Values", []]),
 				Start,
@@ -274,20 +261,29 @@ class Main {
 			)._match(
 				at({t: TConcrete(decl) | TModular({t: TConcrete(decl)}, _)}) => {
 					final proto = cast(decl, typing.Protocol);
-					for(mth in proto.methods) {
-						mth._match(
-							at(
-								( {fuzzyName: "resizeTo:"} is typing.MultiMethod)
-							//	| {name: {name: "join"}} is typing.SingleMethod
-							) => {
-								gen.write(mth);
-								gen.newline();
-							},
-							_ => {}
-						);
-					}
+					gen.write(proto);
+					gen.newline();
 				},
 				_ => throw "internal error: Star.Core.Values should be a concrete type!"
+			);
+
+			stdlib.findType(
+				List3.of([null, "Star", []], [null, "Core", []], [null, "Maybe", []]),
+				Start,
+				null
+			)._match(
+				at({t: TMulti([{t: TConcrete(decl) | TModular({t: TConcrete(decl)}, _)}, _])}) => {
+					final tkind = cast(decl, typing.TaggedKind);
+					gen.write(tkind);
+					gen.newline();
+
+					for(ref in decl.refinements) {
+						final tkind2 = cast(ref, typing.TaggedKind);
+						gen.write(tkind2);
+						gen.newline();
+					}
+				},
+				_ => throw "internal error: Star.Core.Array should be a multi type!"
 			);
 			
 			{

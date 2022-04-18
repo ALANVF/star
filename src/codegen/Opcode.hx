@@ -117,20 +117,20 @@ enum Opcode {
 	OSend_SS(t: TypeRef, id: MethodID);
 	OSend_MS(t: TypeRef, id: MethodID, ?ctx: TVarInstCtx);
 
-	OSend_SI(id: MethodID);
-	OSendDynamic_SI(id: MethodID);
+	OSend_SI(t: TypeRef, id: MethodID);
+	OSendDynamic_SI(t: TypeRef, id: MethodID);
 
-	OSend_MI(id: MethodID, ?ctx: TVarInstCtx);
-	OSendDynamic_MI(id: MethodID, ?ctx: TVarInstCtx);
+	OSend_MI(t: TypeRef, id: MethodID, ?ctx: TVarInstCtx);
+	OSendDynamic_MI(t: TypeRef, id: MethodID, ?ctx: TVarInstCtx);
 
-	OSend_C(id: MethodID, ?ctx: TVarInstCtx);
-	OSendDynamic_C(id: MethodID, ?ctx: TVarInstCtx);
+	OSend_C(t: TypeRef, id: MethodID, ?ctx: TVarInstCtx);
+	OSendDynamic_C(t: TypeRef, id: MethodID, ?ctx: TVarInstCtx);
 
-	OSend_BO(id: MethodID, ?ctx: TVarInstCtx);
-	OSendDynamic_BO(id: MethodID, ?ctx: TVarInstCtx);
+	OSend_BO(t: TypeRef, id: MethodID, ?ctx: TVarInstCtx);
+	OSendDynamic_BO(t: TypeRef, id: MethodID, ?ctx: TVarInstCtx);
 
-	OSend_UO(id: MethodID);
-	OSendDynamic_UO(id: MethodID);
+	OSend_UO(t: TypeRef, id: MethodID);
+	OSendDynamic_UO(t: TypeRef, id: MethodID);
 
 
 	// Creation

@@ -117,7 +117,13 @@ protocol Positional[T] of Collection[T] {
 
 	;== Inserting values
 
-	on [at: (Int) add: value (T)] (T)
+	on [at: index (Int) add: value (T)] (T)
+
+	type Pos of Positional[T]
+	on [at: index (Int) addAll: values (Pos)] (Pos)
+
+	type Iter of Iterable[T]
+	on [at: index (Int) addAll: values (Iter)] (Iter)
 
 	
 	;== Removing values

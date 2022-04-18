@@ -361,7 +361,7 @@ class Str of Values[Char], Ordered is strong {
 	;== Converting
 
 	on [Int] => return Int[Power fromStr: this includesPrefix: false] ;@@ TODO: should allow hexdecimal as well?
-	on [Dec]
+	on [Dec] => return Dec[Power fromStr: this]
 }
 
 

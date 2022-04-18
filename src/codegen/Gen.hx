@@ -225,6 +225,290 @@ class Gen {
 		write("}");
 	}
 
+	overload function write(proto: Protocol) {
+		writeDVars(proto.typevars);
+		
+		final id = CodeGen.world.getID(proto);
+		write('protocol $id ${Type.getFullPath(proto).value()}');
+
+		if(proto.params.length > 0) {
+			write("[_");
+			for(_ in 0...(proto.params.length - 1)) write(", _");
+			write("] ");
+		} else {
+			write(" ");
+		}
+		
+		if(proto.parents.length > 0) {
+			writeBlock(proto.parents, "of #[", "] ", p -> write(CodeGen.world.getTypeRef(p)));
+		}
+
+		proto.refinees._match(
+			at([]) => {},
+			at([ref]) => {
+				write('is refinement ${CodeGen.world.getID(ref)} ');
+			},
+			at(refinees) => {
+				writeBlock(refinees, "is refinement #[", "] ", r -> write('${CodeGen.world.getID(r)}'));
+			}
+		);
+
+		if(proto.friends.length > 0) {
+			writeBlock(proto.friends, "is friend #[", "] ", f -> write(CodeGen.world.getTypeRef(f)));
+		}
+
+		proto.hidden._and(hidden => hidden._match(
+			at(None) => write("is hidden "),
+			at(Some(within)) => {
+				write("is hidden ");
+				write(CodeGen.world.getTypeRef(within));
+				write(" ");
+			}
+		));
+
+		proto.sealed.forEach(sealed -> sealed._match(
+			at(None) => write("is sealed "),
+			at(Some(within)) => {
+				write("is sealed ");
+				write(CodeGen.world.getTypeRef(within));
+				write(" ");
+			}
+		));
+
+		level++;
+		write("{");
+
+		if(proto.sortedDecls.length > 0 || proto.categories.length > 0) throw "TODO";
+		
+		final staticMemberInits: Array<Tuple2<Member, TExpr>> = [];
+		for(mem in proto.staticMembers) {
+			newline();
+			write(mem, true, staticMemberInits);
+			newline();
+		}
+
+		final instMemberInits: Array<Tuple2<Member, TExpr>> = [];
+		for(mem in proto.members) {
+			newline();
+			write(mem, false, instMemberInits);
+			newline();
+		}
+
+		proto.staticInit.doOrElse(init => {
+			newline();
+			write(init, staticMemberInits);
+			newline();
+		}, {
+			if(staticMemberInits.length > 0) {
+				// TODO: lazy
+				newline();
+				final init: StaticInit = untyped $new(typing.StaticInit);
+				init.typedBody = [];
+				write(init, staticMemberInits);
+				newline();
+			}
+		});
+
+		proto.defaultInit.doOrElse(init => {
+			newline();
+			write(init, instMemberInits);
+			newline();
+		}, {
+			if(instMemberInits.length > 0) {
+				// TODO: lazy
+				newline();
+				final init: DefaultInit = untyped $new(typing.DefaultInit);
+				init.typedBody = [];
+				write(init, instMemberInits);
+				newline();
+			}
+		});
+
+		for(init in proto.inits) {
+			newline();
+			write(init);
+			newline();
+		}
+
+		for(mth in proto.staticMethods) {
+			newline();
+			write(mth);
+			newline();
+		}
+
+		for(mth in proto.methods) {
+			newline();
+			write(mth);
+			newline();
+		}
+
+		for(oper in proto.operators) {
+			newline();
+			write(oper);
+			newline();
+		}
+
+		proto.deinit.forEach(deinit -> {
+			newline();
+			write(deinit, null);
+			newline();
+		});
+
+		proto.staticDeinit.forEach(deinit -> {
+			newline();
+			write(deinit, null);
+			newline();
+		});
+
+		level--;
+		newline();
+		write("}");
+	}
+
+	overload function write(kind: TaggedKind) {
+		writeDVars(kind.typevars);
+		
+		final id = CodeGen.world.getID(kind);
+		write('tagged-kind $id ${Type.getFullPath(kind).value()}');
+
+		if(kind.params.length > 0) {
+			write("[_");
+			for(_ in 0...(kind.params.length - 1)) write(", _");
+			write("] ");
+		} else {
+			write(" ");
+		}
+		
+		if(kind.parents.length > 0) {
+			writeBlock(kind.parents, "of #[", "] ", p -> write(CodeGen.world.getTypeRef(p)));
+		}
+
+		kind.refinees._match(
+			at([]) => {},
+			at([ref]) => {
+				write('is refinement ${CodeGen.world.getID(ref)} ');
+			},
+			at(refinees) => {
+				writeBlock(refinees, "is refinement #[", "] ", r -> write('${CodeGen.world.getID(r)}'));
+			}
+		);
+
+		if(kind.friends.length > 0) {
+			writeBlock(kind.friends, "is friend #[", "] ", f -> write(CodeGen.world.getTypeRef(f)));
+		}
+
+		kind.hidden._and(hidden => hidden._match(
+			at(None) => write("is hidden "),
+			at(Some(within)) => {
+				write("is hidden ");
+				write(CodeGen.world.getTypeRef(within));
+				write(" ");
+			}
+		));
+
+		kind.sealed.forEach(sealed -> sealed._match(
+			at(None) => write("is sealed "),
+			at(Some(within)) => {
+				write("is sealed ");
+				write(CodeGen.world.getTypeRef(within));
+				write(" ");
+			}
+		));
+
+		if(kind._isStrong) write("is strong ");
+		if(kind._isUncounted) write("is uncounted ");
+		if(kind._isFlags) write("is flags ");
+
+		level++;
+		write("{");
+
+		if(kind.sortedDecls.length > 0 || kind.categories.length > 0) throw "TODO";
+
+		for(tcase in kind.taggedCases) {
+			newline();
+			write(tcase);
+			newline();
+		}
+		
+		final staticMemberInits: Array<Tuple2<Member, TExpr>> = [];
+		for(mem in kind.staticMembers) {
+			newline();
+			write(mem, true, staticMemberInits);
+			newline();
+		}
+
+		final instMemberInits: Array<Tuple2<Member, TExpr>> = [];
+		for(mem in kind.members) {
+			newline();
+			write(mem, false, instMemberInits);
+			newline();
+		}
+
+		kind.staticInit.doOrElse(init => {
+			newline();
+			write(init, staticMemberInits);
+			newline();
+		}, {
+			if(staticMemberInits.length > 0) {
+				// TODO: lazy
+				newline();
+				final init: StaticInit = untyped $new(typing.StaticInit);
+				init.typedBody = [];
+				write(init, staticMemberInits);
+				newline();
+			}
+		});
+
+		kind.defaultInit.doOrElse(init => {
+			newline();
+			write(init, instMemberInits);
+			newline();
+		}, {
+			if(instMemberInits.length > 0) {
+				// TODO: lazy
+				newline();
+				final init: DefaultInit = untyped $new(typing.DefaultInit);
+				init.typedBody = [];
+				write(init, instMemberInits);
+				newline();
+			}
+		});
+
+		for(mth in kind.staticMethods) {
+			newline();
+			write(mth);
+			newline();
+		}
+
+		for(mth in kind.methods) {
+			newline();
+			write(mth);
+			newline();
+		}
+
+		for(oper in kind.operators) {
+			newline();
+			write(oper);
+			newline();
+		}
+
+		kind.deinit.forEach(deinit -> {
+			newline();
+			write(deinit, null);
+			newline();
+		});
+
+		kind.staticDeinit.forEach(deinit -> {
+			newline();
+			write(deinit, null);
+			newline();
+		});
+
+		level--;
+		newline();
+		write("}");
+	}
+
 
 	overload function write(mem: Member, isStatic: Bool, inits: Array<Tuple2<Member, TExpr>>) {
 		final id = isStatic? CodeGen.world.getStaticID(mem) : CodeGen.world.getInstID(mem);
@@ -259,6 +543,37 @@ class Gen {
 
 		mem.typedValue._and(tvalue => {
 			inits.push(tuple(mem, tvalue));
+		});
+	}
+
+	overload function write(tcase: TaggedCase) {
+		final id = CodeGen.world.getID(tcase);
+
+		// TODO: assoc
+		write('has $id [');
+		tcase._match(
+			at(sc is SingleTaggedCase) => {
+				write(sc.name.name);
+			},
+			at(mc is MultiTaggedCase) => {
+				level++;
+				for(p in mc.params) {
+					newline();
+					write(p.label.name+": "+p.name.name+" (");
+					write(CodeGen.world.getTypeRef(p.type));
+					write(")");
+					// ...
+				}
+				level--;
+				newline();
+			},
+			_ => throw "bad"
+		);
+		write("]");
+
+		tcase.typedInit._and(init => {
+			write(" ");
+			writeBlock(CodeGen.compile(new GenCtx(), init));
 		});
 	}
 
@@ -845,38 +1160,66 @@ class Gen {
 			ctx._and(ctx => write(ctx));
 		},
 		
-		at(OSend_SI(id)) => write('send-si $id'),
-		at(OSendDynamic_SI(id)) => write('send-dyn-si $id'),
-
-		at(OSend_MI(id, ctx)) => {
-			write('send-mi $id');
-			ctx._and(ctx => write(ctx));
+		at(OSend_SI(t, id)) => {
+			write("send-si ");
+			write(t);
+			write(' $id');
 		},
-		at(OSendDynamic_MI(id, ctx)) => {
-			write('send-dyn-mi $id');
-			ctx._and(ctx => write(ctx));
-		},
-
-		at(OSend_C(id, ctx)) => {
-			write('send-c $id');
-			ctx._and(ctx => write(ctx));
-		},
-		at(OSendDynamic_C(id, ctx)) => {
-			write('send-dyn-c $id');
-			ctx._and(ctx => write(ctx));
+		at(OSendDynamic_SI(t, id)) => {
+			write("send-dyn-si ");
+			write(t);
+			write(' $id');
 		},
 
-		at(OSend_BO(id, ctx)) => {
-			write('send-bo $id');
+		at(OSend_MI(t, id, ctx)) => {
+			write("send-mi ");
+			write(t);
+			write(' $id');
 			ctx._and(ctx => write(ctx));
 		},
-		at(OSendDynamic_BO(id, ctx)) => {
-			write('send-dyn-bo $id');
+		at(OSendDynamic_MI(t, id, ctx)) => {
+			write("send-dyn-mi ");
+			write(t);
+			write(' $id');
 			ctx._and(ctx => write(ctx));
 		},
 
-		at(OSend_UO(id)) => write('send-uo $id'),
-		at(OSendDynamic_UO(id)) => write('send-dyn-uo $id'),
+		at(OSend_C(t, id, ctx)) => {
+			write("send-c ");
+			write(t);
+			write(' $id');
+			ctx._and(ctx => write(ctx));
+		},
+		at(OSendDynamic_C(t, id, ctx)) => {
+			write("send-dyn-c ");
+			write(t);
+			write(' $id');
+			ctx._and(ctx => write(ctx));
+		},
+
+		at(OSend_BO(t, id, ctx)) => {
+			write("send-bo ");
+			write(t);
+			write(' $id');
+			ctx._and(ctx => write(ctx));
+		},
+		at(OSendDynamic_BO(t, id, ctx)) => {
+			write("send-dyn-bo ");
+			write(t);
+			write(' $id');
+			ctx._and(ctx => write(ctx));
+		},
+
+		at(OSend_UO(t, id)) => {
+			write("send-uo ");
+			write(t);
+			write(' $id');
+		},
+		at(OSendDynamic_UO(t, id)) => {
+			write("send-dyn-uo ");
+			write(t);
+			write(' $id');
+		},
 
 		at(OInitClass(t)) => {
 			write("init-class ");

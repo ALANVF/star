@@ -191,6 +191,81 @@ protocol Values[T] of Positional[T] {
 
 	;on [from: (Int) to: (Int) set: values (This)] is setter
 
+
+	;== Inserting values
+
+	on [at: index (Int) add: value (T)] (T) {
+		if index < 0 => index += length
+
+		if 0 <= index < length {
+			this[resizeBy: 1]
+			this[from: index moveBy: 1]
+			buffer[at: index] = value
+			length++
+
+			return value
+		} else {
+			throw IndexError[at: index]
+		}
+	}
+
+	type V of Values[T]
+	on [at: index (Int) addAll: values (V)] (V) {
+		if index < 0 => index += length
+
+		if 0 <= index < length {
+			my valuesLen = values.length
+			this[resizeBy: valuesLen]
+			this[from: index moveBy: valuesLen]
+			values[copyInto: buffer + index]
+			length += valuesLen
+
+			return values
+		} else {
+			throw IndexError[at: index]
+		}
+	}
+	
+	type Pos of Positional[T]
+	on [at: index (Int) addAll: values (Pos)] (Pos) {
+		if index < 0 => index += length
+
+		if 0 <= index < length {
+			my valuesLen = values.length
+			this[resizeBy: valuesLen]
+			this[from: index moveBy: valuesLen]
+			for my value in: values {
+				buffer[at: index] = value
+				index++
+			}
+			length += valuesLen
+
+			return values
+		} else {
+			throw IndexError[at: index]
+		}
+	}
+
+	type Iter of Iterable[T]
+	on [at: index (Int) addAll: values (Iter)] (Iter) {
+		if index < 0 => index += length
+
+		if 0 <= index < length {
+			for my value in: values {
+				this[resizeBy: 1]
+				this[from: index moveBy: 1]
+				buffer[at: index] = value
+				index++
+				length++
+			}
+
+			return values
+		} else {
+			throw IndexError[at: index]
+		}
+	}
+
+
 	;== Removing elements
 
 	on [removeAt: index (Int)] (T) {
