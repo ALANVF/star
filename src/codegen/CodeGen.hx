@@ -526,7 +526,7 @@ static function getName(ctx: GenCtx, name: String, loc: Local, depth: Int): Opco
 				at(null) => {
 					[mem.isStatic ? OGetStaticField(name) : OGetField(name)];
 				},
-				at({_1: thisName, _2: thisType}) => {
+				at(tuple(thisName, thisType)) => {
 					if(mem.isStatic) [
 						OGetStaticMember(
 							thisType,
@@ -759,7 +759,7 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 	at(EThis) => if(wantValue) {
 		[ctx.getThis()._match(
 			at(null) => OThis,
-			at({_1: name, _2: type}) => OGetLocal(name)
+			at(tuple(name, type)) => OGetLocal(name)
 		)];
 	} else [],
 

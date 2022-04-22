@@ -325,7 +325,7 @@ abstract class TypeDecl extends AnyFullTypeDecl {
 			(params.length == 0 ? ref.thisType : ref.applyArgs(params))._and(r =>
 				r.iterAssocType()._match(
 					at(null) => null,
-					at({_1: k, _2: v}) => tuple(k.getFrom(thisType), v.getFrom(thisType))
+					at(tuple(k, v)) => tuple(k.getFrom(thisType), v.getFrom(thisType))
 				)
 			)
 		);

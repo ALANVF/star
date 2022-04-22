@@ -1590,14 +1590,14 @@ class Type implements ITypeable {
 			at(TApplied(type, params)) => type.applyArgs(params)._and(ty => {
 				ty.iterAssocType()._match(
 					at(null) => null,
-					at({_1: k, _2: v}) => tuple(k.getFrom(ty), v.getFrom(ty))
+					at(tuple(k, v)) => tuple(k.getFrom(ty), v.getFrom(ty))
 				);
 			}),
 			at(TTypeVar(typevar)) => typevar.iterAssocType(),
 			at(TModular(type, unit)) => type.iterAssocType()
 		)._match(
 			at(null) => null,
-			at({_1: k, _2: v}) => tuple(k.getFrom(this), v.getFrom(this))
+			at(tuple(k, v)) => tuple(k.getFrom(this), v.getFrom(this))
 		);
 	}
 

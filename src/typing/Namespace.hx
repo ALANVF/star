@@ -267,7 +267,7 @@ abstract class Namespace extends TypeDecl {
 		} else {
 			return parents.findMap(p -> p.iterAssocType())._match(
 				at(null) => super.iterAssocType(),
-				at({_1: k, _2: v}) => tuple(k.getFrom(thisType), v.getFrom(thisType))
+				at(tuple(k, v)) => tuple(k.getFrom(thisType), v.getFrom(thisType))
 			);
 		}
 	}

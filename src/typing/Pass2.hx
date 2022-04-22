@@ -961,7 +961,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 			final t = ctx.getType(type)._or(return invalidExpr()).fullSimplify();
 			sendTypeMessage(ctx, t, begin, end, msg)._match(
 				at(null) => invalidExpr(),
-				at({_1: msg2, _2: ret}) => {e: ETypeMessage(t, msg2), t: ret.getFrom(t)}
+				at(tuple(msg2, ret)) => {e: ETypeMessage(t, msg2), t: ret.getFrom(t)}
 			);
 		},
 
@@ -993,7 +993,7 @@ static function typeExpr(ctx: Ctx, expr: UExpr): TExpr {
 			tobj.t._match(
 				at(t!) => sendObjMessage(ctx, t, begin, end, msg)._match(
 					at(null) => invalidExpr(),
-					at({_1: msg2, _2: ret}) => {
+					at(tuple(msg2, ret)) => {
 						{ e: EObjMessage(tobj, msg2), t: ret._and(r => r.simplify()) };
 					}
 				),
@@ -2903,7 +2903,7 @@ static function typePattern(ctx: Ctx, expectType: Type, expr: UExpr): Pattern {
 				at(null) => {
 					PIgnore;
 				},
-				at({_1: msg2, _2: type}) => {
+				at(tuple(msg2, type)) => {
 					return {
 						p: PExtractMessage(msg2),
 						t: type,
@@ -3277,7 +3277,7 @@ static function typeStmt(ctx: Ctx, stmt: UStmt): TStmt {
 									lpat2 = typePattern(forCtx, et, vvar);
 								}
 							),
-							at({_1: kt, _2: vt}) => {
+							at(tuple(kt, vt)) => {
 								kt = kt.getFrom(t);
 								vt = vt.getFrom(t);
 								lpat1 = typePattern(forCtx, kt, lvar);
