@@ -20,6 +20,7 @@ class Member implements IDecl {
 	var noInherit: Bool = false;
 	final value: Null<Expr>;
 	@ignore var typedValue: Null<TExpr> = null;
+	var refinee: Null<Member> = null;
 
 	static function fromAST(decl: AnyTypeDecl, ast: parsing.ast.decls.Member) {
 		final declSpan = Span.range(ast.span, ast.name.span);

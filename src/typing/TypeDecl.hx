@@ -442,6 +442,16 @@ abstract class TypeDecl extends AnyFullTypeDecl {
 
 	// Method lookup
 
+	function hasDefaultInit(): Bool {
+		for(ref in refinees) {
+			if(ref.hasDefaultInit()) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	// TODO: make sure parent methods don't collide with overridden or refined methods
 
 	function findSingleStatic(ctx: Ctx, name: String, from: Type, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {

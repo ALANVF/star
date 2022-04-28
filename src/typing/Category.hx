@@ -363,6 +363,10 @@ class Category extends AnyTypeDecl {
 
 	// Method lookup
 
+	function hasDefaultInit(): Bool {
+		return thisType.hasDefaultInit();
+	}
+
 	function findSingleStatic(ctx: Ctx, name: String, from: Type, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {
 		//if(type.exists(t -> cache.contains(t)) || lookup._match(at(d is TypeDecl) => cache.contains(d.thisType), _ => false)) return null;
 

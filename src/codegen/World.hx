@@ -189,6 +189,10 @@ typedef CaseMap<T: {}> = AccessMap<T, KindTag>;
 	}
 
 	overload function getStaticID(mem: Member) {
+		mem.refinee._and(ref => {
+			mem = ref;
+		});
+		
 		final decl = mem.decl;
 		final staticMap = staticMembers[decl]._match(
 			at(null) => {
@@ -203,6 +207,10 @@ typedef CaseMap<T: {}> = AccessMap<T, KindTag>;
 	}
 
 	overload function getInstID(mem: Member) {
+		mem.refinee._and(ref => {
+			mem = ref;
+		});
+
 		final decl = mem.decl;
 		final instMap = instMembers[decl]._match(
 			at(null) => {

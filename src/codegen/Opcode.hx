@@ -108,6 +108,8 @@ enum Opcode {
 
 	// Messaging
 
+	ODefaultInit(t: TypeRef);
+
 	OInitThis_S(_super: TypeRef, id: InitID);
 	OInitThis_M(_super: TypeRef, id: InitID, ?ctx: TVarInstCtx);
 

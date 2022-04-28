@@ -1873,6 +1873,34 @@ class Type implements ITypeable {
 
 	// Method lookup
 
+	function hasDefaultInit(): Bool {
+		return t._match(
+			at(TPath(depth, lookup, source)) => throw "todo",
+			at(TLookup(type, lookup, source)) => throw "todo",
+			at(TConcrete(decl) | TInstance(decl, _, _)) => decl.hasDefaultInit(),
+			at(TThis(source)) => source._match(
+				at(td is TypeDecl) => td.hasDefaultInit(),
+				_ => throw "todo"
+			),
+			at(TBlank) => throw "bad",
+			at(TMulti(types)) => {
+				leastSpecific(types)
+					.some(type -> type.hasDefaultInit());
+			},
+			at(TApplied({t: TMulti(types)}, args)) => {
+				leastSpecific(types.filter(type -> type.acceptsArgs(args)))
+					.some(type -> type.hasDefaultInit());
+			},
+			at(TApplied(type, args)) => {
+				type.hasDefaultInit();
+			},
+			at(TTypeVar(typevar)) => {
+				typevar.hasDefaultInit();
+			},
+			at(TModular(type, unit)) => type.hasDefaultInit()
+		);
+	}
+
 	function findSingleStatic(ctx: Ctx, name: String, from: Type, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {
 		return t._match(
 			at(TPath(depth, lookup, source)) => throw "todo",

@@ -143,6 +143,8 @@ class Class extends ClassLike {
 	}
 
 
+	// Attributes
+
 	override function isNative(kind: NativeKind) {
 		return native.exists(nat -> nat.matches(kind)) || super.isNative(kind);
 	}
@@ -160,6 +162,8 @@ class Class extends ClassLike {
 	}
 
 
+	// Type checking
+
 	override function hasParentDecl(decl: TypeDecl) {
 		return this == decl
 			|| parents.some(p -> p.hasParentDecl(decl))
@@ -167,6 +171,12 @@ class Class extends ClassLike {
 			|| super.hasParentDecl(decl);
 	}
 
+
+	// Method lookup
+
+	override function hasDefaultInit(): Bool {
+		return defaultInit.isSome() || super.hasDefaultInit();
+	}
 
 	override function defaultSingleStatic(ctx: Ctx, name: String, from: Type, getter = false) {
 		if(!native.match(Some(NVoid | NBool))) {

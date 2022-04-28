@@ -2,11 +2,6 @@ use Native
 
 type T
 class Array[T] of Values[T] {
-	my buffer is hidden
-	my length is getter
-	my capacity is getter
-
-
 	;== Creating (macros)
 
 	init [_: values (Array[T])] is macro {

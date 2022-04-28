@@ -101,6 +101,8 @@ class Protocol extends ClassLike {
 		return "protocol";
 	}
 
+
+	// Type checking
 	
 	override function hasParentDecl(decl: TypeDecl) {
 		//trace(this.fullName(),decl.fullName());
@@ -121,6 +123,12 @@ class Protocol extends ClassLike {
 		return this == Pass2.STD_Value ? !type.isNative(NVoid) : super.hasChildType(type);
 	}
 
+
+	// Method lookup
+
+	override function hasDefaultInit(): Bool {
+		return defaultInit.isSome() || super.hasDefaultInit();
+	}
 
 	override function defaultSingleStatic(ctx: Ctx, name: String, from: Type, getter = false) {
 		if(this != Pass2.STD_Value && !getter) {

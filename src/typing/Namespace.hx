@@ -314,6 +314,10 @@ abstract class Namespace extends TypeDecl {
 
 	// Method lookup
 
+	override function hasDefaultInit(): Bool {
+		return parents.some(p -> p.hasDefaultInit()) || super.hasDefaultInit();
+	}
+
 	function defaultSingleStatic(ctx: Ctx, name: String, from: Type, getter = false): Null<SingleStaticKind> {
 		return null;
 	}

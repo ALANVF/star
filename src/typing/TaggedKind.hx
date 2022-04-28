@@ -129,6 +129,10 @@ class TaggedKind extends Kind {
 
 	// Method lookup
 
+	override function hasDefaultInit(): Bool {
+		return defaultInit.isSome() || super.hasDefaultInit();
+	}
+
 	override function findSingleStatic(ctx: Ctx, name: String, from: Type, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {
 		if(cache.contains(thisType)) return null;
 		

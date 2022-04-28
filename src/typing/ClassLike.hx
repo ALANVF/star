@@ -25,7 +25,9 @@ abstract class ClassLike extends Namespace {
 					getter: mem.getter,
 					setter: mem.setter,
 					noInherit: mem.noInherit,
-					value: mem.value
+					value: mem.value,
+					// does this need typedValue?
+					refinee: mem
 				})
 			)))
 			.concat(super.instMembers(from));
@@ -45,6 +47,10 @@ abstract class ClassLike extends Namespace {
 
 
 	// Method lookup
+
+	override function hasDefaultInit(): Bool {
+		return members.some(m -> m.typedValue != null) || super.hasDefaultInit();
+	}
 
 	function defaultSingleInst(ctx: Ctx, name: String, from: AnyTypeDecl, getter = false): Null<SingleInstKind> {
 		return null;

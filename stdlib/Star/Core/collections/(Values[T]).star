@@ -2,9 +2,9 @@ use Native
 
 type T
 protocol Values[T] of Positional[T] {
-	my buffer (Ptr[T])
-	my length (Int)
-	my capacity (Int) = length
+	my buffer (Ptr[T]) is hidden
+	my length (Int) is getter
+	my capacity (Int) is getter = length
 
 
 	;== Creating

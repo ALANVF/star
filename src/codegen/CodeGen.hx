@@ -2103,14 +2103,14 @@ overload static function compile(ctx: GenCtx, resType: Type, type: Type, candida
 				type = type.getInTCtx(tctx);
 			});*/
 
-			final typeref = world.getTypeRef(
-				kind.match(
-					MSInit(_, _)
-					| MSMemberwiseInit(_)
-					| MSTaggedCase(_, _, _, _)
-					| MSTaggedCaseAlias(_)
-				) ? resType : type
+			final senderType = kind._match(
+				at(MSInit(_, _)
+				 | MSMemberwiseInit(_)
+				 | MSTaggedCase(_, _, _, _)
+				 | MSTaggedCaseAlias(_)) => resType,
+				_ => type
 			);
+			final typeref = world.getTypeRef(senderType);
 			kind._match(
 				at(MSInit(init = {isMacro: true}, _)) => {
 					throw "NYI";
@@ -2278,6 +2278,11 @@ overload static function compile(ctx: GenCtx, resType: Type, type: Type, candida
 						res = res.concat(compile(ctx, args[i]));
 						res.push(OSetMember(id));
 					});
+
+					if(senderType.hasDefaultInit()) {
+						res.push(ODup);
+						res.push(ODefaultInit(typeref));
+					}
 
 					res;
 				},

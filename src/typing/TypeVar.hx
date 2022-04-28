@@ -625,6 +625,11 @@ class TypeVar extends AnyFullTypeDecl {
 
 
 	// Method lookup
+
+	function hasDefaultInit(): Bool {
+		// TODO
+		return false;
+	}
 	
 	function findSingleStatic(ctx: Ctx, name: String, from: Type, getter = false, cache: TypeCache = Nil): Null<SingleStaticKind> {
 		for(mem in staticMembers) {

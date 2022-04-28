@@ -771,6 +771,7 @@ class Gen {
 				paramNames = _paramNames;
 			},
 			at(cm is CastMethod) => {
+				cm.ret = cm.type; // hacky thing, ideally just use ret for everything?
 				write(CodeGen.world.getTypeRef(cm.type));
 			},
 			_ => throw "bad"
@@ -1120,6 +1121,11 @@ class Gen {
 			write('tee-static-member ');
 			write(t);
 			write(' $id');
+		},
+
+		at(ODefaultInit(t)) => {
+			write("default-init ");
+			write(t);
 		},
 
 		at(OInitThis_S(_super, id)) => {

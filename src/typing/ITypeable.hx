@@ -86,6 +86,8 @@ interface ITypeable extends ITypeLookup {
 
 
 	// Method lookup
+
+	function hasDefaultInit(): Bool;
 	
 	function findSingleStatic(
 		ctx: Ctx,

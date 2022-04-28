@@ -5,11 +5,6 @@ use Native
 ]
 
 class Str of Values[Char], Ordered is strong {
-	my buffer (Ptr[Char]) is hidden
-	my length is getter
-	my capacity is hidden
-
-
 	;== Creating (macros)
 
 	init [_: str (Str)] is macro {
