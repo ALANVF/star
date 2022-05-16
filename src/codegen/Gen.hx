@@ -1058,7 +1058,7 @@ class Gen {
 		at(ODec64(int, dec, null)) => write('dec64 $int.$dec'),
 		at(ODec64(int, dec, exp!!)) => write('dec64 $int.${dec}e$exp'),
 
-		//at(OChar(char)) => write('char ${char.toInt()}'),
+		at(OChar(char)) => write('char ${char.toInt()}'),
 
 		at(OStr(str)) => write('str "${str.escape()}"'),
 
@@ -1084,6 +1084,7 @@ class Gen {
 		},
 		at(OKindID) => write("kind-id"),
 		at(OKindSlot(i)) => write('kind-slot $i'),
+		at(OKindValue) => write("kind-value"),
 
 		at(OUpcast(t)) => {
 			write("upcast ");
@@ -1100,6 +1101,15 @@ class Gen {
 
 		at(OOfType(t)) => {
 			write("of-type ");
+			write(t);
+		},
+
+		at(ONewPtr(t)) => {
+			write("new-ptr ");
+			write(t);
+		},
+		at(OPtrFromAddr(t)) => {
+			write("ptr-from-addr ");
 			write(t);
 		},
 
@@ -1257,6 +1267,9 @@ class Gen {
 		},
 		at(OMultiKindGetTag(tag)) => {
 			write('multi-kind-get-tag $tag');
+		},
+		at(OMultiKindGetSlot(tag, slot)) => {
+			write('multi-kind-get-slot $tag $slot');
 		}
 	);
 

@@ -306,7 +306,7 @@ overload static function compile(ctx: GenCtx, stmt: TStmt): Opcodes return stmt.
 				loop.push(ODup);
 				loop.push(OKindID);
 				loop.push(OTCaseID(world.getTypeRef(iterRet), noneCaseID));
-				loop.push(ONative("tcaseid_eq"));
+				loop.push(ONative("caseid_eq"));
 				loop.push(OIf([
 					OBreak(label2)
 				]));
@@ -599,11 +599,8 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 	} else [],
 
 	at(EChar(char)) => if(wantValue) {
-		// TODO: merge with `Type <dec>` compile logic
-		[
-			OInt8(char, false)/*,
-			ONativeCast(world.getTypeRef(Pass2.STD_Char))*/
-		];
+		// TODO: merge with `Type <char>` compile logic
+		[OChar(char)];
 	} else [],
 
 	at(EStr([])) => if(wantValue) [OStr("")] else [],
@@ -1405,8 +1402,8 @@ overload static function compile(
 					res.push(OKindID);
 					res.push(OVCaseID(world.getTypeRef(type), world.getID(valueCase)));
 					res.push(ONative(bound._match(
-						at(Inclusive) => "vcaseid_ge",
-						at(Exclusive) => "vcaseid_gt"
+						at(Inclusive) => "caseid_ge",
+						at(Exclusive) => "caseid_gt"
 					)));
 					res.push(exitCase);
 				},
@@ -1414,8 +1411,8 @@ overload static function compile(
 					res.push(OKindID);
 					res.push(OTCaseID(world.getTypeRef(type), world.getID(taggedCase)));
 					res.push(ONative(bound._match(
-						at(Inclusive) => "tcaseid_ge",
-						at(Exclusive) => "tcaseid_gt"
+						at(Inclusive) => "caseid_ge",
+						at(Exclusive) => "caseid_gt"
 					)));
 					res.push(exitCase);
 				},
@@ -1425,8 +1422,8 @@ overload static function compile(
 					res.push(OKindID);
 					res.push(OTCaseID(world.getTypeRef(type), world.getID(taggedCase)));
 					res.push(ONative(bound._match(
-						at(Inclusive) => "tcaseid_ge",
-						at(Exclusive) => "tcaseid_gt"
+						at(Inclusive) => "caseid_ge",
+						at(Exclusive) => "caseid_gt"
 					)));
 					res.push(exitCase);
 				},
@@ -1460,8 +1457,8 @@ overload static function compile(
 					res.push(OKindID);
 					res.push(OVCaseID(world.getTypeRef(type), world.getID(valueCase)));
 					res.push(ONative(bound._match(
-						at(Inclusive) => "vcaseid_le",
-						at(Exclusive) => "vcaseid_lt"
+						at(Inclusive) => "caseid_le",
+						at(Exclusive) => "caseid_lt"
 					)));
 					res.push(exitCase);
 				},
@@ -1469,8 +1466,8 @@ overload static function compile(
 					res.push(OKindID);
 					res.push(OTCaseID(world.getTypeRef(type), world.getID(taggedCase)));
 					res.push(ONative(bound._match(
-						at(Inclusive) => "tcaseid_le",
-						at(Exclusive) => "tcaseid_lt"
+						at(Inclusive) => "caseid_le",
+						at(Exclusive) => "caseid_lt"
 					)));
 					res.push(exitCase);
 				},
@@ -1480,8 +1477,8 @@ overload static function compile(
 					res.push(OKindID);
 					res.push(OTCaseID(world.getTypeRef(type), world.getID(taggedCase)));
 					res.push(ONative(bound._match(
-						at(Inclusive) => "tcaseid_le",
-						at(Exclusive) => "tcaseid_lt"
+						at(Inclusive) => "caseid_le",
+						at(Exclusive) => "caseid_lt"
 					)));
 					res.push(exitCase);
 				},
@@ -1515,8 +1512,8 @@ overload static function compile(
 					res.push(OKindID);
 					res.push(OVCaseID(world.getTypeRef(type), world.getID(valueCase)));
 					res.push(ONative(minBound._match(
-						at(Inclusive) => "vcaseid_ge",
-						at(Exclusive) => "vcaseid_gt"
+						at(Inclusive) => "caseid_ge",
+						at(Exclusive) => "caseid_gt"
 					)));
 					res.push(exitCase);
 				},
@@ -1524,8 +1521,8 @@ overload static function compile(
 					res.push(OKindID);
 					res.push(OTCaseID(world.getTypeRef(type), world.getID(taggedCase)));
 					res.push(ONative(minBound._match(
-						at(Inclusive) => "tcaseid_ge",
-						at(Exclusive) => "tcaseid_gt"
+						at(Inclusive) => "caseid_ge",
+						at(Exclusive) => "caseid_gt"
 					)));
 					res.push(exitCase);
 				},
@@ -1535,8 +1532,8 @@ overload static function compile(
 					res.push(OKindID);
 					res.push(OTCaseID(world.getTypeRef(type), world.getID(taggedCase)));
 					res.push(ONative(minBound._match(
-						at(Inclusive) => "tcaseid_ge",
-						at(Exclusive) => "tcaseid_gt"
+						at(Inclusive) => "caseid_ge",
+						at(Exclusive) => "caseid_gt"
 					)));
 					res.push(exitCase);
 				},
@@ -1560,8 +1557,8 @@ overload static function compile(
 					res.push(OKindID);
 					res.push(OVCaseID(world.getTypeRef(type), world.getID(valueCase)));
 					res.push(ONative(maxBound._match(
-						at(Inclusive) => "vcaseid_le",
-						at(Exclusive) => "vcaseid_lt"
+						at(Inclusive) => "caseid_le",
+						at(Exclusive) => "caseid_lt"
 					)));
 					res.push(exitCase);
 				},
@@ -1569,8 +1566,8 @@ overload static function compile(
 					res.push(OKindID);
 					res.push(OTCaseID(world.getTypeRef(type), world.getID(taggedCase)));
 					res.push(ONative(maxBound._match(
-						at(Inclusive) => "tcaseid_le",
-						at(Exclusive) => "tcaseid_lt"
+						at(Inclusive) => "caseid_le",
+						at(Exclusive) => "caseid_lt"
 					)));
 					res.push(exitCase);
 				},
@@ -1580,8 +1577,8 @@ overload static function compile(
 					res.push(OKindID);
 					res.push(OTCaseID(world.getTypeRef(type), world.getID(taggedCase)));
 					res.push(ONative(maxBound._match(
-						at(Inclusive) => "tcaseid_le",
-						at(Exclusive) => "tcaseid_lt"
+						at(Inclusive) => "caseid_le",
+						at(Exclusive) => "caseid_lt"
 					)));
 					res.push(exitCase);
 				},
@@ -1678,7 +1675,7 @@ overload static function compile(
 			var res: Opcodes = if(isRhs) [ODup] else [];
 			
 			res.push(OVCaseID(world.getTypeRef(type), world.getID(valueCase)));
-			res.push(ONative("vcaseid_eq"));
+			res.push(ONative("caseid_eq"));
 			res.push(exitCase);
 
 			return res;
@@ -1688,7 +1685,7 @@ overload static function compile(
 			var res: Opcodes = if(isRhs) [ODup] else [];
 			
 			res.push(OTCaseID(world.getTypeRef(type), world.getID(taggedCase)));
-			res.push(ONative("tcaseid_eq"));
+			res.push(ONative("caseid_eq"));
 			res.push(exitCase);
 
 			return res;
@@ -1703,7 +1700,7 @@ overload static function compile(
 			}
 			
 			res.push(OTCaseID(world.getTypeRef(type), world.getID(taggedCase)));
-			res.push(ONative("tcaseid_eq"));
+			res.push(ONative("caseid_eq"));
 			res.push(exitCase);
 
 			if(hasPatterns) args._for(i => arg, if(!arg.p.match(PIgnore)) {
@@ -2123,7 +2120,17 @@ overload static function compile(ctx: GenCtx, resType: Type, type: Type, candida
 							for(arg in args) {
 								res = res.concat(compile(ctx, arg));
 							}
-							res.push(ONative(name));
+							if(name == "ptr_new") {
+								final elemType = senderType.getNative()._match(
+									at(null) => throw "bad",
+									at(NPtr(elem)) => elem.getFrom(senderType),
+									_ => throw "bad"
+								);
+								final elemRef = world.getTypeRef(elemType);
+								res.push(ONewPtr(elemRef));
+							} else {
+								res.push(ONative(name));
+							}
 							return res;
 						}
 					));
@@ -2558,6 +2565,14 @@ overload static function compile(sender: Type, target: Type, candidates: Array<C
 				at(Some({name: name})) => {
 					if(name == "value_unsafe_cast") {
 						return [ONativeCast(world.getTypeRef(target))];
+					} else if(name == "cast_u64_ptr") {
+						final elemType = target.getNative()._match(
+							at(null) => throw "bad",
+							at(NPtr(elem)) => elem.getFrom(target),
+							_ => throw "bad"
+						);
+						final elemRef = world.getTypeRef(elemType);
+						return [OPtrFromAddr(elemRef)];
 					} else {
 						return [ONative(name)];
 					}

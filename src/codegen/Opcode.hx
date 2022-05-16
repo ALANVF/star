@@ -64,7 +64,7 @@ enum Opcode {
 	ODec32(int: Int, dec: String, ?exp: Int);
 	ODec64(int: Int, dec: String, ?exp: Int);
 
-	//OChar(char: Char);
+	OChar(char: Char);
 
 	OStr(str: String);
 
@@ -87,12 +87,16 @@ enum Opcode {
 	OTCaseID(t: TypeRef, tag: KindTag);
 	OKindID;
 	OKindSlot(i: UInt);
+	OKindValue;
 
 	OUpcast(t: TypeRef);
 	ODowncast(t: TypeRef);
 	ONativeCast(t: TypeRef);
 
 	OOfType(t: TypeRef);
+
+	ONewPtr(t: TypeRef);
+	OPtrFromAddr(t: TypeRef);
 
 
 	// Members
@@ -113,6 +117,7 @@ enum Opcode {
 	OInitThis_S(_super: TypeRef, id: InitID);
 	OInitThis_M(_super: TypeRef, id: InitID, ?ctx: TVarInstCtx);
 
+	// TODO: implement type variable method mappings for the tvar ctx
 	OSend_IS(t: TypeRef, id: InitID);
 	OSend_IM(t: TypeRef, id: InitID, ?ctx: TVarInstCtx);
 
@@ -148,6 +153,7 @@ enum Opcode {
 	
 	OMultiKindHasTag(tag: KindTag);
 	OMultiKindGetTag(tag: KindTag);
+	OMultiKindGetSlot(tag: KindTag, slot: UInt);
 	//OMultiKindAddTag(tag: KindTag);
 	//OMultiKindRemoveTag(tag: KindTag);
 }

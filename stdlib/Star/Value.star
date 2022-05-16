@@ -1,9 +1,9 @@
 protocol Value {
 	init [new]
 
-	on [new] (This)
+	on [new] (This) is native `value_new`
 
-	operator `?` (Core.Bool) is native `value_truthy`
+	operator `?` (Core.Bool) => return true
 	
 	operator `?=` [value (This)] (Core.Bool) is native `value_eq`
 	
