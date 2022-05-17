@@ -1,0 +1,646 @@
+bool: [ #{0} | #{1} ]
+int8: [ skip ]
+uint8: [ skip ]
+int16: [ 2 skip ]
+uint16: [ 2 skip ]
+int32: [ 4 skip ]
+uint32: [ 4 skip ]
+int64: [ 8 skip ]
+uint64: [ 8 skip ]
+float32: [ 4 skip ]
+float64: [ 8 skip ]
+char: [ skip ]
+string: [
+	size: uint32
+	(size) skip
+]
+
+type-id: uint32
+typevar-id: uint16
+method-id: uint32
+init-id: uint32
+member-id: uint16
+kind-tag: uint16
+
+
+base: [
+	"STARVM"
+	version: 3 uint8
+	entrypoint: [
+		type-id
+		method-id
+	]
+	num-decls: uint32
+	(num-decls) decl
+]
+
+
+decl: [
+	| #{1} opaque-decl
+	| #{2} newtype-decl
+	| #{3} module-decl
+	| #{4} class-decl
+	| #{5} protocol-decl
+	| #{6} tagged-kind-decl
+	| #{7} value-kind-decl
+]
+
+decl-prelude: [
+	type-id
+	name: string
+	typevars
+
+	static-single-methods
+	static-multi-methods
+]
+
+typevars: [
+	size: uint8
+	(size) [
+		typevar-id
+		typevar-decl
+	]
+]
+
+typevar-decl: [
+	typevar-id
+	name: string
+	parents
+]
+
+parents: [
+	size: uint8
+	(size) typeref
+]
+
+opaque-decl: [
+	decl-prelude
+
+	inst-single-methods
+	inst-multi-methods
+	inst-cast-methods
+	binary-methods
+	unary-methods
+]
+
+newtype-decl: [
+	decl-prelude
+
+	base: typeref
+	no-inherit: bool
+
+	static-members
+
+	inst-single-methods
+	inst-multi-methods
+	inst-cast-methods
+	binary-methods
+	unary-methods
+]
+
+module-decl: [
+	decl-prelude
+
+	parents
+	is-main: opt method-id
+
+	static-members
+
+	static-init
+]
+
+class-decl: [
+	decl-prelude
+
+	parents
+
+	static-members
+	inst-members
+
+	static-init
+	default-init
+
+	single-inits
+	multi-inits
+
+	inst-single-methods
+	inst-multi-methods
+	inst-cast-methods
+	binary-methods
+	unary-methods
+
+	inst-single-method-vtable
+	inst-multi-method-vtable
+	inst-cast-method-vtable
+	binary-method-vtable
+	unary-method-vtable
+
+	deinit
+	static-deinit
+]
+
+protocol-decl: [
+	decl-prelude
+
+	parents
+
+	static-members
+	inst-members
+
+	static-init
+	default-init
+
+	single-inits
+	multi-inits
+
+	inst-single-methods
+	inst-multi-methods
+	inst-cast-methods
+	binary-methods
+	unary-methods
+
+	inst-single-method-vtable
+	inst-multi-method-vtable
+	inst-cast-method-vtable
+	binary-method-vtable
+	unary-method-vtable
+
+	deinit
+	static-deinit
+]
+
+tagged-kind-decl: [
+	decl-prelude
+
+	parents
+	is-flags: bool
+
+	static-members
+	inst-members
+
+	tagged-cases
+
+	static-init
+	default-init
+
+	inst-single-methods
+	inst-multi-methods
+	inst-cast-methods
+	binary-methods
+	unary-methods
+
+	inst-single-method-vtable
+	inst-multi-method-vtable
+	inst-cast-method-vtable
+	binary-method-vtable
+	unary-method-vtable
+
+	deinit
+	static-deinit
+]
+
+value-kind-decl: [
+	decl-prelude
+
+	parents
+	is-flags: bool
+	base: opt typeref
+
+	static-members
+
+	value-cases
+
+	static-init
+
+	inst-single-methods
+	inst-multi-methods
+	inst-cast-methods
+	binary-methods
+	unary-methods
+
+	inst-single-method-vtable
+	inst-multi-method-vtable
+	inst-cast-method-vtable
+	binary-method-vtable
+	unary-method-vtable
+
+	deinit
+	static-deinit
+]
+
+
+single-inits: [
+	size: uint16
+	(size) single-inits
+]
+
+multi-inits: [
+	size: uint16
+	(size) multi-inits
+]
+
+static-single-methods: [
+	size: uint16
+	(size) single-method
+]
+
+static-multi-methods: [
+	size: uint16
+	(size) multi-method
+]
+
+inst-single-methods: [
+	size: uint16
+	(size) single-method
+]
+
+inst-multi-methods: [
+	size: uint16
+	(size) multi-method
+]
+
+inst-cast-methods: [
+	size: uint16
+	(size) cast-method
+]
+
+binary-methods: [
+	size: uint16
+	(size) binary-method
+]
+
+unary-methods: [
+	size: uint16
+	(size) unary-method
+]
+
+inst-single-method-vtable: [
+	size: uint8
+	(size) [
+		type-id
+		inst-single-methods
+	]
+]
+
+inst-multi-method-vtable: [
+	size: uint8
+	(size) [
+		type-id
+		inst-multi-methods
+	]
+]
+
+inst-cast-method-vtable: [
+	size: uint8
+	(size) [
+		type-id
+		inst-cast-methods
+	]
+]
+
+binary-method-vtable: [
+	size: uint8
+	(size) [
+		type-id
+		binary-methods
+	]
+]
+
+unary-method-vtable: [
+	size: uint8
+	(size) [
+		type-id
+		unary-methods
+	]
+]
+
+static-init: [
+	opt opcodes
+]
+
+default-init: [
+	opt opcodes
+]
+
+deinit: [
+	opt opcodes
+]
+
+static-deinit: [
+	opt opcodes
+]
+
+static-members: [
+	size: uint16
+	(size) member
+]
+
+inst-members: [
+	size: uint16
+	(size) member
+]
+
+tagged-cases: [
+	size: uint16
+	(size) tagged-case
+]
+
+value-cases: [
+	size: uint16
+	(size) value-case
+]
+
+
+member: [
+	member-id
+	type: typeref
+]
+
+tagged-kind: [
+	kind-tag
+	name: string
+	slots: opt [
+		arity: uint8
+		(arity) typeref
+	]
+	default-init
+]
+
+value-kind: [
+	kind-tag
+	name: string
+	value-init: opt opcodes
+]
+
+
+method-prelude: [
+	method-id
+	body: opcodes
+]
+
+single-method: [
+	method-prelude
+
+	name: string
+]
+
+multi-method: [
+	method-prelude
+
+	typevars
+	arity: uint8
+	params: (arity) typeref
+	name: string
+]
+
+cast-method: [
+	method-prelude
+
+	typevars
+	type: typeref
+]
+
+binary-method: [
+	method-prelude
+
+	typevars
+	param: typeref
+	name: string
+]
+
+unary-method: [
+	method-prelude
+
+	name: string
+]
+
+init-prelude: [
+	init-id
+	body: opcodes
+]
+
+single-init: [
+	init-prelude
+
+	name: string
+]
+
+multi-init: [
+	init-prelude
+
+	typevars
+	arity: uint8
+	params: (arity) typeref
+	name: string
+]
+
+
+typeref: [
+	| #{0} type-id
+	| #{1} type-id type-inst-ctx
+	| #{2} typevar
+	| #{3} ;-- "this" type
+]
+
+type-inst-ctx: [
+	size: uint8
+	(size) [
+		typevar-id
+		typeref
+	]
+]
+
+typevar: [
+	kind: [
+		| #{0} ;-- decl
+		| #{1} ;-- method
+	]
+	typevar-id
+]
+
+
+local-id: uint16
+field-id: uint16
+loop-id: uint8
+
+native-op: uint16
+
+typevar-inst-ctx: [
+	size: uint8
+	(size) [
+		typevar
+		typeref
+	]
+]
+
+#enum opcode!: uint8! [
+	;-- Storage / Access
+	O_NEW_LOCAL O_GET_LOCAL O_SET_LOCAL O_TEE_LOCAL
+	O_GET_FIELD O_SET_FIELD O_TEE_FIELD
+	O_GET_STATIC_FIELD O_SET_STATIC_FIELD O_TEE_STATIC_FIELD
+
+	;-- Stack manip
+	O_DUP O_DUP2 O_SWAP O_POP
+
+	;-- Control flow
+	O_IF O_IF_NOT O_IF_ELSE
+	O_DO
+	O_LOOP
+	O_TRY    
+	O_RET O_RET_VOID
+	O_THROW O_RETHROW
+	O_BREAK
+	O_NEXT
+
+	;-- Natives
+	O_NATIVE
+
+	;-- Values
+	O_INT8 O_UINT8 O_INT16 O_UINT16 O_INT32 O_UINT32 O_INT64 O_UINT64
+	O_DEC32 O_DEC64
+	O_CHAR
+	O_STR
+	O_TRUE O_FALSE
+	O_THIS
+	;O_FUNC
+
+	;-- Comprehension
+	O_BLOCK
+
+	;-- Operations
+	O_VCASE_ID O_TCASE_ID
+	O_KIND_ID O_KIND_SLOT O_KIND_VALUE
+	O_UPCAST O_DOWNCAST O_NATIVE_CAST
+	O_OF_TYPE
+	O_NEW_PTR O_PTR_FROM_ADDR
+
+	;-- Members
+	O_GET_MEMBER O_SET_MEMBER O_TEE_MEMBER
+	O_GET_STATIC_MEMBER O_SET_STATIC_MEMBER O_TEE_STATIC_MEMBER
+
+	;-- Messaging
+	O_DEFAULT_INIT
+	O_INIT_THIS_S O_INIT_THIS_M
+	O_SEND_IS
+	O_SEND_IM
+	O_SEND_SS
+	O_SEND_MS
+	O_SEND_SI O_SEND_DYN_SI
+	O_SEND_MI O_SEND_DYN_MI
+	O_SEND_C O_SEND_DYN_C
+	O_SEND_BO O_SEND_DYN_BO
+	O_SEND_UO O_SEND_DYN_UO
+
+	;-- Creation
+	O_INIT_CLASS
+	O_INIT_TKIND O_INIT_VKIND
+	O_INIT_MULTI_TKIND O_INIT_MULTI_VKIND
+
+	;-- Multi kinds
+	O_MULTI_KIND_HAS_TAG O_MULTI_KIND_GET_TAG
+	O_MULTI_KIND_GET_SLOT
+]
+
+opcodes: [
+	size: uint32 ;-- should be large enough, right?
+	(size) opcode
+]
+
+opcode: [
+	| O_NEW_LOCAL                        ; takes: []                returns: []
+	| O_GET_LOCAL local-id               ; takes: []                returns: [value]
+	| O_SET_LOCAL local-id               ; takes: [new-value]       returns: []
+	| O_TEE_LOCAL local-id               ; takes: [new-value]       returns: [new-value]
+	| O_GET_FIELD field-id               ; takes: [value]           returns: [field-value]
+	| O_SET_FIELD field-id               ; takes: [value new-value] returns: []
+	| O_TEE_FIELD field-id               ; takes: [value new-value] returns: [new-value]
+	| O_GET_STATIC_FIELD field-id        ; takes: []                returns: [field-value]
+	| O_SET_STATIC_FIELD field-id        ; takes: [new-value]       returns: []
+	| O_TEE_STATIC_FIELD field-id        ; takes: [new-value]       returns: [new-value]
+	
+	| O_DUP                              ; takes: [value1]          returns: [value1 value1]
+	| O_DUP2                             ; takes: [value1 value2]   returns: [value1 value1 value2]
+	| O_SWAP                             ; takes: [value1 value2]   returns: [value2 value1]
+	| O_POP                              ; takes: [value]           returns: []
+
+	| O_IF opcodes                       ; takes: [bool]            returns: []
+	| O_IF_NOT opcodes                   ; takes: [bool]            returns: []
+	| O_IF_ELSE opcodes opcodes          ; takes: [bool]            returns: [opt value]
+	| O_DO loop-id opcodes               ; takes: []                returns: []
+	| O_LOOP loop-id opcodes opt opcodes ; takes: []                returns: []
+	| O_TRY opcodes opcodes              ; takes: []                returns: []
+	| O_RET                              ; takes: [value]           returns: []
+	| O_RET_VOID                         ; takes: []                returns: []
+	| O_THROW string                     ; takes: [value]           returns: []
+	| O_RETHROW                          ; takes: []                returns: []
+	| O_BREAK loop-id                    ; takes: []                returns: []
+	| O_NEXT loop-id                     ; takes: []                returns: []
+
+	| O_NATIVE native-op                 ; takes: [any value]       returns: [opt value]
+	
+	| O_INT8 int8                        ; takes: []                returns: [int8]
+	| O_UINT8 uint8                      ; takes: []                returns: [uint8]
+	| O_INT16 int16                      ; takes: []                returns: [int16]
+	| O_UINT16 uint16                    ; takes: []                returns: [uint16]
+	| O_INT32 int32                      ; takes: []                returns: [int32]
+	| O_UINT32 uint32                    ; takes: []                returns: [uint32]
+	| O_INT64 int64                      ; takes: []                returns: [int64]
+	| O_UINT64 uint64                    ; takes: []                returns: [uint64]
+	| O_DEC32 float32                    ; takes: []                returns: [float32]
+	| O_DEC64 float64                    ; takes: []                returns: [float64]
+	| O_CHAR uint8                       ; takes: []                returns: [uint8]
+	| O_STRING string                    ; takes: []                returns: [string]
+	| O_TRUE                             ; takes: []                returns: [bool]
+	| O_FALSE                            ; takes: []                returns: [bool]
+	| O_THIS                             ; takes: []                returns: [this]
+	;| O_FUNC
+
+	| O_BLOCK opcodes
+
+	| O_VCASE_ID typeref kind-tag           ; takes: []                returns: [kind-tag]
+	| O_TCASE_ID typeref kind-tag           ; takes: []                returns: [kind-tag]
+	| O_KIND_ID                             ; takes: [kind]            returns: [kind-tag]
+	| O_KIND_SLOT uint8                     ; takes: [tagged-kind]     returns: [value]
+	| O_KIND_VALUE                          ; takes: [value-kind]      returns: [value]
+	| O_UPCAST typeref                      ; takes: [value]           returns: [value']
+	| O_DOWNCAST typeref                    ; takes: [value]           returns: [value']
+	| O_NATIVE_CAST typeref                 ; takes: [value]           returns: [value']
+	| O_OF_TYPE typeref                     ; takes: [value]           returns: [bool]
+	| O_NEW_PTR typeref                     ; takes: [size]            returns: [ptr]
+	| O_PTR_FROM_ADDR typeref               ; takes: [uint64]          returns: [ptr]
+
+	| O_GET_MEMBER member-id                ; takes: [value]           returns: [member-value]
+	| O_SET_MEMBER member-id                ; takes: [value new-value] returns: []
+	| O_TEE_MEMBER member-id                ; takes: [value new-value] returns: [new-value]
+	| O_GET_STATIC_MEMBER typeref member-id ; takes: []                returns: [member-value]
+	| O_SET_STATIC_MEMBER typeref member-id ; takes: [new-value]       returns: []
+	| O_TEE_STATIC_MEMBER typeref member-id ; takes: [new-value]       returns: [new-value]
+
+	| O_DEFAULT_INIT typeref                                ; takes: []                returns: []
+	| O_INIT_THIS_S typeref init-id                         ; takes: []                returns: []
+	| O_INIT_THIS_M typeref init-id opt typevar-inst-ctx    ; takes: [some arg]        returns: []
+	| O_SEND_IS typeref init-id                             ; takes: []                returns: [value]
+	| O_SEND_IM typeref init-id opt typevar-inst-ctx        ; takes: [some arg]        returns: [value]
+	| O_SEND_SS typeref method-id                           ; takes: []                returns: [opt value]
+	| O_SEND_MS typeref method-id opt typevar-inst-ctx      ; takes: [some arg]        returns: [opt value]
+	| O_SEND_SI typeref method-id                           ; takes: [sender]          returns: [opt value]
+	| O_SEND_DYN_SI typeref method-id                       ; takes: [sender]          returns: [opt value]
+	| O_SEND_MI typeref method-id opt typevar-inst-ctx      ; takes: [sender some arg] returns: [opt value]
+	| O_SEND_DYN_MI typeref method-id opt typevar-inst-ctx  ; takes: [sender some arg] returns: [opt value]
+	| O_SEND_C typeref method-id opt typevar-inst-ctx       ; takes: [sender]          returns: [value]
+	| O_SEND_DYN_C typeref method-id opt typevar-inst-ctx   ; takes: [sender]          returns: [value]
+	| O_SEND_BO typeref method-id opt typevar-inst-ctx      ; takes: [sender arg]      returns: [opt value]
+	| O_SEND_DYN_BO typeref method-id opt typevar-inst-ctx  ; takes: [sender arg]      returns: [opt value]
+	| O_SEND_UO typeref method-id                           ; takes: [sender]          returns: [opt value]
+	| O_SEND_DYN_UO typeref method-id                       ; takes: [sender]          returns: [opt value]
+
+	| O_INIT_CLASS typeref                                  ; takes: []                returns: [value]
+	| O_INIT_TKIND typeref kind-tag                         ; takes: [any arg]         returns: [value]
+	| O_INIT_VKIND typeref kind-tag                         ; takes: []                returns: [value]
+	| O_INIT_MULTI_TKIND typeref kind-tag                   ; takes: [any arg]         returns: [value]
+	| O_INIT_MULTI_VKIND typeref kind-tag                   ; takes: []                returns: [value]
+
+	| O_MULTI_KIND_HAS_TAG kind-tag                         ; takes: [value]           returns: [bool]
+	| O_MULTI_KIND_GET_TAG kind-tag                         ; takes: [value]           returns: [value]
+	| O_MULTI_KIND_GET_SLOT kind-tag uint8                  ; takes: [value]           returns: [value]
+]

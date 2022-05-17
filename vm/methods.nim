@@ -19,9 +19,11 @@ public:
         name: string
     
     CastMethod = ref object of Method
+        typevars: TypeVars
         `type`: TypeRef
     
     BinaryMethod = ref object of Method
+        typevars: TypeVars
         param: TypeRef
         name: string
     
