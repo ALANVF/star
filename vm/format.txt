@@ -356,7 +356,7 @@ member: [
 	type: typeref
 ]
 
-tagged-kind: [
+tagged-case: [
 	kind-tag
 	name: string
 	slots: opt [
@@ -366,7 +366,7 @@ tagged-kind: [
 	default-init
 ]
 
-value-kind: [
+value-case: [
 	kind-tag
 	name: string
 	value-init: opt opcodes
@@ -559,7 +559,7 @@ opcode: [
 	| O_TEE_STATIC_FIELD field-id        ; takes: [new-value]       returns: [new-value]
 	
 	| O_DUP                              ; takes: [value1]          returns: [value1 value1]
-	| O_DUP2                             ; takes: [value1 value2]   returns: [value1 value1 value2]
+	| O_DUP2                             ; takes: [value1 value2]   returns: [value1 value2 value1]
 	| O_SWAP                             ; takes: [value1 value2]   returns: [value2 value1]
 	| O_POP                              ; takes: [value]           returns: []
 
