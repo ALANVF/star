@@ -30,6 +30,33 @@ base: [
 		type-id
 		method-id
 	]
+	defaults-types: [
+		default-Value: type-id
+		default-MultiKind: type-id
+		default-Void: type-id
+		default-Bool: type-id
+		default-Int8: type-id
+		default-Int16: type-id
+		default-Int32: type-id
+		default-Int64: type-id
+		default-UInt8: type-id
+		default-UInt16: type-id
+		default-UInt32: type-id
+		default-UInt64: type-id
+		default-Dec32: type-id
+		default-Dec64: type-id
+		default-Char: type-id
+		default-Str: type-id
+		default-Ptr: type-id
+		default-Iterable1: type-id
+		default-Iterable2: type-id
+		default-Iterator1: type-id
+		default-Iterator2: type-id
+		default-Func0: type-id
+		default-Func1: type-id
+		default-Func2: type-id
+		default-Func3: type-id
+	]
 	num-decls: uint32
 	(num-decls) decl
 ]

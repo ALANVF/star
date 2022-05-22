@@ -7,9 +7,12 @@ import std/tables
 
 public:
  type
+    Version = (uint8, uint8, uint8)
     World = ref object
-        typeDecls: Table[TypeID, BaseDecl]
-        entrypoint: ref (TypeID, MethodID)
+        typeDecls: seq[BaseDecl]
+        entrypoint: (TypeID, MethodID)
+
+        version: Version
 
         staticFields: Table[TypeRef, ref seq[Value]]
 

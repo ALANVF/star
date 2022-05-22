@@ -84,6 +84,11 @@ macro public*(tyDecl: untyped): untyped =
     #echo tyDecl[0].astGenRepr
     return tyDecl[0]
 
+iterator times*[T: SomeInteger](count: T): T {.inline.} =
+    for i in 1.T..count:
+        yield i
+
+
 const
     NaN32* = 0x7fc00000'f32
     Inf32* = 0x7f800000'f32
