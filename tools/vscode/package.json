@@ -46,6 +46,6 @@
 		"compile": "reon-convert tj syntaxes/star.reon"
 	},
 	"devDependencies": {
-		"reon-convert": "0.1.12"
+		"reon-convert": "^0.1.15"
 	}
 }
