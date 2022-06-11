@@ -14,7 +14,7 @@ public:
 
         version: Version
 
-        staticFields: Table[TypeRef, ref seq[Value]]
+        staticFields: Table[TypeID, ref seq[Value]]
 
         ptrTypeCache: Table[TypeRef, TypeRef]
         
@@ -44,3 +44,21 @@ proc makePtrTo*(world: World, t: TypeRef): TypeRef =
         let pt = TypeRef(kind: trInst, instID: world.defaultPtr, instCtx: {1.TypeVarID: t}.toTable)
         world.ptrTypeCache[t] = pt
         return pt
+
+proc getOrInitStaticFields*(world: World, decl: BaseDecl): ref seq[Value] =
+    let declID = decl.id
+    if world.staticFields.contains(declID):
+        world.staticFields[declID]
+    else:
+        let members = decl.staticMembers
+        if members == nil:
+            nil
+        else:
+            let numMembers = members[].len
+            if numMembers == 0:
+                nil
+            else:
+                let fields = new seq[Value]
+                newSeq(fields[], numMembers)
+                world.staticFields[declID] = fields
+                fields

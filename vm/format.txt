@@ -63,6 +63,7 @@ base: [
 
 
 decl: [
+	| #{0} category-decl
 	| #{1} opaque-decl
 	| #{2} newtype-decl
 	| #{3} module-decl
@@ -100,6 +101,26 @@ parents: [
 	(size) typeref
 ]
 
+category-decl: [
+	decl-prelude
+
+	path-type: typeref
+	for-type: typeref
+
+	static-members
+
+	static-init
+
+	single-inits
+	multi-inits
+
+	inst-single-methods
+	inst-multi-methods
+	inst-cast-methods
+	binary-methods
+	unary-methods
+]
+
 opaque-decl: [
 	decl-prelude
 
@@ -117,6 +138,8 @@ newtype-decl: [
 	no-inherit: bool
 
 	static-members
+
+	static-init
 
 	inst-single-methods
 	inst-multi-methods
@@ -492,11 +515,43 @@ loop-id: uint8
 
 native-op: uint16
 
+member-mappings: [
+	size: uint8
+	(size) [ member-id [type-id member-id] ]
+]
+case-mappings: [
+	size: uint8
+	(size) [ kind-tag [type-id kind-tag] ]
+]
+init-mappings: [
+	size: uint8
+	(size) [ init-id [type-id init-id] ]
+]
+method-mappings: [
+	size: uint8
+	(size) [ method-id [type-id method-id] ]
+]
 typevar-inst-ctx: [
 	size: uint8
 	(size) [
 		typevar
 		typeref
+		opt [
+			static-members: member-mappings
+			inst-members: member-mappings
+
+			tagged-cases: case-mappings
+			value-cases: case-mappings
+			
+			single-inits: init-mappings
+			multi-inits: init-mappings
+
+			inst-single-methods: method-mappings
+			inst-multi-methods: method-mappings
+			inst-cast-methods: method-mappings
+			binary-methods: method-mappings
+			unary-methods: method-mappings
+		]
 	]
 ]
 

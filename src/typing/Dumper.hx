@@ -2247,11 +2247,13 @@ class Dumper {
 
 		dump(cat.typevars);
 
+		cat.staticInit.toNull()._and(i => writeLine(() -> dump(i)));
 		writeLines(cat.staticMembers, m -> dump(m));
 		writeLines(cat.inits, i -> dump(i));
 		writeLines(cat.staticMethods, m -> dump(m));
 		writeLines(cat.methods, m -> dump(m));
 		writeLines(cat.operators, o -> dump(o));
+		cat.staticDeinit.toNull()._and(d => writeLine(() -> dump(d)));
 	}
 
 	overload function dump(tdecl: TypeDecl) {
@@ -2310,11 +2312,13 @@ class Dumper {
 				write(" ");
 				dump(decl.type, cache);
 
+				decl.staticInit.toNull()._and(i => writeLine(() -> dump(i)));
 				writeLines(decl.staticMembers, m -> dump(m));
 				writeLines(decl.members, m -> dump(m));
 				writeLines(decl.staticMethods, m -> dump(m));
 				writeLines(decl.methods, m -> dump(m));
 				writeLines(decl.operators, o -> dump(o));
+				decl.staticDeinit.toNull()._and(d => writeLine(() -> dump(d)));
 			},
 			at(decl is OpaqueAlias) => {
 				write("(opaquetype ");

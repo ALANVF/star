@@ -98,7 +98,7 @@ proc lookupTypevar(state: State, tv: TypeVar): TypeRef =
         return state.thisTVCtx[][tv.id]
     
     if state.methodTVCtx != nil and state.methodTVCtx.contains(tv):
-        return state.methodTVCtx[tv]
+        return state.methodTVCtx[tv].t
 
     assert(false, "???")
 
@@ -133,7 +133,7 @@ proc staticFieldsFor(state: State, t: TypeRef): ref seq[Value] =
     of trThis:
         return state.staticFields
     else:
-        return state.world.staticFields.getOrDefault(t, nil)
+        return state.world.staticFields.getOrDefault(state.getDecl(t).id, nil)
 
 proc defaultInitFor(state: State, t: TypeRef): nil Opcodes =
     let decl =
@@ -182,6 +182,46 @@ proc ofType(state: State, d1, d2: BaseDecl, ctx1, ctx2: ptr TypeInstCtx): bool =
     # TODO
     false
 
+
+#[proc initStaticFields*(world: World, typeID: TypeID): ref seq[Value] =
+    if world.staticFields.hasKey(typeID):
+        return world.staticFields[typeID]
+
+    let decl = world.typeDecls[typeID]
+    if decl isnot OpaqueDecl:
+        let fields = decl.staticMembers
+        if fields != nil:
+            let numFields = fields[].len
+            if numFields > 0:
+                new result
+                newSeq(result[], numFields)
+                
+
+
+            else:
+                result = nil
+        else:
+            result = nil
+    else:
+        result = nil]#
+
+
+proc newState*(world: World, decl: BaseDecl): State =
+    let declID = decl.id
+    let t = TypeRef(kind: trDecl, declID: declID)
+    let staticFields = world.getOrInitStaticFields(decl)
+
+    return State(
+        world: world,
+        thisDecl: decl,
+        thisType: t,
+        thisValue: nil,
+        thisTVCtx: nil,
+        methodTVCtx: nil,
+        staticFields: staticFields,
+        instFields: nil,
+        stack: @[]
+    )
 
 proc newState(state: State, t: ptr TypeRef, value: ptr Value, methodTCtx: nil TypeVarInstCtx = nil): State =
     let world = state.world
@@ -920,7 +960,7 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
         let arg = state.stack.pop
         let sender = state.stack.pop
         let mstate = state.newState(addr t, addr sender, op.bo_ctx)
-        let mth = mstate.thisDecl.binaryOps[][op.bo_id]
+        let mth = mstate.thisDecl.binaryMethods[][op.bo_id]
         
         let mscope = Scope(locals: @[arg])
 
@@ -945,11 +985,11 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
         var mth: BinaryMethod
         if unlikely(t == sender_t):
             mstate = state.newState(addr t, addr sender, op.bo_ctx)
-            mth = mstate.thisDecl.binaryOps[][op.bo_id]
+            mth = mstate.thisDecl.binaryMethods[][op.bo_id]
         else:
             mstate = state.newState(addr sender_t, addr sender, op.bo_ctx)
             let baseDecl = state.getDecl(t)
-            mth = mstate.thisDecl.binaryOpsVTable[][baseDecl.id][op.bo_id]
+            mth = mstate.thisDecl.binaryMethodVTable[][baseDecl.id][op.bo_id]
         
         let mscope = Scope(locals: @[arg])
 
@@ -968,7 +1008,7 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
 
         let sender = state.stack.pop
         let mstate = state.newState(addr t, addr sender)
-        let mth = mstate.thisDecl.unaryOps[][op.uo_id]
+        let mth = mstate.thisDecl.unaryMethods[][op.uo_id]
         
         let mscope = Scope(locals: @[])
 
@@ -992,11 +1032,11 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
         var mth: UnaryMethod
         if unlikely(t == sender_t):
             mstate = state.newState(addr t, addr sender)
-            mth = mstate.thisDecl.unaryOps[][op.uo_id]
+            mth = mstate.thisDecl.unaryMethods[][op.uo_id]
         else:
             mstate = state.newState(addr sender_t, addr sender)
             let baseDecl = state.getDecl(t)
-            mth = mstate.thisDecl.unaryOpsVTable[][baseDecl.id][op.uo_id]
+            mth = mstate.thisDecl.unaryMethodVTable[][baseDecl.id][op.uo_id]
         
         let mscope = Scope(locals: @[])
 

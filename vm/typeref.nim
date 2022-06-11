@@ -18,8 +18,22 @@ public:
         of trTypeVar:
             tvar: TypeVar
         of trThis: nil
+
+public:
+ type
+    TypeVarInstCtxEntryMappings = tuple
+        staticMembers, instMembers: Table[MemberID, (TypeID, MemberID)]
+        taggedCases, valueCases: Table[KindTag, (TypeID, KindTag)]
+        singleInits, multiInits: Table[InitID, (TypeID, InitID)]
+        staticSingleMethods, staticMultiMethods,
+            instSingleMethods, instMultiMethods, instCastMethods,
+            binaryMethods, unaryMethods: Table[MethodID, (TypeID, MethodID)]
+        
+    TypeVarInstCtxEntry = tuple
+        t: TypeRef
+        mappings: ref TypeVarInstCtxEntryMappings
     
-    TypeVarInstCtx = TableRef[TypeVar, TypeRef] not nil
+    TypeVarInstCtx = TableRef[TypeVar, TypeVarInstCtxEntry] not nil
 
 func `==`*(t1, t2: TypeRef): bool =
     t1.kind == t2.kind and (

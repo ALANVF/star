@@ -9,6 +9,8 @@ class StrongAlias extends Alias {
 	final members: Array<Member> = [];
 	final methods: Array<Method> = [];
 	final operators: Array<Operator> = [];
+	var staticInit: Option<StaticInit> = None;
+	var staticDeinit: Option<StaticDeinit> = None;
 	var noInherit: Bool = false;
 
 	static function fromAST(lookup, ast: parsing.ast.decls.Alias) {
@@ -56,6 +58,10 @@ class StrongAlias extends Alias {
 				case DMethod(m): alias.methods.push(Method.fromAST(alias, m));
 	
 				case DOperator(o): Operator.fromAST(alias, o).forEach(x -> alias.operators.push(x));
+
+				case DDefaultInit(i) if(alias.staticInit.isSome()): alias.staticInit = Some(StaticInit.fromAST(alias, i));
+				
+				case DDeinit(d) if(alias.staticDeinit.isSome()): alias.staticDeinit = Some(StaticDeinit.fromAST(alias, d));
 	
 				default: alias.errors.push(Type_UnexpectedDecl(alias, decl));
 			}

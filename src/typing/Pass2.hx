@@ -363,6 +363,8 @@ static function resolveDecl(ctx: Ctx, decl: TypeDecl) {
 			for(m in sa.members) resolveMember(ctx, m);
 			for(m in sa.methods) resolveMethod(ctx, m);
 			for(o in sa.operators) resolveOperator(ctx, o);
+			sa.staticInit.forEach(i -> resolveEmptyMethod(ctx, i));
+			sa.staticDeinit.forEach(i -> resolveEmptyMethod(ctx, i));
 		},
 		at(oa is OpaqueAlias) => {
 			for(m in oa.staticMethods) resolveStaticMethod(ctx, m);
@@ -383,6 +385,8 @@ static function resolveCategory(ctx: Ctx, category: Category) {
 	for(m in category.methods) resolveMethod(ctx, m);
 	for(i in category.inits) resolveInit(ctx, i);
 	for(o in category.operators) resolveOperator(ctx, o);
+	category.staticInit.forEach(i -> resolveEmptyMethod(ctx, i));
+	category.staticDeinit.forEach(i -> resolveEmptyMethod(ctx, i));
 }
 
 

@@ -8,9 +8,12 @@ import methods
 import world
 import std/tables
 import std/streams
+import std/typetraits
 
 {.experimental: "notNil".}
+{.push warning[User]: off.}
 {.experimental: "codeReordering".}
+{.pop.}
 
 public:
  type
@@ -54,7 +57,7 @@ proc readVStr(input: Input): string =
     return input.readStr(size.int)
 
 
-proc load*(input: Input): World =
+proc loadWorld*(input: Input): World =
     result = World()
     
     if input.readStr(6) != "STARVM":
@@ -117,6 +120,7 @@ proc load*(input: Input): World =
 
 proc readDecl(input: Input): BaseDecl =
     case input.readUint8
+    of 0: input.readCategoryDecl
     of 1: input.readOpaqueDecl
     of 2: input.readNewtypeDecl
     of 3: input.readModuleDecl
@@ -153,6 +157,26 @@ proc readParents(input: Input, parents: var seq[TypeRef]) =
     for i in 0'u8..<size:
         input.readTypeRef parents[i]
 
+proc readCategoryDecl(input: Input): CategoryDecl =
+    result = CategoryDecl()
+    input.readDeclPrelude result
+
+    input.readTypeRef result.pathType
+    input.readTypeRef result.forType
+
+    input.readMembers result.staticMembers
+
+    input.readOptOpcodes result.staticInit
+
+    input.readSingleInits result.singleInits
+    input.readMultiInits result.multiInits
+
+    input.readSingleMethods result.instSingleMethods
+    input.readMultiMethods result.instMultiMethods
+    input.readCastMethods result.instCastMethods
+    input.readBinaryMethods result.binaryMethods
+    input.readUnaryMethods result.unaryMethods
+
 proc readOpaqueDecl(input: Input): OpaqueDecl =
     result = OpaqueDecl()
     input.readDeclPrelude result
@@ -160,8 +184,8 @@ proc readOpaqueDecl(input: Input): OpaqueDecl =
     input.readSingleMethods result.instSingleMethods
     input.readMultiMethods result.instMultiMethods
     input.readCastMethods result.instCastMethods
-    input.readBinaryMethods result.binaryOps
-    input.readUnaryMethods result.unaryOps
+    input.readBinaryMethods result.binaryMethods
+    input.readUnaryMethods result.unaryMethods
 
 proc readNewtypeDecl(input: Input): NewtypeDecl =
     result = NewtypeDecl()
@@ -172,11 +196,13 @@ proc readNewtypeDecl(input: Input): NewtypeDecl =
 
     input.readMembers result.staticMembers
 
+    input.readOptOpcodes result.staticInit
+
     input.readSingleMethods result.instSingleMethods
     input.readMultiMethods result.instMultiMethods
     input.readCastMethods result.instCastMethods
-    input.readBinaryMethods result.binaryOps
-    input.readUnaryMethods result.unaryOps
+    input.readBinaryMethods result.binaryMethods
+    input.readUnaryMethods result.unaryMethods
 
 proc readModuleDecl(input: Input): ModuleDecl =
     result = ModuleDecl()
@@ -209,14 +235,14 @@ proc readClassDecl(input: Input): ClassDecl =
     input.readSingleMethods result.instSingleMethods
     input.readMultiMethods result.instMultiMethods
     input.readCastMethods result.instCastMethods
-    input.readBinaryMethods result.binaryOps
-    input.readUnaryMethods result.unaryOps
+    input.readBinaryMethods result.binaryMethods
+    input.readUnaryMethods result.unaryMethods
 
     input.readVTableMethods result.instSingleMethodVTable, readSingleMethods
     input.readVTableMethods result.instMultiMethodVTable, readMultiMethods
     input.readVTableMethods result.instCastMethodVTable, readCastMethods
-    input.readVTableMethods result.binaryOpVTable, readBinaryMethods
-    input.readVTableMethods result.unaryOpVTable, readUnaryMethods
+    input.readVTableMethods result.binaryMethodVTable, readBinaryMethods
+    input.readVTableMethods result.unaryMethodVTable, readUnaryMethods
 
     input.readOptOpcodes result.deinit
     input.readOptOpcodes result.staticDeinit
@@ -239,14 +265,14 @@ proc readProtocolDecl(input: Input): ProtocolDecl =
     input.readSingleMethods result.instSingleMethods
     input.readMultiMethods result.instMultiMethods
     input.readCastMethods result.instCastMethods
-    input.readBinaryMethods result.binaryOps
-    input.readUnaryMethods result.unaryOps
+    input.readBinaryMethods result.binaryMethods
+    input.readUnaryMethods result.unaryMethods
 
     input.readVTableMethods result.instSingleMethodVTable, readSingleMethods
     input.readVTableMethods result.instMultiMethodVTable, readMultiMethods
     input.readVTableMethods result.instCastMethodVTable, readCastMethods
-    input.readVTableMethods result.binaryOpVTable, readBinaryMethods
-    input.readVTableMethods result.unaryOpVTable, readUnaryMethods
+    input.readVTableMethods result.binaryMethodVTable, readBinaryMethods
+    input.readVTableMethods result.unaryMethodVTable, readUnaryMethods
 
     input.readOptOpcodes result.deinit
     input.readOptOpcodes result.staticDeinit
@@ -269,14 +295,14 @@ proc readTaggedKindDecl(input: Input): TaggedKindDecl =
     input.readSingleMethods result.instSingleMethods
     input.readMultiMethods result.instMultiMethods
     input.readCastMethods result.instCastMethods
-    input.readBinaryMethods result.binaryOps
-    input.readUnaryMethods result.unaryOps
+    input.readBinaryMethods result.binaryMethods
+    input.readUnaryMethods result.unaryMethods
 
     input.readVTableMethods result.instSingleMethodVTable, readSingleMethods
     input.readVTableMethods result.instMultiMethodVTable, readMultiMethods
     input.readVTableMethods result.instCastMethodVTable, readCastMethods
-    input.readVTableMethods result.binaryOpVTable, readBinaryMethods
-    input.readVTableMethods result.unaryOpVTable, readUnaryMethods
+    input.readVTableMethods result.binaryMethodVTable, readBinaryMethods
+    input.readVTableMethods result.unaryMethodVTable, readUnaryMethods
 
     input.readOptOpcodes result.deinit
     input.readOptOpcodes result.staticDeinit
@@ -302,14 +328,14 @@ proc readValueKindDecl(input: Input): ValueKindDecl =
     input.readSingleMethods result.instSingleMethods
     input.readMultiMethods result.instMultiMethods
     input.readCastMethods result.instCastMethods
-    input.readBinaryMethods result.binaryOps
-    input.readUnaryMethods result.unaryOps
+    input.readBinaryMethods result.binaryMethods
+    input.readUnaryMethods result.unaryMethods
 
     input.readVTableMethods result.instSingleMethodVTable, readSingleMethods
     input.readVTableMethods result.instMultiMethodVTable, readMultiMethods
     input.readVTableMethods result.instCastMethodVTable, readCastMethods
-    input.readVTableMethods result.binaryOpVTable, readBinaryMethods
-    input.readVTableMethods result.unaryOpVTable, readUnaryMethods
+    input.readVTableMethods result.binaryMethodVTable, readBinaryMethods
+    input.readVTableMethods result.unaryMethodVTable, readUnaryMethods
 
     input.readOptOpcodes result.deinit
     input.readOptOpcodes result.staticDeinit
@@ -544,7 +570,24 @@ proc readOptTypeVarInstCtx(input: Input, ctx: var nil TypeVarInstCtx) =
         for _ in times(size):
             var id: TypeVar
             input.readTypeVar id
-            input.readTypeRef ctx[][id]
+
+            let entry = addr ctx[][id]
+            input.readTypeRef entry[].t
+            if input.readBool:
+                new entry[].mappings
+                let mappings = entry[].mappings
+
+                for value in fields(mappings[]):
+                    let size = input.readUint8
+                    if size > 0:
+                        type T = typeof(value).genericParams.get(0)
+                        initTable value, size.int
+                        for _ in times(size):
+                            value[input.readIntType(T)] = (input.readTypeID, input.readIntType(T))
+
+            else:
+                entry[].mappings = nil
+
 
 proc readOpcode(input: Input, op: var Opcode)
 proc readOpcodes(input: Input, ops: var Opcodes) =

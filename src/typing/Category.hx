@@ -15,6 +15,8 @@ class Category extends AnyTypeDecl {
 	final methods: Array<Method> = [];
 	final inits: Array<Init> = [];
 	final operators: Array<Operator> = [];
+	var staticInit: Option<StaticInit> = None;
+	var staticDeinit: Option<StaticDeinit> = None;
 	var hidden: Null<Option<Type>> = null;
 	final friends: Array<Type> = [];
 
@@ -59,6 +61,10 @@ class Category extends AnyTypeDecl {
 			case DInit(i): category.inits.push(Init.fromAST(category, i));
 
 			case DOperator(o): Operator.fromAST(category, o).forEach(x -> category.operators.push(x));
+
+			case DDefaultInit(i) if(category.staticInit.isSome()): category.staticInit = Some(StaticInit.fromAST(category, i));
+			
+			case DDeinit(d) if(category.staticDeinit.isSome()): category.staticDeinit = Some(StaticDeinit.fromAST(category, d));
 
 			default: category.errors.push(Type_UnexpectedDecl(category, decl));
 		}

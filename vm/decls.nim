@@ -19,14 +19,29 @@ public:
 
         staticSingleMethods: Table[MethodID, SingleMethod]
         staticMultiMethods: Table[MethodID, MultiMethod]
+    
+    CategoryDecl = ref object of BaseDecl
+        pathType, forType: TypeRef
+
+        staticMembers: Table[MemberID, Member]
+
+        staticInit: nil Opcodes
+
+        singleInits: Table[InitID, SingleInit]
+        multiInits: Table[InitID, MultiInit]
+
+        instSingleMethods: Table[MethodID, SingleMethod]
+        instMultiMethods: Table[MethodID, MultiMethod]
+        instCastMethods: Table[MethodID, CastMethod]
+        binaryMethods: Table[MethodID, BinaryMethod]
+        unaryMethods: Table[MethodID, UnaryMethod]
 
     OpaqueDecl = ref object of BaseDecl
         instSingleMethods: Table[MethodID, SingleMethod]
         instMultiMethods: Table[MethodID, MultiMethod]
         instCastMethods: Table[MethodID, CastMethod]
-        
-        binaryOps: Table[MethodID, BinaryMethod]
-        unaryOps: Table[MethodID, UnaryMethod]
+        binaryMethods: Table[MethodID, BinaryMethod]
+        unaryMethods: Table[MethodID, UnaryMethod]
 
     NewtypeDecl = ref object of BaseDecl
         base: TypeRef
@@ -34,13 +49,14 @@ public:
         
         staticMembers: Table[MemberID, Member]
         #instMembers: Table[MemberID, Member]
+
+        staticInit: nil Opcodes
         
         instSingleMethods: Table[MethodID, SingleMethod]
         instMultiMethods: Table[MethodID, MultiMethod]
         instCastMethods: Table[MethodID, CastMethod]
-        
-        binaryOps: Table[MethodID, BinaryMethod]
-        unaryOps: Table[MethodID, UnaryMethod]
+        binaryMethods: Table[MethodID, BinaryMethod]
+        unaryMethods: Table[MethodID, UnaryMethod]
     
     ModuleDecl = ref object of BaseDecl
         parents: seq[TypeRef]
@@ -67,15 +83,14 @@ public:
         instSingleMethods: Table[MethodID, SingleMethod]
         instMultiMethods: Table[MethodID, MultiMethod]
         instCastMethods: Table[MethodID, CastMethod]
-        
-        binaryOps: Table[MethodID, BinaryMethod]
-        unaryOps: Table[MethodID, UnaryMethod]
+        binaryMethods: Table[MethodID, BinaryMethod]
+        unaryMethods: Table[MethodID, UnaryMethod]
 
         instSingleMethodVTable: Table[TypeID, Table[MethodID, SingleMethod]]
         instMultiMethodVTable: Table[TypeID, Table[MethodID, MultiMethod]]
         instCastMethodVTable: Table[TypeID, Table[MethodID, CastMethod]]
-        binaryOpVTable: Table[TypeID, Table[MethodID, BinaryMethod]]
-        unaryOpVTable: Table[TypeID, Table[MethodID, UnaryMethod]]
+        binaryMethodVTable: Table[TypeID, Table[MethodID, BinaryMethod]]
+        unaryMethodVTable: Table[TypeID, Table[MethodID, UnaryMethod]]
 
         deinit: nil Opcodes
         staticDeinit: nil Opcodes
@@ -95,15 +110,14 @@ public:
         instSingleMethods: Table[MethodID, SingleMethod]
         instMultiMethods: Table[MethodID, MultiMethod]
         instCastMethods: Table[MethodID, CastMethod]
-        
-        binaryOps: Table[MethodID, BinaryMethod]
-        unaryOps: Table[MethodID, UnaryMethod]
+        binaryMethods: Table[MethodID, BinaryMethod]
+        unaryMethods: Table[MethodID, UnaryMethod]
 
         instSingleMethodVTable: Table[TypeID, Table[MethodID, SingleMethod]]
         instMultiMethodVTable: Table[TypeID, Table[MethodID, MultiMethod]]
         instCastMethodVTable: Table[TypeID, Table[MethodID, CastMethod]]
-        binaryOpVTable: Table[TypeID, Table[MethodID, BinaryMethod]]
-        unaryOpVTable: Table[TypeID, Table[MethodID, UnaryMethod]]
+        binaryMethodVTable: Table[TypeID, Table[MethodID, BinaryMethod]]
+        unaryMethodVTable: Table[TypeID, Table[MethodID, UnaryMethod]]
 
         deinit: nil Opcodes
         staticDeinit: nil Opcodes
@@ -123,15 +137,14 @@ public:
         instSingleMethods: Table[MethodID, SingleMethod]
         instMultiMethods: Table[MethodID, MultiMethod]
         instCastMethods: Table[MethodID, CastMethod]
-        
-        binaryOps: Table[MethodID, BinaryMethod]
-        unaryOps: Table[MethodID, UnaryMethod]
+        binaryMethods: Table[MethodID, BinaryMethod]
+        unaryMethods: Table[MethodID, UnaryMethod]
 
         instSingleMethodVTable: Table[TypeID, Table[MethodID, SingleMethod]]
         instMultiMethodVTable: Table[TypeID, Table[MethodID, MultiMethod]]
         instCastMethodVTable: Table[TypeID, Table[MethodID, CastMethod]]
-        binaryOpVTable: Table[TypeID, Table[MethodID, BinaryMethod]]
-        unaryOpVTable: Table[TypeID, Table[MethodID, UnaryMethod]]
+        binaryMethodVTable: Table[TypeID, Table[MethodID, BinaryMethod]]
+        unaryMethodVTable: Table[TypeID, Table[MethodID, UnaryMethod]]
 
         deinit: nil Opcodes
         staticDeinit: nil Opcodes
@@ -150,15 +163,14 @@ public:
         instSingleMethods: Table[MethodID, SingleMethod]
         instMultiMethods: Table[MethodID, MultiMethod]
         instCastMethods: Table[MethodID, CastMethod]
-        
-        binaryOps: Table[MethodID, BinaryMethod]
-        unaryOps: Table[MethodID, UnaryMethod]
+        binaryMethods: Table[MethodID, BinaryMethod]
+        unaryMethods: Table[MethodID, UnaryMethod]
 
         instSingleMethodVTable: Table[TypeID, Table[MethodID, SingleMethod]]
         instMultiMethodVTable: Table[TypeID, Table[MethodID, MultiMethod]]
         instCastMethodVTable: Table[TypeID, Table[MethodID, CastMethod]]
-        binaryOpVTable: Table[TypeID, Table[MethodID, BinaryMethod]]
-        unaryOpVTable: Table[TypeID, Table[MethodID, UnaryMethod]]
+        binaryMethodVTable: Table[TypeID, Table[MethodID, BinaryMethod]]
+        unaryMethodVTable: Table[TypeID, Table[MethodID, UnaryMethod]]
 
         deinit: nil Opcodes
         staticDeinit: nil Opcodes
@@ -183,7 +195,7 @@ macro genAccessor(name: untyped, types: untyped, ret: untyped): untyped =
     let decl = newIdentNode("decl")
     let first = quote:
         method `name`*(`decl`: BaseDecl): `ret` {.base.} =
-            raise newException(ValueError, "bad")
+            return nil
     
     let res = newStmtList(first)
     
@@ -204,26 +216,27 @@ macro genAccessor(name: untyped, types: untyped, ret: untyped): untyped =
 
 # TODO: figure out better accessors for NewtypeDecl
 
-genAccessor staticMembers, (NewtypeDecl, ModuleDecl, ClassDecl, ProtocolDecl, TaggedKindDecl, ValueKindDecl), ptr Table[MemberID, Member]
+genAccessor staticMembers, (CategoryDecl, NewtypeDecl, ModuleDecl, ClassDecl, ProtocolDecl, TaggedKindDecl, ValueKindDecl), ptr Table[MemberID, Member]
 
 genAccessor instMembers, (ClassDecl, ProtocolDecl, TaggedKindDecl), ptr Table[MemberID, Member]
 
-genAccessor singleInits, (ClassDecl, ProtocolDecl), ptr Table[InitID, SingleInit]
-genAccessor multiInits, (ClassDecl, ProtocolDecl), ptr Table[InitID, MultiInit]
+genAccessor singleInits, (CategoryDecl, ClassDecl, ProtocolDecl), ptr Table[InitID, SingleInit]
+genAccessor multiInits, (CategoryDecl, ClassDecl, ProtocolDecl), ptr Table[InitID, MultiInit]
 
-genAccessor instSingleMethods, (OpaqueDecl, NewtypeDecl, ClassDecl, ProtocolDecl, TaggedKindDecl, ValueKindDecl), ptr Table[MethodID, SingleMethod]
-genAccessor instMultiMethods, (OpaqueDecl, NewtypeDecl, ClassDecl, ProtocolDecl, TaggedKindDecl, ValueKindDecl), ptr Table[MethodID, MultiMethod]
-genAccessor instCastMethods, (OpaqueDecl, NewtypeDecl, ClassDecl, ProtocolDecl, TaggedKindDecl, ValueKindDecl), ptr Table[MethodID, CastMethod]
+genAccessor instSingleMethods, (CategoryDecl, OpaqueDecl, NewtypeDecl, ClassDecl, ProtocolDecl, TaggedKindDecl, ValueKindDecl), ptr Table[MethodID, SingleMethod]
+genAccessor instMultiMethods, (CategoryDecl, OpaqueDecl, NewtypeDecl, ClassDecl, ProtocolDecl, TaggedKindDecl, ValueKindDecl), ptr Table[MethodID, MultiMethod]
+genAccessor instCastMethods, (CategoryDecl, OpaqueDecl, NewtypeDecl, ClassDecl, ProtocolDecl, TaggedKindDecl, ValueKindDecl), ptr Table[MethodID, CastMethod]
 
-genAccessor binaryOps, (OpaqueDecl, NewtypeDecl, ClassDecl, ProtocolDecl, TaggedKindDecl, ValueKindDecl), ptr Table[MethodID, BinaryMethod]
-genAccessor unaryOps, (OpaqueDecl, NewtypeDecl, ClassDecl, ProtocolDecl, TaggedKindDecl, ValueKindDecl), ptr Table[MethodID, UnaryMethod]
+genAccessor binaryMethods, (CategoryDecl, OpaqueDecl, NewtypeDecl, ClassDecl, ProtocolDecl, TaggedKindDecl, ValueKindDecl), ptr Table[MethodID, BinaryMethod]
+genAccessor unaryMethods, (CategoryDecl, OpaqueDecl, NewtypeDecl, ClassDecl, ProtocolDecl, TaggedKindDecl, ValueKindDecl), ptr Table[MethodID, UnaryMethod]
 
 genAccessor instSingleMethodVTable, (ClassDecl, ProtocolDecl, TaggedKindDecl, ValueKindDecl), ptr Table[TypeID, Table[MethodID, SingleMethod]]
 genAccessor instMultiMethodVTable, (ClassDecl, ProtocolDecl, TaggedKindDecl, ValueKindDecl), ptr Table[TypeID, Table[MethodID, MultiMethod]]
 genAccessor instCastMethodVTable, (ClassDecl, ProtocolDecl, TaggedKindDecl, ValueKindDecl), ptr Table[TypeID, Table[MethodID, CastMethod]]
-genAccessor binaryOpVTable, (ClassDecl, ProtocolDecl, TaggedKindDecl, ValueKindDecl), ptr Table[TypeID, Table[MethodID, BinaryMethod]]
-genAccessor unaryOpVTable, (ClassDecl, ProtocolDecl, TaggedKindDecl, ValueKindDecl), ptr Table[TypeID, Table[MethodID, UnaryMethod]]
+genAccessor binaryMethodVTable, (ClassDecl, ProtocolDecl, TaggedKindDecl, ValueKindDecl), ptr Table[TypeID, Table[MethodID, BinaryMethod]]
+genAccessor unaryMethodVTable, (ClassDecl, ProtocolDecl, TaggedKindDecl, ValueKindDecl), ptr Table[TypeID, Table[MethodID, UnaryMethod]]
 
 genAccessor parents, (ModuleDecl, ClassDecl, ProtocolDecl, TaggedKindDecl, ValueKindDecl), ptr seq[TypeRef]
 
+genAccessor staticInit, (CategoryDecl, NewtypeDecl, ModuleDecl, ClassDecl, ProtocolDecl, TaggedKindDecl), nil Opcodes
 genAccessor defaultInit, (ClassDecl, ProtocolDecl, TaggedKindDecl), nil Opcodes
