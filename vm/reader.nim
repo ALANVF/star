@@ -31,7 +31,7 @@ proc readIntType(input: Input, t: typedesc): t {.inline.} =
     elif t is uint64: input.readUint64
 
 template genReadIntType(t: typedesc): untyped =
-    proc `read t`(input: Input): t {.inline.} = input.readIntType(t)
+    proc `read t`(input: Input): t {.inline.} = input.readIntType(t).pred # bytecode uses 1-based ids
 
 proc initTable[K, V](table: var Table[K, V], initialSize: int) {.inline.} =
     table = initTable[K, V](initialSize)
@@ -177,6 +177,8 @@ proc readCategoryDecl(input: Input): CategoryDecl =
     input.readBinaryMethods result.binaryMethods
     input.readUnaryMethods result.unaryMethods
 
+    input.readOptOpcodes result.staticDeinit
+
 proc readOpaqueDecl(input: Input): OpaqueDecl =
     result = OpaqueDecl()
     input.readDeclPrelude result
@@ -204,18 +206,23 @@ proc readNewtypeDecl(input: Input): NewtypeDecl =
     input.readBinaryMethods result.binaryMethods
     input.readUnaryMethods result.unaryMethods
 
+    input.readOptOpcodes result.staticDeinit
+
 proc readModuleDecl(input: Input): ModuleDecl =
     result = ModuleDecl()
     input.readDeclPrelude result
 
     input.readParents result.parents
-    result.isMain = input.readBool
+    {.cast(uncheckedAssign).}:
+        result.isMain = input.readBool
     if result.isMain:
         result.main = input.readMethodID
     
     input.readMembers result.staticMembers
 
     input.readOptOpcodes result.staticInit
+
+    input.readOptOpcodes result.staticDeinit
 
 proc readClassDecl(input: Input): ClassDecl =
     result = ClassDecl()
@@ -267,7 +274,7 @@ proc readProtocolDecl(input: Input): ProtocolDecl =
     input.readCastMethods result.instCastMethods
     input.readBinaryMethods result.binaryMethods
     input.readUnaryMethods result.unaryMethods
-
+    
     input.readVTableMethods result.instSingleMethodVTable, readSingleMethods
     input.readVTableMethods result.instMultiMethodVTable, readMultiMethods
     input.readVTableMethods result.instCastMethodVTable, readCastMethods
@@ -371,7 +378,6 @@ proc readMethodPrelude[T: Method](input: Input, mth: T) =
 proc readSingleMethod(input: Input): SingleMethod =
     result = SingleMethod(body: cast[Opcodes](nil))
     input.readMethodPrelude result
-
     input.readVStr result.name
 
 proc readMultiMethod(input: Input): MultiMethod =
@@ -528,7 +534,8 @@ proc readValueCases(input: Input, cases: var Table[KindTag, ValueCase]) =
 
 proc readTypeInstCtx(input: Input, ctx: var TypeInstCtx)
 proc readTypeRef(input: Input, tref: var TypeRef) =
-    tref.kind = KTypeRef(input.readUint8)
+    {.cast(uncheckedAssign).}:
+        tref.kind = KTypeRef(input.readUint8)
     case tref.kind
     of trDecl:
         tref.declID = input.readTypeID
@@ -545,7 +552,9 @@ proc readTypeInstCtx(input: Input, ctx: var TypeInstCtx) =
     initTable ctx, size.int
     for _ in times(size):
         let id = input.readTypeVarID
-        input.readTypeRef ctx[id]
+        var t: TypeRef
+        input.readTypeRef t
+        ctx[id] = t
 
 proc readTypeVar(input: Input, tvar: var TypeVar) =
     tvar.kind = KTypeVar(input.readUint8)
@@ -570,6 +579,8 @@ proc readOptTypeVarInstCtx(input: Input, ctx: var nil TypeVarInstCtx) =
         for _ in times(size):
             var id: TypeVar
             input.readTypeVar id
+            
+            ctx[][id] = default typeof ctx[][id]
 
             let entry = addr ctx[][id]
             input.readTypeRef entry[].t
@@ -600,14 +611,18 @@ proc readOpcodes(input: Input, ops: var Opcodes) =
 
 proc readOptOpcodes(input: Input, ops: var nil Opcodes) =
     let size = input.readUint32
-    new ops
-    ops[].setLen(size)
-    shallow ops[]
-    for i in 0..<size:
-        input.readOpcode ops[][i]
+    if size == 0:
+        ops = nil
+    else:
+        new ops
+        ops[].setLen(size)
+        shallow ops[]
+        for i in 0..<size:
+            input.readOpcode ops[][i]
 
 proc readOpcode(input: Input, op: var Opcode) =
-    op.kind = KOpcode(input.readUint8)
+    {.cast(uncheckedAssign).}:
+        op.kind = KOpcode(input.readUint8)
     case op.kind
     of oNewLocal, oDup..oPop, oRet, oRetVoid, oRethrow, oTrue..oThis, oKindID, oKindValue:
         discard

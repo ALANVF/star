@@ -191,6 +191,18 @@ class Main {
 
 			final gen = new codegen.Gen(stdlibDump);
 
+			{
+				final proto = cast(typing.Pass2.STD_Value, typing.Protocol);
+				gen.write(proto);
+				gen.newline();
+			}
+
+			{
+				final proto = cast(typing.Pass2.STD_MultiKind, typing.Protocol);
+				gen.write(proto);
+				gen.newline();
+			}
+
 			//gen.write("Star.Core.Int:");
 			//gen.newline();
 			typing.Pass2.STD_Int._match(
@@ -284,6 +296,19 @@ class Main {
 					}
 				},
 				_ => throw "internal error: Star.Core.Array should be a multi type!"
+			);
+
+			stdlib.findType(
+				List3.of([null, "Star", []], [null, "Native", []], [null, "Ptr", []]),
+				Start,
+				null
+			)._match(
+				at({t: TConcrete(decl) | TModular({t: TConcrete(decl)}, _)}) => {
+					final cls = cast(decl, typing.Class);
+					gen.write(cls);
+					gen.newline();
+				},
+				_ => throw "internal error: Star.Native.Ptr should be a concrete type!"
 			);
 			
 			{

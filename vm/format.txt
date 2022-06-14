@@ -84,10 +84,7 @@ decl-prelude: [
 
 typevars: [
 	size: uint8
-	(size) [
-		typevar-id
-		typevar-decl
-	]
+	(size) typevar-decl
 ]
 
 typevar-decl: [

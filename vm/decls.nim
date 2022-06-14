@@ -36,6 +36,8 @@ public:
         binaryMethods: Table[MethodID, BinaryMethod]
         unaryMethods: Table[MethodID, UnaryMethod]
 
+        staticDeinit: nil Opcodes
+
     OpaqueDecl = ref object of BaseDecl
         instSingleMethods: Table[MethodID, SingleMethod]
         instMultiMethods: Table[MethodID, MultiMethod]
@@ -57,6 +59,8 @@ public:
         instCastMethods: Table[MethodID, CastMethod]
         binaryMethods: Table[MethodID, BinaryMethod]
         unaryMethods: Table[MethodID, UnaryMethod]
+
+        staticDeinit: nil Opcodes
     
     ModuleDecl = ref object of BaseDecl
         parents: seq[TypeRef]
@@ -67,6 +71,8 @@ public:
         staticMembers: Table[MemberID, Member]
 
         staticInit: nil Opcodes
+
+        staticDeinit: nil Opcodes
     
     ClassDecl = ref object of BaseDecl
         parents: seq[TypeRef]
@@ -238,5 +244,8 @@ genAccessor unaryMethodVTable, (ClassDecl, ProtocolDecl, TaggedKindDecl, ValueKi
 
 genAccessor parents, (ModuleDecl, ClassDecl, ProtocolDecl, TaggedKindDecl, ValueKindDecl), ptr seq[TypeRef]
 
-genAccessor staticInit, (CategoryDecl, NewtypeDecl, ModuleDecl, ClassDecl, ProtocolDecl, TaggedKindDecl), nil Opcodes
+genAccessor staticInit, (CategoryDecl, NewtypeDecl, ModuleDecl, ClassDecl, ProtocolDecl, TaggedKindDecl, ValueKindDecl), nil Opcodes
 genAccessor defaultInit, (ClassDecl, ProtocolDecl, TaggedKindDecl), nil Opcodes
+
+genAccessor deinit, (ClassDecl, ProtocolDecl, TaggedKindDecl), nil Opcodes
+genAccessor staticDeinit, (CategoryDecl, NewtypeDecl, ModuleDecl, ClassDecl, ProtocolDecl, TaggedKindDecl, ValueKindDecl), nil Opcodes

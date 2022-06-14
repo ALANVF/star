@@ -653,7 +653,17 @@ class Gen {
 							ops.push(OGetLocal(name));
 						}
 					});
-					ops.push(ONative(native));
+					if(native == "ptr_new") {
+						final elemType = init.decl.getNative()._match(
+							at(null) => throw "bad",
+							at(NPtr(elem)) => elem,
+							_ => throw "bad"
+						);
+						final elemRef = CodeGen.world.getTypeRef(elemType);
+						ops.push(ONewPtr(elemRef));
+					} else {
+						ops.push(ONative(native));
+					}
 					ops.push(ORet);
 					writeBlock(ops);
 				}

@@ -62,7 +62,7 @@ func makeUInt64(state: State, value: uint64, t = state.world.defaultUInt64Ref): 
 func makeDec32(state: State, value: float32, t = state.world.defaultDec32Ref): Value = Value(t: t, kind: vDec32, d32: value)
 func makeDec64(state: State, value: float64, t = state.world.defaultDec64Ref): Value = Value(t: t, kind: vDec64, d64: value)
 func makeBool(state: State, value: bool, t = state.world.defaultBoolRef): Value = Value(t: t, kind: vBool, b: value)
-func makeChar(state: State, value: char|uint8, t = state.world.defaultCharRef): Value = Value(t: t, kind: vUInt8, u8: value.uint8)
+func makeChar(state: State, value: uint8, t = state.world.defaultCharRef): Value = Value(t: t, kind: vUInt8, u8: value.uint8)
 func makeKindID(state: State, value: KindTag): Value =
     when KindTag is int8: makeInt8(state, value)
     elif KindTag is uint8: makeUInt8(state, value)
@@ -78,7 +78,7 @@ func makeStr(state: State, value: string): Value =
     var buf: seq[Value]
     newSeq(buf, value.len)
     for i, c in value.pairs:
-        buf[i] = state.makeChar(c)
+        buf[i] = state.makeChar(c.uint8)
     
     let rbuf = new(seq[Value])
     rbuf[] = buf
@@ -123,9 +123,16 @@ proc getInCtx(state: State, tref: TypeRef): TypeRef =
 proc getDecl(state: State, tref: TypeRef): BaseDecl =
     case tref.kind
     of trDecl: state.world.typeDecls[tref.declID]
-    of trInst: state.world.typeDecls[tref.declID]
+    of trInst: state.world.typeDecls[tref.instID]
     of trThis: state.thisDecl
-    of trTypeVar: raise newException(AssertionDefect, "???")
+    of trTypeVar: raiseAssert "???"
+
+proc getDeclName(state: State, tref: TypeRef): string =
+    case tref.kind
+    of trDecl: state.world.typeDecls[tref.declID].name
+    of trInst: state.world.typeDecls[tref.instID].name&"[...]"
+    of trThis: "this("&state.thisDecl.name&")"
+    of trTypeVar: raiseAssert "???" #state.getDeclName(state.lookupTypevar(tref.tvar))
 
 
 proc staticFieldsFor(state: State, t: TypeRef): ref seq[Value] =
@@ -141,7 +148,7 @@ proc defaultInitFor(state: State, t: TypeRef): nil Opcodes =
         of trDecl: state.world.typeDecls[t.declID]
         of trInst: state.world.typeDecls[t.instID]
         of trThis: state.thisDecl
-        of trTypeVar: raise newException(AssertionDefect, "???")
+        of trTypeVar: raiseAssert "???"
     
     return decl.defaultInit
 
@@ -153,34 +160,83 @@ proc ofType(state: State, t1, t2: TypeRef): bool =
     of trDecl:
         case t2.kind
         of trDecl:
-            return t1.declID == t2.declID or
+            t1.declID == t2.declID or
                 state.ofType(state.world.typeDecls[t1.declID], state.world.typeDecls[t2.declID], nil, nil)
         of trInst:
-            return state.ofType(state.world.typeDecls[t1.declID], state.world.typeDecls[t2.instID], nil, addr t2.instCtx)
+            state.ofType(state.world.typeDecls[t1.declID], state.world.typeDecls[t2.instID], nil, addr t2.instCtx)
         of trThis:
-            return state.ofType(t1, state.thisType)
+            state.ofType(t1, state.thisType)
         of trTypeVar:
-            return state.ofType(t1, state.lookupTypevar(t2.tvar))
+            state.ofType(t1, state.lookupTypevar(t2.tvar))
     of trInst:
         case t2.kind
         of trDecl:
-            return state.ofType(state.world.typeDecls[t1.instID], state.world.typeDecls[t1.declID], addr t1.instCtx, nil)
+            state.ofType(state.world.typeDecls[t1.instID], state.world.typeDecls[t1.declID], addr t1.instCtx, nil)
         of trInst:
-            return state.ofType(state.world.typeDecls[t1.instID], state.world.typeDecls[t2.instID], addr t1.instCtx, addr t2.instCtx)
+            state.ofType(state.world.typeDecls[t1.instID], state.world.typeDecls[t2.instID], addr t1.instCtx, addr t2.instCtx)
         of trThis:
-            return state.ofType(t1, state.thisType)
+            state.ofType(t1, state.thisType)
         of trTypeVar:
-            return state.ofType(t1, state.lookupTypevar(t2.tvar))
+            state.ofType(t1, state.lookupTypevar(t2.tvar))
     of trThis:
-        return state.ofType(state.thisType, t2)
+        state.ofType(state.thisType, t2)
     of trTypeVar:
-        return state.ofType(state.lookupTypevar(t1.tvar), t2)
+        state.ofType(state.lookupTypevar(t1.tvar), t2)
 
 proc ofType(state: State, d1, d2: BaseDecl, ctx1, ctx2: ptr TypeInstCtx): bool =
     if d1 == d2: return true
 
     # TODO
     false
+
+
+proc stringy(state: State, value: Value): string =
+    let dname = state.getDeclName(value.t)
+    let tname = dname & " "
+
+    case value.kind
+    of vVoid: tname & "()"
+    of vBool: tname & $value.b
+    of vInt8: tname & $value.i8
+    of vUInt8:
+        if value.t == state.world.defaultCharRef:
+            tname & value.u8.char.`$`.escape("'", "'")
+        else:
+            tname & $value.u8
+    of vInt16: tname & $value.i16
+    of vUInt16: tname & $value.u16
+    of vInt32: tname & $value.i32
+    of vUInt32: tname & $value.u32
+    of vInt64: tname & $value.i64
+    of vUInt64: tname & $value.u64
+    of vDec32: tname & $value.d32
+    of vDec64: tname & $value.d64
+    of vPtr:
+        if value.offset == 0:
+            tname & "0x" & cast[uint64](value.`ptr`).toHex
+        else:
+            tname & (cast[uint64](value.`ptr`) + cast[uint64](value.offset)).toHex
+    of vVoidPtr:
+        tname & "0x" & cast[uint64](value.vptr).toHex
+    
+    of vClass:
+        if value.t == state.world.defaultStrRef:
+            let length = value.c_fields[2].i32
+            let data = value.c_fields[0].`ptr`[]
+            var res: string
+            res.setLen(length)
+            shallow res
+            
+            for i, val in data:
+                res[i] = val.u8.char
+            
+            tname & res.escape()
+        else:
+            var res: seq[string] = @[]
+            for v in value.c_fields[]: res.add state.stringy(v)
+            dname & "[new: " & res.join(", ") & "]"
+    else:
+        raiseAssert "NYI!"
 
 
 #[proc initStaticFields*(world: World, typeID: TypeID): ref seq[Value] =
@@ -231,7 +287,7 @@ proc newState(state: State, t: ptr TypeRef, value: ptr Value, methodTCtx: nil Ty
         of trDecl: (world.typeDecls[ty.declID], nil)
         of trInst: (world.typeDecls[ty.declID], addr ty.instCtx)
         of trThis: (state.thisDecl, state.thisTVCtx)
-        of trTypeVar: raise newException(AssertionDefect, "???")
+        of trTypeVar: raiseAssert "???"
 
     return State(
         world: world,
@@ -261,7 +317,7 @@ proc newClass(state: State, t: TypeRef): Value =
         of trInst: state.world.typeDecls[t.instID]
         else: raise newException(ValueError, "bad")
     let clsDecl =
-        if decl is ClassDecl:
+        if decl of ClassDecl:
             cast[ClassDecl](decl)
         else:
             raise newException(ValueError, "bad")
@@ -527,7 +583,7 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
             else:
                 return res
         else:
-            raise newException(AssertionDefect, "Missing return value")
+            raiseAssert "Missing return value"
     
 
     # Operations
@@ -1065,7 +1121,7 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
             of trInst: state.world.typeDecls[kind.instID]
             else: raise newException(ValueError, "bad")
         let kindDecl =
-            if decl is TaggedKindDecl:
+            if decl of TaggedKindDecl:
                 cast[TaggedKindDecl](decl)
             else:
                 raise newException(ValueError, "bad")
@@ -1120,7 +1176,7 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
             of trInst: state.world.typeDecls[kind.instID]
             else: raise newException(ValueError, "bad")
         let kindDecl =
-            if decl is ValueKindDecl:
+            if decl of ValueKindDecl:
                 cast[ValueKindDecl](decl)
             else:
                 raise newException(ValueError, "bad")
@@ -1156,7 +1212,7 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
             of trInst: state.world.typeDecls[kind.instID]
             else: raise newException(ValueError, "bad")
         let kindDecl =
-            if decl is TaggedKindDecl:
+            if decl of TaggedKindDecl:
                 cast[TaggedKindDecl](decl)
             else:
                 raise newException(ValueError, "bad")
@@ -1205,7 +1261,7 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
             of trInst: state.world.typeDecls[kind.instID]
             else: raise newException(ValueError, "bad")
         let kindDecl =
-            if decl is ValueKindDecl:
+            if decl of ValueKindDecl:
                 cast[ValueKindDecl](decl)
             else:
                 raise newException(ValueError, "bad")
@@ -1283,7 +1339,7 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
             raise newException(ValueError, "Multi kind does not contain the tag given")
 
 
-    #else: raise newException(AssertionDefect, "NYI!")
+    #else: raiseAssert "NYI!"
 
     return nil
 
@@ -2359,7 +2415,7 @@ proc eval*(state: State, scope: Scope, native: NativeOp): Result =
                 data[][i] = value
         
         of vVoidPtr:
-            raise newException(AssertionDefect, "NYI!")
+            raiseAssert "NYI!"
         
         else:
             raise newException(ValueError, "Expected a pointer")
@@ -2372,7 +2428,13 @@ proc eval*(state: State, scope: Scope, native: NativeOp): Result =
     of caseid_ge: binaryOp(vUInt16, vBool, value1.u16 >= value2.u16) # lazy for now
     of caseid_lt: binaryOp(vUInt16, vBool, value1.u16 < value2.u16) # lazy for now
     of caseid_le: binaryOp(vUInt16, vBool, value1.u16 <= value2.u16) # lazy for now
+
+    # debug
+    of debug_print:
+        let value = state.stack.pop
+
+        echo state.stringy(value)
     
-    #else: raise newException(AssertionDefect, "NYI!")
+    #else: raiseAssert "NYI!"
 
     return nil

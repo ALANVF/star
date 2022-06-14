@@ -452,7 +452,10 @@ public:
         caseid_gt,
         caseid_ge,
         caseid_lt,
-        caseid_le
+        caseid_le,
+
+        # debug
+        debug_print
 
 
 public:

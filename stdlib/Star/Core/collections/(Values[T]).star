@@ -17,7 +17,7 @@ protocol Values[T] of Positional[T] {
 	init [new: capacity (Int)] {
 		buffer = Ptr[T][new: capacity]
 		length = 0
-		this.capacity = capacity
+		_.capacity = capacity
 	}
 
 	init [fill: size (Int) with: value (T)] {
