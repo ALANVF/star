@@ -1,0 +1,378 @@
+types {
+	Star.Value
+	Star.MultiKind
+	Star.Void
+	Star.Bool
+	Star.Int8
+	Star.Int16
+	Star.Int32
+	Star.Int64
+	Star.UInt8
+	Star.UInt16
+	Star.UInt32
+	Star.UInt64
+	Star.Dec32
+	Star.Dec64
+	Star.Char
+	Star.Str
+	Star.Ptr
+	Star.Iterable1
+	Star.Iterable2
+	Star.Iterator1
+	Star.Iterator2
+	Star.Func0
+	Star.Func1
+	Star.Func2
+	Star.Func3
+}
+
+protocol 1 Star.Value {
+	single-inits {
+		init 1 [new] {
+			this
+			throw ""
+		}
+	}
+	
+	inst-single-methods {
+		on 1 [new] (this) {
+			this
+			native value_new
+			ret
+		}
+	}
+	
+	inst-cast-methods {
+		on 1 [decl#2] (decl#2) {
+			this
+			native cast_value_str
+			ret
+		}
+	}
+	
+	binary-methods {
+		operator 1 `?=` [
+			1 (this)
+		] (decl#3) {
+			this
+			get-local 1
+			native value_eq
+			ret
+		}
+		
+		operator 2 `!=` [
+			1 (this)
+		] (decl#3) {
+			this
+			get-local 1
+			native value_eq
+			native bool_not
+			ret
+		}
+	}
+
+	unary-methods {
+		operator 1 `?` (decl#3) {
+			true
+			ret
+		}
+	}
+}
+
+protocol 2 Star.MultiKind {
+	binary-methods {
+		operator 3 `&` [
+			1 (this)
+		] (decl#3) {
+			this
+			get-local 1
+			native multikind_has
+			ret
+		}
+		
+		operator 4 `|` [
+			1 (this)
+		] (this) {
+			this
+			get-local 1
+			native multikind_include
+			ret
+		}
+		
+		operator 5 `^` [
+			1 (this)
+		] (this) {
+			this
+			get-local 1
+			native multikind_exclude
+			ret
+		}
+	}
+
+	unary-methods {
+		operator 1 `?` (decl#3) {
+			this
+			native multikind_truthy
+			ret
+		}
+	}
+}
+
+class 3 Star.Void {
+
+}
+
+class 4 Star.Bool {
+
+}
+
+class 5 Star.Int8 {
+
+}
+
+class 6 Star.Int16 {
+
+}
+
+class 7 Star.Int32 {
+
+}
+
+class 8 Star.Int64 {
+
+}
+
+class 9 Star.UInt8 {
+
+}
+
+class 10 Star.UInt16 {
+
+}
+
+class 11 Star.UInt32 {
+
+}
+
+class 12 Star.UInt64 {
+
+}
+
+class 13 Star.Dec32 {
+
+}
+
+class 14 Star.Dec64 {
+
+}
+
+class 15 Star.Char {
+
+}
+
+class 16 Star.Str {
+	inst-members {
+		my 1 buffer (inst#17{
+			dvar#1 => decl#15
+		})
+		
+		my 2 length (decl#7)
+		
+		my 3 capacity (decl#7)
+	}
+
+	single-inits {
+		init 1 [new] {
+			send-ss inst#17{
+				dvar#1 => decl#15
+			} 1
+			set-field 1
+			int32 0
+			tee-field 3
+			set-field 2
+		}
+	}
+	
+	multi-inits {
+		init 1 [
+			new: 1 (decl#7)
+		] {
+			get-local 1
+			new-ptr decl#15
+			set-field 1
+			int32 0
+			set-field 2
+			this
+			get-local 1
+			set-field 3
+		}
+	}
+}
+
+class 17 Star.Ptr typevars {
+	type 1 T
+} {
+	static-single-methods {
+		on 1 [new] (this) {
+			int32 0
+			new-ptr dvar#1
+			ret
+		}
+	}
+	
+	static-multi-methods {
+		on 1 [
+			pointTo: 1 (dvar#1)
+		] (this) {
+			int32 1
+			new-ptr dvar#1
+			dup
+			get-local 1
+			native ptr_set_deref
+			ret
+		}
+	}
+
+	multi-inits {
+		init 1 [
+			new: 1 (decl#5)
+		] {
+			get-local 1
+			new-ptr dvar#1
+			ret
+		}
+	}
+}
+
+protocol 18 Star.Iterable1 {
+
+}
+
+protocol 19 Star.Iterable2 {
+
+}
+
+protocol 20 Star.Iterator1 {
+
+}
+
+protocol 21 Star.Iterator2 {
+
+}
+
+protocol 22 Star.Func0 {
+
+}
+
+protocol 23 Star.Func1 {
+
+}
+
+protocol 24 Star.Func2 {
+
+}
+
+protocol 25 Star.Func3 {
+
+}
+
+module 26 Main is main 1 {
+	static-single-methods {
+		on 1 [main] (decl#2) {
+			str "Hello, world!"
+			native debug_print
+			
+			int32 1
+			int32 2
+			native i32_add
+			native debug_print
+
+			int32 5
+			int32 10
+			send-im decl#27 1
+			new-local
+			set-local 1
+
+			get-local 1
+			native debug_print
+
+			int32 5
+			int32 4
+			send-im decl#27 1
+			native debug_print
+
+			get-local 1
+			int32 5
+			int32 10
+			send-im decl#27 1
+			send-bo decl#1 1
+			native debug_print
+
+			str "abc"
+			new-local
+			set-local 2
+
+			get-local 2
+			dup
+			get-member 1
+			new-local
+			set-local 3
+			dup
+			get-member 2
+			new-local
+			set-local 4
+			pop
+			int32 0
+			new-local
+			set-local 5
+			loop 1 {
+				get-local 5
+				get-local 4
+				native i32_lt
+				ifnot {
+					break 1
+				}
+
+				get-local 3
+				get-local 5
+				native ptr_get_at
+				new-local
+				set-local 6
+
+				get-local 6
+				native debug_print
+			} then {
+				get-local 5
+				native i32_succ
+				set-local 5
+			}
+		}
+	}
+}
+
+class 27 Point {
+	inst-members {
+		my 1 x (decl#7)
+		my 2 y (decl#7)
+	}
+
+	multi-inits {
+		init 1 [new: 1 (decl#7) _: 2 (decl#7)] {
+			get-local 1
+			set-field 1
+			get-local 2
+			set-field 2
+
+			get-field 2
+			get-field 1
+			native i32_gt
+			if {
+				retvoid
+			}
+			get-field 1
+			int32 3
+			native i32_mult
+			set-field 1
+		}
+	}
+}
