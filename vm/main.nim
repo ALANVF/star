@@ -9,6 +9,10 @@ import std/streams
 import std/os
 import std/syncio
 
+#[ TODO:
+ # figure out how to encode type effects because SOMEONE thought they could just brush it off and deal with it later 
+]#
+
 let argv = os.commandLineParams()
 
 let input = openFileStream(argv[0], FileMode.fmRead)

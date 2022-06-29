@@ -135,7 +135,110 @@ class 6 Star.Int16 {
 }
 
 class 7 Star.Int32 {
-
+	inst-multi-methods {
+		on 1 [
+			gcd: 1 (this)
+		] (this) {
+			new-local
+			this
+			native i32_abs
+			set-local 2
+			new-local
+			get-local 1
+			native i32_abs
+			set-local 3
+			new-local
+			int32 0
+			set-local 4
+			get-local 2
+			int32 0
+			native i32_eq
+			if {
+				get-local 3
+				ret
+			}
+			get-local 3
+			int32 0
+			native i32_eq
+			if {
+				get-local 2
+				ret
+			}
+			loop 1 {
+				get-local 2
+				get-local 3
+				native i32_or
+				int32 2
+				native i32_mod0
+				if {
+					get-local 4
+					native i32_succ
+					set-local 4
+					get-local 2
+					int32 1
+					native i32_shr
+					set-local 2
+					get-local 3
+					int32 1
+					native i32_shr
+					set-local 3
+				} else {
+					break 1
+				}
+			}
+			loop 1 {
+				get-local 2
+				int32 2
+				native i32_mod0
+				if {
+					get-local 2
+					int32 1
+					native i32_shr
+					set-local 2
+				} else {
+					break 1
+				}
+			}
+			loop 1 {
+				loop 2 {
+					get-local 3
+					int32 2
+					native i32_mod0
+					if {
+						get-local 3
+						int32 1
+						native i32_shr
+						set-local 3
+					} else {
+						break 2
+					}
+				}
+				get-local 2
+				get-local 3
+				native i32_gt
+				if {
+					get-local 3
+					get-local 2
+					set-local 3
+					set-local 2
+				}
+			} then {
+				get-local 3
+				get-local 2
+				native i32_sub
+				tee-local 3
+				int32 0
+				native i32_gt
+				ifnot {
+					break 1
+				}
+			}
+			get-local 2
+			get-local 4
+			native i32_shl
+			ret
+		}
+	}
 }
 
 class 8 Star.Int64 {
@@ -345,6 +448,105 @@ module 26 Main is main 1 {
 				get-local 5
 				native i32_succ
 				set-local 5
+			}
+
+			int32 0
+			set-local 5
+			loop 1 {
+				get-local 5
+				int32 7
+				native i32_le
+				ifnot {
+					break 1
+				}
+				
+				get-local 5
+				send-ms this 1
+				native debug_print 
+			} then {
+				get-local 5
+				native i32_succ
+				set-local 5
+			}
+
+			int32 0
+			set-local 5
+			loop 1 {
+				get-local 5
+				int32 7
+				native i32_le
+				ifnot {
+					break 1
+				}
+				
+				get-local 5
+				send-ms this 2
+				native debug_print 
+			} then {
+				get-local 5
+				native i32_succ
+				set-local 5
+			}
+
+			int32 12
+			int32 13
+			send-mi decl#7 1
+			native debug_print
+
+			int32 12
+			int32 14
+			send-mi decl#7 1
+			native debug_print
+
+			int32 12
+			int32 15
+			send-mi decl#7 1
+			native debug_print
+
+			int32 12
+			int32 15
+			send-mi decl#7 1
+			native debug_print
+		}
+	}
+
+	static-multi-methods {
+		on 1 [fact: 1 (decl#7)] (decl#7) {
+			get-local 1
+			int32 0
+			native i32_eq
+			if {
+				int32 1
+				ret
+			} else {
+				get-local 1
+				get-local 1
+				int32 1
+				native i32_sub
+				send-ms this 1
+				native i32_mult
+				ret
+			}
+		}
+
+		on 2 [fib: 1 (decl#7)] (decl#7) {
+			get-local 1
+			int32 2
+			native i32_lt
+			if {
+				get-local 1
+				ret
+			} else {
+				get-local 1
+				int32 1
+				native i32_sub
+				send-ms this 2
+				get-local 1
+				int32 2
+				native i32_sub
+				send-ms this 2
+				native i32_add
+				ret
 			}
 		}
 	}

@@ -69,7 +69,7 @@ class Int of Native.Int32, Num {
 			if u > v {
 				#{u, v} = #{v, u}
 			}
-		} while (v -= u)?
+		} while (v -= u) > 0
 
 		return u << shift
 	}

@@ -1,2 +1,6 @@
 bin
 dump
+
+# old code
+vm/pas
+vm/gen/*.red
