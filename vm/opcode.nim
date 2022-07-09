@@ -497,7 +497,7 @@ public:
         # Operations
         oVCaseID, oTCaseID,
         oKindID, oKindSlot, oKindValue,
-        oUpcast, oDowncast, oNativeCast,
+        oUpcast, oDowncast, oNativeCast, oDynamicCast,
         oOfType,
         oNewPtr, oPtrFromAddr,
 
@@ -585,7 +585,7 @@ public:
         of oKindID: nil
         of oKindSlot: slot: uint8
         of oKindValue: nil
-        of oUpcast..oNativeCast: target: TypeRef
+        of oUpcast..oDynamicCast: target: TypeRef
         of oOfType: of_t: TypeRef
         of oNewPtr, oPtrFromAddr: ptr_t: TypeRef
         

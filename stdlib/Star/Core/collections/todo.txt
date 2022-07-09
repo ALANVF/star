@@ -22,3 +22,4 @@
 - [ ] unrolled buffers (like scala)
 - [ ] sorted variants of various types
 - [ ] maps that supports lookup of keys and values
+- [ ] Dec64 as default dec type: https://www.crockford.com/dec64.html

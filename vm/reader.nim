@@ -670,7 +670,7 @@ proc readOpcode(input: Input, op: var Opcode) =
         op.cid_tag = input.readKindTag
     of oKindSlot:
         op.slot = input.readUint8
-    of oUpcast..oNativeCast:
+    of oUpcast..oDynamicCast:
         input.readTypeRef op.target
     of oOfType:
         input.readTypeRef op.of_t

@@ -589,7 +589,7 @@ typevar-inst-ctx: [
 	;-- Operations
 	O_VCASE_ID O_TCASE_ID
 	O_KIND_ID O_KIND_SLOT O_KIND_VALUE
-	O_UPCAST O_DOWNCAST O_NATIVE_CAST
+	O_UPCAST O_DOWNCAST O_NATIVE_CAST O_DYNAMIC_CAST
 	O_OF_TYPE
 	O_NEW_PTR O_PTR_FROM_ADDR
 
@@ -684,6 +684,7 @@ opcode: [
 	| O_UPCAST typeref                      ; takes: [value]           returns: [value']
 	| O_DOWNCAST typeref                    ; takes: [value]           returns: [value']
 	| O_NATIVE_CAST typeref                 ; takes: [value]           returns: [value']
+	| O_DYNAMIC_CAST typeref                ; takes: [value]           returns: [value']
 	| O_OF_TYPE typeref                     ; takes: [value]           returns: [bool]
 	| O_NEW_PTR typeref                     ; takes: [size]            returns: [ptr]
 	| O_PTR_FROM_ADDR typeref               ; takes: [uint64]          returns: [ptr]

@@ -561,6 +561,7 @@ grammar StarBCD::Grammar {
 	token opcode:sym<upcast>        { <sym>\h+ <typeref> }
 	token opcode:sym<downcast>      { <sym>\h+ <typeref> }
 	token opcode:sym<native-cast>   { <sym>\h+ <typeref> }
+	token opcode:sym<dynamic-cast>  { <sym>\h+ <typeref> }
 	token opcode:sym<of-type>       { <sym>\h+ <typeref> }
 	token opcode:sym<new-ptr>       { <sym>\h+ <typeref> }
 	token opcode:sym<ptr-from-addr> { <sym>\h+ <typeref> }
@@ -637,7 +638,7 @@ enum Opcode <<
 	#| Operations
 	O_VCASE_ID O_TCASE_ID
 	O_KIND_ID O_KIND_SLOT O_KIND_VALUE
-	O_UPCAST O_DOWNCAST O_NATIVE_CAST
+	O_UPCAST O_DOWNCAST O_NATIVE_CAST O_DYNAMIC_CAST
 	O_OF_TYPE
 	O_NEW_PTR O_PTR_FROM_ADDR
 
@@ -1832,6 +1833,7 @@ class StarBCD::Actions {
 	method opcode:sym<upcast>($/)        {make { $!buf.push-opcode: ~$<sym>; $<typeref>.made.() }}
 	method opcode:sym<downcast>($/)      {make { $!buf.push-opcode: ~$<sym>; $<typeref>.made.() }}
 	method opcode:sym<native-cast>($/)   {make { $!buf.push-opcode: ~$<sym>; $<typeref>.made.() }}
+	method opcode:sym<dynamic-cast>($/)  {make { $!buf.push-opcode: ~$<sym>; $<typeref>.made.() }}
 	method opcode:sym<of-type>($/)       {make { $!buf.push-opcode: ~$<sym>; $<typeref>.made.() }}
 	method opcode:sym<new-ptr>($/)       {make { $!buf.push-opcode: ~$<sym>; $<typeref>.made.() }}
 	method opcode:sym<ptr-from-addr>($/) {make { $!buf.push-opcode: ~$<sym>; $<typeref>.made.() }}

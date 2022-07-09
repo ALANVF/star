@@ -93,3 +93,15 @@ const
     NaN32* = 0x7fc00000'f32
     Inf32* = 0x7f800000'f32
     NegInf32* = 0xff800000'f32
+
+
+public:
+ type
+    EitherKind = enum eLeft, eRight
+    Either[T, U] = object
+        case kind: EitherKind
+        of eLeft: left: T
+        of eRight: right: U
+
+proc makeLeft*[T, U](_: typedesc[Either[T, U]], value: T): Either[T, U] = Either[T, U](kind: eLeft, left: value)
+proc makeRight*[T, U](_: typedesc[Either[T, U]], value: U): Either[T, U] = Either[T, U](kind: eRight, right: value)

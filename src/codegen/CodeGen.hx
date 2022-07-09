@@ -1919,7 +1919,7 @@ overload static function compile(ctx: GenCtx, sender: Type, msg: ObjMessage, wan
 	at(Lazy(_)) => throw "bad",
 	at(Single(kind)) => compile(ctx, sender, kind, wantValue),
 	at(Multi(candidates, labels, args)) => compile(ctx, sender, candidates, args, wantValue),
-	at(Cast(target, candidates)) => compile(target, sender, candidates),
+	at(Cast(target, candidates)) => compile(sender, target, candidates),
 	at(Super(parent, msg)) => compile(ctx, parent, msg, wantValue)
 );
 
@@ -2589,6 +2589,13 @@ overload static function compile(sender: Type, target: Type, candidates: Array<C
 				} else
 					null
 			), null);
+
+			// TODO
+			if(mth.decl is TypeVar) {
+				if(target.t.match(TTypeVar(_))) {
+					return [ODynamicCast(world.getTypeRef(target))];
+				}
+			}
 
 			final id = world.getID(mth);
 			[mth.typedBody != null ? OSend_C(typeref, id, ictx) : OSendDynamic_C(typeref, id, ictx)];

@@ -92,6 +92,7 @@ enum Opcode {
 	OUpcast(t: TypeRef);
 	ODowncast(t: TypeRef);
 	ONativeCast(t: TypeRef);
+	ODynamicCast(t: TypeRef);
 
 	OOfType(t: TypeRef);
 

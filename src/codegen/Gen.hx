@@ -1108,6 +1108,10 @@ class Gen {
 			write("nativecast ");
 			write(t);
 		},
+		at(ODynamicCast(t)) => {
+			write("dynamiccast ");
+			write(t);
+		},
 
 		at(OOfType(t)) => {
 			write("of-type ");

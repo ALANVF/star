@@ -330,6 +330,66 @@ proc newClass(state: State, t: TypeRef): Value =
     return Value(t: t, kind: vClass, c_fields: fields)
 
 
+proc eval*(state: State, scope: Scope, ops: Opcodes): Result
+
+proc searchCastMethods(state: State, t, target: TypeRef): nil CastMethod =
+    let decl = state.getDecl(t)
+    let ops = decl.instCastMethods
+
+    if ops == nil:
+        let parents = decl.parents
+
+        if parents == nil:
+            return nil
+
+        # TODO: change this to be a breadth search
+        for parent in parents[]:
+            let res = state.searchCastMethods(parent, target)
+            if res != nil:
+                return res
+        
+        return nil
+    else:
+        for op in ops[].values:
+            # TODO: implement proper behavior for generics and inheritance
+            if target == op.`type`:
+                return op
+        
+        return nil
+
+proc dynCast(state: State, value: Value, target: TypeRef): Either[Value, Result] =
+    let t = value.t
+    
+    if t == target:
+        return Either[Value, Result].makeLeft value
+    elif state.ofType(t, target):
+        # TODO
+        return Either[Value, Result].makeLeft value
+    elif state.ofType(target, t):
+        # TODO
+        return Either[Value, Result].makeLeft value
+    else:
+        let castMethod = state.searchCastMethods(t, target)
+
+        if castMethod == nil:
+            raiseAssert "Invalid dynamic cast from `" & $t & "` to `" & $target & "`"
+        
+        let mstate = state.newState(addr t, addr value, nil)
+        let mscope = Scope(locals: @[])
+
+        let res = eval(mstate, mscope, castMethod.body)
+        if res != nil:
+            case res.kind
+            of rReturnVoid:
+                raiseAssert "???"
+            of rReturn:
+                return Either[Value, Result].makeLeft res.value
+            else:
+                return Either[Value, Result].makeRight res
+        else:
+            raiseAssert "???"
+
+
 proc eval*(state: State, scope: Scope, op: Opcode): Result
 
 proc eval*(state: State, scope: Scope, ops: Opcodes): Result =
@@ -632,9 +692,18 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
     # TODO
     of oUpcast..oNativeCast:
         var value = state.stack.pop
-        value.t = op.target
+        value.t = state.getInCtx(op.target)
         state.stack.add value
     
+    of oDynamicCast:
+        var value = state.stack.pop
+        let target = state.getInCtx(op.target)
+        
+        let res = state.dynCast(value, target)
+        case res.kind
+        of eLeft: state.stack.add res.left
+        of eRight: return res.right
+
 
     of oOfType:
         state.stack.add state.makeBool(state.ofType(state.stack.pop.t, op.of_t))
