@@ -213,10 +213,6 @@ proc readModuleDecl(input: Input): ModuleDecl =
     input.readDeclPrelude result
 
     input.readParents result.parents
-    {.cast(uncheckedAssign).}:
-        result.isMain = input.readBool
-    if result.isMain:
-        result.main = input.readMethodID
     
     input.readMembers result.staticMembers
 

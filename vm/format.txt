@@ -149,7 +149,6 @@ module-decl: [
 	decl-prelude
 
 	parents
-	is-main: opt method-id
 
 	static-members
 

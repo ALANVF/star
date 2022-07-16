@@ -1317,12 +1317,6 @@ class StarBCD::Actions {
 		with $<static-multi-methods> { .made.() } else { $!buf.push-uint16: 0 }
 
 		with $<parents> { .made.() } else { $!buf.push-uint8: 0 }
-		with $<is-main> -> $is-main {
-			$!buf.push-bool: True;
-			$!buf.push-method-id: $is-main<id>.made;
-		} else {
-			$!buf.push-bool: False;
-		}
 
 		with $<static-members> { .made.() } else { $!buf.push-uint16: 0 }
 

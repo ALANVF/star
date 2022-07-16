@@ -64,9 +64,6 @@ public:
     
     ModuleDecl = ref object of BaseDecl
         parents: seq[TypeRef]
-        case isMain: bool
-        of true: main: MethodID
-        of false: nil
 
         staticMembers: Table[MemberID, Member]
 
