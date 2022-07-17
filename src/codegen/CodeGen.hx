@@ -5,8 +5,8 @@ import Util.detuple;
 import codegen.Opcode;
 
 private enum Capture {
-	CLocal(name: String, t: TypeRef);
-	CAssign(name: String, t: TypeRef, assignTo: TExpr);
+	CLocal(id: LocalID, t: TypeRef);
+	CAssign(id: LocalID, t: TypeRef, assignTo: TExpr);
 }
 
 @:publicFields
@@ -14,7 +14,7 @@ private enum Capture {
 class CodeGen {
 //
 
-static final world = new World();
+static final world = new World2();
 
 
 overload static function compile(ctx: GenCtx, stmts: TStmts): Opcodes {
@@ -216,25 +216,23 @@ overload static function compile(ctx: GenCtx, stmt: TStmt): Opcodes return stmt.
 			final lenName = ctx.anon();
 			final bufName = ctx.anon();
 			final iname = kpat._andOr(kp => kp.p._match(
-				at(PMy(name)) => name,
+				at(PMy(name)) => ctx.newLocal(name),
 				at(PIgnore) => ctx.anon(),
 				_ => throw "NYI"
 			), {
 				ctx.anon();
 			});
-
-			final intref = world.getTypeRef(Pass2.STD_Int);
 			
 			res.push(ODup);
-			res.push(ONewLocal(lenName, intref));
+			res.push(ONewLocal);
 			res.push(OGetMember(world.getInstID(length.getMember())));
 			res.push(OSetLocal(lenName));
 
-			res.push(ONewLocal(bufName, world.getTypeRef(buffer.retType().nonNull())));
+			res.push(ONewLocal);
 			res.push(OGetMember(world.getInstID(buffer.getMember())));
 			res.push(OSetLocal(bufName));
 
-			res.push(ONewLocal(iname, intref));
+			res.push(ONewLocal);
 			res.push(OInt32(0, true));
 			res.push(OSetLocal(iname));
 
@@ -272,19 +270,39 @@ overload static function compile(ctx: GenCtx, stmt: TStmt): Opcodes return stmt.
 			final iterName = ctx.anon();
 
 			kpat._andOr(kpat => {
-				throw "TODO";
+				trace("TODO "+stmt.orig.mainSpan().display());
 			}, {
 				final elemType = etype.iterElemType().nonNull(); // TODO: cache this or smth
 				final iterType = Pass2.STD_Iterator1.applyArgs([elemType]).nonNull();
-
-				final casts = CastKind.reduceOverloads(
+				
+				var overloads = CastKind.reduceOverloads(
 					etype.findCast(/*BAD*/{where:WBlock,thisType:etype}, iterType, etype),
 					etype,
 					iterType
-				)._match(
+				);
+
+				// hacky
+				if(overloads.every(ov -> ov._match(
+					at(CMethod({typedBody: null})) => true,
+					_ => false
+				))) {
+					overloads = [overloads[0]];
+				}
+
+				final casts = overloads/*.filter(
+					k -> k._match(
+						at(CMethod(m)) => (etype.t.match(TTypeVar(_) | TInstance(_ == Pass2.STD_Iterable1 => true, _, _))),
+						_ => true
+					)
+				)*/._match(
 					at([]) => throw 'Cannot iterate on type `${etype.fullName()}`!',
 					at(kinds = [_]) => kinds,
-					at(kinds) => throw 'Cannot find specific iterator for type `${etype.fullName()}`!'
+					at(kinds) => throw 'Cannot find specific iterator for type `${etype.fullName()}`!'+kinds.map(
+						k -> k._match(
+							at(CMethod(m)) => m.span.display(),
+							_ => throw "bad"
+						)
+					)
 				);
 
 				final iterNext = iterType.findSingleInst(/*BAD*/null, "next", Pass2.STD_Iterator1).nonNull();
@@ -293,7 +311,7 @@ overload static function compile(ctx: GenCtx, stmt: TStmt): Opcodes return stmt.
 				final noneCaseID = world.getID(noneCase);
 
 				res = res.concat(compile(etype, iterType, casts));
-				res.push(ONewLocal(iterName, world.getTypeRef(iterType)));
+				res.push(ONewLocal);
 				res.push(OSetLocal(iterName));
 
 				final ctx2 = ctx.inner();
@@ -340,7 +358,7 @@ overload static function compile(ctx: GenCtx, stmt: TStmt): Opcodes return stmt.
 		var res: Opcodes = [];
 
 		final lname = lvar._andOr(lv => lv.e._match(
-			at(EVarDecl(name, _, _)) => name,
+			at(EVarDecl(name, _, _)) => ctx.newLocal(name),
 			_ => throw "NYI"
 		), {
 			ctx.anon();
@@ -353,7 +371,7 @@ overload static function compile(ctx: GenCtx, stmt: TStmt): Opcodes return stmt.
 		final stopType = stopExpr.t._or(throw "bad");
 		if(startType != stopType) throw "todo";
 
-		res.push(ONewLocal(lname, world.getTypeRef(startType)));
+		res.push(ONewLocal);
 
 		final downwards = (stopKind == LoopDownto);
 
@@ -370,7 +388,7 @@ overload static function compile(ctx: GenCtx, stmt: TStmt): Opcodes return stmt.
 				_ => {
 					final name = ctx.anon();
 					
-					res.push(ONewLocal(name, world.getTypeRef(stopType)));
+					res.push(ONewLocal);
 					if(stopKind == LoopTimes) {
 						res.push(OGetLocal(lname));
 						if(by != null) throw "NYI!";
@@ -389,7 +407,7 @@ overload static function compile(ctx: GenCtx, stmt: TStmt): Opcodes return stmt.
 				final byName = ctx.anon();
 				final byType = e.t._or(throw "bad");
 
-				res.push(ONewLocal(byName, world.getTypeRef(byType)));
+				res.push(ONewLocal);
 				res = res.concat(compile(ctx, e));
 				res.push(OSetLocal(byName));
 
@@ -456,11 +474,11 @@ overload static function compile(ctx: GenCtx, stmt: TStmt): Opcodes return stmt.
 
 	at(SBreak(null)) => [OBreak(ctx.getLoop()._or(throw "Cannot break here!"))],
 	at(SBreak(Left(depth))) => [OBreak(ctx.getLoop(depth)._or(throw "Cannot break here!"))],
-	at(SBreak(Right(label))) => [OBreak(label)],
+	at(SBreak(Right(label))) => [OBreak(ctx.label(label))],
 
 	at(SNext(null)) => [ONext(ctx.getLoop()._or(throw "Cannot continue here!"))],
 	at(SNext(Left(depth))) => [ONext(ctx.getLoop(depth)._or(throw "Cannot continue here!"))],
-	at(SNext(Right(label))) => [ONext(label)],
+	at(SNext(Right(label))) => [ONext(ctx.label(label))],
 
 	at(SThrow(span, value)) => {
 		compile(ctx, value).concat([
@@ -524,7 +542,7 @@ static function getName(ctx: GenCtx, name: String, loc: Local, depth: Int): Opco
 			final mem = lf.member;
 			ctx.getThis(depth)._match(
 				at(null) => {
-					[mem.isStatic ? OGetStaticField(name) : OGetField(name)];
+					[mem.isStatic ? OGetStaticField(world.getStaticID(mem)) : OGetField(world.getInstID(mem))];
 				},
 				at(tuple(thisName, thisType)) => {
 					if(mem.isStatic) [
@@ -543,33 +561,35 @@ static function getName(ctx: GenCtx, name: String, loc: Local, depth: Int): Opco
 		},
 		_ => {
 			// TODO
-			[OGetLocal(name)];
+			[OGetLocal(ctx.local(name))];
 		}
 	);
 }
 
-static function setName(name: String, loc: Local): Opcode {
+static function setName(ctx: GenCtx, name: String, loc: Local): Opcode {
 	return loc._match(
 		at(lf is Pass2.LocalField) => {
-			lf.member.isStatic ? OSetStaticField(name) : OSetField(name);
+			final mem = lf.member;
+			mem.isStatic ? OSetStaticField(world.getStaticID(mem)) : OSetField(world.getInstID(mem));
 		},
 		_ => {
 			// TODO
-			OSetLocal(name);
+			OSetLocal(ctx.local(name));
 		}
 	);
 }
 
-static function setOrTeeName(name: String, loc: Local, wantValue: Bool): Opcode {
+static function setOrTeeName(ctx: GenCtx, name: String, loc: Local, wantValue: Bool): Opcode {
 	return loc._match(
 		at(lf is Pass2.LocalField) => {
-			lf.member.isStatic
-				? (wantValue ? OTeeStaticField(name) : OSetStaticField(name))
-				: (wantValue ? OTeeField(name) : OSetField(name));
+			final mem = lf.member;
+			mem.isStatic
+				? (wantValue ? OTeeStaticField(world.getStaticID(mem)) : OSetStaticField(world.getStaticID(mem)))
+				: (wantValue ? OTeeField(world.getInstID(mem)) : OSetField(world.getInstID(mem)));
 		},
 		_ => {
 			// TODO
-			wantValue ? OTeeLocal(name) : OSetLocal(name);
+			wantValue ? OTeeLocal(ctx.local(name)) : OSetLocal(ctx.local(name));
 		}
 	);
 }
@@ -648,7 +668,7 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 	
 	at(EArray(values)) => {
 		final type = expr.t.nonNull();
-		if(type.t.match(TMulti(_))) throw "type inference is not currently available for arrays!";
+		if(type.t.match(TMulti(_))) throw "type inference is not currently available for arrays! "+expr.orig.mainSpan().display();
 		var res: Opcodes;
 		do {
 			if(values.length > 0) {
@@ -763,7 +783,7 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 	at(EWildcard) => throw "bad",
 
 	at(EFunc(params, ret, body)) => {
-		trace("TODO");
+		trace("TODO "+expr.orig.mainSpan().display());
 		[];
 	},
 
@@ -940,7 +960,7 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 		res;
 	},
 	at(ELiteralCtor(type, literal)) => {
-		trace("TODO");
+		trace("TODO "+expr.orig.mainSpan().display());
 		[];
 	},
 
@@ -991,7 +1011,7 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 				at(Block(_, blk)) => {
 					// TODO
 					res.push(OBlock(
-						compile(ctx.addThis("", world.getTypeRef(type)), blk)
+						compile(ctx.addThis(0 /*?*/, world.getTypeRef(type)), blk)
 					));
 				}
 			);
@@ -1050,12 +1070,13 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 	at(EInfixChain(left, chain)) => throw "todo",
 
 	at(EVarDecl(name, _, value)) => {
-		final res: Opcodes = [ONewLocal(name, world.getTypeRef(expr.t.nonNull()))];
+		final res: Opcodes = [ONewLocal];
+		final id = ctx.newLocal(name);
 		value._andOr(v => {
 			res
 			.concat(compile(ctx, v))
 			.concat([
-				wantValue ? OTeeLocal(name) : OSetLocal(name)
+				wantValue ? OTeeLocal(id) : OSetLocal(id)
 			]);
 		}, {
 			res;
@@ -1067,8 +1088,9 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 			at(ESuffix({e: EName(_ == name => true, _)}, kind)) => kind.isStep(),
 			_ => false
 		);
+		
 		compile(ctx, value, !isStep).concat([
-			setOrTeeName(name, loc, wantValue)
+			setOrTeeName(ctx, name, loc, wantValue)
 		]);
 	},
 
@@ -1124,7 +1146,7 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 				for(i in 0...lenp) { final pat = patterns[lenp - i - 1]; pat.p._match(
 					at(PExpr(expr)) => expr.e._match(
 						at(EName(name, loc)) => {
-							res.push(setName(name, loc));
+							res.push(setName(ctx, name, loc));
 						},
 
 						at(ELiteralCtor(type, literal)) => throw "NYI",
@@ -1134,8 +1156,8 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 						at(EObjMember(obj, kind)) => throw "NYI",
 						
 						at(EVarDecl(name, _, null)) => {
-							res.push(ONewLocal(name, world.getTypeRef(expr.t.nonNull())));
-							res.push(OSetLocal(name));
+							res.push(ONewLocal);
+							res.push(OSetLocal(ctx.newLocal(name)));
 						},
 
 						_ => throw "bad"
@@ -1146,15 +1168,15 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 					at(PIgnore) => continue,
 
 					at(PMy(name)) => {
-						res.push(ONewLocal(name, world.getTypeRef(expr.t.nonNull())));
-						res.push(OSetLocal(name));
+						res.push(ONewLocal);
+						res.push(OSetLocal(ctx.newLocal(name)));
 					},
 
 					at(PMyType(name, type)) => {
 						// TODO
 						final typeref = world.getTypeRef(type.nonNull());
 						
-						res.push(ONewLocal(name, typeref));
+						res.push(ONewLocal);
 						res.push(ODup);
 						res.push(OOfType(typeref));
 						res.push(OIfNot([
@@ -1162,7 +1184,7 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 							OThrow(pat.orig._andOr(u => u.mainSpan().display(), "???"))
 						]));
 						res.push(ONativeCast(typeref)); // TODO?
-						res.push(OSetLocal(name));
+						res.push(OSetLocal(ctx.newLocal(name)));
 					},
 
 					_ => throw "NYI"
@@ -1252,15 +1274,16 @@ overload static function compile(
 		},
 
 		at(PMy(name)) => {
+			final id = ctx.newLocal(name);
 			captures[name]._match(
 				at(null) => {
-					captures[name] = CLocal(name, world.getTypeRef(target));
-					return [OSetLocal(name)];
+					captures[name] = CLocal(id, world.getTypeRef(target));
+					return [OSetLocal(id)];
 				},
 				at(CLocal(_, type) | CAssign(_, type, _)) => {
 					if(uniqueCaptures) throw "bad";
 					if(!type.equals(world.getTypeRef(target))) throw "bad";
-					return [OSetLocal(name)];
+					return [OSetLocal(id)];
 				}
 			);
 		},
@@ -1268,15 +1291,16 @@ overload static function compile(
 		at(PMyType(name, type)) => {
 			final typeref = world.getTypeRef(type);
 			//final targetref = world.getTypeRef(target);
+			final id = ctx.newLocal(name);
 			captures[name]._match(
 				at(null) => {
-					captures[name] = CLocal(name, typeref);
+					captures[name] = CLocal(id, typeref);
 					return [
 						ODup,
 						OOfType(typeref),
 						exitCase,
 						if(type.hasParentType(target)) ODowncast(typeref) else OUpcast(typeref),
-						OSetLocal(name)
+						OSetLocal(id)
 					];
 				},
 				at(CLocal(_, type2) | CAssign(_, type2, _)) => {
@@ -1287,7 +1311,7 @@ overload static function compile(
 						OOfType(typeref),
 						exitCase,
 						if(type.hasParentType(target)) ODowncast(typeref) else OUpcast(typeref),
-						OSetLocal(name)
+						OSetLocal(id)
 					];
 				}
 			);
@@ -1684,7 +1708,7 @@ overload static function compile(
 		at(PTypeTaggedCaseSingle(type, taggedCase)) => {
 			var res: Opcodes = if(isRhs) [ODup] else [];
 			
-			res.push(OTCaseID(world.getTypeRef(type), world.getID(taggedCase)));
+			res.push(OTCaseID(world.getTypeRef(target.strictUnifyWithType(type)), world.getID(taggedCase)));
 			res.push(ONative("caseid_eq"));
 			res.push(exitCase);
 
@@ -1746,7 +1770,8 @@ static function compileDestructure(ctx: GenCtx, exitCase: Opcode, captures: Map<
 		at(PExpr(expr)) => {
 			final anon = ctx.anon();
 			
-			captures[anon] = CAssign(anon, rhsref, expr);
+			// TODO
+			captures['`$anon'] = CAssign(anon, rhsref, expr);
 
 			return [OSetLocal(anon)];
 		},
@@ -1757,9 +1782,11 @@ static function compileDestructure(ctx: GenCtx, exitCase: Opcode, captures: Map<
 
 		at(PMy(name)) => {
 			if(captures.exists(name)) throw "bad";
-			captures[name] = CLocal(name, rhsref);
 
-			return [OSetLocal(name)];
+			final id = ctx.newLocal(name);
+			captures[name] = CLocal(id, rhsref);
+
+			return [OSetLocal(id)];
 		},
 
 		at(PMyType(name, type)) => {
@@ -1767,14 +1794,16 @@ static function compileDestructure(ctx: GenCtx, exitCase: Opcode, captures: Map<
 			final typeref = world.getTypeRef(type.nonNull());
 
 			if(captures.exists(name)) throw "bad";
-			captures[name] = CLocal(name, typeref);
+
+			final id = ctx.newLocal(name);
+			captures[name] = CLocal(id, typeref);
 			
 			return [
 				ODup,
 				OOfType(typeref),
 				exitCase,
 				if(type.hasParentType(rhs)) ODowncast(typeref) else OUpcast(typeref),
-				OSetLocal(name)
+				OSetLocal(id)
 			];
 		},
 
@@ -1818,8 +1847,8 @@ static function compileCapturesPre(ctx: GenCtx, res: Opcodes, captures: Map<Stri
 	if(captures.size() == 0) return;
 	
 	for(capture in captures) capture._match(
-		at(CLocal(name, t) | CAssign(name, t, _)) => {
-			res.push(ONewLocal(name, t));
+		at(CLocal(id, t) | CAssign(id, t, _)) => {
+			res.push(ONewLocal);
 		}
 	);
 }
@@ -1828,11 +1857,11 @@ static function compileCapturesPost(ctx: GenCtx, res: Opcodes, captures: Map<Str
 	
 	for(capture in captures) capture._match(
 		at(CLocal(_, _)) => {},
-		at(CAssign(name, t, expr)) => {
-			res.push(OGetLocal(name));
+		at(CAssign(id, t, expr)) => {
+			res.push(OGetLocal(id));
 			expr.e._match(
 				at(EName(name, loc)) => {
-					res.push(setName(name, loc));
+					res.push(setName(ctx, name, loc));
 				},
 			
 				at(ELiteralCtor(type, literal)) => throw "NYI",
@@ -1885,7 +1914,7 @@ overload static function compile(ctx: GenCtx, res: Opcodes, sender: Type, cascad
 			final typeref = world.getTypeRef(type);
 			res.push(OBlock(
 				[
-					ONewLocal(anon, typeref),
+					ONewLocal,
 					OSetLocal(anon)
 				].concat(
 					compile(ctx.addThis(anon, typeref), blk)
@@ -2040,7 +2069,7 @@ overload static function compile(ctx: GenCtx, sender: Type, kind: SingleInstKind
 
 		final typeref = world.getTypeRef(sender);
 		final id = world.getID(mth);
-		final res: Opcodes = [mth.typedBody != null ? OSend_SI(typeref, id) : OSendDynamic_SI(typeref, id)];
+		final res: Opcodes = [mth.typedBody != null && !sender.isProtocol() ? OSend_SI(typeref, id) : OSendDynamic_SI(typeref, id)];
 		if(!wantValue && mth.ret._andOr(ret => ret != Pass2.STD_Void.thisType, false)) {
 			res.push(OPop);
 		}
@@ -2060,7 +2089,7 @@ overload static function compile(ctx: GenCtx, sender: Type, kind: SingleInstKind
 
 		final typeref = world.getTypeRef(sender);
 		final id = world.getID(mth);
-		res.push(mth.typedBody != null ? OSend_MI(typeref, id) : OSendDynamic_MI(typeref, id));
+		res.push(mth.typedBody != null && !sender.isProtocol() ? OSend_MI(typeref, id) : OSendDynamic_MI(typeref, id));
 		if(!wantValue && mth.ret._andOr(ret => ret != Pass2.STD_Void.thisType, false)) {
 			res.push(OPop);
 		}
@@ -2395,7 +2424,7 @@ overload static function compile(ctx: GenCtx, sender: Type, candidates: Array<Ob
 			at(MIMethod(mth = {isMacro: true}, _)) => {
 				if(mth.decl.isNative(NBool)) {
 					mth.fuzzyName._match(
-						at("yes:no:") => { // inline if-else macro method Bool#yes:no:
+						at("yes: no:") => { // inline if-else macro method Bool#yes:no:
 							[OIfElse(
 								compile(ctx, args[0]),
 								compile(ctx, args[1])
@@ -2451,7 +2480,7 @@ overload static function compile(ctx: GenCtx, sender: Type, candidates: Array<Ob
 					res = res.concat(compile(ctx, arg));
 				}
 				
-				res.push(mth.typedBody != null ? OSend_MI(typeref, id, ictx) : OSendDynamic_MI(typeref, id, ictx));
+				res.push(mth.typedBody != null && !sender.isProtocol() ? OSend_MI(typeref, id, ictx) : OSendDynamic_MI(typeref, id, ictx));
 				
 				if(!wantValue && mth.ret._andOr(ret => ret != Pass2.STD_Void.thisType, false)) {
 					res.push(OPop);
@@ -2526,7 +2555,7 @@ overload static function compile(ctx: GenCtx, sender: Type, candidates: Array<Ob
 					);
 				}
 
-				res.push(mth.typedBody != null ? OSend_MI(typeref, id, ictx) : OSendDynamic_MI(typeref, id, ictx));
+				res.push(mth.typedBody != null && !sender.isProtocol() ? OSend_MI(typeref, id, ictx) : OSendDynamic_MI(typeref, id, ictx));
 				
 				if(!wantValue && mth.ret._andOr(ret => ret != Pass2.STD_Void.thisType, false)) {
 					res.push(OPop);
@@ -2598,7 +2627,7 @@ overload static function compile(sender: Type, target: Type, candidates: Array<C
 			}
 
 			final id = world.getID(mth);
-			[mth.typedBody != null ? OSend_C(typeref, id, ictx) : OSendDynamic_C(typeref, id, ictx)];
+			[mth.typedBody != null && !sender.isProtocol() ? OSend_C(typeref, id, ictx) : OSendDynamic_C(typeref, id, ictx)];
 		},
 		at([CUpcast(parent)]) => {
 			final tref = world.getTypeRef(parent);
@@ -2691,11 +2720,20 @@ overload static function compile(ctx: GenCtx, sender: Type, kinds: Array<TExpr.B
 						}
 					);
 				}, {
-					tctx._and(tctx => if(tctx.size() > 0) throw "NYI");
+					final ictx = tctx._andOr(tctx => (
+						if(tctx.size() > 0) {
+							final _ictx = new TVarInstCtx();
+							for(tv => t in tctx) {
+								_ictx[world.getTVar(tv)] = world.getTypeRef(t);
+							}
+							_ictx;
+						} else
+							null
+					), null);
 
 					final typeref = world.getTypeRef(sender);
 					final id = world.getID(mth);
-					res.push(mth.typedBody != null ? OSend_BO(typeref, id) : OSendDynamic_BO(typeref, id));
+					res.push(mth.typedBody != null ? OSend_BO(typeref, id, ictx) : OSendDynamic_BO(typeref, id, ictx));
 				});
 			}
 

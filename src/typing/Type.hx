@@ -1546,6 +1546,21 @@ class Type implements ITypeable {
 		);
 	}
 
+	function isProtocol() {
+		return t._match(
+			at(TPath(depth, lookup, source)) => throw "todo",
+			at(TLookup(type, lookup, source)) => throw "todo",
+			at(TConcrete(decl) | TInstance(decl, _, _)) => decl is Protocol,
+			at(TThis(decl is TypeDecl)) => decl is Protocol,
+			at(TThis(_)) => throw "todo",
+			at(TBlank) => throw "bad",
+			at(TMulti(types)) => types.some(ty -> ty is Protocol),
+			at(TApplied(type, params)) => type.isProtocol(),
+			at(TTypeVar(typevar)) => typevar.parents.some(p -> p.isProtocol()), // fuzzy for now
+			at(TModular(type, unit)) => type.isProtocol()
+		);
+	}
+
 
 	// Iterating
 

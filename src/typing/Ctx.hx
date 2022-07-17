@@ -206,16 +206,20 @@ enum Where {
 				at(WCategory(_)) => throw "bad",
 				at(WEmptyMethod({decl: decl}) | WMethod({decl: decl}) | WMember({decl: decl}) | WTaggedCase({decl: decl})) => {
 					// TODO: add proper check for statics?
-					//final isStatic = !allowsThis();
+					final isStatic = !allowsThis();
 					decl.findInstMember(this, name)._and(kind => {
 						final mem = kind.getMember();
-						(locals[name] = new LocalField(
-							this,
-							mem,
-							mem.name.name,
-							kind.retType()._and(t => t.getIn(this)),
-							mem.value._and(v => Pass2.typeExpr(this, v))
-						));
+						if(!mem.isStatic && isStatic) {
+							null;
+						} else {
+							(outer.locals[name] = new LocalField(
+								outer,
+								mem,
+								mem.name.name,
+								kind.retType()._and(t => t.getIn(this)),
+								mem.value._and(v => Pass2.typeExpr(this, v))
+							));
+						}
 					});
 				},
 				at(WTypevars(_)) => outer.findLocal(name, depth)

@@ -212,6 +212,10 @@ class TypeVar extends AnyFullTypeDecl {
 		if(params.length != 0) throw "todo";
 
 		for(parent in parents) {
+			// hacky thingy
+			if(parent.t.match(TApplied(_, _))) {
+				parents[parents.indexOf(parent)] = parent = parent.simplify();
+			}
 			if(!decl.hasChildType(parent)) return false;
 		}
 

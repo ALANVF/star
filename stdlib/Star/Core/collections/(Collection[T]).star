@@ -172,7 +172,7 @@ protocol Collection[T] of Iterable[T] {
 	}
 
 	on [containsOne: values (Iterable[T])] (Bool) {
-		my found = Maybe[none]
+		my found = Maybe[T][none]
 		for my value in: values {
 			for my value' in: this {
 				if value ?= value' {

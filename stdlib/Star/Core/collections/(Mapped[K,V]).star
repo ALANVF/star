@@ -45,7 +45,7 @@ protocol Mapped[K, V] of Iterable[K], Iterable[K, V] {
 	on [maybeRemoveKey: key (K)] (Maybe[V])
 	
 	on [removeAllKeys: keys (Iterable[K])] (Array[V]) {
-		my values = #[]
+		my values = Array[V] #[]
 		
 		for my key in: keys {
 			values[add: this[removeKey: key]]
@@ -55,7 +55,7 @@ protocol Mapped[K, V] of Iterable[K], Iterable[K, V] {
 	}
 
 	on [removeAnyKeys: keys (Iterable[K])] (Array[V]) {
-		my values = #[]
+		my values = Array[V] #[]
 		
 		for my key in: keys {
 			match this[maybeRemoveKey: key] at Maybe[the: my value] {
@@ -74,7 +74,7 @@ protocol Mapped[K, V] of Iterable[K], Iterable[K, V] {
 	on [maybeRemoveValue: value (V)] (K)
 	
 	on [removeAllValues: values (Iterable[V])] (Array[K]) {
-		my keys = #[]
+		my keys = Array[K] #[]
 		
 		for my value in: values {
 			keys[add: this[removeValue: value]]
@@ -84,7 +84,7 @@ protocol Mapped[K, V] of Iterable[K], Iterable[K, V] {
 	}
 	
 	on [removeAnyValues: values (Iterable[V])] (Array[K]) {
-		my keys = #[]
+		my keys = Array[K] #[]
 		
 		for my value in: values {
 			match this[maybeRemoveValue: value] at Maybe[the: my key] {

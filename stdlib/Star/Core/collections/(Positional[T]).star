@@ -104,7 +104,7 @@ protocol Positional[T] of Collection[T] {
 	
 	type Iter of Iterable[T]
 	on [prependAll: values (Iter)] (Iter) {
-		my values' = #[]
+		my values' = Array[T] #[]
 		-> [addAll: values]
 		
 		for my i after: values'.length downto: 0 {

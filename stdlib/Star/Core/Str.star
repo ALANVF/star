@@ -352,6 +352,11 @@ class Str of Values[Char], Ordered is strong {
 		-> [add: char]
 	}
 
+	type T { on [Str] }
+	operator `+` [value (T)] (This) {
+		return this + value[Str]
+	}
+
 
 	;== Converting
 

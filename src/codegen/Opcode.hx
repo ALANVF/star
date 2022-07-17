@@ -3,18 +3,18 @@ package codegen;
 enum Opcode {
 	// Storage and access
 
-	ONewLocal(name: String, t: TypeRef);
-	OGetLocal(name: String);
-	OSetLocal(name: String);
-	OTeeLocal(name: String);
+	ONewLocal;
+	OGetLocal(id: LocalID);
+	OSetLocal(id: LocalID);
+	OTeeLocal(id: LocalID);
 
-	OGetField(name: String);
-	OSetField(name: String);
-	OTeeField(name: String);
+	OGetField(id: MemberID);
+	OSetField(id: MemberID);
+	OTeeField(id: MemberID);
 
-	OGetStaticField(name: String);
-	OSetStaticField(name: String);
-	OTeeStaticField(name: String);
+	OGetStaticField(id: MemberID);
+	OSetStaticField(id: MemberID);
+	OTeeStaticField(id: MemberID);
 
 
 	// Stack manip
@@ -31,10 +31,10 @@ enum Opcode {
 	OIfNot(then: Opcodes);
 	OIfElse(then: Opcodes, _else: Opcodes);
 
-	ODo(label: String, _do: Opcodes);
+	ODo(label: LabelID, _do: Opcodes);
 
-	OLoop(label: String, loop: Opcodes);
-	OLoopThen(label: String, loop: Opcodes, then: Opcodes);
+	OLoop(label: LabelID, loop: Opcodes);
+	OLoopThen(label: LabelID, loop: Opcodes, then: Opcodes);
 
 	OTry(_try: Opcodes, _catch: Opcodes);
 
@@ -44,9 +44,9 @@ enum Opcode {
 	OThrow(info: String);
 	ORethrow;
 
-	OBreak(label: String);
+	OBreak(label: LabelID);
 
-	ONext(label: String);
+	ONext(label: LabelID);
 
 
 	// Natives

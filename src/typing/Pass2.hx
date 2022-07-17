@@ -391,15 +391,25 @@ static function resolveCategory(ctx: Ctx, category: Category) {
 
 
 static function resolveEmptyMethod(ctx: Ctx, method: EmptyMethod) {
+	// TODO: improve this
+	final oldLocals = ctx.locals;
+	ctx.locals = ctx.locals.copy();
+
 	final methodCtx = ctx.innerEmptyMethod(method);
 	final bodyCtx = methodCtx.innerBlock();
 	final tstmts = method.body.map(stmt -> typeStmt(bodyCtx, stmt));
 	method.typedBody = tstmts;
+
+	ctx.locals = oldLocals;
 }
 
 
 static function resolveMethod(ctx: Ctx, method: Method) {
 	if(method.isMacro) return;
+
+	// TODO: improve this
+	final oldLocals = ctx.locals;
+	ctx.locals = ctx.locals.copy();
 
 	final methodCtx = ctx.innerMethod(method);
 
@@ -454,11 +464,17 @@ static function resolveMethod(ctx: Ctx, method: Method) {
 		final tstmts = body.map(stmt -> typeStmt(bodyCtx, stmt));
 		method.typedBody = tstmts;
 	});
+
+	ctx.locals = oldLocals;
 }
 
 
 static function resolveStaticMethod(ctx: Ctx, method: StaticMethod) {
 	if(method.isMacro) return;
+
+	// TODO: improve this
+	final oldLocals = ctx.locals;
+	ctx.locals = ctx.locals.copy();
 
 	final methodCtx = ctx.innerMethod(method);
 
@@ -499,11 +515,17 @@ static function resolveStaticMethod(ctx: Ctx, method: StaticMethod) {
 		final tstmts = body.map(stmt -> typeStmt(bodyCtx, stmt));
 		method.typedBody = tstmts;
 	});
+
+	ctx.locals = oldLocals;
 }
 
 
 static function resolveInit(ctx: Ctx, init: Init) {
 	if(init.isMacro) return;
+
+	// TODO: improve this
+	final oldLocals = ctx.locals;
+	ctx.locals = ctx.locals.copy();
 
 	final initCtx = ctx.innerMethod(init);
 
@@ -542,11 +564,17 @@ static function resolveInit(ctx: Ctx, init: Init) {
 		final tstmts = body.map(stmt -> typeStmt(bodyCtx, stmt));
 		init.typedBody = tstmts;
 	});
+
+	ctx.locals = oldLocals;
 }
 
 
 static function resolveOperator(ctx: Ctx, op: Operator) {
 	if(op.isMacro) return;
+
+	// TODO: improve this
+	final oldLocals = ctx.locals;
+	ctx.locals = ctx.locals.copy();
 
 	final opCtx = ctx.innerMethod(op);
 
@@ -575,10 +603,16 @@ static function resolveOperator(ctx: Ctx, op: Operator) {
 		final tstmts = body.map(stmt -> typeStmt(bodyCtx, stmt));
 		op.typedBody = tstmts;
 	});
+
+	ctx.locals = oldLocals;
 }
 
 
 static function resolveMember(ctx: Ctx, member: Member) {
+	// TODO: improve this
+	final oldLocals = ctx.locals;
+	ctx.locals = ctx.locals.copy();
+
 	member.type._match(
 		at(null) => ctx.typeDecl.findInstMember(ctx, member.name.name, member.isStatic, true)._and(kind => {
 			member.type = kind.retType();
@@ -593,6 +627,8 @@ static function resolveMember(ctx: Ctx, member: Member) {
 		}
 		member.typedValue = texpr;
 	});
+
+	ctx.locals = oldLocals;
 }
 
 
@@ -603,6 +639,10 @@ static function resolveValueCase(ctx: Ctx, vcase: ValueCase) {
 }
 
 static function resolveTaggedCase(ctx: Ctx, tcase: TaggedCase) {
+	// TODO: improve this
+	final oldLocals = ctx.locals;
+	ctx.locals = ctx.locals.copy();
+
 	final caseCtx = ctx.innerTaggedCase(tcase);
 
 	tcase._match(
@@ -654,6 +694,8 @@ static function resolveTaggedCase(ctx: Ctx, tcase: TaggedCase) {
 
 		tcase.typedInit = init.map(s -> typeStmt(initCtx, s));
 	});
+
+	ctx.locals = oldLocals;
 }
 
 
@@ -1513,6 +1555,28 @@ static function typeLocalAssign(
 							},
 							_ => {}
 						);
+
+						// Basic type inference
+						// TODO: work on this, likely doesn't work in more complex scenarios
+						if(tvalue.t.t.match(TMulti(_)) && local.type != null) {
+							tvalue.e._match(
+								at(ETypeMessage(type, msg)) => {
+									if(type.t.match(TMulti(_))) {
+										tvalue.e = ETypeMessage({
+											t: local.type.t,
+											span: type.span
+										}, msg);
+									}
+								},
+								_ => {}
+							);
+				
+							tvalue.t = {
+								t: local.type.t,
+								span: tvalue.t.span
+							};
+						}
+						
 						ESetName(name, local, tvalue);
 					},
 					at(op!!) => {
@@ -3254,7 +3318,7 @@ static function typeStmt(ctx: Ctx, stmt: UStmt): TStmt {
 			case SForIn(_, lvar, lvar2, _, inExpr, cond, label, body):
 				final forCtx = ctx.innerPattern();
 
-				final texpr = typeExpr(ctx.innerBlock(), inExpr);
+				final texpr = typeExpr(ctx, inExpr);
 
 				final t = texpr.t._or(throw "!!! "+inExpr.mainSpan().display());
 				

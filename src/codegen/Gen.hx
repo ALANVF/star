@@ -642,15 +642,21 @@ class Gen {
 		if(init.noInherit) write("is noinherit ");
 
 		init.typedBody._andOr(tb => {
-			writeBlock(CodeGen.compile(new GenCtx(), tb));
+			final genCtx = new GenCtx();
+			paramNames._and(names => {
+				for(name in names) {
+					genCtx.newLocal(name);
+				}
+			});
+			writeBlock(CodeGen.compile(genCtx, tb));
 		}, {
 			init.native._andOr(nat => nat._match(
 				at(None) => throw "bad",
 				at(Some({name: native})) => {
 					final ops: Opcodes = [];
 					paramNames._and(names => {
-						for(name in names) {
-							ops.push(OGetLocal(name));
+						for(id in 0...names.length) {
+							ops.push(OGetLocal(id + 1));
 						}
 					});
 					if(native == "ptr_new") {
@@ -723,15 +729,21 @@ class Gen {
 		if(mth.noInherit) write("is noinherit ");
 
 		mth.typedBody._andOr(tb => {
-			writeBlock(CodeGen.compile(new GenCtx(), tb));
+			final genCtx = new GenCtx();
+			paramNames._and(names => {
+				for(name in names) {
+					genCtx.newLocal(name);
+				}
+			});
+			writeBlock(CodeGen.compile(genCtx, tb));
 		}, {
 			mth.native._andOr(nat => nat._match(
 				at(None) => throw "bad",
 				at(Some({name: native})) => {
 					final ops: Opcodes = [];
 					paramNames._and(names => {
-						for(name in names) {
-							ops.push(OGetLocal(name));
+						for(id in 0...names.length) {
+							ops.push(OGetLocal(id + 1));
 						}
 					});
 					ops.push(ONative(native));
@@ -802,15 +814,21 @@ class Gen {
 		if(mth.noInherit) write("is noinherit ");
 
 		mth.typedBody._andOr(tb => {
-			writeBlock(CodeGen.compile(new GenCtx(), tb));
+			final genCtx = new GenCtx();
+			paramNames._and(names => {
+				for(name in names) {
+					genCtx.newLocal(name);
+				}
+			});
+			writeBlock(CodeGen.compile(genCtx, tb));
 		}, {
 			mth.native._andOr(nat => nat._match(
 				at(None) => throw "bad",
 				at(Some({name: native})) => {
 					final ops: Opcodes = [OThis];
 					paramNames._and(names => {
-						for(name in names) {
-							ops.push(OGetLocal(name));
+						for(id in 0...names.length) {
+							ops.push(OGetLocal(id + 1));
 						}
 					});
 					ops.push(ONative(native));
@@ -874,14 +892,18 @@ class Gen {
 		if(oper.noInherit) write("is noinherit ");
 
 		oper.typedBody._andOr(tb => {
-			writeBlock(CodeGen.compile(new GenCtx(), tb));
+			final genCtx = new GenCtx();
+			paramName._and(name => {
+				genCtx.newLocal(name);
+			});
+			writeBlock(CodeGen.compile(genCtx, tb));
 		}, {
 			oper.native._andOr(nat => nat._match(
 				at(None) => throw "bad",
 				at(Some({name: native})) => {
 					final ops: Opcodes = [OThis];
 					paramName._and(name => {
-						ops.push(OGetLocal(name));
+						ops.push(OGetLocal(1));
 					});
 					ops.push(ONative(native));
 					ops.push(ORet);
@@ -911,12 +933,12 @@ class Gen {
 			if(isStaticInit) {
 				for(mi in memberInits.nonNull()) { detuple(@final [mem, expr] = mi);
 					ops = ops.concat(CodeGen.compile(ctx, expr));
-					ops.push(OSetStaticField(mem.name.name));
+					ops.push(OSetStaticField(CodeGen.world.getStaticID(mem)));
 				}
 			} else if(isDefaultInit) {
 				for(mi in memberInits.nonNull()) { detuple(@final [mem, expr] = mi);
 					ops = ops.concat(CodeGen.compile(ctx, expr));
-					ops.push(OSetField(mem.name.name));
+					ops.push(OSetField(CodeGen.world.getInstID(mem)));
 				}
 			}
 
@@ -979,21 +1001,18 @@ class Gen {
 	}
 
 	overload function write(opcode: Opcode) opcode._match(
-		at(ONewLocal(name, t)) => {
-			write('new-local $name ');
-			write(t);
-		},
-		at(OGetLocal(name)) => write('get-local $name'),
-		at(OSetLocal(name)) => write('set-local $name'),
-		at(OTeeLocal(name)) => write('tee-local $name'),
+		at(ONewLocal) => write("new-local"),
+		at(OGetLocal(id)) => write('get-local $id'),
+		at(OSetLocal(id)) => write('set-local $id'),
+		at(OTeeLocal(id)) => write('tee-local $id'),
 
-		at(OGetField(name)) => write('get-field $name'),
-		at(OSetField(name)) => write('set-field $name'),
-		at(OTeeField(name)) => write('tee-field $name'),
+		at(OGetField(id)) => write('get-field $id'),
+		at(OSetField(id)) => write('set-field $id'),
+		at(OTeeField(id)) => write('tee-field $id'),
 
-		at(OGetStaticField(name)) => write('get-static-field $name'),
-		at(OSetStaticField(name)) => write('set-static-field $name'),
-		at(OTeeStaticField(name)) => write('tee-static-field $name'),
+		at(OGetStaticField(id)) => write('get-static-field $id'),
+		at(OSetStaticField(id)) => write('set-static-field $id'),
+		at(OTeeStaticField(id)) => write('tee-static-field $id'),
 
 		at(ODup) => write("dup"),
 		at(ODup2) => write("dup2"),
@@ -1015,17 +1034,17 @@ class Gen {
 			writeBlock(_else);
 		},
 
-		at(ODo(label, _do)) => {
-			write('do "$label" ');
+		at(ODo(id, _do)) => {
+			write('do $id ');
 			writeBlock(_do);
 		},
 		
-		at(OLoop(label, loop)) => {
-			write('loop "$label" ');
+		at(OLoop(id, loop)) => {
+			write('loop $id ');
 			writeBlock(loop);
 		},
-		at(OLoopThen(label, loop, then)) => {
-			write('loop "$label" ');
+		at(OLoopThen(id, loop, then)) => {
+			write('loop $id ');
 			writeBlock(loop);
 			write(" then ");
 			writeBlock(then);
@@ -1046,11 +1065,11 @@ class Gen {
 
 		//at(OBreak) => write("break"),
 		//at(OBreakDepth(depth)) => write('break-depth $depth'),
-		at(OBreak(label)) => write('break "$label"'),
+		at(OBreak(id)) => write('break $id'),
 
 		//at(ONext) => write("next"),
 		//at(ONextDepth(depth)) => write('next-depth $depth'),
-		at(ONext(label)) => write('next "$label"'),
+		at(ONext(id)) => write('next $id'),
 
 		at(ONative(native)) => write('native $native'),
 

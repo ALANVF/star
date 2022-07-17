@@ -3,35 +3,62 @@ package codegen;
 @:build(util.Overload.build())
 @:publicFields class GenCtx {
 	var outer: Null<GenCtx>;
-	var anons: UInt;
+	var locals: UInt;
 	var labels: UInt;
-	var loopStack: List<String>;
-	var thisStack: List2<String, TypeRef>;
+	var localsMap: Map<String, LocalID>;
+	var labelsMap: Map<String, LabelID>;
+	var loopStack: List<LabelID>;
+	var thisStack: List2<LocalID, TypeRef>;
 
-	function new(outer: Null<GenCtx> = null, anons: UInt = 0, labels: UInt = 0, loopStack: List<String> = Nil, thisStack: List2<String, TypeRef> = Nil2) {
+	function new(
+		outer: Null<GenCtx> = null,
+		locals: UInt = 0,
+		labels: UInt = 0,
+		localsMap: Null<Map<String, LocalID>> = null,
+		labelsMap: Null<Map<String, LabelID>> = null,
+		loopStack: List<LabelID> = Nil,
+		thisStack: List2<LocalID, TypeRef> = Nil2
+	) {
 		this.outer = outer;
-		this.anons = anons;
+		this.locals = locals;
 		this.labels = labels;
+		this.localsMap = localsMap._or(new Map());
+		this.labelsMap = labelsMap._or(new Map());
 		this.loopStack = loopStack;
 		this.thisStack = thisStack;
 	}
 
 	function inner() {
-		return new GenCtx(this, anons, labels, loopStack, thisStack);
+		return new GenCtx(this, locals, labels, localsMap.copy(), labelsMap.copy(), loopStack, thisStack);
 	}
 
 	function anon() {
-		return '`${anons++}';
+		return ++locals;
 	}
 
-	function label() {
-		return '`${labels++}';
+	function local(name: String) {
+		return localsMap[name].nonNull();
+	}
+
+	function newLocal(name: String) {
+		localsMap[name] = ++locals;
+		return locals;
+	}
+
+	overload function label() {
+		return ++labels;
+	}
+
+	overload function label(label: String) {
+		return labelsMap[label].nonNull();
 	}
 
 	function loop(label: Null<String>) {
 		label._andOr(label => {
-			loopStack = loopStack.prepend(label);
-			return label;
+			final id = ++labels;
+			labelsMap[label] = id;
+			loopStack = loopStack.prepend(id);
+			return id;
 		}, {
 			final lbl = this.label();
 			loopStack = loopStack.prepend(lbl);
@@ -39,14 +66,14 @@ package codegen;
 		});
 	}
 
-	function addThis(name: String, typeref: TypeRef) {
-		return new GenCtx(this, anons, labels, loopStack, Cons2(name, typeref, thisStack));
+	function addThis(id: LocalID, typeref: TypeRef) {
+		return new GenCtx(this, locals, labels, localsMap.copy(), labelsMap.copy(), loopStack, Cons2(id, typeref, thisStack));
 	}
 
 	overload function getThis() {
 		return thisStack._match(
 			at([]) => null,
-			at([[name, typeref], ..._]) => tuple(name, typeref)
+			at([[id, typeref], ..._]) => tuple(id, typeref)
 		);
 	}
 
@@ -60,14 +87,14 @@ package codegen;
 		);
 		return stack._match(
 			at(Nil2) => null,
-			at(Cons2(name, typeref, _)) => tuple(name, typeref)
+			at(Cons2(id, typeref, _)) => tuple(id, typeref)
 		);
 	}
 
 	overload function getLoop() {
 		return loopStack._match(
 			at([]) => null,
-			at([label, ..._]) => label
+			at([id, ..._]) => id
 		);
 	}
 
@@ -84,14 +111,21 @@ package codegen;
 		);
 		return stack._match(
 			at([]) => null,
-			at([label, ..._]) => label
+			at([id, ..._]) => id
 		);
 	}
 
 	function popLoop(label: Null<String>) {
-		loopStack = loopStack.tail();
-		if(label == null) {
+		label._andOr(label => {
+			if(labelsMap[label] == loopStack.head()) {
+				labels--;
+			}
+
+			labelsMap.remove(label);
+		}, {
 			labels--;
-		}
+		});
+
+		loopStack = loopStack.tail();
 	}
 }
