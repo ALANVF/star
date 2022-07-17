@@ -67,13 +67,23 @@ class Dict[K, V] of Mapped[K, V] is friend #[DictIterator[K], DictIterator[K, V]
 	}
 	
 	init [new: pairs (Array[Tuple[K, V]])] {
-		_.pairs = pairs[collect: Pair[K, V] #{K$.0, V$.1}]
+		_.pairs = Array[new: pairs.length]
+		for my i, #{my key, my value} in: pairs {
+			_.pairs[add: Pair[:key :value]]
+		}
 	}
 	
 	
 	;== Copying
 	
-	on [new] (This) => return This[pairs: pairs[collect: Pair[K, V]$0[new]]]
+	;on [new] (This) => return This[pairs: pairs[collect: Pair[K, V]$0[new]]]
+	on [new] (This) {
+		my pairs' = pairs[new]
+		for my i, my pair in: pairs' {
+			pairs'[Unsafe at: i] = pair[new]
+		}
+		return This[pairs: pairs']
+	}
 	
 	
 	;== Sizes
@@ -85,17 +95,38 @@ class Dict[K, V] of Mapped[K, V] is friend #[DictIterator[K], DictIterator[K, V]
 	
 	;== Keys
 	
-	on [keys] (Array[K]) is getter => return pairs[collect: Pair[K, V]$0.key]
+	;on [keys] (Array[K]) is getter => return pairs[collect: Pair[K, V]$0.key]
+	on [keys] (Array[K]) is getter {
+		my res = Array[K][new: pairs.length]
+		for my pair in: pairs {
+			res[add: pair.key]
+		}
+		return res
+	}
 	
 	
 	;== Values
 	
-	on [values] (Array[V]) is getter => return pairs[collect: Pair[K, V]$0.value]
+	;on [values] (Array[V]) is getter => return pairs[collect: Pair[K, V]$0.value]
+	on [values] (Array[V]) is getter {
+		my res = Array[V][new: pairs.length]
+		for my pair in: pairs {
+			res[add: pair.value]
+		}
+		return res
+	}
 	
 	
 	;== Entries
 	
-	on [entries] (Array[Tuple[K, V]]) is getter => return pairs[collect: Pair[K, V]$0[Tuple[K,V]]] ;broken: pairs[Array[Tuple[K, V]]]
+	;on [entries] (Array[Tuple[K, V]]) is getter => return pairs[collect: Pair[K, V]$0[Tuple[K,V]]] ;broken: pairs[Array[Tuple[K, V]]]
+	on [entries] (Array[Tuple[K, V]]) is getter {
+		my res = Array[Tuple[K, V]][new: pairs.length]
+		for my pair in: pairs {
+			res[add: pair[Tuple[K, V]]]
+		}
+		return res
+	}
 	
 	
 	;== Internal
@@ -147,7 +178,7 @@ class Dict[K, V] of Mapped[K, V] is friend #[DictIterator[K], DictIterator[K, V]
 		match this[pairForKey: key] at Maybe[the: my pair] {
 			pair.value = value
 		} else {
-			pairs[add: Pair[K, V] #{key, value}]
+			pairs[add: Pair[:key :value]]
 		}
 	}
 	
@@ -169,7 +200,7 @@ class Dict[K, V] of Mapped[K, V] is friend #[DictIterator[K], DictIterator[K, V]
 	
 	on [atNew: key (K) set: value (V)] is setter {
 		match this[pairForKey: key] at Maybe[none] {
-			pairs[add: Pair[K, V] #{key, value}]
+			pairs[add: Pair[:key :value]]
 		}
 	}
 
@@ -295,6 +326,6 @@ type K
 type V
 category Unsafe for Dict[K, V] {
 	on [atNew: key (K) set: value (V)] is setter {
-		pairs[add: Pair[K, V] #{key, value}]
+		pairs[add: Pair[:key :value]]
 	}
 }
