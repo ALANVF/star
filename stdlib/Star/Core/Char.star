@@ -75,7 +75,7 @@ class Char of Ordered is native[repr: `int` bits: 8 signed: false] is strong {
 		return Range[This][from: this :to]
 	}
 
-	on [to: (This) by: (Int)] (Range[This]) is inline {
+	;[on [to: (This) by: (Int)] (Range[This]) is inline {
 		return Range[This][from: this :to :by]
 	}
 
@@ -93,7 +93,7 @@ class Char of Ordered is native[repr: `int` bits: 8 signed: false] is strong {
 	
 	on [downto: (This) by: (Int)] (Range[This]) is inline {
 		return Range[This][from: this :downto :by]
-	}
+	}]
 
 
 	;== Stepping

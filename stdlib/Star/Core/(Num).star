@@ -19,17 +19,15 @@ protocol Num of Ordered {
 	on [log] (Num)
 	on [log: base (Int)] (Num)
 
-	on [next] (This)
-	on [previous] (This)
-
 	; gcd
 	; lcm
 
-	on [to: (This)] (Range[This]) is inline {
-		return Range[This][from: this :to]
-	}
+	
+	;== Ranges
 
-	on [to: (This) by: (This)] (Range[This]) is inline {
+	on [to: (This)] (Range[This])
+
+	;[on [to: (This) by: (This)] (Range[This]) is inline {
 		return Range[This][from: this :to :by]
 	}
 
@@ -47,7 +45,7 @@ protocol Num of Ordered {
 
 	on [downto: (This) by: (This)] (Range[This]) is inline {
 		return Range[This][from: this :downto :by]
-	}
+	}]
 
 
 	operator `?` (Bool)

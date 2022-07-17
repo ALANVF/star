@@ -79,6 +79,13 @@ class Int of Native.Int32, Num {
 	}
 
 
+	;== Ranges
+
+	on [to: (This)] (Range[This]) is inline {
+		return Range[This][from: this :to]
+	}
+
+
 	;[
 	operator `+` [int (This)] (This)
 	operator `-` [int (This)] (This)

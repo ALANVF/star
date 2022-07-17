@@ -64,17 +64,17 @@ class Dec of Num is native[repr: `dec` bits: 64] is strong {
 	
 	;== Stepping
 	
-	on [next] (This) is native `d64_succ`
-	on [previous] (This) is native `d64_pred`
+	operator `++` (This) is native `d64_succ`
+	operator `--` (This) is native `d64_pred`
 	
 	
 	;== Ranges
 	
-	;;[
 	on [to: (This)] (Range[This]) is inline {
 		return Range[This][from: this :to]
 	}
 
+	;[
 	on [to: (This) by: (This)] (Range[This]) is inline {
 		return Range[This][from: this :to :by]
 	}
@@ -94,7 +94,7 @@ class Dec of Num is native[repr: `dec` bits: 64] is strong {
 	on [downto: (This) by: (This)] (Range[This]) is inline {
 		return Range[This][from: this :downto :by]
 	}
-	;]
+	]
 
 
 	;== Operators
