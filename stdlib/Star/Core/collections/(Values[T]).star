@@ -10,18 +10,18 @@ protocol Values[T] of Positional[T] {
 	;== Creating
 
 	init [new] {
-		buffer = Ptr[T][new]
+		buffer = Ptr[new]
 		length = capacity = 0
 	}
 
 	init [new: capacity (Int)] {
-		buffer = Ptr[T][new: capacity]
+		buffer = Ptr[new: capacity]
 		length = 0
 		_.capacity = capacity
 	}
 
 	init [fill: size (Int) with: value (T)] {
-		buffer = Ptr[T][new: size]
+		buffer = Ptr[new: size]
 		length = capacity = size
 		for my i from: 0 times: size {
 			buffer[at: i] = value

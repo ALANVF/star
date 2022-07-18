@@ -283,7 +283,11 @@ class ProtocolEntry extends ClassLikeEntry {
 	override function addMultiInit(init: MultiInit, e: MultiMethodEntry) multiInits.add(init, e);
 }
 
-class TaggedKindEntry extends ClassLikeEntry {
+interface ITaggedCaseEntries {
+	final taggedCases: Entries<KindTag, TaggedCase, TaggedCaseEntry>;
+}
+
+class TaggedKindEntry extends ClassLikeEntry implements ITaggedCaseEntries {
 	var isFlags: Bool;
 
 	final taggedCases = new Entries<KindTag, TaggedCase, TaggedCaseEntry>();
@@ -300,13 +304,43 @@ class ValueKindEntry extends ClassLikeEntry {
 }
 
 
+class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
+	final staticMembers = new MemberEntries();
+	final instMembers = new MemberEntries();
+
+	final taggedCases = new Entries<KindTag, TaggedCase, TaggedCaseEntry>();
+	final valueCases = new Entries<KindTag, ValueCase, ValueCaseEntry>();
+
+	final singleInits = new SingleInits();
+	final multiInits = new MultiInits();
+
+	final instSingleMethods = new InstSingleMethods();
+	final instMultiMethods = new InstMultiMethods();
+	final castMethods = new CastMethods();
+	final binaryMethods = new BinaryMethods();
+	final unaryMethods = new UnaryMethods();
+
+	override function addStaticMember(mem: Member, e: MemberEntry) staticMembers.add(mem, e);
+	override function addInstMember(mem: Member, e: MemberEntry) instMembers.add(mem, e);
+	override function addSingleInit(init: SingleInit, e: SingleMethodEntry) singleInits.add(init, e);
+	override function addMultiInit(init: MultiInit, e: MultiMethodEntry) multiInits.add(init, e);
+	override function addInstSingle(mth: SingleMethod, e: SingleMethodEntry) instSingleMethods.add(mth, e);
+	override function addInstMulti(mth: MultiMethod, e: MultiMethodEntry) instMultiMethods.add(mth, e);
+	override function addCast(mth: CastMethod, e: CastMethodEntry) castMethods.add(mth, e);
+	override function addBinary(mth: BinaryOperator, e: BinaryMethodEntry) binaryMethods.add(mth, e);
+	override function addUnary(mth: UnaryOperator, e: UnaryMethodEntry) unaryMethods.add(mth, e);
+}
+
+
 @:build(util.Overload.build())
 @:publicFields class World2 {
 	final typeDecls = new Entries<TypeID, AnyTypeDecl, TypeDeclEntry>();
 	final methods = new Map<AnyMethod, Tuple2<TypeDeclEntry, AnyMethodEntry>>(); // TODO: improve this
+	final typevars = new Map<TypeVar, TypeVarEntryMappings>();
 	
 	final declTVars = new Map<TypeVar, Tuple2<TypeDeclEntry, TypeVarEntry>>();
 	final methodTVars = new Map<TypeVar, Tuple2<AnyMethodEntry, TypeVarEntry>>();
+
 
 	final singleInits = new Map<SingleInit, Tuple2<TypeDeclEntry, SingleMethodEntry>>();
 	final multiInits = new Map<MultiInit, Tuple2<TypeDeclEntry, MultiMethodEntry>>();
@@ -321,7 +355,7 @@ class ValueKindEntry extends ClassLikeEntry {
 	final binaryMethods = new Map<BinaryOperator, Tuple2<TypeDeclEntry, BinaryMethodEntry>>();
 
 	final valueCases = new Map<ValueCase, Tuple2<ValueKindEntry, ValueCaseEntry>>();
-	final taggedCases = new Map<TaggedCase, Tuple2<TaggedKindEntry, TaggedCaseEntry>>();
+	final taggedCases = new Map<TaggedCase, Tuple2<TypeDeclEntry/* & ITaggedCaseEntries*/, TaggedCaseEntry>>();
 
 	final staticMembers = new Map<Member, Tuple2<TypeDeclEntry, MemberEntry>>();
 	final instMembers = new Map<Member, Tuple2<TypeDeclEntry, MemberEntry>>();
@@ -336,7 +370,7 @@ class ValueKindEntry extends ClassLikeEntry {
 		);
 	}
 
-	overload function get(decl: AnyTypeDecl) {
+	overload function get(decl: AnyTypeDecl): TypeDeclEntry {
 		if(typeDecls.has(decl)) {
 			return typeDecls.get(decl);
 		} else {
@@ -402,7 +436,7 @@ class ValueKindEntry extends ClassLikeEntry {
 		return staticDeinit._and(sd => CodeGen.compile(new GenCtx(), sd.typedBody));
 	}
 	
-	overload function add(decl: AnyTypeDecl) {
+	overload function add(decl: AnyTypeDecl): TypeDeclEntry {
 		if(typeDecls.has(decl)) {
 			return typeDecls.get(decl);
 		} else {
@@ -526,7 +560,8 @@ class ValueKindEntry extends ClassLikeEntry {
 							instMemberInits.push(tuple(me, tv));
 						});
 					}
-
+					
+					for(it in c.inits) this.add(e, it);
 					for(sm in c.staticMethods) this.add(e, sm);
 					for(im in c.methods) this.add(e, im);
 					for(op in c.operators) this.add(e, op);
@@ -563,7 +598,8 @@ class ValueKindEntry extends ClassLikeEntry {
 							instMemberInits.push(tuple(me, tv));
 						});
 					}
-
+					
+					for(it in p.inits) this.add(e, it);
 					for(sm in p.staticMethods) this.add(e, sm);
 					for(im in p.methods) this.add(e, im);
 					for(op in p.operators) this.add(e, op);
@@ -617,7 +653,7 @@ class ValueKindEntry extends ClassLikeEntry {
 							},
 							_ => throw "bad"
 						);
-						taggedCases[tc] = tuple(e, te);
+						taggedCases[tc] = tuple((cast e : TypeDeclEntry), te);
 						e.taggedCases.add(tc, te);
 						te.defaultInit = tc.typedInit._and(i => CodeGen.compile(new GenCtx(), i));
 					}
@@ -672,18 +708,79 @@ class ValueKindEntry extends ClassLikeEntry {
 
 					e;
 				},
+				at(tvar is TypeVar) => {
+					typevars[tvar]._and(e => return e);
+
+					final e = new TypeVarEntryMappings();
+					typevars[tvar] = e;
+
+					// TODO: don't duplicate code
+					for(tc in tvar.taggedCases) {
+						if(tc.typedAssoc != null) throw "NYI";
+
+						final te = tc._match(
+							at(stc is SingleTaggedCase) => {
+								({
+									name: stc.name.name,
+									slots: null
+								} : TaggedCaseEntry);
+							},
+							at(mtc is MultiTaggedCase) => {
+								({
+									name: mtc.params.map(p -> p.label.name + ":").join(" "),
+									slots: mtc.params.map(p -> this.getTypeRef(p.type))
+								} : TaggedCaseEntry);
+							},
+							_ => throw "bad"
+						);
+						taggedCases[tc] = tuple((e : TypeDeclEntry), te);
+						e.taggedCases.add(tc, te);
+						te.defaultInit = tc.typedInit._and(i => CodeGen.compile(new GenCtx(), i));
+					}
+					for(vc in tvar.valueCases) {
+						final ve: ValueCaseEntry = {
+							name: vc.name.name
+						};
+						valueCases[vc] = cast tuple(e, ve);
+						e.valueCases.add(vc, ve);
+						ve.valueInit = vc.typedValue._and(v => {
+							final r = CodeGen.compile(new GenCtx(), v);
+							r.push(ORet);
+							r;
+						});
+					}
+					for(mem in tvar.staticMembers) this.addStatic(e, mem);
+					for(mem in tvar.members) this.addInst(e, mem);
+					for(it in tvar.inits) this.add(e, it);
+					for(sm in tvar.staticMethods) this.add(e, sm);
+					for(im in tvar.methods) this.add(e, im);
+					for(op in tvar.operators) this.add(e, op);
+
+					e;
+				},
 				_ => throw "bad"
 			);
 		}
 	}
 
 
-	overload inline function getID(tcase: TaggedCase) {
-		return taggedCases[tcase]._2.id;
+	overload function getID(tcase: TaggedCase) {
+		return this.get(tcase)._2.id;
 	}
 
-	overload inline function getID(vcase: ValueCase) {
+	overload function getID(vcase: ValueCase) {
 		return valueCases[vcase]._2.id;
+	}
+	
+	
+	overload function get(tcase: TaggedCase) {
+		return taggedCases[tcase]._or({
+			final d = this.get(tcase.decl);
+			final e = (cast d : ITaggedCaseEntries).taggedCases.get(tcase);
+			final t = tuple(d, e);
+			taggedCases[tcase] = t;
+			t;
+		});
 	}
 
 
@@ -1048,13 +1145,16 @@ class ValueKindEntry extends ClassLikeEntry {
 		if(methods.exists(mth)) {
 			return methods[mth]._2.id;
 		} else {
-			mth.decl._match(
-				at(tv is TypeVar) => {
-					// TODO
-					return 1;
-				},
-				_ => return this.add(this.get(mth.decl), mth).id
-			);
+			return this.add(this.get(mth.decl), mth).id;
+		}
+	}
+
+	overload function get(mth: AnyMethod) {
+		if(methods.exists(mth)) {
+			return methods[mth];
+		} else {
+			final decl = this.get(mth.decl);
+			return tuple(decl, this.add(decl, mth));
 		}
 	}
 

@@ -2168,7 +2168,7 @@ overload static function compile(ctx: GenCtx, resType: Type, type: Type, candida
 						if(tctx.size() > 0) {
 							final _ictx = new TVarInstCtx();
 							for(tv => t in tctx) {
-								_ictx[world.getTVar(tv)] = world.getTypeRef(t);
+								_ictx[world.getTVar(tv)] = genTVarEntry(ctx, tv, t);
 							}
 							_ictx;
 						} else
@@ -2211,7 +2211,7 @@ overload static function compile(ctx: GenCtx, resType: Type, type: Type, candida
 						if(tctx.size() > 0) {
 							final _ictx = new TVarInstCtx();
 							for(tv => t in tctx) {
-								_ictx[world.getTVar(tv)] = world.getTypeRef(t);
+								_ictx[world.getTVar(tv)] = genTVarEntry(ctx, tv, t);
 							}
 							_ictx;
 						} else
@@ -2251,7 +2251,7 @@ overload static function compile(ctx: GenCtx, resType: Type, type: Type, candida
 						if(tctx.size() > 0) {
 							final _ictx = new TVarInstCtx();
 							for(tv => t in tctx) {
-								_ictx[world.getTVar(tv)] = world.getTypeRef(t);
+								_ictx[world.getTVar(tv)] = genTVarEntry(ctx, tv, t);
 							}
 							_ictx;
 						} else
@@ -2453,7 +2453,7 @@ overload static function compile(ctx: GenCtx, sender: Type, candidates: Array<Ob
 					if(tctx.size() > 0) {
 						final _ictx = new TVarInstCtx();
 						for(tv => t in tctx) {
-							_ictx[world.getTVar(tv)] = world.getTypeRef(t);
+							_ictx[world.getTVar(tv)] = genTVarEntry(ctx, tv, t);
 						}
 						// Check for dup dvars in tvar table (which happens for some reason?)
 						typeref._match(
@@ -2506,7 +2506,7 @@ overload static function compile(ctx: GenCtx, sender: Type, candidates: Array<Ob
 					if(tctx.size() > 0) {
 						final _ictx = new TVarInstCtx();
 						for(tv => t in tctx) {
-							_ictx[world.getTVar(tv)] = world.getTypeRef(t);
+							_ictx[world.getTVar(tv)] = genTVarEntry(ctx, tv, t);
 						}
 						// Check for dup dvars in tvar table (which happens for some reason?)
 						typeref._match(
@@ -2612,7 +2612,7 @@ overload static function compile(sender: Type, target: Type, candidates: Array<C
 				if(tctx.size() > 0) {
 					final _ictx = new TVarInstCtx();
 					for(tv => t in tctx) {
-						_ictx[world.getTVar(tv)] = world.getTypeRef(t);
+						_ictx[world.getTVar(tv)] = genTVarEntry(/*BAD*/untyped null, tv, t);
 					}
 					_ictx;
 				} else
@@ -2724,7 +2724,7 @@ overload static function compile(ctx: GenCtx, sender: Type, kinds: Array<TExpr.B
 						if(tctx.size() > 0) {
 							final _ictx = new TVarInstCtx();
 							for(tv => t in tctx) {
-								_ictx[world.getTVar(tv)] = world.getTypeRef(t);
+								_ictx[world.getTVar(tv)] = genTVarEntry(ctx, tv, t);
 							}
 							_ictx;
 						} else
@@ -2804,6 +2804,76 @@ static function compileSuffix(sender: Type, kind: UnaryOpKind, wantValue: Bool) 
 	}*/
 
 	return res;
+}
+
+
+static function genTVarEntry(ctx: GenCtx, tv: TypeVar, t: Type): Tuple2<TypeRef, Null<TVarMappings>> {
+	final tref = world.getTypeRef(t);
+	
+	var mappings: Null<TVarMappings> = null;
+	if(tv.inits.length != 0
+	|| tv.members.length != 0
+	|| tv.methods.length != 0
+	|| tv.operators.length != 0
+	|| tv.staticMembers.length != 0
+	|| tv.staticMethods.length != 0
+	|| tv.taggedCases.length != 0
+	|| tv.valueCases.length != 0
+	|| tv.categories.length != 0
+	) {
+		final m = new TVarMappings();
+
+		if(tv.inits.length != 0) {
+
+		}
+
+		if(tv.members.length != 0) {
+
+		}
+
+		if(tv.methods.length != 0) {
+			for(mth in tv.methods) mth._match(
+				at(sm is SingleMethod) => {
+					
+				},
+				at(mm is MultiMethod) => {
+
+				},
+				at(cm is CastMethod) => {
+					detuple(@final [de, me] = world.get(cm));
+					// TODO
+				},
+				_ => throw "bad"
+			);
+		}
+
+		if(tv.operators.length != 0) {
+
+		}
+
+		if(tv.staticMembers.length != 0) {
+
+		}
+
+		if(tv.staticMethods.length != 0) {
+
+		}
+
+		if(tv.taggedCases.length != 0) {
+
+		}
+
+		if(tv.valueCases.length != 0) {
+
+		}
+
+
+		if(tv.categories.length != 0) throw "NYI!";
+
+		mappings = m;
+	}
+
+	return tuple(tref, mappings);
 }
 
 

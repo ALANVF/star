@@ -1,3 +1,3 @@
 package codegen;
 
-typedef TVarInstCtx = Map<TVar, TypeRef>
+typedef TVarInstCtx = Map<TVar, Tuple2<TypeRef, Null<TVarMappings>>>;

@@ -1333,10 +1333,15 @@ class Gen {
 	}
 
 	overload function write(inst: TVarInstCtx) {
-		writeBlock(inst, (tv, t) -> {
+		writeBlock(inst, (tv, t: Tuple2<TypeRef, Null<TVarMappings>>) -> {
 			write(tv);
 			write(" => ");
-			write(t);
+			write(t._1);
+			t._2._and(mappings => {
+				write(" {");
+				write(Std.string(mappings)); // TODO
+				write("}");
+			});
 		});
 	}
 
