@@ -5,7 +5,7 @@ class RangeIterator[T] of Iterator[T] {
 	my value (T) = to
 
 	on [next] (Maybe[T]) {
-		if value ?= to {
+		if value > to { ; `>` to deal with end value
 			return Maybe[none]
 		} else {
 			return Maybe[the: value++]

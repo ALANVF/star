@@ -114,8 +114,10 @@ class Series[T] of Ordered, Iterable[T] {
 	}
 
 	on [next] (This) is inline => return this[skip: 1]
+	operator `++` (This) is inline => return this[skip: 1]
 	
 	on [previous] (This) is inline => return this[skip: -1]
+	operator `--` (This) is inline => return this[skip: -1]
 
 
 	;== Comparing

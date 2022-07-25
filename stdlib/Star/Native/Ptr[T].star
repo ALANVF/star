@@ -43,8 +43,8 @@ class Ptr[T] of Ordered is native[repr: `ptr` elem: T] {
 	
 	on [fill: length (Int) with: value (T)] is native `ptr_fill_with`
 
-	on [next] (Ptr[T]) => return this + 1
-	on [previous] (Ptr[T]) => return this - 1
+	operator `++` (Ptr[T]) => return this + 1
+	operator `--` (Ptr[T]) => return this - 1
 
 
 	operator `+` [offset (Int)] (This) is native `ptr_add`
