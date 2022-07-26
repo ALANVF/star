@@ -684,7 +684,7 @@ proc readOpcode(input: Input, op: var Opcode) =
     of oDefaultInit:
         input.readTypeRef op.di_t
     of oInitThis_s, oInitThis_m:
-        input.readTypeRef op.super
+        input.readTypeRef op.init_t
         op.init_id = input.readInitID
         input.readOptTypeVarInstCtx op.init_ctx
     of oSend_is:

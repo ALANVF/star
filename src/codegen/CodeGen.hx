@@ -270,7 +270,178 @@ overload static function compile(ctx: GenCtx, stmt: TStmt): Opcodes return stmt.
 			final iterName = ctx.anon();
 
 			kpat._andOr(kpat => {
-				trace("TODO "+stmt.orig.mainSpan().display());
+				etype.iterAssocType()._andOr(assocType => {
+					detuple(@final [keyType, valueType] = assocType.nonNull()); // TODO: cache this or smth
+					final iterType = Pass2.STD_Iterator2.applyArgs([keyType, valueType]).nonNull();
+
+					var overloads = CastKind.reduceOverloads(
+						etype.findCast(/*BAD*/{where:WBlock,thisType:etype}, iterType, etype),
+						etype,
+						iterType
+					);
+
+					// hacky
+					if(overloads.every(ov -> ov._match(
+						at(CMethod({typedBody: null})) => true,
+						_ => false
+					))) {
+						overloads = [overloads[0]];
+					}
+
+					final casts = overloads/*.filter(
+						k -> k._match(
+							at(CMethod(m)) => (etype.t.match(TTypeVar(_) | TInstance(_ == Pass2.STD_Iterable2 => true, _, _))),
+							_ => true
+						)
+					)*/._match(
+						at([]) => throw 'Cannot iterate on type `${etype.fullName()}`!',
+						at(kinds = [_]) => kinds,
+						at(kinds) => throw 'Cannot find specific iterator for type `${etype.fullName()}`!'+kinds.map(
+							k -> k._match(
+								at(CMethod(m)) => m.span.display(),
+								_ => throw "bad"
+							)
+						)
+					);
+
+					final iterNext = iterType.findSingleInst(/*BAD*/null, "next", Pass2.STD_Iterator2).nonNull();
+					final iterRet = iterNext.retType().nonNull();
+					final noneCase = iterRet.allTaggedCases().find(c -> c is SingleTaggedCase).nonNull();
+					final noneCaseID = world.getID(noneCase);
+
+					res = res.concat(compile(etype, iterType, casts));
+					res.push(ONewLocal);
+					res.push(OSetLocal(iterName));
+
+					final ctx2 = ctx.inner();
+					var loop = [
+						OGetLocal(iterName)
+					];
+
+					loop = loop.concat(compile(ctx2, iterType, iterNext, true));
+					
+					loop.push(ODup);
+					loop.push(OKindID);
+					loop.push(OTCaseID(world.getTypeRef(iterRet), noneCaseID));
+					loop.push(ONative("caseid_eq"));
+					loop.push(OIf([
+						OBreak(label2)
+					]));
+
+					loop.push(OKindSlot(0));
+
+					final captures = new Map<String, Capture>();
+					final pat1 = compile(ctx2, exitLoop, captures, keyType, kpat, true, true, true);
+					final pat2 = compile(ctx2, exitLoop, captures, valueType, vpat, true, true, true);
+
+					
+					compileCapturesPre(ctx2, loop, captures);
+					loop.push(ODup);
+					loop.push(OGetMember(1));
+					loop = loop.concat(pat1);
+					loop.push(OGetMember(2));
+					loop = loop.concat(pat2);
+					cond._and(cond => {
+						loop = loop.concat(compile(ctx2, cond));
+						loop.push(exitLoop);
+					});
+					compileCapturesPost(ctx2, loop, captures);
+
+					loop = loop.concat(compile(ctx2, body));
+
+					res.push(OLoop(label2, loop));
+				}, {
+					// TODO: don't duplicate code
+					final elemType = etype.iterElemType().nonNull(); // TODO: cache this or smth
+					final iterType = Pass2.STD_Iterator1.applyArgs([elemType]).nonNull();
+					
+					var overloads = CastKind.reduceOverloads(
+						etype.findCast(/*BAD*/{where:WBlock,thisType:etype}, iterType, etype),
+						etype,
+						iterType
+					);
+
+					// hacky
+					if(overloads.every(ov -> ov._match(
+						at(CMethod({typedBody: null})) => true,
+						_ => false
+					))) {
+						overloads = [overloads[0]];
+					}
+
+					final casts = overloads/*.filter(
+						k -> k._match(
+							at(CMethod(m)) => (etype.t.match(TTypeVar(_) | TInstance(_ == Pass2.STD_Iterable1 => true, _, _))),
+							_ => true
+						)
+					)*/._match(
+						at([]) => throw 'Cannot iterate on type `${etype.fullName()}`!',
+						at(kinds = [_]) => kinds,
+						at(kinds) => throw 'Cannot find specific iterator for type `${etype.fullName()}`!'+kinds.map(
+							k -> k._match(
+								at(CMethod(m)) => m.span.display(),
+								_ => throw "bad"
+							)
+						)
+					);
+
+					final iterNext = iterType.findSingleInst(/*BAD*/null, "next", Pass2.STD_Iterator1).nonNull();
+					final iterRet = iterNext.retType().nonNull();
+					final noneCase = iterRet.allTaggedCases().find(c -> c is SingleTaggedCase).nonNull();
+					final noneCaseID = world.getID(noneCase);
+
+					final iname = kpat._andOr(kp => kp.p._match(
+						at(PMy(name)) => ctx.newLocal(name),
+						at(PIgnore) => ctx.anon(),
+						_ => throw "NYI"
+					), {
+						ctx.anon();
+					});
+
+					res = res.concat(compile(etype, iterType, casts));
+					res.push(ONewLocal);
+					res.push(OSetLocal(iterName));
+
+					res.push(ONewLocal);
+					res.push(OInt32(0, true));
+					res.push(OSetLocal(iname));
+
+					final ctx2 = ctx.inner();
+					var loop = [
+						OGetLocal(iterName)
+					];
+
+					loop = loop.concat(compile(ctx2, iterType, iterNext, true));
+					
+					loop.push(ODup);
+					loop.push(OKindID);
+					loop.push(OTCaseID(world.getTypeRef(iterRet), noneCaseID));
+					loop.push(ONative("caseid_eq"));
+					loop.push(OIf([
+						OBreak(label2)
+					]));
+
+					loop.push(OKindSlot(0));
+
+					final captures = new Map<String, Capture>();
+					final pat = compile(ctx2, exitLoop, captures, elemType, vpat, true, true, true);
+
+					compileCapturesPre(ctx2, loop, captures);
+					loop = loop.concat(pat);
+					cond._and(cond => {
+						loop = loop.concat(compile(ctx2, cond));
+						loop.push(exitLoop);
+					});
+					compileCapturesPost(ctx2, loop, captures);
+
+					loop = loop.concat(compile(ctx2, body));
+
+					res.push(OLoopThen(label2, loop, [
+						OGetLocal(iname),
+						ONative("i32_succ"),
+						OSetLocal(iname)
+					]));
+				});
 			}, {
 				final elemType = etype.iterElemType().nonNull(); // TODO: cache this or smth
 				final iterType = Pass2.STD_Iterator1.applyArgs([elemType]).nonNull();

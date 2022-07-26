@@ -822,12 +822,47 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
                 return res
     
     of oInitThis_s:
-        # TODO
-        discard
+        let t = state.getInCtx(op.init_t)
+
+        let mstate = state.newState(addr t, state.thisValue)
+        let mth = mstate.thisDecl.singleInits[][op.init_id]
+        
+        let mscope = Scope(locals: @[])
+
+        let res = eval(mstate, mscope, mth.body)
+        if res != nil:
+            case res.kind
+            of rReturnVoid:
+                discard
+            of rReturn:
+                assert false, "???"
+            else:
+                return res
     
     of oInitThis_m:
-        # TODO
-        discard
+        let t = state.getInCtx(op.init_t)
+        
+        let mstate = state.newState(addr t, state.thisValue, op.init_ctx)
+        let mth = mstate.thisDecl.multiInits[][op.init_id]
+        
+        let numParams = mth.params.len
+        var locals: seq[Value]
+        setLen(locals, numParams)
+        shallow(locals)
+        # TODO: maybe use toOpenArray
+        for i in countdown(numParams-1, 0):
+            locals[i] = state.stack.pop
+        let mscope = Scope(locals: locals)
+
+        let res = eval(mstate, mscope, mth.body)
+        if res != nil:
+            case res.kind
+            of rReturnVoid:
+                discard
+            of rReturn:
+                assert false, "???"
+            else:
+                return res
 
     of oSend_is:
         let t = state.getInCtx(op.is_t)

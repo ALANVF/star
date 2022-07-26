@@ -116,8 +116,8 @@ enum Opcode {
 
 	ODefaultInit(t: TypeRef);
 
-	OInitThis_S(_super: TypeRef, id: InitID);
-	OInitThis_M(_super: TypeRef, id: InitID, ?ctx: TVarInstCtx);
+	OInitThis_S(t: TypeRef, id: InitID);
+	OInitThis_M(t: TypeRef, id: InitID, ?ctx: TVarInstCtx);
 
 	// TODO: implement type variable method mappings for the tvar ctx
 	OSend_IS(t: TypeRef, id: InitID);

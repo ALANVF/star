@@ -1174,14 +1174,14 @@ class Gen {
 			write(t);
 		},
 
-		at(OInitThis_S(_super, id)) => {
+		at(OInitThis_S(t, id)) => {
 			write("init-this-s ");
-			write(_super);
+			write(t);
 			write(' $id');
 		},
-		at(OInitThis_M(_super, id, ctx)) => {
+		at(OInitThis_M(t, id, ctx)) => {
 			write("init-this-m ");
-			write(_super);
+			write(t);
 			write(' $id');
 			ctx._and(ctx => write(ctx));
 		},

@@ -671,7 +671,7 @@ public:
         of oDefaultInit:
             di_t: TypeRef
         of oInitThis_s, oInitThis_m:
-            super: TypeRef
+            init_t: TypeRef
             init_id: InitID
             init_ctx: nil TypeVarInstCtx
         of oSend_is:
