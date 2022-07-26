@@ -51,6 +51,7 @@ class Class extends ClassLike {
 			case IsNative(_, [{label: {name: "repr"}, expr: ELitsym(_, repr)}], _): switch repr {
 				case "void": cls.native = Some(NVoid);
 				case "bool": cls.native = Some(NBool);
+				case "dec64": cls.native = Some(NDec64);
 				case "voidptr": cls.native = Some(NVoidPtr);
 				default: cls.errors.push(Type_InvalidAttribute(cls, cls.name.name, "native", span));
 			}
@@ -59,11 +60,11 @@ class Class extends ClassLike {
 				{label: {name: "elem"}, expr: EType(t)}
 			], _): cls.native = Some(NPtr(cls.makeTypePath(t)));
 			case IsNative(_, [
-				{label: {name: "repr"}, expr: ELitsym(_, "dec")},
+				{label: {name: "repr"}, expr: ELitsym(_, "float")},
 				{label: {name: "bits"}, expr: EInt(_, bits, _)}
 			], _): switch bits {
-				case 32: cls.native = Some(NDec32);
-				case 64: cls.native = Some(NDec64);
+				case 32: cls.native = Some(NFloat32);
+				case 64: cls.native = Some(NFloat64);
 				default: cls.errors.push(Type_InvalidAttribute(cls, cls.name.name, "native", span));
 			}
 			case IsNative(_, [

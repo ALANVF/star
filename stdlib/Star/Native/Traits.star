@@ -31,10 +31,13 @@ module Traits {
 	type T is native[repr: `int` bits: 64 signed: false]
 	alias IsUInt64 = T
 	
-	type T is native[repr: `dec` bits: 32]
-	alias IsDec32 = T
+	type T is native[repr: `float` bits: 32]
+	alias IsFloat32 = T
 	
-	type T is native[repr: `dec` bits: 64]
+	type T is native[repr: `float` bits: 64]
+	alias IsFloat64 = T
+
+	type T is native[repr: `dec64`]
 	alias IsDec64 = T
 	
 	

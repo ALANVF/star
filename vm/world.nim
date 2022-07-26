@@ -22,7 +22,7 @@ public:
             defaultVoid, defaultBool,
             defaultInt8, defaultInt16, defaultInt32, defaultInt64,
             defaultUInt8, defaultUInt16, defaultUInt32, defaultUInt64,
-            defaultDec32, defaultDec64,
+            defaultFloat32, defaultFloat64, defaultDec64,
             defaultChar,
             defaultStr,
             defaultPtr,
@@ -33,7 +33,7 @@ public:
         defaultVoidRef, defaultBoolRef,
             defaultInt8Ref, defaultInt16Ref, defaultInt32Ref, defaultInt64Ref,
             defaultUInt8Ref, defaultUInt16Ref, defaultUInt32Ref, defaultUInt64Ref,
-            defaultDec32Ref, defaultDec64Ref,
+            defaultFloat32Ref, defaultFloat64Ref, defaultDec64Ref,
             defaultCharRef,
             defaultStrRef: TypeRef
 

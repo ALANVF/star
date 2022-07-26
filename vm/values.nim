@@ -1,4 +1,5 @@
 import util
+import dec64
 import ids
 import typeref
 import std/tables
@@ -11,7 +12,7 @@ public:
         vVoid, # Acts like a unit value
         vBool,
         vInt8, vUInt8, vInt16, vUInt16, vInt32, vUInt32, vInt64, vUInt64,
-        vDec32, vDec64,
+        vFloat32, vFloat64, vDec64,
         vPtr, vVoidPtr,
 
         vClass,
@@ -35,8 +36,9 @@ public:
         of vUInt32: u32: uint32
         of vInt64: i64: int64
         of vUInt64: u64: uint64
-        of vDec32: d32: float32
-        of vDec64: d64: float64
+        of vFloat32: f32: float32
+        of vFloat64: f64: float64
+        of vDec64: d64: Dec64
         of vPtr:
             offset: uint
             `ptr`: ref seq[Value]

@@ -67,7 +67,8 @@ class Gen {
 		at(NUInt32) => write("uint32"),
 		at(NInt64) => write("int64"),
 		at(NUInt64) => write("uint64"),
-		at(NDec32) => write("dec32"),
+		at(NFloat32) => write("float32"),
+		at(NFloat64) => write("float64"),
 		at(NDec64) => write("dec64"),
 		at(NVoidPtr) => write("voidptr"),
 		at(NPtr(t)) => {
@@ -1082,8 +1083,10 @@ class Gen {
 		at(OInt64(int, true)) => write('int64 $int'),
 		at(OInt64(int, false)) => write('uint64 $int'),
 
-		at(ODec32(int, dec, null)) => write('dec32 $int.$dec'),
-		at(ODec32(int, dec, exp!!)) => write('dec32 $int.${dec}e$exp'),
+		at(OFloat32(int, dec, null)) => write('float32 $int.$dec'),
+		at(OFloat32(int, dec, exp!!)) => write('float32 $int.${dec}e$exp'),
+		at(OFloat64(int, dec, null)) => write('float64 $int.$dec'),
+		at(OFloat64(int, dec, exp!!)) => write('float64 $int.${dec}e$exp'),
 		at(ODec64(int, dec, null)) => write('dec64 $int.$dec'),
 		at(ODec64(int, dec, exp!!)) => write('dec64 $int.${dec}e$exp'),
 

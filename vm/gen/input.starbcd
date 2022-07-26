@@ -11,7 +11,8 @@ types {
 	Star.UInt16
 	Star.UInt32
 	Star.UInt64
-	Star.Dec32
+	Star.Float32
+	Star.Float64
 	Star.Dec64
 	Star.Char
 	Star.Str
@@ -261,22 +262,26 @@ class 12 Star.UInt64 {
 
 }
 
-class 13 Star.Dec32 {
+class 13 Star.Float32 {
 
 }
 
-class 14 Star.Dec64 {
+class 14 Star.Float64 {
 
 }
 
-class 15 Star.Char {
+class 15 Star.Dec64 {
 
 }
 
-class 16 Star.Str {
+class 16 Star.Char {
+
+}
+
+class 17 Star.Str {
 	inst-members {
-		my 1 buffer (inst#17{
-			dvar#1 => decl#15
+		my 1 buffer (inst#18{
+			dvar#1 => decl#16
 		})
 		
 		my 2 length (decl#7)
@@ -286,8 +291,8 @@ class 16 Star.Str {
 
 	single-inits {
 		init 1 [new] {
-			send-ss inst#17{
-				dvar#1 => decl#15
+			send-ss inst#18{
+				dvar#1 => decl#16
 			} 1
 			set-field 1
 			int32 0
@@ -301,7 +306,7 @@ class 16 Star.Str {
 			new: 1 (decl#7)
 		] {
 			get-local 1
-			new-ptr decl#15
+			new-ptr decl#16
 			set-field 1
 			int32 0
 			set-field 2
@@ -312,7 +317,7 @@ class 16 Star.Str {
 	}
 }
 
-class 17 Star.Ptr typevars {
+class 18 Star.Ptr typevars {
 	type 1 T
 } {
 	static-single-methods {
@@ -347,39 +352,39 @@ class 17 Star.Ptr typevars {
 	}
 }
 
-protocol 18 Star.Iterable1 {
+protocol 19 Star.Iterable1 {
 
 }
 
-protocol 19 Star.Iterable2 {
+protocol 20 Star.Iterable2 {
 
 }
 
-protocol 20 Star.Iterator1 {
+protocol 21 Star.Iterator1 {
 
 }
 
-protocol 21 Star.Iterator2 {
+protocol 22 Star.Iterator2 {
 
 }
 
-protocol 22 Star.Func0 {
+protocol 23 Star.Func0 {
 
 }
 
-protocol 23 Star.Func1 {
+protocol 24 Star.Func1 {
 
 }
 
-protocol 24 Star.Func2 {
+protocol 25 Star.Func2 {
 
 }
 
-protocol 25 Star.Func3 {
+protocol 26 Star.Func3 {
 
 }
 
-module 26 Main is main 1 {
+module 27 Main is main 1 {
 	static-single-methods {
 		on 1 [main] (decl#2) {
 			str "Hello, world!"
@@ -392,7 +397,7 @@ module 26 Main is main 1 {
 
 			int32 5
 			int32 10
-			send-im decl#27 1
+			send-im decl#28 1
 			new-local
 			set-local 1
 
@@ -401,13 +406,13 @@ module 26 Main is main 1 {
 
 			int32 5
 			int32 4
-			send-im decl#27 1
+			send-im decl#28 1
 			native debug_print
 
 			get-local 1
 			int32 5
 			int32 10
-			send-im decl#27 1
+			send-im decl#28 1
 			send-bo decl#1 1
 			native debug_print
 
@@ -504,8 +509,13 @@ module 26 Main is main 1 {
 			native debug_print
 
 			int32 12
-			int32 15
+			int32 16
 			send-mi decl#7 1
+			native debug_print
+
+			dec64 0.1
+			dec64 0.2
+			native d64_add
 			native debug_print
 		}
 	}
@@ -552,7 +562,7 @@ module 26 Main is main 1 {
 	}
 }
 
-class 27 Point {
+class 28 Point {
 	inst-members {
 		my 1 x (decl#7)
 		my 2 y (decl#7)

@@ -817,7 +817,8 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 						haxe.Int64.ofInt(int)
 					), kind == NInt64);
 				},
-				at(NDec32) => ODec32(int, "0", exp),
+				at(NFloat32) => OFloat32(int, "0", exp),
+				at(NFloat64) => OFloat64(int, "0", exp),
 				at(NDec64) => ODec64(int, "0", exp),
 				_ => throw "Cannot construct int literal from non-numeric type!"
 			)
@@ -849,7 +850,8 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 					), kind == NInt64);
 				},
 				at(NUInt8 | NUInt16 | NUInt32 | NUInt64) => throw "Cannot construct unsigned int literal using a negative number!",
-				at(NDec32) => ODec32(-int, "0", exp),
+				at(NFloat32) => OFloat32(-int, "0", exp),
+				at(NFloat64) => OFloat64(-int, "0", exp),
 				at(NDec64) => ODec64(-int, "0", exp),
 				_ => throw "Cannot construct int literal from non-numeric type!"
 			)
@@ -859,7 +861,8 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 		[type.getNative()._match(
 			at(null) => throw "Cannot construct dec literal from non-native type!",
 			at(kind!!) => kind._match(
-				at(NDec32) => ODec32(int, dec, exp),
+				at(NFloat32) => OFloat32(int, dec, exp),
+				at(NFloat64) => OFloat64(int, dec, exp),
 				at(NDec64) => ODec64(int, dec, exp),
 				_ => throw "Cannot construct dec literal from non-numeric type!"
 			)
@@ -869,7 +872,8 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 		[type.getNative()._match(
 			at(null) => throw "Cannot construct dec literal from non-native type!",
 			at(kind!!) => kind._match(
-				at(NDec32) => ODec32(-int, dec, exp),
+				at(NFloat32) => OFloat32(-int, dec, exp),
+				at(NFloat64) => OFloat64(-int, dec, exp),
 				at(NDec64) => ODec64(-int, dec, exp),
 				_ => throw "Cannot construct dec literal from non-numeric type!"
 			)
@@ -2743,7 +2747,7 @@ overload static function compile(ctx: GenCtx, sender: Type, kinds: Array<TExpr.B
 
 			res;
 		},
-		_ => throw "NYI"
+		_ => throw "NYI "+right.orig.mainSpan().display()
 	);
 }
 

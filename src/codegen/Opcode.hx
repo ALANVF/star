@@ -61,7 +61,8 @@ enum Opcode {
 	OInt32(int: Int, signed: Bool);
 	OInt64(int: /*hl.I64*/haxe.Int64, signed: Bool);
 	
-	ODec32(int: Int, dec: String, ?exp: Int);
+	OFloat32(int: Int, dec: String, ?exp: Int);
+	OFloat64(int: Int, dec: String, ?exp: Int);
 	ODec64(int: Int, dec: String, ?exp: Int);
 
 	OChar(char: Char);

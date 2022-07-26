@@ -2071,7 +2071,8 @@ class Dumper {
 			at(NUInt32) => write("uint32"),
 			at(NInt64) => write("int64"),
 			at(NUInt64) => write("uint64"),
-			at(NDec32) => write("dec32"),
+			at(NFloat32) => write("float32"),
+			at(NFloat64) => write("float64"),
 			at(NDec64) => write("dec64"),
 			at(NVoidPtr) => write("voidptr"),
 			at(NPtr(t)) => {

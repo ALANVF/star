@@ -1,25 +1,18 @@
 use Native
 
-class Dec of Num is native[repr: `dec` bits: 64] is strong {
+class Dec of Num is native[repr: `dec64`] is strong {
 	;== Constants
 
-	on [nan] (Dec) is static is getter is native `d64_nan`
-	on [inf] (Dec) is static is getter is native `d64_inf`
-	on [neg_inf] (Dec) is static is getter is native `d64_neg_inf`
-	
-	on [pi] (Dec) is static is getter is native `d64_pi`
+	on [nan] (This) is static is getter is native `d64_nan`
+
+	on [pi] (This) is static is getter is native `d64_pi`
+	on [e] (This) is static is getter is native `d64_e`
 
 
 	;== Math
 
-	on [sign] (Dec) {
-		case {
-			at this < 0.0 => return -1.0
-			at this > 0.0 => return 1.0
-			else          => return 0.0
-		}
-	}
-
+	on [isNaN] (This) is native `d64_is_nan`
+	on [sign] (This) is native `d64_sign`
 	on [abs] (This) is native `d64_abs`
 	on [sqrt] (This) is native `d64_sqrt`
 
@@ -48,6 +41,7 @@ class Dec of Num is native[repr: `dec` bits: 64] is strong {
 	on [truncate] (This) is native `d64_trunc`
 	on [round] (This) is native `d64_round`
 	
+	;@@ TODO: maybe use native impl
 	on [round: digits (Int)] (This) {
 		my tens = 10 ** digits
 
@@ -60,6 +54,8 @@ class Dec of Num is native[repr: `dec` bits: 64] is strong {
 	on [log: base (Int)] (This) {
 		return this[log] / base[log]
 	}
+
+	on [normal] (This) is native `d64_normal`
 	
 	
 	;== Stepping
@@ -156,7 +152,18 @@ class Dec of Num is native[repr: `dec` bits: 64] is strong {
 	on [UInt32] is native `cast_d64_u32`
 	on [Int64] is native `cast_d64_i64`
 	on [UInt64] is native `cast_d64_u64`
+	on [Float32] is native `cast_d64_f32`
+	on [Float64] is native `cast_d64_f64`
 	on [Int] is native `cast_d64_i32`
 	on [Dec] is inline => return this
 	on [Str] is native `cast_d64_str`
+}
+
+category Native for Dec {
+	;== Creation
+
+	on [coefficient: (Int64) exponent: (Int8)] (This) is static is native `d64_new`
+
+	on [coefficient] (Int64) is getter is native `d64_get_coef`
+	on [exponent] (Int8) is getter is native `d64_get_exp`
 }

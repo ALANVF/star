@@ -1,4 +1,5 @@
 import util
+import dec64
 import ids
 import typeref
 import typevar
@@ -82,7 +83,8 @@ proc loadWorld*(input: Input): World =
     result.defaultUInt16 = input.readTypeId
     result.defaultUInt32 = input.readTypeId
     result.defaultUInt64 = input.readTypeId
-    result.defaultDec32 = input.readTypeId
+    result.defaultFloat32 = input.readTypeId
+    result.defaultFloat64 = input.readTypeId
     result.defaultDec64 = input.readTypeId
     result.defaultChar = input.readTypeId
     result.defaultStr = input.readTypeId
@@ -106,7 +108,8 @@ proc loadWorld*(input: Input): World =
     result.defaultUInt16Ref = TypeRef(kind: trDecl, declID: result.defaultUInt16)
     result.defaultUInt32Ref = TypeRef(kind: trDecl, declID: result.defaultUInt32)
     result.defaultUInt64Ref = TypeRef(kind: trDecl, declID: result.defaultUInt64)
-    result.defaultDec32Ref = TypeRef(kind: trDecl, declID: result.defaultDec32)
+    result.defaultFloat32Ref = TypeRef(kind: trDecl, declID: result.defaultFloat32)
+    result.defaultFloat64Ref = TypeRef(kind: trDecl, declID: result.defaultFloat64)
     result.defaultDec64Ref = TypeRef(kind: trDecl, declID: result.defaultDec64)
     result.defaultCharRef = TypeRef(kind: trDecl, declID: result.defaultChar)
     result.defaultStrRef = TypeRef(kind: trDecl, declID: result.defaultStr)
@@ -655,8 +658,9 @@ proc readOpcode(input: Input, op: var Opcode) =
     of oUInt32: op.u32 = input.readUint32
     of oInt64: op.i64 = input.readInt64
     of oUInt64: op.u64 = input.readUint64
-    of oDec32: op.d32 = input.readFloat32
-    of oDec64: op.d64 = input.readFloat64
+    of oFloat32: op.f32 = input.readFloat32
+    of oFloat64: op.f64 = input.readFloat64
+    of oDec64: op.d64 = toDec64(input.readInt64)
     of oChar: op.c = input.readUint8
     of oStr: input.readVStr op.s
     of oBlock:

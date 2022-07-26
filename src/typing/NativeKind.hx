@@ -12,7 +12,8 @@ enum NativeKind {
 	NUInt32;
 	NInt64;
 	NUInt64;
-	NDec32;
+	NFloat32;
+	NFloat64;
 	NDec64;
 	NVoidPtr;
 	NPtr(t: Type);

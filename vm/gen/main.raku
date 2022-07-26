@@ -3,7 +3,7 @@
 grammar StarBCD::Grammar {
 	token TOP {^\s*
 		types \h+ '{'\s*
-			<type>**25 %% [\s+]
+			<type>**26 %% [\s+]
 		'}' \s+
 		<decl>+ % [\s+]
 	\s*$}
@@ -535,21 +535,22 @@ grammar StarBCD::Grammar {
 
 	token opcode:sym<native> { <sym>\h+ <ident> }
 
-	token opcode:sym<int8>   { <sym>\h+ <sint> }
-	token opcode:sym<uint8>  { <sym>\h+ <uint> }
-	token opcode:sym<int16>  { <sym>\h+ <sint> }
-	token opcode:sym<uint16> { <sym>\h+ <uint> }
-	token opcode:sym<int32>  { <sym>\h+ <sint> }
-	token opcode:sym<uint32> { <sym>\h+ <uint> }
-	token opcode:sym<int64>  { <sym>\h+ <sint> }
-	token opcode:sym<uint64> { <sym>\h+ <uint> }
-	token opcode:sym<dec32>  { <sym>\h+ <dec> }
-	token opcode:sym<dec64>  { <sym>\h+ <dec> }
-	token opcode:sym<char>   { <sym>\h+ <uint> }
-	token opcode:sym<str>    { <sym>\h+ <string> }
-	token opcode:sym<true>   { <sym> }
-	token opcode:sym<false>  { <sym> }
-	token opcode:sym<this>   { <sym> }
+	token opcode:sym<int8>    { <sym>\h+ <sint> }
+	token opcode:sym<uint8>   { <sym>\h+ <uint> }
+	token opcode:sym<int16>   { <sym>\h+ <sint> }
+	token opcode:sym<uint16>  { <sym>\h+ <uint> }
+	token opcode:sym<int32>   { <sym>\h+ <sint> }
+	token opcode:sym<uint32>  { <sym>\h+ <uint> }
+	token opcode:sym<int64>   { <sym>\h+ <sint> }
+	token opcode:sym<uint64>  { <sym>\h+ <uint> }
+	token opcode:sym<float32> { <sym>\h+ <dec> }
+	token opcode:sym<float64> { <sym>\h+ <dec> }
+	token opcode:sym<dec64>   { <sym>\h+ <dec> }
+	token opcode:sym<char>    { <sym>\h+ <uint> }
+	token opcode:sym<str>     { <sym>\h+ <string> }
+	token opcode:sym<true>    { <sym> }
+	token opcode:sym<false>   { <sym> }
+	token opcode:sym<this>    { <sym> }
 
 	token opcode:sym<block> { <sym>\h+ <opcodes> }
 
@@ -626,7 +627,7 @@ enum Opcode <<
 
 	#| Values
 	O_INT8 O_UINT8 O_INT16 O_UINT16 O_INT32 O_UINT32 O_INT64 O_UINT64
-	O_DEC32 O_DEC64
+	O_FLOAT32 O_FLOAT64 O_DEC64
 	O_CHAR
 	O_STR
 	O_TRUE O_FALSE
@@ -730,7 +731,8 @@ enum NativeOp <<
 	cast_u8_u32
 	cast_u8_i64
 	cast_u8_u64
-	cast_u8_d32
+	cast_u8_f32
+	cast_u8_f64
 	cast_u8_d64
 	cast_u8_str
 
@@ -768,7 +770,8 @@ enum NativeOp <<
 	cast_i8_u32
 	cast_i8_i64
 	cast_i8_u64
-	cast_i8_d32
+	cast_i8_f32
+	cast_i8_f64
 	cast_i8_d64
 	cast_i8_str
 
@@ -804,7 +807,8 @@ enum NativeOp <<
 	cast_u16_u32
 	cast_u16_i64
 	cast_u16_u64
-	cast_u16_d32
+	cast_u16_f32
+	cast_u16_f64
 	cast_u16_d64
 	cast_u16_str
 
@@ -842,7 +846,8 @@ enum NativeOp <<
 	cast_i16_u32
 	cast_i16_i64
 	cast_i16_u64
-	cast_i16_d32
+	cast_i16_f32
+	cast_i16_f64
 	cast_i16_d64
 	cast_i16_str
 
@@ -878,7 +883,8 @@ enum NativeOp <<
 	cast_u32_i32
 	cast_u32_i64
 	cast_u32_u64
-	cast_u32_d32
+	cast_u32_f32
+	cast_u32_f64
 	cast_u32_d64
 	cast_u32_str
 
@@ -916,7 +922,8 @@ enum NativeOp <<
 	cast_i32_u32
 	cast_i32_i64
 	cast_i32_u64
-	cast_i32_d32
+	cast_i32_f32
+	cast_i32_f64
 	cast_i32_d64
 	cast_i32_str
 
@@ -952,7 +959,8 @@ enum NativeOp <<
 	cast_u64_i32
 	cast_u64_u32
 	cast_u64_i64
-	cast_u64_d32
+	cast_u64_f32
+	cast_u64_f64
 	cast_u64_d64
 	cast_u64_str
 
@@ -990,64 +998,126 @@ enum NativeOp <<
 	cast_i64_i32
 	cast_i64_u32
 	cast_i64_u64
-	cast_i64_d32
+	cast_i64_f32
+	cast_i64_f64
 	cast_i64_d64
 	cast_i64_str
 
-	# dec32
-	d32_nan
-	d32_inf
-	d32_neg_inf
-	d32_pi
-	d32_abs
-	d32_sqrt
-	d32_exp
-	d32_sin
-	d32_cos
-	d32_tan
-	d32_asin
-	d32_acos
-	d32_atan
-	d32_floor
-	d32_ceil
-	d32_trunc
-	d32_round
-	d32_ln
-	d32_log
-	d32_truthy
-	d32_neg
-	d32_succ
-	d32_pred
-	d32_add
-	d32_sub
-	d32_mult
-	d32_pow
-	d32_div
-	d32_idiv
-	d32_mod
-	d32_mod0
-	d32_eq
-	d32_ne
-	d32_gt
-	d32_ge
-	d32_lt
-	d32_le
-	cast_d32_i8
-	cast_d32_u8
-	cast_d32_i16
-	cast_d32_u16
-	cast_d32_i32
-	cast_d32_u32
-	cast_d32_i64
-	cast_d32_u64
-	cast_d32_d64
-	cast_d32_str
+	# float32
+	f32_nan
+	f32_inf
+	f32_neg_inf
+	f32_pi
+	f32_e
+	f32_is_nan
+	f32_sign
+	f32_abs
+	f32_sqrt
+	f32_exp
+	f32_sin
+	f32_cos
+	f32_tan
+	f32_asin
+	f32_acos
+	f32_atan
+	f32_floor
+	f32_ceil
+	f32_trunc
+	f32_round
+	f32_ln
+	f32_log
+	f32_truthy
+	f32_neg
+	f32_succ
+	f32_pred
+	f32_add
+	f32_sub
+	f32_mult
+	f32_pow
+	f32_div
+	f32_idiv
+	f32_mod
+	f32_mod0
+	f32_eq
+	f32_ne
+	f32_gt
+	f32_ge
+	f32_lt
+	f32_le
+	cast_f32_i8
+	cast_f32_u8
+	cast_f32_i16
+	cast_f32_u16
+	cast_f32_i32
+	cast_f32_u32
+	cast_f32_i64
+	cast_f32_u64
+	cast_f32_f64
+	cast_f32_d64
+	cast_f32_str
+
+	# float64
+	f64_nan
+	f64_inf
+	f64_neg_inf
+	f64_pi
+	f64_e
+	f64_is_nan
+	f64_sign
+	f64_abs
+	f64_sqrt
+	f64_exp
+	f64_sin
+	f64_cos
+	f64_tan
+	f64_asin
+	f64_acos
+	f64_atan
+	f64_floor
+	f64_ceil
+	f64_trunc
+	f64_round
+	f64_ln
+	f64_log
+	f64_truthy
+	f64_neg
+	f64_succ
+	f64_pred
+	f64_add
+	f64_sub
+	f64_mult
+	f64_pow
+	f64_div
+	f64_idiv
+	f64_mod
+	f64_mod0
+	f64_eq
+	f64_ne
+	f64_gt
+	f64_ge
+	f64_lt
+	f64_le
+	cast_f64_i8
+	cast_f64_u8
+	cast_f64_i16
+	cast_f64_u16
+	cast_f64_i32
+	cast_f64_u32
+	cast_f64_i64
+	cast_f64_u64
+	cast_f64_f32
+	cast_f64_d64
+	cast_f64_str
 
 	# dec64
+	d64_new
+	d64_get_coef
+	d64_get_exp
 	d64_nan
-	d64_inf
-	d64_neg_inf
 	d64_pi
+	d64_e
+	d64_is_nan
+	d64_sign
 	d64_abs
 	d64_sqrt
 	d64_exp
@@ -1063,6 +1133,7 @@ enum NativeOp <<
 	d64_round
 	d64_ln
 	d64_log
+	d64_normal
 	d64_truthy
 	d64_neg
 	d64_succ
@@ -1089,7 +1160,8 @@ enum NativeOp <<
 	cast_d64_u32
 	cast_d64_i64
 	cast_d64_u64
-	cast_d64_d32
+	cast_d64_f32
+	cast_d64_f64
 	cast_d64_str
 
 	# ptr
@@ -1131,6 +1203,122 @@ for Opcode.keys -> $key {
 }
 
 use NativeCall;
+
+# ported from https://github.com/vpisarev/DEC64/blob/alt/dec64_string.c#L356
+sub str-to-dec64(Str $str --> int64) {
+	my Int @string = $str.ords;
+
+	my Int $at;
+	my Int $c;
+	my Int $digits;
+	my Bool $leading;
+	my Bool $ok;
+	my Bool $point;
+
+	my int64 $coef;
+	my int64 $exp;
+	my int64 $exponent;
+	my int64 $sign;
+	my int64 $sign-exp;
+
+	$c = @string[0];
+	$coef = 0;
+	$digits = 0;
+	$exponent = 0;
+	$leading = True;
+	$ok = False;
+	$point = False;
+
+	if $c == '-'.ord {
+		$c = @string[1];
+		$at = 1;
+		$sign = -1;
+	} else {
+		$at = 0;
+		$sign = 1;
+	}
+
+	while defined $c {
+		given $c {
+			when '0'.ord {
+				$ok = True;
+
+				if $leading {
+					$exponent -= $point
+				} else {
+					$digits += 1;
+					if $digits > 18 {
+						$exponent += 1 - $point
+					} else {
+						$coef *= 10;
+						$exponent -= $point
+					}
+				}
+			}
+			when '1'.ord .. '9'.ord {
+				$ok = True;
+				$leading = False;
+
+				$digits += 1;
+				if $digits > 18 {
+					$exponent += 1 - $point
+				} else {
+					$coef = $coef * 10 + ($c - '0'.ord);
+					$exponent -= $point
+				}
+			}
+			when '.'.ord {
+				if $point {
+					die "Parsing error!"
+				} else {
+					$point = True
+				}
+			}
+			default {
+				die "Invalid character"
+			}
+		}
+
+		$at += 1;
+		$c = @string[$at]
+	}
+
+	if -128 <= $exponent <= 127 {
+		return (($sign * $coef) +< 8) +| ($exponent +& 255)
+	} else {
+		die "out of range!"
+	}
+}
+
+#`[
+# ported from https://github.com/vpisarev/DEC64/blob/alt/dec64.c#L664
+sub dec64-normal(int64 $dec is copy --> int64) {
+	my int8 $e = $dec +& 255;
+	return $dec if $e == 0;
+
+	$dec = $dec +> 8;
+	return 0 if $dec == 0;
+
+	if $e < 0 {
+		repeat {
+			my int64 $tmp = $dec div 10;
+			last if $dec != $tmp*10;
+			$dec = $tmp
+		} while ++$e < 0;
+		return ($dec +< 8) +| $e
+	} else {
+		$dec = $dec +< 8;
+
+		repeat {
+			my int64 $tmp = $dec * 10;
+			last if $tmp < $dec; # overflow check
+			$dec = $tmp
+		} while --$e > 0;
+		return $dec +| $e
+	}
+}
+]
+
 class MyBuf does Buf is repr<VMArray> {
 	method push-int8(int8 $int) { self.write-int8: self.elems, $int, Endian::LittleEndian }
 	method push-uint8(uint8 $int) { self.write-uint8: self.elems, $int, Endian::LittleEndian }
@@ -1150,6 +1338,8 @@ class MyBuf does Buf is repr<VMArray> {
 	method push-num32(num32 $num) { self.write-num32: self.elems, $num, Endian::LittleEndian }
 
 	method push-num64(num64 $num) { self.write-num64: self.elems, $num, Endian::LittleEndian }
+
+	method push-dec64(Str $dec) { self.write-int64: self.elems, str-to-dec64($dec), Endian::LittleEndian }
 
 	method push-type-id(uint32 $id) { self.push-uint32: $id }
 	method push-typevar-id(uint16 $id) { self.push-uint16: $id }
@@ -1801,21 +1991,22 @@ class StarBCD::Actions {
 
 	method opcode:sym<native>($/) {make { $!buf.push-opcode: ~$<sym>; $!buf.push-nativeop: $<ident>.made }}
 
-	method opcode:sym<int8>($/)   {make { $!buf.push-opcode: ~$<sym>; $!buf.push-int8: $<sint>.made }}
-	method opcode:sym<uint8>($/)  {make { $!buf.push-opcode: ~$<sym>; $!buf.push-uint8: $<uint>.made }}
-	method opcode:sym<int16>($/)  {make { $!buf.push-opcode: ~$<sym>; $!buf.push-int16: $<sint>.made }}
-	method opcode:sym<uint16>($/) {make { $!buf.push-opcode: ~$<sym>; $!buf.push-uint16: $<uint>.made }}
-	method opcode:sym<int32>($/)  {make { $!buf.push-opcode: ~$<sym>; $!buf.push-int32: $<sint>.made }}
-	method opcode:sym<uint32>($/) {make { $!buf.push-opcode: ~$<sym>; $!buf.push-uint32: $<uint>.made }}
-	method opcode:sym<int64>($/)  {make { $!buf.push-opcode: ~$<sym>; $!buf.push-int64: $<sint>.made }}
-	method opcode:sym<uint64>($/) {make { $!buf.push-opcode: ~$<sym>; $!buf.push-uint64: $<uint>.made }}
-	method opcode:sym<dec32>($/)  {make { $!buf.push-opcode: ~$<sym>; $!buf.push-num32: $<dec>.made }}
-	method opcode:sym<dec64>($/)  {make { $!buf.push-opcode: ~$<sym>; $!buf.push-num64: $<dec>.made }}
-	method opcode:sym<char>($/)   {make { $!buf.push-opcode: ~$<sym>; $!buf.push-uint8: $<uint>.made }}
-	method opcode:sym<str>($/)    {make { $!buf.push-opcode: ~$<sym>; $!buf.push-string: $<string>.made }}
-	method opcode:sym<true>($/)   {make { $!buf.push-opcode: ~$<sym> }}
-	method opcode:sym<false>($/)  {make { $!buf.push-opcode: ~$<sym> }}
-	method opcode:sym<this>($/)   {make { $!buf.push-opcode: ~$<sym> }}
+	method opcode:sym<int8>($/)    {make { $!buf.push-opcode: ~$<sym>; $!buf.push-int8: $<sint>.made }}
+	method opcode:sym<uint8>($/)   {make { $!buf.push-opcode: ~$<sym>; $!buf.push-uint8: $<uint>.made }}
+	method opcode:sym<int16>($/)   {make { $!buf.push-opcode: ~$<sym>; $!buf.push-int16: $<sint>.made }}
+	method opcode:sym<uint16>($/)  {make { $!buf.push-opcode: ~$<sym>; $!buf.push-uint16: $<uint>.made }}
+	method opcode:sym<int32>($/)   {make { $!buf.push-opcode: ~$<sym>; $!buf.push-int32: $<sint>.made }}
+	method opcode:sym<uint32>($/)  {make { $!buf.push-opcode: ~$<sym>; $!buf.push-uint32: $<uint>.made }}
+	method opcode:sym<int64>($/)   {make { $!buf.push-opcode: ~$<sym>; $!buf.push-int64: $<sint>.made }}
+	method opcode:sym<uint64>($/)  {make { $!buf.push-opcode: ~$<sym>; $!buf.push-uint64: $<uint>.made }}
+	method opcode:sym<float32>($/) {make { $!buf.push-opcode: ~$<sym>; $!buf.push-num32: $<dec>.made }}
+	method opcode:sym<float64>($/) {make { $!buf.push-opcode: ~$<sym>; $!buf.push-num64: $<dec>.made }}
+	method opcode:sym<dec64>($/)   {make { $!buf.push-opcode: ~$<sym>; $!buf.push-dec64: $<dec>.Str }}
+	method opcode:sym<char>($/)    {make { $!buf.push-opcode: ~$<sym>; $!buf.push-uint8: $<uint>.made }}
+	method opcode:sym<str>($/)     {make { $!buf.push-opcode: ~$<sym>; $!buf.push-string: $<string>.made }}
+	method opcode:sym<true>($/)    {make { $!buf.push-opcode: ~$<sym> }}
+	method opcode:sym<false>($/)   {make { $!buf.push-opcode: ~$<sym> }}
+	method opcode:sym<this>($/)    {make { $!buf.push-opcode: ~$<sym> }}
 
 	method opcode:sym<block>($/) {make { $!buf.push-opcode: ~$<sym>; $<opcodes>.made.() }}
 

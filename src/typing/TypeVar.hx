@@ -54,6 +54,7 @@ class TypeVar extends AnyFullTypeDecl {
 			case IsNative(_, [{label: {name: "repr"}, expr: ELitsym(_, repr)}], _): switch repr {
 				case "void": typevar.native = NVoid;
 				case "bool": typevar.native = NBool;
+				case "dec64": typevar.native = NDec64;
 				case "voidptr": typevar.native = NVoidPtr;
 				default: typevar.errors.push(Type_InvalidAttribute(typevar, typevar.name.name, "native", span));
 			}
@@ -62,11 +63,11 @@ class TypeVar extends AnyFullTypeDecl {
 				{label: {name: "elem"}, expr: EType(t)}
 			], _): typevar.native = NPtr(typevar.makeTypePath(t));
 			case IsNative(_, [
-				{label: {name: "repr"}, expr: ELitsym(_, "dec")},
+				{label: {name: "repr"}, expr: ELitsym(_, "float")},
 				{label: {name: "bits"}, expr: EInt(_, bits, _)}
 			], _): switch bits {
-				case 32: typevar.native = NDec32;
-				case 64: typevar.native = NDec64;
+				case 32: typevar.native = NFloat32;
+				case 64: typevar.native = NFloat64;
 				default: typevar.errors.push(Type_InvalidAttribute(typevar, typevar.name.name, "native", span));
 			}
 			case IsNative(_, [
