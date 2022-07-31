@@ -17,6 +17,19 @@ class CodeGen {
 static final world = new World2();
 
 
+static function compileProgram(project: Project) {
+	if(project.useStdlib && project != Project.STDLIB) {
+		compileProgram(Project.STDLIB);
+	}
+
+	// TODO: improve, maybe use visitor pattern
+	for(file in project.allFiles()) {
+		for(decl in file.sortedDecls) if(!(decl is DirectAlias)) world.add(decl);
+		for(cat in file.categories) world.add(cat);
+	}
+}
+
+
 overload static function compile(ctx: GenCtx, stmts: TStmts): Opcodes {
 	final res = [];
 	
@@ -369,6 +382,20 @@ overload static function compile(ctx: GenCtx, stmt: TStmt): Opcodes return stmt.
 						overloads = [overloads[0]];
 					}
 
+					// hacky
+					if(overloads.some(k -> k._match(
+						at(CMethod(m)) => (m.decl == Pass2.STD_Iterable1),
+						_ => false
+					)) && overloads.some(k -> k._match(
+						at(CMethod(m)) => (m.decl != Pass2.STD_Iterable1),
+						_ => true
+					))) {
+						overloads = overloads.filter(k -> k._match(
+							at(CMethod(m)) => (m.decl != Pass2.STD_Iterable1),
+							_ => true
+						));
+					}
+
 					final casts = overloads/*.filter(
 						k -> k._match(
 							at(CMethod(m)) => (etype.t.match(TTypeVar(_) | TInstance(_ == Pass2.STD_Iterable1 => true, _, _))),
@@ -458,6 +485,20 @@ overload static function compile(ctx: GenCtx, stmt: TStmt): Opcodes return stmt.
 					_ => false
 				))) {
 					overloads = [overloads[0]];
+				}
+
+				// hacky
+				if(overloads.some(k -> k._match(
+					at(CMethod(m)) => (m.decl == Pass2.STD_Iterable1),
+					_ => false
+				)) && overloads.some(k -> k._match(
+					at(CMethod(m)) => (m.decl != Pass2.STD_Iterable1),
+					_ => true
+				))) {
+					overloads = overloads.filter(k -> k._match(
+						at(CMethod(m)) => (m.decl != Pass2.STD_Iterable1),
+						_ => true
+					));
 				}
 
 				final casts = overloads/*.filter(
@@ -2355,7 +2396,7 @@ overload static function compile(ctx: GenCtx, resType: Type, type: Type, candida
 					for(arg in args) {
 						res = res.concat(compile(ctx, arg));
 					}
-					res.push(OSend_MS(typeref, id, ictx));
+					res.push(OSend_IM(typeref, id, ictx));
 					if(!wantValue) {
 						res.push(OPop);
 					}

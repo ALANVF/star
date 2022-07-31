@@ -433,7 +433,7 @@ class List[T] of Positional[T] {
 
 	type T' if Power.Castable[T, T']?
 	on [List[T']] {
-		my result = List[new]
+		my result = List[T'][new]
 		
 		for my value in: this {
 			result[add: value[T']]
@@ -445,7 +445,7 @@ class List[T] of Positional[T] {
 	on [Immutable.List[T]] => return head[Immutable.List[T]]
 
 	on [Array[T]] {
-		return Array[new: length]
+		return Array[T][new: length]
 		-> [addAll: this]
 	}
 

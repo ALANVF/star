@@ -43,7 +43,8 @@ base: [
 		default-UInt16: type-id
 		default-UInt32: type-id
 		default-UInt64: type-id
-		default-Dec32: type-id
+		default-Float32: type-id
+		default-Float64: type-id
 		default-Dec64: type-id
 		default-Char: type-id
 		default-Str: type-id
@@ -116,6 +117,8 @@ category-decl: [
 	inst-cast-methods
 	binary-methods
 	unary-methods
+
+	static-deinit
 ]
 
 opaque-decl: [
@@ -143,6 +146,8 @@ newtype-decl: [
 	inst-cast-methods
 	binary-methods
 	unary-methods
+
+	static-deinit
 ]
 
 module-decl: [
@@ -153,6 +158,8 @@ module-decl: [
 	static-members
 
 	static-init
+
+	static-deinit
 ]
 
 class-decl: [

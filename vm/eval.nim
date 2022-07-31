@@ -288,10 +288,10 @@ proc newState(state: State, t: ptr TypeRef, value: ptr Value, methodTCtx: nil Ty
     let (decl, tctx) =
         case ty.kind
         of trDecl: (world.typeDecls[ty.declID], nil)
-        of trInst: (world.typeDecls[ty.declID], addr ty.instCtx)
+        of trInst: (world.typeDecls[ty.instID], addr t[].instCtx)
         of trThis: (state.thisDecl, state.thisTVCtx)
         of trTypeVar: raiseAssert "???"
-
+    
     return State(
         world: world,
         thisDecl: decl,
@@ -714,7 +714,7 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
     
 
     of oNewPtr:
-        let sizeValue = state.stack.pop; assert likely(sizeValue.kind in {vInt8..vUInt8}), "Expected an integer"
+        let sizeValue = state.stack.pop; assert likely(sizeValue.kind in {vInt8..vUInt64}), "Expected an integer"
 
         let size =
             case sizeValue.kind
@@ -1021,7 +1021,7 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
 
         let sender = state.stack.pop
         let mstate = state.newState(addr t, addr sender, op.mi_ctx)
-
+        
         let res = eval(mstate, mscope, mth.body)
         if res != nil:
             case res.kind
@@ -1046,7 +1046,7 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
         for i in countdown(numParams-1, 0):
             locals[i] = state.stack.pop
         let mscope = Scope(locals: locals)
-
+        
         let sender = state.stack.pop
         let sender_t = sender.t
         

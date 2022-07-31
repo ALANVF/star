@@ -33,7 +33,7 @@ package codegen;
 	}
 
 	function anon() {
-		return ++locals;
+		return locals++;
 	}
 
 	function local(name: String) {
@@ -41,12 +41,12 @@ package codegen;
 	}
 
 	function newLocal(name: String) {
-		localsMap[name] = ++locals;
+		localsMap[name] = locals++;
 		return locals;
 	}
 
 	overload function label() {
-		return ++labels;
+		return labels++;
 	}
 
 	overload function label(label: String) {
@@ -55,7 +55,7 @@ package codegen;
 
 	function loop(label: Null<String>) {
 		label._andOr(label => {
-			final id = ++labels;
+			final id = labels++;
 			labelsMap[label] = id;
 			loopStack = loopStack.prepend(id);
 			return id;

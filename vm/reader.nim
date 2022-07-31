@@ -32,7 +32,7 @@ proc readIntType(input: Input, t: typedesc): t {.inline.} =
     elif t is uint64: input.readUint64
 
 template genReadIntType(t: typedesc): untyped =
-    proc `read t`(input: Input): t {.inline.} = input.readIntType(t).pred # bytecode uses 1-based ids
+    proc `read t`(input: Input): t {.inline.} = input.readIntType(t) # bytecode uses 1-based ids
 
 proc initTable[K, V](table: var Table[K, V], initialSize: int) {.inline.} =
     table = initTable[K, V](initialSize)
@@ -220,7 +220,7 @@ proc readModuleDecl(input: Input): ModuleDecl =
     input.readMembers result.staticMembers
 
     input.readOptOpcodes result.staticInit
-
+    
     input.readOptOpcodes result.staticDeinit
 
 proc readClassDecl(input: Input): ClassDecl =
@@ -429,7 +429,7 @@ proc readMultiInits(input: Input, inits: var Table[InitID, MultiInit]) =
             let init = input.readMultiInit
             inits[init.id] = init
 
-proc readSingleMethods(input: Input,methods: var Table[MethodID, SingleMethod]) =
+proc readSingleMethods(input: Input, methods: var Table[MethodID, SingleMethod]) =
     let size = input.readUint16
     if size > 0:
         initTable methods, size.int

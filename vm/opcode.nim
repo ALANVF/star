@@ -567,7 +567,7 @@ public:
         oBlock,
 
         # Operations
-        oVCaseID, oTCaseID,
+        oVCaseID, oTCaseID, # TODO: flip these
         oKindID, oKindSlot, oKindValue,
         oUpcast, oDowncast, oNativeCast, oDynamicCast,
         oOfType,

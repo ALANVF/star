@@ -29,6 +29,7 @@ class Main {
 	public static var stdlibDumper: typing.Dumper = null;
 	static var compilerDump: haxe.io.Output = null;
 	public static var compilerDumper: typing.Dumper = null;
+	static var mainOutput: sys.io.FileOutput = null;
 
 	static inline function nl() {
 		Sys.print("\n");
@@ -160,6 +161,7 @@ class Main {
 		if(dumpStmts) { stmtsDump = sys.io.File.write("./dump/stmts.stir"); stmtsDumper = new typing.Dumper(stmtsDump); }
 		stdlibDump = sys.io.File.write("./dump/stdlib.stir"); stdlibDumper = new typing.Dumper(stdlibDump);
 		compilerDump = sys.io.File.write("./dump/compiler.stir"); compilerDumper = new typing.Dumper(compilerDump);
+		mainOutput = sys.io.File.write("./dump/main.starbc");
 		try {
 			final stdlib = testProject("stdlib", {
 				isStdlib: true,
@@ -189,7 +191,20 @@ class Main {
 				_ => throw "???"+type
 			);*/
 
-			final gen = new codegen.Gen(stdlibDump);
+			nl();
+
+			final main = testProject("tests/hello-world", {
+				pass1: true,
+				pass2: true
+			});
+
+			codegen.CodeGen.compileProgram(main);
+			
+			final bc = new codegen.Gen(mainOutput, codegen.CodeGen.world);
+			bc.writeWorld();
+
+
+			final gen = new codegen.GenDump(stdlibDump);
 
 			{
 				final proto = cast(typing.Pass2.STD_Value, typing.Protocol);
@@ -321,7 +336,7 @@ class Main {
 				}
 			}
 
-			nl();
+			/*nl();
 			
 			final compiler = testProject("star", {pass1: true, pass2: true}); {
 				final files = compiler.allFiles();
@@ -331,17 +346,19 @@ class Main {
 					compilerDumper.nextLine();
 					compilerDumper.nextLine();
 				}
-			};
+			};*/
 		} catch(e: haxe.Exception) {
 			if(dumpTypes) typesDump.close();
 			if(dumpStmts) stmtsDump.close();
 			stdlibDump.close();
 			compilerDump.close();
+			mainOutput.close();
 			hl.Api.rethrow(e);
 		}
 		if(dumpTypes) typesDump.close();
 		if(dumpStmts) stmtsDump.close();
 		stdlibDump.close();
 		compilerDump.close();
+		mainOutput.close();
 	}
 }

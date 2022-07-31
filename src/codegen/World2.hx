@@ -10,10 +10,10 @@ import typing.*;
 	function new() {}
 
 	function add(k: K, v: V) {
-		//if(map.exists(k)) return;
+		if(map.exists(k)) return;
 		final id: I = cast list.push(v);
-		v.id = id;
-		map[k] = id;
+		v.id = id-1;
+		map[k] = id-1;
 	}
 
 	inline function has(k: K) {
@@ -21,7 +21,7 @@ import typing.*;
 	}
 
 	function find(k: K) {
-		return map[k]._and(i => list[i - 1]);
+		return map[k]._and(i => list[i]);
 	}
 
 	function findIndex(k: K) {
@@ -30,7 +30,7 @@ import typing.*;
 
 	function get(k: K) {
 		return map[k]._andOr(
-			i => list[i - 1],
+			i => list[i],
 			throw "Entry not found!"
 		);
 	}
@@ -87,14 +87,16 @@ class UnaryMethodEntry extends AnyMethodEntry {
 
 typedef MethodEntries<K: AnyMethod, V: AnyMethodEntry> = Entries<MethodID, K, V>;
 
-typedef InstSingleMethods = MethodEntries<SingleMethod, SingleMethodEntry>;
-typedef InstMultiMethods = MethodEntries<MultiMethod, MultiMethodEntry>;
-typedef CastMethods = MethodEntries<CastMethod, CastMethodEntry>;
-typedef BinaryMethods = MethodEntries<BinaryOperator, BinaryMethodEntry>;
-typedef UnaryMethods = MethodEntries<UnaryOperator, UnaryMethodEntry>;
+typedef StaticSingleMethods = Entries<MethodID, SingleStaticMethod, SingleMethodEntry>;
+typedef StaticMultiMethods = Entries<MethodID, MultiStaticMethod, MultiMethodEntry>;
+typedef InstSingleMethods = Entries<MethodID, SingleMethod, SingleMethodEntry>;
+typedef InstMultiMethods = Entries<MethodID, MultiMethod, MultiMethodEntry>;
+typedef CastMethods = Entries<MethodID, CastMethod, CastMethodEntry>;
+typedef BinaryMethods = Entries<MethodID, BinaryOperator, BinaryMethodEntry>;
+typedef UnaryMethods = Entries<MethodID, UnaryOperator, UnaryMethodEntry>;
 
-typedef SingleInits = MethodEntries<SingleInit, SingleMethodEntry>;
-typedef MultiInits = MethodEntries<MultiInit, MultiMethodEntry>;
+typedef SingleInits = Entries<InitID, SingleInit, SingleMethodEntry>;
+typedef MultiInits = Entries<InitID, MultiInit, MultiMethodEntry>;
 
 
 @:structInit @:publicFields
@@ -127,8 +129,8 @@ abstract class TypeDeclEntry {
 	var name: String;
 	final typevars = new TypeVarEntries();
 
-	final staticSingleMethods = new MethodEntries<SingleStaticMethod, SingleMethodEntry>();
-	final staticMultiMethods = new MethodEntries<MultiStaticMethod, MultiMethodEntry>();
+	final staticSingleMethods = new StaticSingleMethods();
+	final staticMultiMethods = new StaticMultiMethods();
 	
 	function new() {}
 
@@ -143,16 +145,6 @@ abstract class TypeDeclEntry {
 	function addCast(mth: CastMethod, e: CastMethodEntry) {}
 	function addBinary(mth: BinaryOperator, e: BinaryMethodEntry) {}
 	function addUnary(mth: UnaryOperator, e: UnaryMethodEntry) {}
-
-	/*
-	override function addSingleInit(init: SingleInit, e: SingleMethodEntry) {}
-	override function addMultiInit(init: MultiInit, e: MultiMethodEntry) {}
-	override function addInstSingle(mth: SingleMethod, e: SingleMethodEntry) {}
-	override function addInstMulti(mth: MultiMethod, e: MultiMethodEntry) {}
-	override function addCast(mth: CastMethod, e: CastMethodEntry) {}
-	override function addBinary(mth: BinaryOperator, e: BinaryMethodEntry) {}
-	override function addUnary(mth: UnaryOperator, e: UnaryMethodEntry) {}
-	*/
 }
 
 class CategoryEntry extends TypeDeclEntry {
@@ -442,7 +434,7 @@ class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
 		} else {
 			function initEntry(e: TypeDeclEntry) {
 				typeDecls.add(decl, e);
-				e.name = decl.name.name;
+				e.name = Type.getFullPath(decl).value(); // TODO: eqv of Type#simpleName
 				
 				final tvars = decl._match(
 					at(td is TypeDecl) => td.typevars,
@@ -546,7 +538,7 @@ class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
 					e.parents = c.parents.map(p -> this.getTypeRef(p));
 
 					final staticMemberInits = new Array<Tuple2<MemberEntry, TExpr>>();
-					for(mem in c.staticMembers) {
+					for(mem in c.staticMembers) { // TODO: get inherited members
 						final me = this.addStatic(e, mem);
 						mem.typedValue._and(tv => {
 							staticMemberInits.push(tuple(me, tv));
@@ -554,7 +546,7 @@ class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
 					}
 
 					final instMemberInits = new Array<Tuple2<MemberEntry, TExpr>>();
-					for(mem in c.members) {
+					for(mem in c.instMembers(c)) {
 						final me = this.addInst(e, mem);
 						mem.typedValue._and(tv => {
 							instMemberInits.push(tuple(me, tv));
@@ -563,6 +555,15 @@ class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
 					
 					for(it in c.inits) this.add(e, it);
 					for(sm in c.staticMethods) this.add(e, sm);
+					// TODO
+					for(parent in c.parents) {
+						parent.getTypeDecl()._match(
+							at(cl is ClassLike) => {
+								for(im in cl.methods) if(im.typedBody!=null) this.add(e, im);
+							},
+							_ => {}
+						);
+					}
 					for(im in c.methods) this.add(e, im);
 					for(op in c.operators) this.add(e, op);
 
@@ -592,7 +593,7 @@ class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
 					}
 
 					final instMemberInits = new Array<Tuple2<MemberEntry, TExpr>>();
-					for(mem in p.members) {
+					for(mem in p.instMembers(p)) {
 						final me = this.addInst(e, mem);
 						mem.typedValue._and(tv => {
 							instMemberInits.push(tuple(me, tv));
@@ -601,6 +602,15 @@ class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
 					
 					for(it in p.inits) this.add(e, it);
 					for(sm in p.staticMethods) this.add(e, sm);
+					// TODO
+					for(parent in p.parents) {
+						parent.getTypeDecl()._match(
+							at(cl is ClassLike) => {
+								for(im in cl.methods) if(im.typedBody!=null) this.add(e, im);
+							},
+							_ => {}
+						);
+					}
 					for(im in p.methods) this.add(e, im);
 					for(op in p.operators) this.add(e, op);
 
@@ -628,7 +638,7 @@ class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
 					}
 
 					final instMemberInits = new Array<Tuple2<MemberEntry, TExpr>>();
-					for(mem in tk.members) {
+					for(mem in tk.instMembers(tk)) {
 						final me = this.addInst(e, mem);
 						mem.typedValue._and(tv => {
 							instMemberInits.push(tuple(me, tv));
@@ -836,13 +846,14 @@ class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
 							ops;
 						}
 					), {
-						[OStr(""), OThrow("")];
+						[OStr(""), OThrow(mth.span.display())];
 					});
 				});
 
 				e;
 			},
 			at(mi is MultiInit) => {
+				if(mi.isMacro) return null; // BAD
 				multiInits[mi]._and(e => return e._2);
 
 				final e = new MultiMethodEntry();
@@ -882,7 +893,7 @@ class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
 							ops;
 						}
 					), {
-						[OStr(""), OThrow("")];
+						[OStr(""), OThrow(mth.span.display())];
 					});
 				});
 
@@ -912,7 +923,7 @@ class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
 							ops;
 						}
 					), {
-						[OStr(""), OThrow("")];
+						[OStr(""), OThrow(mth.span.display())];
 					});
 				});
 
@@ -952,7 +963,7 @@ class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
 							ops;
 						}
 					), {
-						[OStr(""), OThrow("")];
+						[OStr(""), OThrow(mth.span.display())];
 					});
 				});
 
@@ -982,13 +993,14 @@ class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
 							ops;
 						}
 					), {
-						[OStr(""), OThrow("")];
+						[OStr(""), OThrow(mth.span.display())];
 					});
 				});
 
 				e;
 			},
 			at(mi is MultiMethod) => {
+				if(mi.isMacro) return null; // BAD
 				multiInstMethods[mi]._and(e => return e._2);
 
 				final e = new MultiMethodEntry();
@@ -1022,7 +1034,7 @@ class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
 							ops;
 						}
 					), {
-						[OStr(""), OThrow("")];
+						[OStr(""), OThrow(mth.span.display())];
 					});
 				});
 
@@ -1065,7 +1077,7 @@ class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
 							ops;
 						}
 					), {
-						[OStr(""), OThrow("")];
+						[OStr(""), OThrow(mth.span.display())];
 					});
 				});
 
@@ -1098,7 +1110,7 @@ class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
 							];
 						}
 					), {
-						[OStr(""), OThrow("")];
+						[OStr(""), OThrow(mth.span.display())];
 					});
 				});
 
@@ -1126,7 +1138,7 @@ class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
 							];
 						}
 					), {
-						[OStr(""), OThrow("")];
+						[OStr(""), OThrow(mth.span.display())];
 					});
 				});
 
@@ -1162,6 +1174,8 @@ class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
 	function addStatic(decl: TypeDeclEntry, mem: Member) {
 		staticMembers[mem]._and(e => return e._2);
 
+		mem.refinee._and(ref => mem = ref);
+
 		final e: MemberEntry = {
 			type: this.getTypeRef(mem.type)
 		};
@@ -1174,6 +1188,8 @@ class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
 
 	function addInst(decl: TypeDeclEntry, mem: Member) {
 		instMembers[mem]._and(e => return e._2);
+
+		mem.refinee._and(ref => mem = ref);
 
 		final e: MemberEntry = {
 			type: this.getTypeRef(mem.type)

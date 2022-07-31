@@ -1561,6 +1561,21 @@ class Type implements ITypeable {
 		);
 	}
 
+	function getTypeDecl(): TypeDecl {
+		return t._match(
+			at(TPath(depth, lookup, source)) => throw "todo",
+			at(TLookup(type, lookup, source)) => throw "todo",
+			at(TConcrete(decl) | TInstance(decl, _, _)) => decl,
+			at(TThis(decl is TypeDecl)) => decl,
+			at(TThis(_)) => throw "bad",
+			at(TBlank) => throw "bad",
+			at(TMulti(types)) => types[0].getTypeDecl(), // TODO
+			at(TApplied(type, params)) => type.getTypeDecl(),
+			at(TTypeVar(typevar)) => throw "bad",
+			at(TModular(type, unit)) => type.getTypeDecl()
+		);
+	}
+
 
 	// Iterating
 
