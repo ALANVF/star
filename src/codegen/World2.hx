@@ -553,17 +553,101 @@ class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
 						});
 					}
 					
-					for(it in c.inits) this.add(e, it);
-					for(sm in c.staticMethods) this.add(e, sm);
 					// TODO
 					for(parent in c.parents) {
 						parent.getTypeDecl()._match(
 							at(cl is ClassLike) => {
-								for(im in cl.methods) if(im.typedBody!=null) this.add(e, im);
+								cl._match(
+									at({inits: inits} is Class | {inits: inits} is Protocol) => {
+										for(it in inits) if(it.typedBody!=null) this.add(e, it);
+									},
+									_ => {}
+								);
+								for(sm in cl.staticMethods) if(sm.typedBody!=null) this.add(e, sm);
+								for(im in cl.methods) if(im.typedBody!=null) {
+									final m = {
+										im._match(
+											at(im is SingleMethod) => {
+												final m: SingleMethod = untyped $new(SingleMethod);
+												m.decl = im.decl;
+												m.span = im.span;
+												m.name = im.name;
+												m.typedBody = im.typedBody;
+												m.ret = im.ret;
+												m.isMain = im.isMain;
+												m.isGetter = im.isGetter;
+												m.isSetter = im.isSetter;
+												m.isInline = im.isInline;
+												m.isMacro = im.isMacro;
+												m;
+											},
+											at(im is MultiMethod) => {
+												final m: MultiMethod = untyped $new(MultiMethod);
+												m.decl = im.decl;
+												m.span = im.span;
+												m.typevars = im.typevars;
+												m.params = im.params;
+												m.fuzzyName = im.fuzzyName;
+												m.typedBody = im.typedBody;
+												m.ret = im.ret;
+												m.isMain = im.isMain;
+												m.isGetter = im.isGetter;
+												m.isSetter = im.isSetter;
+												m.isInline = im.isInline;
+												m.isMacro = im.isMacro;
+
+												m;
+											},
+											at(im is CastMethod) => {
+												final m: CastMethod = untyped $new(CastMethod);
+												m.decl = im.decl;
+												m.span = im.span;
+												m.typevars = im.typevars;
+												m.type = im.type;
+												m.typedBody = im.typedBody;
+												m.isMain = im.isMain;
+												m.isGetter = im.isGetter;
+												m.isSetter = im.isSetter;
+												m.isInline = im.isInline;
+												m.isMacro = im.isMacro;
+												m;
+											},
+											_ => throw "bad"
+										);
+									};
+
+									final me = this.add(e, m);
+
+									final clid = this.getID(cl);
+									/*im._match(
+										at(m is SingleMethod) => {
+											if(!e.instSingleMethodVTable.exists(clid)) {
+												e.instSingleMethodVTable[clid] = new InstSingleMethods();
+											}
+											e.instSingleMethodVTable[clid].add(m, cast me);
+										},
+										at(m is MultiMethod) => {
+											if(!e.instMultiMethodVTable.exists(clid)) {
+												e.instMultiMethodVTable[clid] = new InstMultiMethods();
+											}
+											e.instMultiMethodVTable[clid].add(m, cast me);
+										},
+										at(m is CastMethod) => {
+											if(!e.castMethodVTable.exists(clid)) {
+												e.castMethodVTable[clid] = new CastMethods();
+											}
+											e.castMethodVTable[clid].add(m, cast me);
+										},
+										_ => throw "bad"
+									);*/
+								}
+								for(op in cl.operators) if(op.typedBody!=null) this.add(e, op);
 							},
 							_ => {}
 						);
 					}
+					for(it in c.inits) this.add(e, it);
+					for(sm in c.staticMethods) this.add(e, sm);
 					for(im in c.methods) this.add(e, im);
 					for(op in c.operators) this.add(e, op);
 
@@ -600,17 +684,101 @@ class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
 						});
 					}
 					
-					for(it in p.inits) this.add(e, it);
-					for(sm in p.staticMethods) this.add(e, sm);
 					// TODO
 					for(parent in p.parents) {
 						parent.getTypeDecl()._match(
 							at(cl is ClassLike) => {
-								for(im in cl.methods) if(im.typedBody!=null) this.add(e, im);
+								cl._match(
+									at({inits: inits} is Class | {inits: inits} is Protocol) => {
+										for(it in inits) if(it.typedBody!=null) this.add(e, it);
+									},
+									_ => {}
+								);
+								for(sm in cl.staticMethods) if(sm.typedBody!=null) this.add(e, sm);
+								for(im in cl.methods) if(im.typedBody!=null) {
+									final m = {
+										im._match(
+											at(im is SingleMethod) => {
+												final m: SingleMethod = untyped $new(SingleMethod);
+												m.decl = im.decl;
+												m.span = im.span;
+												m.name = im.name;
+												m.typedBody = im.typedBody;
+												m.ret = im.ret;
+												m.isMain = im.isMain;
+												m.isGetter = im.isGetter;
+												m.isSetter = im.isSetter;
+												m.isInline = im.isInline;
+												m.isMacro = im.isMacro;
+												m;
+											},
+											at(im is MultiMethod) => {
+												final m: MultiMethod = untyped $new(MultiMethod);
+												m.decl = im.decl;
+												m.span = im.span;
+												m.typevars = im.typevars;
+												m.params = im.params;
+												m.fuzzyName = im.fuzzyName;
+												m.typedBody = im.typedBody;
+												m.ret = im.ret;
+												m.isMain = im.isMain;
+												m.isGetter = im.isGetter;
+												m.isSetter = im.isSetter;
+												m.isInline = im.isInline;
+												m.isMacro = im.isMacro;
+
+												m;
+											},
+											at(im is CastMethod) => {
+												final m: CastMethod = untyped $new(CastMethod);
+												m.decl = im.decl;
+												m.span = im.span;
+												m.typevars = im.typevars;
+												m.type = im.type;
+												m.typedBody = im.typedBody;
+												m.isMain = im.isMain;
+												m.isGetter = im.isGetter;
+												m.isSetter = im.isSetter;
+												m.isInline = im.isInline;
+												m.isMacro = im.isMacro;
+												m;
+											},
+											_ => throw "bad"
+										);
+									};
+
+									final me = this.add(e, m);
+
+									final clid = this.getID(cl);
+									/*im._match(
+										at(m is SingleMethod) => {
+											if(!e.instSingleMethodVTable.exists(clid)) {
+												e.instSingleMethodVTable[clid] = new InstSingleMethods();
+											}
+											e.instSingleMethodVTable[clid].add(m, cast me);
+										},
+										at(m is MultiMethod) => {
+											if(!e.instMultiMethodVTable.exists(clid)) {
+												e.instMultiMethodVTable[clid] = new InstMultiMethods();
+											}
+											e.instMultiMethodVTable[clid].add(m, cast me);
+										},
+										at(m is CastMethod) => {
+											if(!e.castMethodVTable.exists(clid)) {
+												e.castMethodVTable[clid] = new CastMethods();
+											}
+											e.castMethodVTable[clid].add(m, cast me);
+										},
+										_ => throw "bad"
+									);*/
+								}
+								for(op in cl.operators) if(op.typedBody!=null) this.add(e, op);
 							},
 							_ => {}
 						);
 					}
+					for(it in p.inits) this.add(e, it);
+					for(sm in p.staticMethods) this.add(e, sm);
 					for(im in p.methods) this.add(e, im);
 					for(op in p.operators) this.add(e, op);
 

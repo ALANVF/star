@@ -98,6 +98,10 @@ class StrongAlias extends Alias {
 	
 	// Type checking
 
+	override function getParents(): Array<Type> {
+		return [type];
+	}
+
 	override function hasParentDecl(decl: TypeDecl) {
 		return super.hasParentDecl(decl)
 			|| (!noInherit && type.hasParentDecl(decl));

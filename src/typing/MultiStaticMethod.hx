@@ -6,7 +6,7 @@ import parsing.ast.Ident;
 import typing.Traits;
 
 class MultiStaticMethod extends StaticMethod {
-	@ignore final typevars = new MultiMap<String, TypeVar>();
+	@ignore var typevars = new MultiMap<String, TypeVar>();
 	var params: MultiParams = [];
 	var fuzzyName: String;
 	var isUnordered: Bool = false;

@@ -1752,7 +1752,6 @@ proc testSub(a, b: Dec64): string =
 proc testDiv(a, b: Dec64): string =
     return $a & " / " & $b & " = " & $(a / b)
 
-
 # testing
 if false:
     echo testAdd(makeDec64(1, -1), makeDec64(-2, -1))

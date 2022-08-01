@@ -10,13 +10,13 @@ import typing.Traits;
 @:autoBuild(util.Auto.build())
 abstract class AnyMethod implements ITypeLookupDecl {
 	final errors: Array<Error> = [];
-	final decl: AnyTypeDecl;
-	final span: Span;
+	var decl: AnyTypeDecl;
+	var span: Span;
 	var hidden: Null<Option<Type>> = null;
 	var noInherit: Bool = false;
 	var native: Null<Option<Ident>> = null;
 	var isAsm: Bool = false;
-	final body: Null<Array<Stmt>>;
+	var body: Null<Array<Stmt>>;
 
 	@ignore var typedBody: Null<Array<TStmt>> = null;
 

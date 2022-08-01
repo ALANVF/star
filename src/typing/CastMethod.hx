@@ -1,7 +1,7 @@
 package typing;
 
 class CastMethod extends Method {
-	@ignore final typevars = new MultiMap<String, TypeVar>();
+	@ignore var typevars = new MultiMap<String, TypeVar>();
 	var type: Type;
 
 	static function fromAST(decl, ast: parsing.ast.decls.Method) {

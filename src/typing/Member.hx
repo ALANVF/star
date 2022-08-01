@@ -8,9 +8,9 @@ import text.Span;
 @:build(util.Auto.build())
 class Member implements IDecl {
 	final errors: Array<Error> = [];
-	final decl: AnyTypeDecl;
-	final span: Span;
-	final name: Ident;
+	var decl: AnyTypeDecl;
+	var span: Span;
+	var name: Ident;
 	var type: Null<Type>;
 	var isStatic: Bool = false;
 	var hidden: Null<Option<Type>> = null;

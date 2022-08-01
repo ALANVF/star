@@ -3,7 +3,7 @@ package typing;
 import parsing.ast.Ident;
 
 class SingleMethod extends Method {
-	final name: Ident;
+	var name: Ident;
 
 	static function fromAST(decl, ast: parsing.ast.decls.Method) {
 		final method = new SingleMethod({

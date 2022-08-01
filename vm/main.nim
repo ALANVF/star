@@ -4,10 +4,13 @@ import values
 import world
 import reader
 import eval
+import dump
 import std/tables
 import std/streams
 import std/os
 import std/syncio
+
+{.experimental: "notNil".}
 
 #[ TODO:
  # figure out how to encode type effects because SOMEONE thought they could just brush it off and deal with it later 
@@ -18,6 +21,17 @@ let argv = os.commandLineParams()
 let input = openFileStream(argv[0], FileMode.fmRead)
 try:
     let world = loadWorld input
+
+    if argv.len > 1:
+        case argv[1]
+        of "-d", "--dump":
+            let output = openFileStream(argv[2], FileMode.fmWrite).Output
+            try:
+                output.write world
+            finally:
+                output.close()
+        else:
+            echo "[Warning]: unknown flag `" & argv[1] & "`"
     
     for typeID, decl in pairs(world.typeDecls):
         let staticMembers = decl.staticMembers

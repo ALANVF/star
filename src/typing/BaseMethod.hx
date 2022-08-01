@@ -4,14 +4,14 @@ import text.Span;
 import typing.Traits;
 
 typedef BaseMethod = VErrors & {
-	final decl: AnyTypeDecl;
-	final span: Span;
+	var decl: AnyTypeDecl;
+	var span: Span;
 	
 	var typedBody: Null<Array<TStmt>>;
 };
 
 typedef BaseGenericMethod = BaseMethod & {
-	final typevars: MultiMap<String, TypeVar>;
+	var typevars: MultiMap<String, TypeVar>;
 };
 
 @:generic

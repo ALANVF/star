@@ -7,9 +7,9 @@ import parsing.ast.Ident;
 @:build(util.Auto.build())
 abstract class AnyTypeDecl implements ITypeable implements ITypeLookupDecl {
 	final errors: Array<Error> = [];
-	final span: Span;
-	final name: Ident;
-	final lookup: ITypeLookup;
+	var span: Span;
+	var name: Ident;
+	var lookup: ITypeLookup;
 	@ignore var thisType: Type;
 
 	abstract function declName(): String;

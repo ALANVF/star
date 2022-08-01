@@ -2,22 +2,6 @@ use Core
 use Native
 
 category Power for Dec {
-	;-- Largest possible base 10 exponent
-	my max_exp is static is hidden is readonly = 511
-
-	;-- Table giving binary powers of 10
-	my powers_of_10 is static is hidden is readonly = #[
-		1e1
-		1e2
-		1e4
-		1e8
-		1e16
-		1e32
-		1e64
-		1e128
-		1e256
-	]
-
 	;-- Taken from here: https://github.com/vpisarev/DEC64/blob/alt/dec64_string.c#L356
 	on [fromStr: str (Str)] (Dec) is static {
 		my pos (Int)

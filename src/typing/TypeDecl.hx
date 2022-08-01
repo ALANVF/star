@@ -209,6 +209,10 @@ abstract class TypeDecl extends AnyFullTypeDecl {
 
 	// Type checking
 
+	function getParents(): Array<Type> {
+		return [];
+	}
+
 	function hasParentDecl(decl: TypeDecl) {
 		return this == decl
 			|| (decl == Pass2.STD_Value && !this.isNative(NVoid))

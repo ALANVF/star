@@ -476,7 +476,9 @@ template readVTableMethods[T: Method](input: Input, vtable: var Table[TypeID, Ta
         initTable vtable, size.int
         for _ in times(size):
             let id = input.readTypeID
-            input.callback vtable[id]
+            var t: Table[MethodID, T]
+            input.callback t
+            vtable[id] = t
 
 
 

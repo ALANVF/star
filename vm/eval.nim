@@ -16,6 +16,9 @@ import std/tables
 
 {.experimental: "notNil".}
 
+const
+    DEBUG = false
+
 public:
  type
     State = ref object
@@ -396,7 +399,9 @@ proc dynCast(state: State, value: Value, target: TypeRef): Either[Value, Result]
 proc eval*(state: State, scope: Scope, op: Opcode): Result
 
 proc eval*(state: State, scope: Scope, ops: Opcodes): Result =
+    when DEBUG: echo state.getDeclName(state.thisType)
     for op in ops[]:
+        when DEBUG: echo op
         let res = eval(state, scope, op)
         if unlikely(res != nil): return res
 
@@ -870,7 +875,7 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
         let newValue = state.newClass(t)
         let mstate = state.newState(addr t, addr newValue)
         let mth = mstate.thisDecl.singleInits[][op.is_id]
-        
+        when DEBUG: echo mth.name
         let mscope = Scope(locals: @[])
 
         let res = eval(mstate, mscope, mth.body)
@@ -890,8 +895,9 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
 
         let newValue = state.newClass(t)
         let mstate = state.newState(addr t, addr newValue, op.im_ctx)
+        when DEBUG: echo state.thisDecl.name
         let mth = mstate.thisDecl.multiInits[][op.im_id]
-        
+        when DEBUG: echo mth.name
         let numParams = mth.params.len
         var locals: seq[Value]
         setLen(locals, numParams)
@@ -900,7 +906,7 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
         for i in countdown(numParams-1, 0):
             locals[i] = state.stack.pop
         let mscope = Scope(locals: locals)
-
+        when DEBUG: echo "begin"
         let res = eval(mstate, mscope, mth.body)
         if res != nil:
             case res.kind
@@ -910,7 +916,7 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
                 assert false, "???"
             else:
                 return res
-        
+        when DEBUG: echo "end"
         state.stack.add newValue
     
     of oSend_ss:
@@ -918,7 +924,7 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
 
         let mstate = state.newState(addr t, nil)
         let mth = mstate.thisDecl.staticSingleMethods[op.ss_id]
-        
+        when DEBUG: echo mth.name
         let mscope = Scope(locals: @[])
 
         let res = eval(mstate, mscope, mth.body)
@@ -936,7 +942,7 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
 
         let mstate = state.newState(addr t, nil, op.ms_ctx)
         let mth = mstate.thisDecl.staticMultiMethods[op.ms_id]
-
+        when DEBUG: echo mth.name
         let numParams = mth.params.len
         var locals: seq[Value]
         setLen(locals, numParams)
@@ -962,7 +968,7 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
         let sender = state.stack.pop
         let mstate = state.newState(addr t, addr sender)
         let mth = mstate.thisDecl.instSingleMethods[][op.si_id]
-        
+        when DEBUG: echo mth.name
         let mscope = Scope(locals: @[])
 
         let res = eval(mstate, mscope, mth.body)
@@ -989,8 +995,9 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
         else:
             mstate = state.newState(addr sender_t, addr sender)
             let baseDecl = state.getDecl(t)
-            mth = mstate.thisDecl.instSingleMethodVTable[][baseDecl.id][op.si_id]
-        
+            if mstate.thisDecl.instSingleMethodVTable[].contains(baseDecl.id):
+                mth = mstate.thisDecl.instSingleMethodVTable[][baseDecl.id][op.si_id]
+        when DEBUG: echo mth.name
         let mscope = Scope(locals: @[])
 
         let res = eval(mstate, mscope, mth.body)
@@ -1009,7 +1016,7 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
 
         let decl = state.getDecl(t)
         let mth = decl.instMultiMethods[][op.mi_id]
-
+        when DEBUG: echo mth.name
         let numParams = mth.params.len
         var locals: seq[Value]
         setLen(locals, numParams)
@@ -1021,7 +1028,7 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
 
         let sender = state.stack.pop
         let mstate = state.newState(addr t, addr sender, op.mi_ctx)
-        
+        when DEBUG: echo "begin"
         let res = eval(mstate, mscope, mth.body)
         if res != nil:
             case res.kind
@@ -1031,14 +1038,16 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
                 state.stack.add res.value
             else:
                 return res
+        when DEBUG: echo "end"
     
     of oSendDyn_mi:
         let t = state.getInCtx(op.mi_t)
 
         let decl = state.getDecl(t)
         var mth = decl.instMultiMethods[][op.mi_id]
-
+        when DEBUG: echo mth.name
         let numParams = mth.params.len
+        
         var locals: seq[Value]
         setLen(locals, numParams)
         shallow(locals)
@@ -1055,7 +1064,8 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
             mstate = state.newState(addr t, addr sender, op.mi_ctx)
         else:
             mstate = state.newState(addr sender_t, addr sender, op.mi_ctx)
-            mth = decl.instMultiMethodVTable[][decl.id][op.mi_id]
+            if mstate.thisDecl.instMultiMethodVTable[].contains(decl.id):
+                mth = mstate.thisDecl.instMultiMethodVTable[][decl.id][op.mi_id]
 
         let res = eval(mstate, mscope, mth.body)
         if res != nil:
@@ -1102,7 +1112,8 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
         else:
             mstate = state.newState(addr sender_t, addr sender, op.cm_ctx)
             let baseDecl = state.getDecl(t)
-            mth = mstate.thisDecl.instCastMethodVTable[][baseDecl.id][op.cm_id]
+            if mstate.thisDecl.instCastMethodVTable[].contains(baseDecl.id):
+                mth = mstate.thisDecl.instCastMethodVTable[][baseDecl.id][op.cm_id]
         
         let mscope = Scope(locals: @[])
 
@@ -1153,7 +1164,8 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
         else:
             mstate = state.newState(addr sender_t, addr sender, op.bo_ctx)
             let baseDecl = state.getDecl(t)
-            mth = mstate.thisDecl.binaryMethodVTable[][baseDecl.id][op.bo_id]
+            if mstate.thisDecl.binaryMethodVTable[].contains(baseDecl.id):
+                mth = mstate.thisDecl.binaryMethodVTable[][baseDecl.id][op.bo_id]
         
         let mscope = Scope(locals: @[arg])
 
@@ -1200,7 +1212,8 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
         else:
             mstate = state.newState(addr sender_t, addr sender)
             let baseDecl = state.getDecl(t)
-            mth = mstate.thisDecl.unaryMethodVTable[][baseDecl.id][op.uo_id]
+            if mstate.thisDecl.unaryMethodVTable[].contains(baseDecl.id):
+                mth = mstate.thisDecl.unaryMethodVTable[][baseDecl.id][op.uo_id]
         
         let mscope = Scope(locals: @[])
 
@@ -1608,7 +1621,7 @@ macro binaryOp(kind, res, op: untyped): untyped =
     quote do:
         let `value2` = state.stack.pop
         let `value1` = state.stack.pop
-        assert `value1`.kind == `kind` and `value2`.kind == `kind`, "Expected " & `kindDisplay`
+        assert `value1`.kind == `kind` and `value2`.kind == `kind`, "Expected " & `kindDisplay` & " but got " & $`value1`.kind & " and " & $`value2`.kind
         `res`
 
 template binaryOp(kind, op: untyped): untyped = binaryOp(kind, kind, op)

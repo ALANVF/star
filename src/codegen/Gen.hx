@@ -331,7 +331,7 @@ class Gen {
 		write(decl.staticMultiMethods);
 
 		writeParents(decl.parents);
-		trace([for(k in decl.instMembers.map.keys()) k.name.name]);
+		//trace([for(k in decl.instMembers.map.keys()) k.name.name]);
 		write(decl.staticMembers);
 		write(decl.instMembers);
 

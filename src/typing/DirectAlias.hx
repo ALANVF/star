@@ -54,6 +54,10 @@ class DirectAlias extends Alias {
 
 	// Type checking
 
+	override function getParents(): Array<Type> {
+		return type.getTypeDecl().getParents(); // TODO?
+	}
+
 	override function hasParentDecl(decl: TypeDecl) {
 		return super.hasParentDecl(decl)
 			|| type.hasParentDecl(decl);

@@ -11,7 +11,11 @@ class Array[T] of Values[T] {
 			this[add: #expand value]
 		}
 	}
-
+init [new: capacity (Int)] {
+		buffer = Ptr[new: capacity]
+		length = 0
+		_.capacity = capacity
+	}
 
 	;== Collecting
 

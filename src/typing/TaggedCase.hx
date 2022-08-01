@@ -13,10 +13,10 @@ import typing.Traits;
 abstract class TaggedCase implements IDecl {
 	final errors: Array<Error> = [];
 	//final decl: ITaggedCases;
-	final decl: AnyTypeDecl;
-	final span: Span;
-	final assoc: Null<Message<parsing.ast.Type>>;
-	final init: Null<Array<Stmt>> = null;
+	var decl: AnyTypeDecl;
+	var span: Span;
+	var assoc: Null<Message<parsing.ast.Type>>;
+	var init: Null<Array<Stmt>> = null;
 
 	@ignore var typedAssoc: Null<typing.Message<Type>> = null;
 	@ignore var typedInit: Null<TStmts> = null;

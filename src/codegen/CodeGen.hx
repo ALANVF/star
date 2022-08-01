@@ -2633,7 +2633,7 @@ overload static function compile(ctx: GenCtx, resType: Type, type: Type, candida
 }
 
 overload static function compile(ctx: GenCtx, sender: Type, candidates: Array<ObjMessage.ObjMultiCandidate>, args: Array<TExpr>, wantValue: Bool): Opcodes {
-	final typeref = world.getTypeRef(sender);
+	var typeref = world.getTypeRef(sender);
 	return candidates._match(
 		at([]) => throw "bad",
 		at([{kind: kind, tctx: tctx}]) => kind._match(
@@ -2695,8 +2695,20 @@ overload static function compile(ctx: GenCtx, sender: Type, candidates: Array<Ob
 				for(arg in args) {
 					res = res.concat(compile(ctx, arg));
 				}
-				
-				res.push(mth.typedBody != null && !sender.isProtocol() ? OSend_MI(typeref, id, ictx) : OSendDynamic_MI(typeref, id, ictx));
+
+				if(!sender.t.match(TTypeVar(_))) {
+					final senderDecl = sender.getTypeDecl();
+					if(mth.decl != senderDecl) {
+						// TODO: make this recursive
+						for(parent in senderDecl.getParents()) {
+							if(parent.getTypeDecl() == mth.decl) {
+								typeref = world.getTypeRef(parent.getFrom(sender));
+							}
+						}
+					}
+				}
+				//                                                          TEMP: change to sealed later
+				res.push((mth.typedBody != null && !sender.isProtocol()) || mth.hidden!=null ? OSend_MI(typeref, id, ictx) : OSendDynamic_MI(typeref, id, ictx));
 				
 				if(!wantValue && mth.ret._andOr(ret => ret != Pass2.STD_Void.thisType, false)) {
 					res.push(OPop);
@@ -2771,7 +2783,20 @@ overload static function compile(ctx: GenCtx, sender: Type, candidates: Array<Ob
 					);
 				}
 
-				res.push(mth.typedBody != null && !sender.isProtocol() ? OSend_MI(typeref, id, ictx) : OSendDynamic_MI(typeref, id, ictx));
+				if(!sender.t.match(TTypeVar(_))) {
+					final senderDecl = sender.getTypeDecl();
+					if(mth.decl != senderDecl) {
+						// TODO: make this recursive
+						for(parent in senderDecl.getParents()) {
+							if(parent.getTypeDecl() == mth.decl) {
+								typeref = world.getTypeRef(parent.getFrom(sender));
+							}
+						}
+					}
+				}
+
+				//                                                          TEMP: change to sealed later
+				res.push((mth.typedBody != null && !sender.isProtocol()) || mth.hidden!=null ? OSend_MI(typeref, id, ictx) : OSendDynamic_MI(typeref, id, ictx));
 				
 				if(!wantValue && mth.ret._andOr(ret => ret != Pass2.STD_Void.thisType, false)) {
 					res.push(OPop);

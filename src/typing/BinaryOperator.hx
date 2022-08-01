@@ -4,7 +4,7 @@ import errors.Error;
 import parsing.ast.Ident;
 
 class BinaryOperator extends Operator {
-	@ignore final typevars = new MultiMap<String, TypeVar>();
+	@ignore var typevars = new MultiMap<String, TypeVar>();
 	final op: BinaryOp;
 	final paramName: Ident;
 	var paramType: Type;

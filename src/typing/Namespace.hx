@@ -182,6 +182,10 @@ abstract class Namespace extends TypeDecl {
 
 	// Type checking
 
+	override function getParents(): Array<Type> {
+		return parents.copy();
+	}
+
 	override function hasParentDecl(decl: TypeDecl) {
 		return this == decl
 			|| parents.some(p -> p.hasParentDecl(decl) || p.t._match(

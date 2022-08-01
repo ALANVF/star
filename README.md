@@ -76,15 +76,21 @@ module Main {
 
 ### Running Star
 
-Things you'll need in order to run Star (or rather, the parser. the compiler and runtime don't exist yet):
+Things you'll need in order to run Star:
 - Haxe (4.2.3 or later)
 - [My fork of HashLink](https://github.com/ALANVF/hashlink/tree/star)
+- Nim 1.7.1 (or later)
 
 If you are on windows, you'll want to run this (recursively, somehow) on the contents of `src`, `star`, and `stdlib`:
 ```powershell
 fsutil.exe file setCaseSensitiveInfo <path> enable
 ```
 
+There is currently no way to compile a project other than what's hardocoded into `src/Main.hx`, so running `haxe build.hxml` will compile that. There's also currently no way to change the output directory, which is currently `dump/main.starbc`. If the compiler is being run without any new changes, you can run `hl bin/main.hl`.
+
+After it's compiled, you can run `nim r vm/main.nim <bytecode file>` to run the compiled bytecode. To compile the VM normally, run `nim --out:starvm<.exe> vm/main.nim` and then run as `starvm <bytecode file>`. `[--dump | -d] <output file>` can also be passed afterwards to create a bytecode dump.
+
+Both the compiler and the VM are still pretty unfinished, so there will be many bugs and crashes!
 
 ### Thinking ahead
 

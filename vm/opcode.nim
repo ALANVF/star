@@ -545,7 +545,7 @@ public:
         oIf, oIfNot, oIfElse,
         oDo,
         oLoop,
-        oTry,    
+        oTry,
         oRet, oRetVoid,
         oThrow, oRethrow,
         oBreak,

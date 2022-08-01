@@ -1187,13 +1187,13 @@ class GenDump {
 		},
 
 		at(OSend_IS(t, id)) => {
-			write("sendinit-s ");
+			write("send-init-s ");
 			write(t);
 			write(' $id');
 		},
 
 		at(OSend_IM(t, id, ctx)) => {
-			write("sendinit-m ");
+			write("send-init-m ");
 			write(t);
 			write(' $id');
 			ctx._and(ctx => write(ctx));

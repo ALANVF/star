@@ -10,9 +10,9 @@ import typing.Traits;
 @:build(util.Auto.build())
 class ValueCase implements IErrors {
 	final errors: Array<Error> = [];
-	final decl: AnyTypeDecl;
-	final span: Span;
-	final name: Ident;
+	var decl: AnyTypeDecl;
+	var span: Span;
+	var name: Ident;
 	var value: Null<Expr>;
 	@ignore var typedValue: Null<TExpr> = null;
 
