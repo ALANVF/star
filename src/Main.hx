@@ -18,6 +18,8 @@ import parsing.ast.Message;
 
 @:build(util.Overload.build())
 class Main {
+	static final STAR_HOME = Util.compiledPath();
+
 	static final stdout = Sys.stdout();
 	public static final renderer = new TextDiagnosticRenderer(stdout);
 
@@ -159,11 +161,11 @@ class Main {
 		args[0]._match(
 			at("-h" | "--help") => {
 				final exePath = Sys.programPath();
-				final exeName = exePath.splitAt({
+				final exeName = {
 					var i = exePath.lastIndexOf("/");
 					if(i == -1) i = exePath.lastIndexOf("\\");
-					if(i == -1) 0 else i+1;
-				})[1];
+					if(i == -1) exePath else exePath.splitAt(i+1)[1];
+				};
 				Sys.println('Usage: $exeName <project path> [options]');
 
 				Sys.println("Options:");
@@ -177,12 +179,12 @@ class Main {
 		final dumpTypes = false;
 		final dumpStmts = false;
 			
-		if(dumpTypes) { typesDump = sys.io.File.write("./dump/types.stir"); typesDumper = new typing.Dumper(typesDump); }
-		if(dumpStmts) { stmtsDump = sys.io.File.write("./dump/stmts.stir"); stmtsDumper = new typing.Dumper(stmtsDump); }
-		stdlibDump = sys.io.File.write("./dump/stdlib.stir"); stdlibDumper = new typing.Dumper(stdlibDump);
-		compilerDump = sys.io.File.write("./dump/compiler.stir"); compilerDumper = new typing.Dumper(compilerDump);
+		if(dumpTypes) { typesDump = sys.io.File.write('$STAR_HOME/dump/types.stir'); typesDumper = new typing.Dumper(typesDump); }
+		if(dumpStmts) { stmtsDump = sys.io.File.write('$STAR_HOME/dump/stmts.stir'); stmtsDumper = new typing.Dumper(stmtsDump); }
+		stdlibDump = sys.io.File.write('$STAR_HOME/dump/stdlib.stir'); stdlibDumper = new typing.Dumper(stdlibDump);
+		compilerDump = sys.io.File.write('$STAR_HOME/dump/compiler.stir'); compilerDumper = new typing.Dumper(compilerDump);
 		try {
-			final stdlib = testProject("stdlib", {
+			final stdlib = testProject('$STAR_HOME/stdlib', {
 				isStdlib: true,
 				pass1: true,
 				pass2: true
@@ -212,11 +214,11 @@ class Main {
 
 			nl();
 
-			final outName = args[0].splitAt({
+			final outName = {
 				var i = args[0].lastIndexOf("/");
 				if(i == -1) i = args[0].lastIndexOf("\\");
-				if(i == -1) 0 else i+1;
-			})[1];
+				if(i == -1) args[0] else args[0].splitAt(i+1)[1];
+			};
 
 			final outPath = if(args.length > 1) {
 				args[1]._match(
@@ -374,7 +376,7 @@ class Main {
 
 			/*nl();
 			
-			final compiler = testProject("star", {pass1: true, pass2: true}); {
+			final compiler = testProject('$STAR_HOME/star', {pass1: true, pass2: true}); {
 				final files = compiler.allFiles();
 				for(file in files) {
 					compilerDumper.dump(file);

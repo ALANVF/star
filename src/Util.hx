@@ -15,6 +15,11 @@ class Util {
 	#end
 
 	@:noUsing
+	static macro function compiledPath() {
+		return macro $v{Sys.getCwd().removeTrailing("/")};
+	}
+
+	@:noUsing
 	static macro function assert(expr) {
 		return macro {
 			if(!($expr)) {
