@@ -5,5 +5,4 @@
 -D hl-ver=1.12.0
 --library haxe-strings
 -main Main
---hl bin/main.hl
---cmd hl bin/main.hl
+--hl bin/output/main.c

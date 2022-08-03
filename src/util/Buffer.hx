@@ -26,7 +26,7 @@ abstract Buffer(BufferData) {
 		return @:privateAccess inline String.__alloc__(bytes, len);
 	}
 
-	@:hlNative("std", "buffer_alloc")
+	@:hlNative("std", "alloc_buffer")
 	private static function alloc(): BufferData {
 		return null;
 	}

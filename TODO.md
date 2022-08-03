@@ -2,5 +2,5 @@
 - More documentation
 - More examples
 - Finish stdlib
-- Write compiler and StarVM runtime
+- Finish compiler
 - Write LLVM backend

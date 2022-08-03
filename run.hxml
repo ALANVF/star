@@ -1,0 +1,2 @@
+build.hxml
+--cmd hl bin/main.hl

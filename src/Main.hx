@@ -153,6 +153,26 @@ class Main {
 		for(file in allFiles("examples")) {
 			parse(newSource(file), false);
 		}*/
+
+		final args = Sys.args();
+
+		args[0]._match(
+			at("-h" | "--help") => {
+				final exePath = Sys.programPath();
+				final exeName = exePath.splitAt({
+					var i = exePath.lastIndexOf("/");
+					if(i == -1) i = exePath.lastIndexOf("\\");
+					if(i == -1) 0 else i+1;
+				})[1];
+				Sys.println('Usage: $exeName <project path> [options]');
+
+				Sys.println("Options:");
+				Sys.println("  [-o | --out] <file>				Specify output file for compiled bytecode");
+
+				return;
+			},
+			_ => {}
+		);
 	
 		final dumpTypes = false;
 		final dumpStmts = false;
@@ -161,7 +181,6 @@ class Main {
 		if(dumpStmts) { stmtsDump = sys.io.File.write("./dump/stmts.stir"); stmtsDumper = new typing.Dumper(stmtsDump); }
 		stdlibDump = sys.io.File.write("./dump/stdlib.stir"); stdlibDumper = new typing.Dumper(stdlibDump);
 		compilerDump = sys.io.File.write("./dump/compiler.stir"); compilerDumper = new typing.Dumper(compilerDump);
-		mainOutput = sys.io.File.write("./dump/main.starbc");
 		try {
 			final stdlib = testProject("stdlib", {
 				isStdlib: true,
@@ -193,7 +212,24 @@ class Main {
 
 			nl();
 
-			final main = testProject("tests/hello-world", {
+			final outName = args[0].splitAt({
+				var i = args[0].lastIndexOf("/");
+				if(i == -1) i = args[0].lastIndexOf("\\");
+				if(i == -1) 0 else i+1;
+			})[1];
+
+			final outPath = if(args.length > 1) {
+				args[1]._match(
+					at("-o" | "--out") => args[2],
+					_ => throw "Invalid flag "+args[1]
+				);
+			} else {
+				'$outName.starbc';
+			};
+
+			mainOutput = sys.io.File.write(outPath);
+
+			final main = testProject(args[0], {
 				pass1: true,
 				pass2: true
 			});
