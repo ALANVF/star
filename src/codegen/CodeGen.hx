@@ -656,7 +656,7 @@ overload static function compile(ctx: GenCtx, stmt: TStmt): Opcodes return stmt.
 				OSetLocal(lname)
 			], [
 				OGetLocal(lname),
-				ONative(downwards? "i32_prec" : "i32_succ"),
+				ONative(downwards? "i32_pred" : "i32_succ"),
 				OSetLocal(lname)
 			]);
 
