@@ -41,8 +41,8 @@ package codegen;
 	}
 
 	function newLocal(name: String) {
-		localsMap[name] = locals++;
-		return locals;
+		localsMap[name] = locals;
+		return locals++;
 	}
 
 	overload function label() {

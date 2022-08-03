@@ -121,6 +121,7 @@ proc write*(output: Output, world: World) =
 
         write "types "
         writeBlock: with output:
+            newline
             writeLine "Value = decl#" & $world.defaultValue
             writeLine "MultiKind = decl#" & $world.defaultMultiKind
             writeLine "Int8 = decl#" & $world.defaultInt8
