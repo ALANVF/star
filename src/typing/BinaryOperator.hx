@@ -5,8 +5,8 @@ import parsing.ast.Ident;
 
 class BinaryOperator extends Operator {
 	@ignore var typevars = new MultiMap<String, TypeVar>();
-	final op: BinaryOp;
-	final paramName: Ident;
+	var op: BinaryOp;
+	var paramName: Ident;
 	var paramType: Type;
 
 	static function fromAST(decl, op, paramName, paramType, ast: parsing.ast.decls.Operator) {

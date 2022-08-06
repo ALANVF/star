@@ -734,7 +734,7 @@ class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
 												m.decl = im.decl;
 												m.span = im.span;
 												m.typevars = im.typevars;
-												m.type = im.type;
+												m.type = im.type.getFrom(parent);
 												m.typedBody = im.typedBody;
 												m.isMain = im.isMain;
 												m.isGetter = im.isGetter;
@@ -747,10 +747,10 @@ class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
 										);
 									};
 
-									final me = this.add(e, m);
+									/*final me =*/ this.add(e, m);
 
-									final clid = this.getID(cl);
-									/*im._match(
+									/*final clid = this.getID(cl);
+									im._match(
 										at(m is SingleMethod) => {
 											if(!e.instSingleMethodVTable.exists(clid)) {
 												e.instSingleMethodVTable[clid] = new InstSingleMethods();
@@ -772,7 +772,40 @@ class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
 										_ => throw "bad"
 									);*/
 								}
-								for(op in cl.operators) if(op.typedBody!=null) this.add(e, op);
+								for(op in cl.operators) if(op.typedBody!=null) {
+									final o = op._match(
+										at(op is BinaryOperator) => {
+											final o: BinaryOperator = untyped $new(BinaryOperator);
+											o.decl = op.decl;
+											o.span = op.span;
+											o.typevars = op.typevars;
+											o.opSpan = op.opSpan;
+											o.op = op.op;
+											o.paramName = op.paramName;
+											o.paramType = op.paramType.getFrom(parent);
+											o.typedBody = op.typedBody;
+											o.ret = op.ret;
+											o.isInline = op.isInline;
+											o.isMacro = op.isMacro;
+											o;
+										},
+										at(op is UnaryOperator) => {
+											final o: UnaryOperator = untyped $new(UnaryOperator);
+											o.decl = op.decl;
+											o.span = op.span;
+											o.opSpan = op.opSpan;
+											o.op = op.op;
+											o.typedBody = op.typedBody;
+											o.ret = op.ret;
+											o.isInline = op.isInline;
+											o.isMacro = op.isMacro;
+											o;
+										},
+										_ => throw "bad"
+									);
+
+									this.add(e, o);
+								}
 							},
 							_ => {}
 						);

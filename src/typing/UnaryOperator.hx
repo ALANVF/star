@@ -1,7 +1,7 @@
 package typing;
 
 class UnaryOperator extends Operator {
-	final op: UnaryOp;
+	var op: UnaryOp;
 
 	static function fromAST(decl, op, ast: parsing.ast.decls.Operator) {
 		return new UnaryOperator({

@@ -5,7 +5,7 @@ import text.Span;
 
 abstract class Operator extends AnyMethod {
 	var ret: Null<Type>;
-	final opSpan: Span;
+	var opSpan: Span;
 	var isInline: Bool = false;
 	var isMacro: Bool = false;
 
