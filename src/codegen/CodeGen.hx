@@ -2671,7 +2671,7 @@ overload static function compile(ctx: GenCtx, sender: Type, candidates: Array<Ob
 						for(tv => t in tctx) {
 							_ictx[world.getTVar(tv)] = genTVarEntry(ctx, tv, t);
 						}
-						trace(_ictx);
+						
 						// Check for dup dvars in tvar table (which happens for some reason?)
 						typeref._match(
 							at(TInst(_, inst)) => {

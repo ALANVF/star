@@ -631,7 +631,8 @@ class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
 																	init.params.map(p -> p.label.name),
 																	init.params.map(p -> ({
 																		e: EName(p.name.name, ctx.locals[p.name.name]),
-																		t: ctx.locals[p.name.name].type
+																		t: ctx.locals[p.name.name].type,
+																		orig: EName(init.span, p.name.name)
 																	}:TExpr))
 																)),
 																t: Pass2.STD_Void.thisType
