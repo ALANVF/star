@@ -151,7 +151,7 @@ class Class extends ClassLike {
 	}
 
 	override function getNative() {
-		return native.toNull()._or(super.getNative());
+		return native.toNull() ?? super.getNative();
 	}
 
 	override function isStrong() {

@@ -17,7 +17,7 @@ class MultiInit extends Init {
 			span: ast.span,
 			params: null,    // hack for partial initialization
 			fuzzyName: null, // hack for partial initialization
-			body: ast.body._and(body => body.stmts())
+			body: ast.body?.stmts()
 		});
 
 		final params = switch ast.spec.of {

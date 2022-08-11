@@ -49,14 +49,14 @@ class File implements ITypeLookup implements IErrors {
 		
 		switch result {
 			case Modular([], _) | Script([], _): status = diags.match(Nil);
-			case Modular(errors, _) | Script(errors, _): errors._for(i => error, {
+			case Modular(errors, _) | Script(errors, _): for(i => error in errors) {
 				this.errors.push(error);
 				
 				if(i == 25) {
 					this.errors.push(TooManyErrors);
 					break;
 				}
-			});
+			}
 		}
 
 		program = Some(result);
@@ -176,14 +176,11 @@ class File implements ITypeLookup implements IErrors {
 								);
 							}
 
-							res2._match(
-								at(r!) => r,
-								_ => if(search == Inside) {
-									null;
-								} else {
-									unit.orElseDo(dir).findType(path, Outside, from, depth, cache);
-								}
-							);
+							res2 ?? if(search == Inside) {
+								null;
+							} else {
+								unit.orElseDo(dir).findType(path, Outside, from, depth, cache);
+							};
 						}
 					},
 					at(Some(_), when(depth != 0)) => {
@@ -218,13 +215,10 @@ class File implements ITypeLookup implements IErrors {
 							} else {
 								finished = false;
 								{t: TApplied(new Type(decl.thisType.t, span), args.map(arg -> arg.t._match(
-									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
-										at(type!) => type,
-										_ => {
-											errors.push(Type_InvalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
-											arg;
-										}
-									),
+									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth) ?? {
+										errors.push(Type_InvalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
+										arg;
+									},
 									_ => arg
 								))), span: span};
 							}
@@ -241,25 +235,19 @@ class File implements ITypeLookup implements IErrors {
 							case [type]:
 								finished = false;
 								{t: TApplied(type, args.map(arg -> arg.t._match(
-									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
-										at(type!) => type,
-										_ => {
-											errors.push(Type_InvalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
-											arg;
-										}
-									),
+									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth) ?? {
+										errors.push(Type_InvalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
+										arg;
+									},
 									_ => arg
 								))), span: span};
 							case types:
 								finished = false;
 								{t: TApplied({t: TMulti(types), span: span}, args.map(arg -> arg.t._match(
-									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
-										at(type!) => type,
-										_ => {
-											errors.push(Type_InvalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
-											arg;
-										}
-									),
+									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth) ?? {
+										errors.push(Type_InvalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
+										arg;
+									},
 									_ => arg
 								))), span: span};
 						}
@@ -273,9 +261,8 @@ class File implements ITypeLookup implements IErrors {
 					at([_, type = (_ : Type) => {t: TConcrete(decl)}]) =>
 						unit.doOrElse(u => {
 							type = {t: TModular(type, u), span: span};
-							decl.findType(rest, Inside, from, 0, cache)._or(
-								u.findType(rest, Outside, from, 0, cache + decl.thisType)
-							);
+							decl.findType(rest, Inside, from, 0, cache)
+							?? u.findType(rest, Outside, from, 0, cache + decl.thisType);
 						}, {
 							decl.findType(rest, Inside, from, 0, cache);
 						}),
@@ -310,12 +297,12 @@ class File implements ITypeLookup implements IErrors {
 		//if(cat.fullName()=="Star.Core.InPlace"&&forType.fullName()=="Star.Core.Linked.List[T]"&&this.path=="C:/Users/alani/Documents/GitHub/star/stdlib/Star/Core/InPlace/Linked.List[T]+InPlace.star")
 		///*if(!this.path.startsWith("C:/Users/alani/Documents/GitHub/star/stdlib"))*/trace(cat.fullName()+" for "+forType.fullName(), this.path);
 		for(cat2 in categories) {
-			cat2.path=cat2.path.simplify();
-			cat2.type=cat2.type._and(t=>t.simplify());
+			cat2.path = cat2.path.simplify();
+			cat2.type = cat2.type?.simplify();
 		}
 		/*if(categories.length!=0) {
 			Sys.print("\n");
-			trace("=== "+forType.fullName()+" === " + cat.span._and(s=>s.display()));
+			trace("=== "+forType.fullName()+" === " + cat.span?.display());
 		}*/
 		return cat.t._match(
 			at(TModular(t, unit), when(!cache.contains(unit))) => {
@@ -372,8 +359,8 @@ class File implements ITypeLookup implements IErrors {
 			} else {
 				false;
 			}*/
-			cat.hasParentType(c.path) && c.path.hasChildType(cat)&&
-					forType.hasParentType(c.thisType) && c.thisType.getMostSpecific().hasChildType(forType);
+			cat.hasParentType(c.path) && c.path.hasChildType(cat) &&
+				forType.hasParentType(c.thisType) && c.thisType.getMostSpecific().hasChildType(forType);
 		})._match(
 			at([]) => dir.findCategory(ctx, cat, forType, from, cache),
 			at(found) => found

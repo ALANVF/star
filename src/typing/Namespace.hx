@@ -23,7 +23,7 @@ abstract class Namespace extends TypeDecl {
 		//if(cache.contains(this)) return None;
 		//cache += thisType;
 
-		if(from == null) from = this;
+		from ??= this;
 
 		return path._match(
 			at([[span, "This", args]], when(search != Inside && depth == 0)) => {
@@ -101,13 +101,10 @@ abstract class Namespace extends TypeDecl {
 							} else {
 								finished = false;
 								{t: TApplied(type.thisType, args.map(arg -> arg.t._match(
-									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
-										at(type!) => type,
-										_ => {
-											errors.push(Type_InvalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
-											arg;
-										}
-									),
+									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth) ?? {
+										errors.push(Type_InvalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
+										arg;
+									},
 									_ => arg
 								))), span: span};
 							}
@@ -123,25 +120,19 @@ abstract class Namespace extends TypeDecl {
 							case [type]:
 								finished = false;
 								{t: TApplied(type, args.map(arg -> arg.t._match(
-									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
-										at(type!) => type,
-										_ => {
-											errors.push(Type_InvalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
-											arg;
-										}
-									),
+									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth) ?? {
+										errors.push(Type_InvalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
+										arg;
+									},
 									_ => arg
 								))), span: span};
 							case types:
 								finished = false;
 								{t: TApplied({t: TMulti(types), span: span}, args.map(arg -> arg.t._match(
-									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
-										at(type!) => type,
-										_ => {
-											errors.push(Type_InvalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
-											arg;
-										}
-									),
+									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth) ?? {
+										errors.push(Type_InvalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
+										arg;
+									},
 									_ => arg
 								))), span: span};
 						}
@@ -261,7 +252,7 @@ abstract class Namespace extends TypeDecl {
 		if(this == Pass2.STD_Iterable1) {
 			return params[0];
 		} else {
-			return parents.findMap(p -> p.iterElemType())._and(e => e.getFrom(thisType))._or(super.iterElemType());
+			return parents.findMap(p -> p.iterElemType())._and(e => e.getFrom(thisType)) ?? super.iterElemType();
 		}
 	}
 

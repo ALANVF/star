@@ -109,14 +109,14 @@ class GenDump {
 			writeBlock(cls.friends, "is friend #[", "] ", f -> write(CodeGen.world.getTypeRef(f)));
 		}
 
-		cls.hidden._and(hidden => hidden._match(
+		cls.hidden?._match(
 			at(None) => write("is hidden "),
 			at(Some(within)) => {
 				write("is hidden ");
 				write(CodeGen.world.getTypeRef(within));
 				write(" ");
 			}
-		));
+		);
 
 		cls.sealed.forEach(sealed -> sealed._match(
 			at(None) => write("is sealed "),
@@ -258,14 +258,14 @@ class GenDump {
 			writeBlock(proto.friends, "is friend #[", "] ", f -> write(CodeGen.world.getTypeRef(f)));
 		}
 
-		proto.hidden._and(hidden => hidden._match(
+		proto.hidden?._match(
 			at(None) => write("is hidden "),
 			at(Some(within)) => {
 				write("is hidden ");
 				write(CodeGen.world.getTypeRef(within));
 				write(" ");
 			}
-		));
+		);
 
 		proto.sealed.forEach(sealed -> sealed._match(
 			at(None) => write("is sealed "),
@@ -398,14 +398,14 @@ class GenDump {
 			writeBlock(kind.friends, "is friend #[", "] ", f -> write(CodeGen.world.getTypeRef(f)));
 		}
 
-		kind.hidden._and(hidden => hidden._match(
+		kind.hidden?._match(
 			at(None) => write("is hidden "),
 			at(Some(within)) => {
 				write("is hidden ");
 				write(CodeGen.world.getTypeRef(within));
 				write(" ");
 			}
-		));
+		);
 
 		kind.sealed.forEach(sealed -> sealed._match(
 			at(None) => write("is sealed "),
@@ -515,30 +515,30 @@ class GenDump {
 		final id = isStatic? CodeGen.world.getStaticID(mem) : CodeGen.world.getInstID(mem);
 
 		write('my $id ${mem.name.name} (');
-		write(CodeGen.world.getTypeRef(mem.type._or(throw "Member does not have a type: "+mem.name.name)));
+		write(CodeGen.world.getTypeRef(mem.type ?? throw "Member does not have a type: "+mem.name.name));
 		write(")");
 
 		if(isStatic) write(" is static");
 		
-		mem.hidden._and(hidden => hidden._match(
+		mem.hidden?._match(
 			at(None) => write(" is hidden"),
 			at(Some(within)) => {
 				write(" is hidden ");
 				write(CodeGen.world.getTypeRef(within));
 			}
-		));
+		);
 
 		if(mem.isReadonly) write(" is readonly");
 
 		// TODO
-		mem.getter._and(getter => getter._match(
+		mem.getter?._match(
 			at(None) => write(' is getter `${mem.name.name}`'),
 			at(Some({name: name})) => write(' is getter `${name}`')
-		));
-		mem.setter._and(setter => setter._match(
+		);
+		mem.setter?._match(
 			at(None) => write(' is setter `${mem.name.name}`'),
 			at(Some({name: name})) => write(' is setter `${name}`')
-		));
+		);
 
 		if(mem.noInherit) write(" is noinherit");
 
@@ -632,14 +632,14 @@ class GenDump {
 		);
 		write("] ");
 
-		init.hidden._and(hidden => hidden._match(
+		init.hidden?._match(
 			at(None) => write("is hidden "),
 			at(Some(within)) => {
 				write("is hidden ");
 				write(CodeGen.world.getTypeRef(within));
 				write(" ");
 			}
-		));
+		);
 		if(init.noInherit) write("is noinherit ");
 
 		init.typedBody._andOr(tb => {
@@ -715,18 +715,18 @@ class GenDump {
 			_ => throw "bad"
 		);
 		write("] (");
-		write(CodeGen.world.getTypeRef(mth.ret._or(Pass2.STD_Void.thisType)));
+		write(CodeGen.world.getTypeRef(mth.ret ?? Pass2.STD_Void.thisType));
 		write(") ");
 
 		write("is static ");
-		mth.hidden._and(hidden => hidden._match(
+		mth.hidden?._match(
 			at(None) => write("is hidden "),
 			at(Some(within)) => {
 				write("is hidden ");
 				write(CodeGen.world.getTypeRef(within));
 				write(" ");
 			}
-		));
+		);
 		if(mth.noInherit) write("is noinherit ");
 
 		mth.typedBody._andOr(tb => {
@@ -800,18 +800,18 @@ class GenDump {
 			_ => throw "bad"
 		);
 		write("] (");
-		write(CodeGen.world.getTypeRef(mth.ret._or(Pass2.STD_Void.thisType)));
+		write(CodeGen.world.getTypeRef(mth.ret ?? Pass2.STD_Void.thisType));
 		write(") ");
 
 		if(mth.isMain) write("is main ");
-		mth.hidden._and(hidden => hidden._match(
+		mth.hidden?._match(
 			at(None) => write("is hidden "),
 			at(Some(within)) => {
 				write("is hidden ");
 				write(CodeGen.world.getTypeRef(within));
 				write(" ");
 			}
-		));
+		);
 		if(mth.noInherit) write("is noinherit ");
 
 		mth.typedBody._andOr(tb => {
@@ -879,17 +879,17 @@ class GenDump {
 			_ => throw "bad"
 		);
 		write("(");
-		write(CodeGen.world.getTypeRef(oper.ret._or(Pass2.STD_Void.thisType)));
+		write(CodeGen.world.getTypeRef(oper.ret ?? Pass2.STD_Void.thisType));
 		write(") ");
 
-		oper.hidden._and(hidden => hidden._match(
+		oper.hidden?._match(
 			at(None) => write("is hidden "),
 			at(Some(within)) => {
 				write("is hidden ");
 				write(CodeGen.world.getTypeRef(within));
 				write(" ");
 			}
-		));
+		);
 		if(oper.noInherit) write("is noinherit ");
 
 		oper.typedBody._andOr(tb => {

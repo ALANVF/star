@@ -54,16 +54,16 @@ class Dumper {
 		for(value in values) write(value);
 	}
 	overload function write(values: Array<String>, sep: String) {
-		values._for(i => value, {
+		for(i => value in values) {
 			if(i != 0) write(sep);
 			write(value);
-		});
+		}
 	}
 	overload function write<T>(values: Array<T>, sep: String, func: (T) -> Void) {
-		values._for(i => value, {
+		for(i => value in values) {
 			if(i != 0) write(sep);
 			func(value);
-		});
+		}
 	}
 
 	overload function write<T, U, V>(values: List3<T, U, V>, sep: String, func: (T, U, V) -> Void) {
@@ -580,11 +580,11 @@ class Dumper {
 			});
 			level--;
 			write(" }");
-			labels._for(i => label, {
+			for(i => label in labels) {
 				nextLine();
 				write('$label: ');
 				dump(args[i]);
-			});
+			}
 		},
 		at(Multi(candidates, labels, args)) => {
 			write(":multi [");
@@ -600,11 +600,11 @@ class Dumper {
 				write(" }");
 			});
 			write("]");
-			labels._for(i => label, {
+			for(i => label in labels) {
 				nextLine();
 				write('$label: ');
 				dump(args[i]);
-			});
+			}
 		},
 		at(Super(parent, msg2)) => {
 			write(":super ");
@@ -631,12 +631,12 @@ class Dumper {
 			});
 			level--;
 			write(" }");
-			labels._for(i => label, {
+			for(i => label in labels) {
 				nextLine();
 				write('$label: ');
 				if(args[i]==null) throw '${labels[0]}: ${args[0].orig.mainSpan().display()} $label: $i';
 				dump(args[i]);
-			});
+			}
 		},
 		at(Multi(candidates, labels, args)) => {
 			write(":multi [");
@@ -652,11 +652,11 @@ class Dumper {
 				write(" }");
 			});
 			write("]");
-			labels._for(i => label, {
+			for(i => label in labels) {
 				nextLine();
 				write('$label: ');
 				dump(args[i]);
-			});
+			}
 		},
 		at(Cast(target, [c])) => {
 			write(":cast { ");
@@ -702,11 +702,11 @@ class Dumper {
 				nextLine();
 			});
 			write(":lazy");
-			labels._for(i => label, {
+			for(i => label in labels) {
 				nextLine();
 				write('$label: ');
 				dump(exprs[i]);
-			});
+			}
 		},
 		at(Cast(cat, type)) => {
 			cat._and(c => {
@@ -1517,11 +1517,11 @@ class Dumper {
 			level++;
 			nextLine();
 			dump(type, Nil);
-			taggedCase.params._for(i => param, {
+			for(i => param in taggedCase.params) {
 				nextLine();
 				write('${param.label.name}: ');
 				dump(args[i]);
-			});
+			}
 			level--;
 			write(")");
 		},
@@ -1547,11 +1547,11 @@ class Dumper {
 			level++;
 			nextLine();
 			dump(type, Nil);
-			taggedCase.params._for(i => param, {
+			for(i => param in taggedCase.params) {
 				nextLine();
 				write('${param.label.name}: ');
 				dump(args[i]);
-			});
+			}
 			nextLine();
 			write(":members {");
 			writeLines(members, m -> {
@@ -1877,11 +1877,11 @@ class Dumper {
 					write(name);
 				},
 				at(Multi(null, labels, exprs)) => {
-					labels._for(i => label, {
+					for(i => label in labels) {
 						nextLine();
 						write('$label: ');
 						dump(exprs[i]);
-					});
+					}
 				},
 				_ => throw "error!"
 			);

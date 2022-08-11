@@ -1,5 +1,6 @@
 package codegen;
 
+import text.Pos;
 import typing.*;
 
 @:generic
@@ -35,8 +36,8 @@ import typing.*;
 		);
 	}
 
-	function getIndex(k: K) {
-		return map[k]._or(throw "Entry not found!");
+	function getIndex(k: K): I {
+		return map[k] ?? throw "Entry not found!";
 	}
 }
 
@@ -557,19 +558,194 @@ class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
 					for(parent in c.parents) {
 						parent.getTypeDecl()._match(
 							at(cl is ClassLike) => {
-								cl._match(
+								/*cl._match(
 									at({inits: inits} is Class | {inits: inits} is Protocol) => {
 										for(it in inits) if(it.typedBody!=null) this.add(e, it);
 									},
 									_ => {}
+								);*/
+								cl._match(
+									at({inits: inits} is Class | {inits: inits} is Protocol) => {
+										for(init in inits) if(init.typedBody!=null) {
+											final i = {
+												init._match(
+													at(init is SingleInit) => {
+														final i: SingleInit = untyped $new(SingleInit);
+														i.decl = c;
+														i.span = init.span;
+														i.name = init.name;
+														i.typedBody = [{
+															s: SExpr({
+																e: EInitThis(parent, Single(SSInit(init))),
+																t: Pass2.STD_Void.thisType
+															})
+														}];
+														i.isMacro = init.isMacro;
+														i;
+													},
+													at(init is MultiInit) => {
+														final i: MultiInit = untyped $new(MultiInit);
+														i.decl = c;
+														i.span = init.span;
+														i.typevars = init.typevars;
+														i.params = init.params;
+														i.fuzzyName = init.fuzzyName;
+														final ctx: Ctx = {
+															where: WMethod(init),
+															outer: {
+																where: WDecl(cl),
+																thisType: parent
+															},
+															thisType: parent
+														};
+														for(param in init.params) {
+															param.type = param.type.simplify();
+											
+															final span = param.name.span;
+															final name = param.name.name;
+															if(name == "_") {
+																continue;
+															} else ctx.locals[name]._andOr(local => {
+																ctx.addError(Type_DuplicateParam(init, name, local.span, span));
+															}, {
+																ctx.locals[name] = new Pass2.LocalParam(
+																	ctx,
+																	span,
+																	name,
+																	param.type,
+																	param.value._and(v =>
+																		param.tvalue = Pass2.assignType(ctx, Pass2.typeExpr(ctx, v), param.type)
+																	)
+																);
+															});
+														}
+														i.typedBody = [{
+															s: SExpr({
+																e: EInitThis(parent, Multi(
+																	[{
+																		kind: MSInit(init),
+																		tctx: {
+																			null; // TODO
+																		}
+																	}],
+																	init.params.map(p -> p.label.name),
+																	init.params.map(p -> ({
+																		e: EName(p.name.name, ctx.locals[p.name.name]),
+																		t: ctx.locals[p.name.name].type
+																	}:TExpr))
+																)),
+																t: Pass2.STD_Void.thisType
+															})
+														}];
+														
+														i;
+													},
+													_ => throw "bad"
+												);
+											};
+		
+											this.add(e, i);
+										}
+									},
+									_ => {}
 								);
-								for(sm in cl.staticMethods) if(sm.typedBody!=null) this.add(e, sm);
+								for(sm in cl.staticMethods) if(sm.typedBody!=null) {
+									final m = {
+										sm._match(
+											at(sm is SingleStaticMethod) => {
+												final m: SingleStaticMethod = untyped $new(SingleStaticMethod);
+												m.decl = c;
+												m.span = sm.span;
+												m.name = sm.name;
+												m.typedBody = [{
+													s: SExpr({
+														e: ETypeMessage(parent, Single(SSMethod(sm))),
+														t: Pass2.STD_Void.thisType
+													})
+												}];
+												m.ret = sm.ret;
+												m.isMain = sm.isMain;
+												m.isGetter = sm.isGetter;
+												m.isSetter = sm.isSetter;
+												m.isInline = sm.isInline;
+												m.isMacro = sm.isMacro;
+												m;
+											},
+											at(sm is MultiStaticMethod) => {
+												final m: MultiStaticMethod = untyped $new(MultiStaticMethod);
+												m.decl = c;
+												m.span = sm.span;
+												m.typevars = sm.typevars;
+												m.params = sm.params;
+												m.fuzzyName = sm.fuzzyName;
+												final ctx: Ctx = {
+													where: WMethod(sm),
+													outer: {
+														where: WDecl(cl),
+														thisType: parent
+													},
+													thisType: parent
+												};
+												for(param in sm.params) {
+													param.type = param.type.simplify();
+									
+													final span = param.name.span;
+													final name = param.name.name;
+													if(name == "_") {
+														continue;
+													} else ctx.locals[name]._andOr(local => {
+														ctx.addError(Type_DuplicateParam(sm, name, local.span, span));
+													}, {
+														ctx.locals[name] = new Pass2.LocalParam(
+															ctx,
+															span,
+															name,
+															param.type,
+															param.value._and(v =>
+																param.tvalue = Pass2.assignType(ctx, Pass2.typeExpr(ctx, v), param.type)
+															)
+														);
+													});
+												}
+												m.typedBody = [{
+													s: SExpr({
+														e: ETypeMessage(parent, Multi(
+															[{
+																kind: MSMethod(sm),
+																tctx: {
+																	null; // TODO
+																}
+															}],
+															sm.params.map(p -> p.label.name),
+															sm.params.map(p -> ({
+																e: EName(p.name.name, ctx.locals[p.name.name]),
+																t: ctx.locals[p.name.name].type
+															}:TExpr))
+														)),
+														t: Pass2.STD_Void.thisType
+													})
+												}];
+												m.ret = sm.ret;
+												m.isMain = sm.isMain;
+												m.isGetter = sm.isGetter;
+												m.isSetter = sm.isSetter;
+												m.isInline = sm.isInline;
+												m.isMacro = sm.isMacro;
+
+												m;
+											},
+											_ => throw "bad"
+										);
+									};
+
+									this.add(e, m);
+								}
 								for(im in cl.methods) if(im.typedBody!=null) {
 									final m = {
 										im._match(
 											at(im is SingleMethod) => {
 												final m: SingleMethod = untyped $new(SingleMethod);
-												m.decl = im.decl;
+												m.decl = c;
 												m.span = im.span;
 												m.name = im.name;
 												m.typedBody = im.typedBody;
@@ -583,7 +759,7 @@ class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
 											},
 											at(im is MultiMethod) => {
 												final m: MultiMethod = untyped $new(MultiMethod);
-												m.decl = im.decl;
+												m.decl = c;
 												m.span = im.span;
 												m.typevars = im.typevars;
 												m.params = im.params;
@@ -600,7 +776,7 @@ class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
 											},
 											at(im is CastMethod) => {
 												final m: CastMethod = untyped $new(CastMethod);
-												m.decl = im.decl;
+												m.decl = c;
 												m.span = im.span;
 												m.typevars = im.typevars;
 												m.type = im.type;
@@ -694,13 +870,103 @@ class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
 									},
 									_ => {}
 								);
-								for(sm in cl.staticMethods) if(sm.typedBody!=null) this.add(e, sm);
+								for(sm in cl.staticMethods) if(sm.typedBody!=null) {
+									final m = {
+										sm._match(
+											at(sm is SingleStaticMethod) => {
+												final m: SingleStaticMethod = untyped $new(SingleStaticMethod);
+												m.decl = p;
+												m.span = sm.span;
+												m.name = sm.name;
+												m.typedBody = [{
+													s: SExpr({
+														e: ETypeMessage(parent, Single(SSMethod(sm))),
+														t: Pass2.STD_Void.thisType
+													})
+												}];
+												m.ret = sm.ret;
+												m.isMain = sm.isMain;
+												m.isGetter = sm.isGetter;
+												m.isSetter = sm.isSetter;
+												m.isInline = sm.isInline;
+												m.isMacro = sm.isMacro;
+												m;
+											},
+											at(sm is MultiStaticMethod) => {
+												final m: MultiStaticMethod = untyped $new(MultiStaticMethod);
+												m.decl = p;
+												m.span = sm.span;
+												m.typevars = sm.typevars;
+												m.params = sm.params;
+												m.fuzzyName = sm.fuzzyName;
+												final ctx: Ctx = {
+													where: WMethod(sm),
+													outer: {
+														where: WDecl(cl),
+														thisType: parent
+													},
+													thisType: parent
+												};
+												for(param in sm.params) {
+													param.type = param.type.simplify();
+									
+													final span = param.name.span;
+													final name = param.name.name;
+													if(name == "_") {
+														continue;
+													} else ctx.locals[name]._andOr(local => {
+														ctx.addError(Type_DuplicateParam(sm, name, local.span, span));
+													}, {
+														ctx.locals[name] = new Pass2.LocalParam(
+															ctx,
+															span,
+															name,
+															param.type,
+															param.value._and(v =>
+																param.tvalue = Pass2.assignType(ctx, Pass2.typeExpr(ctx, v), param.type)
+															)
+														);
+													});
+												}
+												m.typedBody = [{
+													s: SExpr({
+														e: ETypeMessage(parent, Multi(
+															[{
+																kind: MSMethod(sm),
+																tctx: {
+																	null; // TODO
+																}
+															}],
+															sm.params.map(p -> p.label.name),
+															sm.params.map(p -> ({
+																e: EName(p.name.name, ctx.locals[p.name.name]),
+																t: ctx.locals[p.name.name].type
+															}:TExpr))
+														)),
+														t: Pass2.STD_Void.thisType
+													})
+												}];
+												m.ret = sm.ret;
+												m.isMain = sm.isMain;
+												m.isGetter = sm.isGetter;
+												m.isSetter = sm.isSetter;
+												m.isInline = sm.isInline;
+												m.isMacro = sm.isMacro;
+
+												m;
+											},
+											_ => throw "bad"
+										);
+									};
+
+									this.add(e, m);
+								}
 								for(im in cl.methods) if(im.typedBody!=null) {
 									final m = {
 										im._match(
 											at(im is SingleMethod) => {
 												final m: SingleMethod = untyped $new(SingleMethod);
-												m.decl = im.decl;
+												m.decl = p;
 												m.span = im.span;
 												m.name = im.name;
 												m.typedBody = im.typedBody;
@@ -714,7 +980,7 @@ class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
 											},
 											at(im is MultiMethod) => {
 												final m: MultiMethod = untyped $new(MultiMethod);
-												m.decl = im.decl;
+												m.decl = p;
 												m.span = im.span;
 												m.typevars = im.typevars;
 												m.params = im.params;
@@ -731,7 +997,7 @@ class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
 											},
 											at(im is CastMethod) => {
 												final m: CastMethod = untyped $new(CastMethod);
-												m.decl = im.decl;
+												m.decl = p;
 												m.span = im.span;
 												m.typevars = im.typevars;
 												m.type = im.type.getFrom(parent);
@@ -985,13 +1251,13 @@ class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
 	
 	
 	overload function get(tcase: TaggedCase) {
-		return taggedCases[tcase]._or({
+		return taggedCases[tcase] ?? {
 			final d = this.get(tcase.decl);
 			final e = (cast d : ITaggedCaseEntries).taggedCases.get(tcase);
 			final t = tuple(d, e);
 			taggedCases[tcase] = t;
 			t;
-		});
+		};
 	}
 
 
@@ -1421,31 +1687,36 @@ class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
 
 
 	private final dynDVarIDs = new Map<TypeVar, TVarID>();
-	inline function getDVarID(tvar: TypeVar) {
+	function getDVarID(tvar: TypeVar) {
 		if(declTVars.exists(tvar)) {
 			return declTVars[tvar]._2.id;
 		} else {
 			// pls make this actually work I hate this pls
-			return dynDVarIDs[tvar]._or({
-				final id = (cast tvar.lookup : {typevars: MultiMap<String, TypeVar>}).typevars.allValues().indexOf(tvar) + 1;
+			return dynDVarIDs[tvar] ?? {
+				final id = (cast tvar.lookup : {typevars: MultiMap<String, TypeVar>}).typevars.allValues()
+					.sorted((tv1, tv2) -> tv1.span.start.compare(tv2.span.start)) // BAD
+					.indexOf(tvar);
 				dynDVarIDs[tvar] = id;
 				id;
-			});
+			};
 		}
 	}
 
 	private final dynMVarIDs = new Map<TypeVar, TVarID>();
 	function getMVarID(tvar: TypeVar) {
-		if(methodTVars.exists(tvar)) {
-			return methodTVars[tvar]._2.id;
-		} else {
+		// BAD: DO NOT RELY ON methodTVars IDS
+		//if(methodTVars.exists(tvar)) {
+		//	return methodTVars[tvar]._2.id;
+		//} else {
 			// pls make this actually work I hate this pls
-			return dynMVarIDs[tvar]._or({
-				final id = (cast tvar.lookup : {typevars: MultiMap<String, TypeVar>}).typevars.allValues().indexOf(tvar) + 1;
+			return dynMVarIDs[tvar] ?? {
+				final id = (cast tvar.lookup : {typevars: MultiMap<String, TypeVar>}).typevars.allValues()
+					.sorted((tv1, tv2) -> tv1.span.start.compare(tv2.span.start)) // BAD
+					.indexOf(tvar);
 				dynMVarIDs[tvar] = id;
 				id;
-			});
-		}
+			};
+		//}
 	}
 
 	function getTVar(tvar: TypeVar): TVar {

@@ -116,7 +116,7 @@ class Overload {
 		final thisFields = Context.getBuildFields();
 		
 		return thisFields.flatMap(function(field) {
-			if((field.meta != null && field.meta.some(m -> m.name == "ignore" || m.name == ":overload" || m.name == "overload_processed"))
+			if((field.meta?.some(m -> m.name == "ignore" || m.name == ":overload" || m.name == "overload_processed"))
 			|| field.name == "new" || field.name == "__init__"
 			|| !field.kind.match(FFun(_))
 			|| !field.access.contains(AOverload)
@@ -124,24 +124,24 @@ class Overload {
 			) {
 				return [field];
 			}
-
+			
 			final f = switch field.kind {
 				case FFun(f_): f_;
 				default: throw "???";
 			};
 
-			final access = field.access != null ? field.access : [];
-			final meta = field.meta != null ? field.meta : [];
+			final access = field.access ?? [];
+			final meta = field.meta ?? [];
 
 			var mangledName = mangleName(field.name);
-			if(f.params != null && f.params.length > 0) {
+			if(f.params?.length > 0) {
 				// TODO: don't depend on type param names/ordering
 				mangledName += (
 					"ZT" + f.params.length
 					+ f.params.joinMap("Z_", p -> { // worry about meta later lol
 						var res = mangleName(p.name);
-						if(p.params != null && p.params.length > 0) throw "WHAT MAGIC IS THIS???";
-						if(p.constraints != null && p.constraints.length > 0) {
+						if(p.params?.length > 0) throw "WHAT MAGIC IS THIS???";
+						if(p.constraints?.length > 0) {
 							res = (
 								"Zc" + p.constraints.length
 								+ res
@@ -155,10 +155,8 @@ class Overload {
 			mangledName += (
 				"ZA" + f.args.length
 				+ f.args.joinMap("Z_", a -> {
-					var t =
-						if(a.type != null)
-							a.type
-						else if(a.value != null)
+					var t = a.type ??
+						if(a.value != null)
 							Context.toComplexType(Context.typeof(a.value))
 						else null;
 					var res = maybeMangleType(t);

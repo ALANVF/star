@@ -134,7 +134,6 @@ abstract _ImmutableEnumSet<T: EnumValue>(_ISet<T>) from _ISet<T> {
 	public inline function new() this = End;
 
 	private var repr(get, never): _ISet<T>; private inline function get_repr() return this;
-	private var self(get, never): _ImmutableEnumSet<T>; private inline function get_self(): _ImmutableEnumSet<T> return this;
 
 
 	@:op([])
@@ -166,9 +165,9 @@ abstract _ImmutableEnumSet<T: EnumValue>(_ISet<T>) from _ISet<T> {
 	@:op(A | B)
 	public function union(other: _ImmutableEnumSet<T>): _ImmutableEnumSet<T> {
 		if(this.match(End)) return other;
-		else if(other.repr.match(End)) return self;
+		else if(other.repr.match(End)) return abstract;
 		else {
-			var res = self;
+			var res = abstract;
 
 			for(value in other) {
 				res = res.add(value);

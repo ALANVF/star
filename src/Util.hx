@@ -401,10 +401,7 @@ class Util {
 						
 						case macro $i{name}:
 							if(!didChange) didChange = true;
-							final anon = switch newVars.find(v -> v.n == name) {
-								case null: '__anon${anons++}__$name';
-								case v: v.a;
-							};
+							final anon = newVars.find(v -> v.n == name)?.a ?? '__anon${anons++}__$name';
 							newVars.push({n: name, a: anon, t: {t: type, d: dtype}});
 							macro ($i{anon} = ${{expr: EIs(macro _, itype), pos: pos}} => true);
 						

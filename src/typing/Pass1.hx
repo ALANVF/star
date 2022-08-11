@@ -152,12 +152,12 @@ static function resolveBasicType(source: ITypeLookup, type: Type, cache: Cache =
 					//Sys.println(@:privateAccess hl.Bytes.fromValue(type, null).address().toString()+" "+path.simpleName());
 				},
 				_ => {
-					if(source != src) src.findType(path, Start, null, depth, cache)._match(
-						at(ty!) => {
+					if(source != src) src.findType(path, Start, null, depth, cache)._andOr(
+						ty => {
 							type.t = ty.t;
 							//Sys.println(@:privateAccess hl.Bytes.fromValue(type, null).address().toString()+" "+path.simpleName());
 						},
-						_ => src._match(
+						src._match(
 							at(e is IErrors) => {
 								e.errors.push(Type_InvalidTypeLookup(
 									type.span.nonNull(),
@@ -195,21 +195,21 @@ static function resolveBasicType(source: ITypeLookup, type: Type, cache: Cache =
 			base.t._match(
 				at(TConcrete(c) /*| TModular(_, _)*/) => {
 					cache += base;
-					c.findType(path, Inside, null, 0, Nil)._match(
-						at(found!) => {
+					c.findType(path, Inside, null, 0, Nil)._andOr(
+						found => {
 							type.t = found.t;
 						},
-						_ => if(source != src) {
+						if(source != src) {
 							/*src._match(
 								at(e is IErrors) => e.errors.pop(),
 								_ => {}
 							);*/
 
-							source.findType(path, Start, null, 0, cache + source)._match(
-								at(found!) => {
+							source.findType(path, Start, null, 0, cache + source)._andOr(
+								found => {
 									type.t = found.t;
 								},
-								_ => source._match(
+								source._match(
 									at(e is IErrors) => {
 										e.errors.push(Type_InvalidTypeLookup(
 											type.span.nonNull(),
@@ -246,7 +246,7 @@ static function resolveBasicType(source: ITypeLookup, type: Type, cache: Cache =
 
 static function resolveDecl(decl: TypeDecl) {
 	decl.friends.forEach(f -> resolveBasicType(decl, f));
-	decl.hidden._and(h => h.forEach(t -> resolveBasicType(decl, t)));
+	decl.hidden?.forEach(t -> resolveBasicType(decl, t));
 
 	for(typevar in decl.typevars) resolveTypeVar(typevar);
 	decl.params.forEach(p -> resolveBasicType(decl, p));
@@ -315,7 +315,7 @@ static function resolveDecl(decl: TypeDecl) {
 
 static function resolveCategory(category: Category) {
 	category.friends.forEach(f -> resolveBasicType(category, f));
-	category.hidden._and(h => h.forEach(t -> resolveBasicType(category, t)));
+	category.hidden?.forEach(t -> resolveBasicType(category, t));
 
 	for(typevar in category.typevars) resolveTypeVar(typevar);
 	
@@ -367,7 +367,7 @@ static function resolveTypeRule(lookup: ITypeLookup, rule: TypeRule) rule._match
 
 
 static function resolveMethod(method: Method) {
-	method.hidden._and(h => h.forEach(t -> resolveBasicType(method, t)));
+	method.hidden?.forEach(t -> resolveBasicType(method, t));
 
 	method._match(
 		at(multi is MultiMethod) => {
@@ -387,7 +387,7 @@ static function resolveMethod(method: Method) {
 
 
 static function resolveStaticMethod(method: StaticMethod) {
-	method.hidden._and(h => h.forEach(t -> resolveBasicType(method, t)));
+	method.hidden?.forEach(t -> resolveBasicType(method, t));
 
 	method._match(
 		at(multi is MultiStaticMethod) => {
@@ -402,7 +402,7 @@ static function resolveStaticMethod(method: StaticMethod) {
 
 
 static function resolveInit(init: Init) {
-	init.hidden._and(h => h.forEach(t -> resolveBasicType(init, t)));
+	init.hidden?.forEach(t -> resolveBasicType(init, t));
 
 	init._match(
 		at(multi is MultiInit) => {
@@ -415,7 +415,7 @@ static function resolveInit(init: Init) {
 
 
 static function resolveOperator(op: Operator) {
-	op.hidden._and(h => h.forEach(t -> resolveBasicType(op, t)));
+	op.hidden?.forEach(t -> resolveBasicType(op, t));
 
 	op._match(
 		at(binop is BinaryOperator) => {
@@ -430,7 +430,7 @@ static function resolveOperator(op: Operator) {
 
 
 static function resolveMember(member: Member) {
-	member.hidden._and(h => h.forEach(t -> resolveBasicType(member.decl, t)));
+	member.hidden?.forEach(t -> resolveBasicType(member.decl, t));
 	member.type._and(t => resolveBasicType(member.decl, t));
 }
 

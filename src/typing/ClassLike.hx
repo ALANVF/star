@@ -18,7 +18,7 @@ abstract class ClassLike extends Namespace {
 					decl: mem.decl,
 					span: mem.span,
 					name: mem.name,
-					type: mem.type._and(t => t.getFrom(p)),
+					type: mem.type?.getFrom(p),
 					isStatic: mem.isStatic,
 					hidden: mem.hidden,
 					isReadonly: mem.isReadonly,

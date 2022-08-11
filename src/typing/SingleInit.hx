@@ -3,7 +3,7 @@ package typing;
 import parsing.ast.Ident;
 
 class SingleInit extends Init {
-	final name: Ident;
+	var name: Ident;
 
 	static function fromAST(decl, ast: parsing.ast.decls.Init) {
 		final init = new SingleInit({
@@ -13,7 +13,7 @@ class SingleInit extends Init {
 				case Single(name): name;
 				default: throw "Error!";
 			},
-			body: ast.body._and(body => body.stmts())
+			body: ast.body?.stmts()
 		});
 
 		for(attr => span in ast.attrs) switch attr {

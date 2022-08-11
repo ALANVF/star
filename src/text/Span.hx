@@ -42,10 +42,7 @@ class Span {
 	}
 
 	function display() {
-		return source._match(
-			at(null) => "(Unknown)",
-			at(src!!) => src.path
-		)+':${start.line + 1}:${start.column}';
+		return (source?.path ?? "(Unknown)")+':${start.line + 1}:${start.column}';
 	}
 
 	/*function toString() {

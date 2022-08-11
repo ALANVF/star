@@ -29,7 +29,7 @@ abstract class TaggedCase implements IDecl {
 					span: ast.span,
 					name: name,
 					assoc: assoc,
-					init: ast.init._and(i => i.stmts)
+					init: ast.init?.stmts
 				});
 			
 			case Tagged({of: Multi(params)}, assoc):
@@ -38,7 +38,7 @@ abstract class TaggedCase implements IDecl {
 					span: ast.span,
 					params: params.map(p -> MultiParam.fromUntyped(decl, p)),
 					assoc: assoc,
-					init: ast.init._and(i => i.stmts)
+					init: ast.init?.stmts
 				});
 			
 			default: throw "Error!";

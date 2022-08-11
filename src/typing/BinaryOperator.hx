@@ -18,7 +18,7 @@ class BinaryOperator extends Operator {
 			paramName: paramName,
 			paramType: null, // hack for partial initialization
 			ret: null,       // hack for partial initialization
-			body: ast.body._and(body => body.stmts())
+			body: ast.body?.stmts()
 		});
 
 		oper.paramType = oper.makeTypePath(paramType);

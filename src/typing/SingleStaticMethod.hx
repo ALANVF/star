@@ -3,7 +3,7 @@ package typing;
 import parsing.ast.Ident;
 
 class SingleStaticMethod extends StaticMethod {
-	final name: Ident;
+	var name: Ident;
 
 	static function fromAST(decl, ast: parsing.ast.decls.Method) {
 		final method = new SingleStaticMethod({
@@ -14,7 +14,7 @@ class SingleStaticMethod extends StaticMethod {
 				default: throw "Error!";
 			},
 			ret: ast.ret._and(ret => decl.makeTypePath(ret)),
-			body: ast.body._and(body => body.stmts())
+			body: ast.body?.stmts()
 		});
 
 		for(attr => span in ast.attrs) switch attr {

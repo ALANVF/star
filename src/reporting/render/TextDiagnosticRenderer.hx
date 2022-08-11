@@ -28,7 +28,7 @@ class TextDiagnosticRenderer implements IDiagnosticRenderer {
 	private var buffer: ColoredBuffer;
 
 	function new(?writer: haxe.io.Output) {
-		this.writer = Ansi.writer(if(writer == null) Sys.stderr() else writer);
+		this.writer = Ansi.writer(writer ?? Sys.stderr());
 		buffer = new ColoredBuffer();
 	}
 
@@ -281,7 +281,7 @@ class TextDiagnosticRenderer implements IDiagnosticRenderer {
 			
 			// First we determine the range we need to print for this info
 			final currentLineIndex = infoGroup.key;
-			final minLineIndex = lastLineIndex._or(0).max(currentLineIndex - surroundingLines);
+			final minLineIndex = (lastLineIndex ?? 0).max(currentLineIndex - surroundingLines);
 			var maxLineIndex = sourceFile.lineCount.min(currentLineIndex + surroundingLines + 1);
 			
 			if(j < groupedInfos.length - 1) {

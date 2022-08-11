@@ -336,7 +336,7 @@ protocol Values[T] of Positional[T] {
 	type V of Values[T]
 	on [addAll: values (V)] (V) {
 		this[resizeBy: values.length]
-		values[copyInto: buffer + length]
+		values[Values[T]][copyInto: buffer + length] ;@@ TEMP FIX
 		length += values.length
 
 		return values

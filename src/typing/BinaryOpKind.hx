@@ -65,10 +65,8 @@ function reduceOverloads(kinds: Array<BinaryOpKind>, sender: Type, rhs: TExpr) {
 				kind: kind,
 				tctx: tctx,
 				argType: argType,
-				ret: mth.ret._andOr(
-					ret => ret.getInTCtx(tctx).getFrom(sender).getInTCtx(tctx),
-					({t: Pass2.STD_Void.thisType.t, span: mth.span} : Type)
-				),
+				ret: mth.ret?.getInTCtx(tctx).getFrom(sender).getInTCtx(tctx)
+					?? ({t: Pass2.STD_Void.thisType.t, span: mth.span} : Type),
 				complete: complete
 			}
 		},

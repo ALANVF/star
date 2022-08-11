@@ -17,9 +17,9 @@ enum SingleStaticKind {
 
 function name(self: SingleStaticKind) return self._match(
 	at(SSMethod(mth)) => mth.name.name,
-	at(SSMultiMethod(mth)) => mth.params.find(p -> p.value == null).label.name,
+	at(SSMultiMethod(mth)) => (mth.params.find(p -> p.value == null) ?? mth.params[0]).label.name,
 	at(SSInit(init)) => init.name.name,
-	at(SSMultiInit(init)) => init.params.find(p -> p.value == null).label.name,
+	at(SSMultiInit(init)) => (init.params.find(p -> p.value == null) ?? init.params[0]).label.name,
 	at(SSMember(mem)) => mem.name.name,
 	at(SSTaggedCase(tcase)) => tcase.name.name,
 	at(SSTaggedCaseAlias(tcase)) => tcase.assoc.nonNull()._match(
@@ -32,8 +32,8 @@ function name(self: SingleStaticKind) return self._match(
 );
 
 function retType(self: SingleStaticKind): Null<Type> return self._match(
-	at(SSMethod(m)) => m.ret._or(Pass2.STD_Void.thisType),
-	at(SSMultiMethod(m)) => m.ret._or(Pass2.STD_Void.thisType),
+	at(SSMethod(m)) => m.ret ?? Pass2.STD_Void.thisType,
+	at(SSMultiMethod(m)) => m.ret ?? Pass2.STD_Void.thisType,
 	at(SSInit({decl: d}) | SSMultiInit({decl: d})
 	 | SSTaggedCase({decl: d}) | SSTaggedCaseAlias({decl: d})
 	 | SSValueCase({decl: d})) => {t: TThis(d), span: null},

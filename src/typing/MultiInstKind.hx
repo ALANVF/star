@@ -77,15 +77,15 @@ function reduceOverloads(kinds: Array<MultiInstKind>, ctx: Ctx, sender: Type, ar
 			mth.decl._match(
 				at(cat is Category) => {
 					if(cat.thisType.hasTypevars()) {
-						sender.bindTo(cat.thisType, tctx)._or({
+						if(sender.bindTo(cat.thisType, tctx) == null) {
 							trace("???", sender.fullName(), cat.thisType.fullName());
-						});
+						}
 					}
 				},
 				_ => {}
 			);
 
-			mth.params._for(i => param, {
+			for(i => param in mth.params) {
 				args[i].t._andOr(atype => {
 					final ptype = param.type/*.getInTCtx(tctx)*/.getFrom(sender);
 
@@ -128,9 +128,9 @@ function reduceOverloads(kinds: Array<MultiInstKind>, ctx: Ctx, sender: Type, ar
 																	for(tvar => mt in ltctx) {
 																		ltctx[tvar] = mt.getInTCtx(ltctx3);
 																	}
-																	largs._for(i => a, {
+																	for(i => a in largs) {
 																		largs[i] = a.getInTCtx(ltctx);
-																	});
+																	}
 																	if({
 																		var cond = false;
 																		for(tv => mt in ltctx) {
@@ -186,14 +186,14 @@ function reduceOverloads(kinds: Array<MultiInstKind>, ctx: Ctx, sender: Type, ar
 					complete = false;
 					argTypes.push(null);
 				});
-			});
+			}
 
-			/*mth.params._for(i => param, {
+			/*for(i => param in mth.params) {
 				argTypes[i]._and(atype => {
 					atype.bindTo(param.type.getFrom(sender), tctx);
 					//if(tctx.size() > 0) trace(tctx);
 				});
-			});*/
+			}*/
 
 			/*if(tctx.size() == 0 && mth.typevars.size != 0 && mth.fuzzyName=="collect:") {
 				final mp = mth.params.map(p->p.type.getFrom(sender));
@@ -214,10 +214,8 @@ function reduceOverloads(kinds: Array<MultiInstKind>, ctx: Ctx, sender: Type, ar
 				kind: kind,
 				tctx: tctx,
 				argTypes: argTypes,
-				ret: mth.ret._andOr(
-					ret => ret.getInTCtx(tctx).getFrom(sender).getInTCtx(tctx),
-					({t: Pass2.STD_Void.thisType.t, span: mth.span} : Type)
-				),
+				ret: mth.ret?.getInTCtx(tctx).getFrom(sender).getInTCtx(tctx)
+					?? ({t: Pass2.STD_Void.thisType.t, span: mth.span} : Type),
 				complete: complete
 			};
 		},
@@ -226,7 +224,7 @@ function reduceOverloads(kinds: Array<MultiInstKind>, ctx: Ctx, sender: Type, ar
 			final tctx: TypeVarCtx = [];
 			var complete = true;
 
-			indexes._for(i => paramIndex, {
+			for(i => paramIndex in indexes) {
 				final param = mth.params[paramIndex];
 				args[i].t._andOr(atype => {
 					atype.getFrom(sender).bindTo(param.type.getInTCtx(tctx).getFrom(sender), tctx)._andOr(atype2 => {
@@ -238,16 +236,14 @@ function reduceOverloads(kinds: Array<MultiInstKind>, ctx: Ctx, sender: Type, ar
 					complete = false;
 					argTypes.push(null);
 				});
-			});
+			}
 			
 			return {
 				kind: kind,
 				tctx: tctx,
 				argTypes: argTypes,
-				ret: mth.ret._andOr(
-					ret => ret.getInTCtx(tctx).getFrom(sender),
-					({t: Pass2.STD_Void.thisType.t, span: mth.span} : Type)
-				),
+				ret: mth.ret?.getInTCtx(tctx).getFrom(sender)
+					?? ({t: Pass2.STD_Void.thisType.t, span: mth.span} : Type),
 				complete: complete
 			};
 		},

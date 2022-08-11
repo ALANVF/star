@@ -46,8 +46,8 @@ class TypeVar extends AnyFullTypeDecl {
 			rule: ast.rule._and(r => TypeRule.fromAST(cast lookup, r.rule))
 		});
 
-		typevar.params = ast.params._andOr(p => p.of.map(x -> typevar.makeTypePath(x)), []);
-		typevar.parents = ast.parents._andOr(p => p.parents.map(x -> typevar.makeTypePath(x)), []);
+		typevar.params = ast.params?.of.map(x -> typevar.makeTypePath(x)) ?? [];
+		typevar.parents = ast.parents?.parents.map(x -> typevar.makeTypePath(x)) ?? [];
 		
 		for(attr => span in ast.attrs) switch attr {
 			case IsNative(_, _, _) if(typevar.native != null): typevar.errors.push(Type_DuplicateAttribute(typevar, ast.name.name, "native", span));
@@ -477,7 +477,7 @@ class TypeVar extends AnyFullTypeDecl {
 	// Attributes
 
 	function isNative(kind: NativeKind) {
-		if(native._andOr(nat => nat.matches(kind), false)) return true;
+		if(native?.matches(kind) ?? false) return true;
 
 		if(parents.some(p -> p.isNative(kind))) return true;
 
@@ -546,7 +546,7 @@ class TypeVar extends AnyFullTypeDecl {
 	function iterElemType() {
 		// TODO: finish
 
-		return parents.findMap(p -> p.iterElemType())._and(p => p.getFrom(thisType));
+		return parents.findMap(p -> p.iterElemType())?.getFrom(thisType);
 	}
 
 	function iterAssocType(): Null<Tuple2<Type, Type>> {
@@ -772,46 +772,42 @@ class TypeVar extends AnyFullTypeDecl {
 								var bad = false;
 	
 								var begin = 0;
-							while(begin < names.length) {
-								final name = names[begin];
+								while(begin < names.length) {
+									final name = names[begin];
 
-								mems.find(mem -> mem.name.name == name)._match(
-									at(mem!) => if(from.canSeeMember(mem)) {
-										found1.push(mem);
-									} else {
-										bad = true;
+									mems.find(mem -> mem.name.name == name)._andOr(mem => {
+										if(from.canSeeMember(mem)) {
+											found1.push(mem);
+										} else {
+											bad = true;
+											break;
+										}
+									}, {
 										break;
-									},
+									});
 
-									_ => {
+									begin++;
+								}
+
+								var end = names.length - 1;
+								while(begin < end) {
+									final name = names[end];
+
+									mems.find(mem -> mem.name.name == name)._andOr(mem => {
+										if(from.canSeeMember(mem)) {
+											found2.unshift(mem);
+										} else {
+											bad = true;
+											break;
+										}
+									}, {
 										break;
-									}
-								);
+									});
 
-								begin++;
-							}
+									end--;
+								}
 
-							var end = names.length - 1;
-							while(begin < end) {
-								final name = names[end];
-
-								mems.find(mem -> mem.name.name == name)._match(
-									at(mem!) => if(from.canSeeMember(mem)) {
-										found2.unshift(mem);
-									} else {
-										bad = true;
-										break;
-									},
-
-									_ => {
-										break;
-									}
-								);
-
-								end--;
-							}
-
-							if(!bad && mcase.params.every2Strict(names.slice(begin, end + 1), (l, n) -> l.label.name == n)) {
+								if(!bad && mcase.params.every2Strict(names.slice(begin, end + 1), (l, n) -> l.label.name == n)) {
 									candidates.push(MSFromTypevar(this, names, setter, MSTaggedCase(found1, mcase, found2)));
 								}
 							}
@@ -838,20 +834,17 @@ class TypeVar extends AnyFullTypeDecl {
 				var bad = false;
 
 				for(name in names) {
-					  mems.find(mem -> mem.name.name == name)._match(
-						at(mem!) => if(from.canSeeMember(mem)) {
+					mems.find(mem -> mem.name.name == name)._andOr(mem => {
+						if(from.canSeeMember(mem)) {
 							found.push(mem);
 						} else {
 							bad = true;
 							break;
-						},
-
-						// ???
-						_ => {
-							bad = true;
-							break;
 						}
-					);
+					}, /* ??? */ {
+						bad = true;
+						break;
+					});
 				}
 
 				if(!bad) {
@@ -890,9 +883,8 @@ class TypeVar extends AnyFullTypeDecl {
 		);
 
 		for(parent in parents) {
-			parent.findSingleInst(ctx, name, from, getter)._match(
-				at(si!) => return SIFromTypevar(this, name, getter, si),
-				_ => {}
+			parent.findSingleInst(ctx, name, from, getter)._and(
+				si => return SIFromTypevar(this, name, getter, si)
 			);
 		}
 
@@ -1008,9 +1000,8 @@ class TypeVar extends AnyFullTypeDecl {
 		);
 
 		for(parent in parents) {
-			parent.findUnaryOp(ctx, op, from, cache)._match(
-				at(uo!) => return UOFromTypevar(this, op, uo),
-				_ => {}
+			parent.findUnaryOp(ctx, op, from, cache)._and(
+				uo => return UOFromTypevar(this, op, uo)
 			);
 		}
 

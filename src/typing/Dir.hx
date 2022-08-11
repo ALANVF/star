@@ -104,15 +104,12 @@ abstract class Dir implements ITypeLookup {
 				unit.primary = Some(new File(this, filePath, unit));
 				fileNames.remove(fileName);
 			} else {
-				fileNames.find(n -> toName(n.substringBeforeLast(".star")) == unitName)._match(
-					at(fileName2!) => {
-						final filePath2 = '$path/$fileName2';
+				fileNames.find(n -> toName(n.substringBeforeLast(".star")) == unitName)._and(fileName2 => {
+					final filePath2 = '$path/$fileName2';
 
-						unit.primary = Some(new File(this, filePath2, unit));
-						fileNames.remove(fileName2);
-					},
-					_ => {}
-				);
+					unit.primary = Some(new File(this, filePath2, unit));
+					fileNames.remove(fileName2);
+				});
 			}
 			
 			unit.buildUnits();
@@ -149,12 +146,9 @@ abstract class Dir implements ITypeLookup {
 					FileSystem.readDirectory(path)
 					.filter(n -> !FileSystem.isDirectory('$path/$n') && n.endsWith(".star"))
 					.find(n -> toName(n.substringBeforeLast(".star")) == unitName)
-					._match(
-						at(fileName!) => {
-							unit.primary = Some(new File(this, '$path/$fileName', unit));
-						},
-						_ => {}
-					);
+					._and(fileName => {
+						unit.primary = Some(new File(this, '$path/$fileName', unit));
+					});
 				}
 
 				unit.buildUnits();
@@ -188,15 +182,15 @@ abstract class Dir implements ITypeLookup {
 		}
 		
 		for(file in files) if(!cache.contains(file)) {
-			//if(path.simpleName().contains("Tail"))trace(from._and(f => f.name.name), path.simpleName(), file.path);
-			file.findType(path, Inside, from, 0, cache)._match(
-				at(null) => {},
-				at(t!!, when(depth != 0)) => {
+			//if(path.simpleName().contains("Tail"))trace(from?.name.name, path.simpleName(), file.path);
+			file.findType(path, Inside, from, 0, cache)._and(t => {
+				if(depth != 0) {
 					cache += t;
 					depth--;
-				},
-				at(t!!) => return t
-			);
+				} else {
+					return t;
+				}
+			});
 		}
 
 		path._match(
@@ -204,18 +198,16 @@ abstract class Dir implements ITypeLookup {
 				for(unit in units) if(!cache.contains(unit)) {
 					unit.primary._match(
 						at(None) => {},
-						at(Some(p)) => p.findType(path, Inside, from, 0, cache + unit)._match(
-							at(null) => {},
-							at(t!!, when(depth != 0)) => {
+						at(Some(p)) => p.findType(path, Inside, from, 0, cache + unit)._and(t => {
+							if(depth != 0) {
 								cache += t;
 								depth--;
-							},
-							at(t!!) => if(unit.name == name) {
+							} else if(unit.name == name) {
 								return {t: TModular(t, unit), span: span}
 							} else {
 								return t;
 							}
-						)
+						})
 					);
 				}
 			},
@@ -223,26 +215,25 @@ abstract class Dir implements ITypeLookup {
 				for(unit in units) if((search != Inside || !cache.contains(unit)) && unit.name == name) {
 					//trace(s._and(ss=>ss.display()), name);
 					unit.findType(rest, Inside, from, 0, Nil)._match( // TODO: this is all bad pls redo
-						at(null) => unit.primary.toNull()._and(p => p.findType(path, Inside, from, 0, cache))._match(
-							at(null) => {},
-							at(t!!, when(depth != 0)) => {
+						at(null) => unit.primary.toNull()._and(p => p.findType(path, Inside, from, 0, cache))._and(t => {
+							if(depth != 0) {
 								cache += t;
 								depth--;
-							},
-							at(t!!) => return t
-						),
-						at(t!!, when(depth != 0)) => {
-							cache += t;
-							depth--;
-						},
-						at(t!!) => return t
+							} else {
+								return t;
+							}
+						}),
+						at(t!!) => {
+							if(depth != 0) {
+								cache += t;
+								depth--;
+							} else {
+								return t;
+							}
+						}
 					);
-				} else if(unit.name==name) {
-					if(path.match(Cons3(_, "Core", _, Cons3(_, "Dict", _, Nil3)))) {
-						trace(this.path, search);
-					} else {
-						trace("-"+this.path, name, rest, search);
-					}
+				} else if(unit.name == name) {
+					trace("-"+this.path, name, rest, search); // debug
 				}
 			},
 			_ => throw "bad"

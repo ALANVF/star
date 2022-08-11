@@ -57,25 +57,22 @@ class Project extends Dir {
 			}
 		}*/
 		
-		return super.findType(path, search, from, depth, cache)._match(
-			at(t!) => t,
-			_ => if(search != Inside && useStdlib) {
+		return super.findType(path, search, from, depth, cache)
+			?? if(search != Inside && useStdlib) {
 				STDLIB._match(
 					at(stdlib!, when(!cache.contains(this))) => {
 						cache += this;
 						
 						final span = path.span();
 						
-						stdlib.findType(List3.of([span, "Star", []], ...path), Inside, from, 0, Nil)._or(
-							stdlib.findType(List3.of([span, "Star", []], [span, "Core", []], ...path), Inside, from, 0, Nil)
-						);
+						stdlib.findType(List3.of([span, "Star", []], ...path), Inside, from, 0, Nil)
+						?? stdlib.findType(List3.of([span, "Star", []], [span, "Core", []], ...path), Inside, from, 0, Nil);
 					},
 					_ => null
 				);
 			} else {
 				null;
-			}
-		);
+			};
 	}
 
 	inline function pass1() {

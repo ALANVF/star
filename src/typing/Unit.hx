@@ -17,18 +17,20 @@ class Unit extends Dir {
 		
 		switch primary {
 			case None:
-			case Some(p): if(!cache.contains(p)) p.findType(path, Inside, from, 0, cache + this)._match(
-				at(null) => cache += p,
-				at(t!!, when(depth != 0)) => {
+			case Some(p): if(!cache.contains(p)) p.findType(path, Inside, from, 0, cache + this)._andOr(t => {
+				if(depth != 0) {
 					cache += t;
 					depth--;
-				},
-				at(t!!) => return t
-			);
+				} else {
+					return t;
+				}
+			}, {
+				cache += p;
+			});
 		}
 
 		/*for(file in files) if(!cache.contains(file)) {
-			//if(path.simpleName().contains("Tail"))trace(from._and(f => f.name.name), path.simpleName(), file.path);
+			//if(path.simpleName().contains("Tail"))trace(from?.name.name, path.simpleName(), file.path);
 			file.findType(path, Inside, from, 0, cache)._match(
 				at(null) => {},
 				at(t!!, when(depth != 0)) => {
@@ -44,8 +46,7 @@ class Unit extends Dir {
 
 		final res = super.findType(path, search, from, depth, cache);
 		//if(path.simpleName() == "LinkIterator")trace(this.path, primary.exists(p -> p == cache.head()), res);
-		if(res != null) return res;
-		return if(search == Inside) {
+		return res ?? if(search == Inside) {
 			null;
 		} else {
 			var a = outer.findType(path, Outside, from, depth, cache + this);

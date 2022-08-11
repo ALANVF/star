@@ -4,7 +4,6 @@ import errors.Error;
 import parsing.ast.Stmt;
 import parsing.ast.Ident;
 import text.Span;
-import typing.Traits;
 
 @:build(util.Auto.build())
 @:autoBuild(util.Auto.build())

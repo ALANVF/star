@@ -36,7 +36,7 @@ abstract class TypeDecl extends AnyFullTypeDecl {
 		//if(cache.contains(this)) return None;
 		//cache += thisType;
 
-		if(from == null) from = this;
+		from ??= this;
 
 		return path._match(
 			at([[span, "This", args]], when(search != Inside && depth == 0)) => {
@@ -98,13 +98,10 @@ abstract class TypeDecl extends AnyFullTypeDecl {
 							} else {
 								finished = false;
 								{t: TApplied({t: type.thisType.t, span: span}, args.map(arg -> arg.t._match(
-									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
-										at(type!) => type,
-										_ => {
-											errors.push(Type_InvalidTypeLookup(lookup.span(), 'Unknown type `${arg.simpleName()}`'));
-											arg;
-										}
-									),
+									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth) ?? {
+										errors.push(Type_InvalidTypeLookup(lookup.span(), 'Unknown type `${arg.simpleName()}`'));
+										arg;
+									},
 									_ => arg
 								))), span: span};
 							}
@@ -120,25 +117,19 @@ abstract class TypeDecl extends AnyFullTypeDecl {
 							case [type]:
 								finished = false;
 								{t: TApplied(type, args.map(arg -> arg.t._match(
-									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
-										at(type!) => type,
-										_ => {
-											errors.push(Type_InvalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
-											arg;
-										}
-									),
+									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth) ?? {
+										errors.push(Type_InvalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
+										arg;
+									},
 									_ => arg
 								))), span: span};
 							case types:
 								finished = false;
 								{t: TApplied({t: TMulti(types), span: span}, args.map(arg -> arg.t._match(
-									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
-										at(type!) => type,
-										_ => {
-											errors.push(Type_InvalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
-											arg;
-										}
-									),
+									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth) ?? {
+										errors.push(Type_InvalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
+										arg;
+									},
 									_ => arg
 								))), span: span};
 						}
@@ -317,20 +308,16 @@ abstract class TypeDecl extends AnyFullTypeDecl {
 	function iterElemType(): Null<Type> {
 		return refinees.findMap(ref ->
 			// this allows us to obtain our typevars from refinee typevars
-			(params.length == 0 ? ref.thisType : ref.applyArgs(params))._and(r =>
-				r.iterElemType()._and(e => e.getFrom(thisType))
-			)
+			(params.length == 0 ? ref.thisType : ref.applyArgs(params))?.iterElemType()?.getFrom(thisType)
 		);
 	}
 
 	function iterAssocType(): Null<Tuple2<Type, Type>> {
 		return refinees.findMap(ref ->
 			// this allows us to obtain our typevars from refinee typevars
-			(params.length == 0 ? ref.thisType : ref.applyArgs(params))._and(r =>
-				r.iterAssocType()._match(
-					at(null) => null,
-					at(tuple(k, v)) => tuple(k.getFrom(thisType), v.getFrom(thisType))
-				)
+			(params.length == 0 ? ref.thisType : ref.applyArgs(params))?.iterAssocType()._match(
+				at(null) => null,
+				at(tuple(k, v)) => tuple(k.getFrom(thisType), v.getFrom(thisType))
 			)
 		);
 	}
@@ -350,27 +337,19 @@ abstract class TypeDecl extends AnyFullTypeDecl {
 		var params2 = [];
 
 		// Expand all typevars by binding the arg to the param
-		params._for(i => param, { final arg = args[i];
-			arg.bindTo(param, tctx)._match(
-				at(type!) => {
-					params2.push(type);
-				},
-				_ => {
-					return null;
-				}
+		for(i => param in params) { final arg = args[i];
+			arg.bindTo(param, tctx)._andOr(
+				type => params2.push(type),
+				return null
 			);
-		});
+		}
 
 		// then gather up the effects from the expanded params
 		var ctx2 = ctx.innerTypevars(tctx);
 		for(type in params2) {
-			type.trackEffectsIn(ctx2)._match(
-				at(effects2!) => {
-					effects += effects2;
-				},
-				_ => {
-					return null;
-				}
+			type.trackEffectsIn(ctx2)._andOr(
+				effects2 => effects += effects2,
+				return null
 			);
 		}
 		
@@ -433,9 +412,9 @@ abstract class TypeDecl extends AnyFullTypeDecl {
 		for(ref in refinees) {
 			ref.findInstMember(ctx, name, allowStatic)._and(kind => {
 				final tctx: TypeVarCtx = [];
-				params._for(i => p, {
+				for(i => p in params) {
 					p.bindTo(ref.params[i], tctx);
-				});
+				}
 				return MKFromRefinee(this, tctx, kind);
 			});
 		}

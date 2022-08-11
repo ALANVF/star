@@ -10,7 +10,7 @@ class CastMethod extends Method {
 			span: ast.span,
 			type: null, // hack for partial initialization
 			ret: null,
-			body: ast.body._and(body => body.stmts())
+			body: ast.body?.stmts()
 		});
 
 		method.type = switch ast.spec.of {

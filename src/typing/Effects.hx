@@ -38,12 +38,7 @@ abstract Effects(__Effects) from __Effects {
 			},
 			_ => {
 				return {
-					adds: adds.set(typevar, {
-						adds[typevar]._match(
-							at(effects!) => effects + effect,
-							_ => new IEffects() + effect
-						);
-					}),
+					adds: adds.set(typevar, (adds[typevar] ?? new IEffects()) + effect),
 					removes: removes
 				};
 			}
@@ -58,12 +53,7 @@ abstract Effects(__Effects) from __Effects {
 			_ => {
 				return {
 					adds: adds,
-					removes: removes.set(typevar, {
-						removes[typevar]._match(
-							at(effects!) => effects + effect,
-							_ => new IEffects() + effect
-						);
-					})
+					removes: removes.set(typevar, (removes[typevar] ?? new IEffects()) + effect)
 				};
 			}
 		);
@@ -71,15 +61,11 @@ abstract Effects(__Effects) from __Effects {
 
 
 	public function addsFor(typevar: TypeVar): IEffects {
-		return adds[typevar]._or(
-			new IEffects()
-		);
+		return adds[typevar] ?? new IEffects();
 	}
 
 	public function removesFor(typevar: TypeVar): IEffects {
-		return removes[typevar]._or(
-			new IEffects()
-		);
+		return removes[typevar] ?? new IEffects();
 	}
 
 
@@ -103,16 +89,14 @@ abstract Effects(__Effects) from __Effects {
 
 			for(typevar => effects in other.adds) {
 				// make sure `removes` doesn't have any conflicting effects with `adds`
-				removes[typevar]._and(effects2 => {
-					if(effects2.containsAny(effects)) {
-						throw "Conflicting effects!";
-					}
-				});
+				if(removes[typevar]?.containsAny(effects)) {
+					throw "Conflicting effects!";
+				}
 
 				adds2[typevar] = {
-					adds[typevar]._match(
-						at(effects2!) => effects2 | effects,
-						_ => effects
+					adds[typevar]._andOr(
+						effects2 => effects2 | effects,
+						effects
 					);
 				};
 			}
@@ -121,9 +105,9 @@ abstract Effects(__Effects) from __Effects {
 				// we don't need to check for conflicts because we already did that in the prev loop
 
 				removes2[typevar] = {
-					removes[typevar]._match(
-						at(effects2!) => effects2 | effects,
-						_ => effects
+					removes[typevar]._andOr(
+						effects2 => effects2 | effects,
+						effects
 					);
 				};
 			}

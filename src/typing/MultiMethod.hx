@@ -18,7 +18,7 @@ class MultiMethod extends Method {
 			params: null,    // hack for partial initialization
 			fuzzyName: null, // hack for partial initialization
 			ret: null,       // hack for partial initialization
-			body: ast.body._and(body => body.stmts())
+			body: ast.body?.stmts()
 		});
 
 		final params = switch ast.spec.of {

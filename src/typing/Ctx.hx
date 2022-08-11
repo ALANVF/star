@@ -35,10 +35,7 @@ enum Where {
 		at(WMethod(m)) => m.decl,
 		at(WMember(m)) => m.decl,
 		at(WTaggedCase(c)) => c.decl,
-		_ => outer._match(
-			at(ctx!) => ctx.typeDecl,
-			_ => throw "bad"
-		)
+		_ => outer?.typeDecl ?? throw "bad"
 	);
 
 	var thisLookup(get, never): ITypeLookupDecl; private function get_thisLookup(): ITypeLookupDecl return where._match(
@@ -48,10 +45,7 @@ enum Where {
 		at(WEmptyMethod(m)) => m.decl,
 		at(WMember(m)) => m.decl,
 		at(WTaggedCase(c)) => c.decl,
-		_ => outer._match(
-			at(ctx!) => ctx.thisLookup,
-			_ => throw "bad"
-		)
+		_ => outer?.thisLookup ?? throw "bad"
 	);
 
 	var expectedReturnType(get, never): Null<Type>; private function get_expectedReturnType(): Null<Type> {
@@ -63,7 +57,7 @@ enum Where {
 			at(WMethod({type: ret} is CastMethod)) => ret,
 			at(WMethod({ret: ret} is Method | {ret: ret} is StaticMethod | {ret: ret} is Operator)) => ret,
 			at(WMethod(_)) => throw "bad",
-			at(WBlock | WPattern | WTypevars(_)) => outer._and(ctx => ctx.expectedReturnType)
+			at(WBlock | WPattern | WTypevars(_)) => outer?.expectedReturnType
 		);
 	}
 
@@ -143,7 +137,7 @@ enum Where {
 		return {
 			where: WObjCascade(t),
 			outer: this,
-			thisType: t._or(thisType) // TODO: fix
+			thisType: t ?? thisType // TODO: fix
 		};
 	}
 
@@ -170,17 +164,16 @@ enum Where {
 			case WMethod(method): method.errors.push(diag);
 			case WDecl(decl): decl.errors.push(diag);
 			case WCategory(cat): cat.errors.push(diag);
-			default: outer._match(
-				at(ctx!) => ctx.addError(diag),
-				_ => throw "bad"
+			default: outer._andOr(
+				ctx => ctx.addError(diag),
+				throw "bad"
 			);
 		}
 	}
 
 	function findLabel(label: String): Null<TStmt> {
-		return labels[label]._or(
-			outer._and(o => o.findLabel(label))
-		);
+		return labels[label]
+			?? outer?.findLabel(label);
 	}
 
 	function findLocal(name: String, depth = 0): Null<Local> {
@@ -229,10 +222,9 @@ enum Where {
 
 	function getType(path: TypePath): Null<Type> {
 		where._match(
-			at(WObjCascade(t!)) => t.findType(path.toLookupPath(thisLookup), Start, typeDecl, path.leadingCount())._match(
-				at(found!) => found,
-				_ => return outer.getType(path)
-			),
+			at(WObjCascade(t!)) =>
+				t.findType(path.toLookupPath(thisLookup), Start, typeDecl, path.leadingCount())
+				?? return outer.getType(path),
 			at(WMethod(_) | WEmptyMethod(_) | WDecl(_) | WCategory(_)) =>
 				thisLookup.findType(path.toLookupPath(thisLookup), Start, typeDecl, path.leadingCount()),
 			_ => return outer.getType(path)
@@ -243,16 +235,13 @@ enum Where {
 					final thisLookup_ = thisLookup;
 					{
 						t: TApplied(t2, args.map(arg -> arg.t._match(
-							at(TPath(depth, lookup, _)) => thisLookup_.findType(lookup, Start, typeDecl_, depth)._match(
-								at(type!) => type,
-								_ => {
-									addError(Type_InvalidTypeLookup(lookup.span(), 'Unknown type `${arg.simpleName()}`'));
-									arg;
-								}
-							),
+							at(TPath(depth, lookup, _)) => thisLookup_.findType(lookup, Start, typeDecl_, depth) ?? {
+								addError(Type_InvalidTypeLookup(lookup.span(), 'Unknown type `${arg.simpleName()}`'));
+								arg;
+							},
 							_ => arg
 						))),
-						span: t.span._or(t2.span)
+						span: t.span ?? t2.span
 					};
 				},
 				_ => t
@@ -270,7 +259,7 @@ enum Where {
 	function findTypevar(typevar: TypeVar): Null<Type> {
 		return where._match(
 			at(WTypevars(typevars)) => typevars[typevar],
-			_ => outer._and(o => o.findTypevar(typevar))
+			_ => outer?.findTypevar(typevar)
 		);
 	}
 
@@ -287,7 +276,7 @@ enum Where {
 				);
 				null;
 			},
-			_ => outer._and(o => o.findTypevarOf(typevar))
+			_ => outer?.findTypevarOf(typevar)
 		);
 	}
 
@@ -311,10 +300,7 @@ enum Where {
 			at(WEmptyMethod(m)) => m is DefaultInit || m is StaticInit,
 			at(WMethod(m)) => m is Init,
 			at(WTaggedCase(_)) => true,
-			at(WBlock | WPattern | WTypevars(_)) => outer._andOr(
-				o => o.canAssignReadonlyField(),
-				false
-			),
+			at(WBlock | WPattern | WTypevars(_)) => outer?.canAssignReadonlyField() ?? false,
 			_ => false
 		);
 	}
@@ -353,10 +339,7 @@ enum Where {
 
 	function addedEffectsFor(typevar: TypeVar) {
 		return if(effects == Effects.empty) {
-			outer._andOr(
-				o => o.addedEffectsFor(typevar),
-				new IEffects()
-			);
+			outer?.addedEffectsFor(typevar) ?? new IEffects();
 		} else {
 			effects.addsFor(typevar);
 		}

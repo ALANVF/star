@@ -70,7 +70,7 @@ function reduceOverloads(kinds: Array<MultiStaticKind>, sender: Type, args: Arra
 			final tctx: TypeVarCtx = [];
 			var complete = true;
 
-			mth.params._for(i => param, {
+			for(i => param in mth.params) {
 				args[i].t._andOr(atype => {
 					atype.getFrom(sender).bindTo(param.type.getInTCtx(tctx).getFrom(sender), tctx)._andOr(atype2 => {
 						argTypes.push(atype2);
@@ -81,16 +81,14 @@ function reduceOverloads(kinds: Array<MultiStaticKind>, sender: Type, args: Arra
 					complete = false;
 					argTypes.push(null);
 				});
-			});
+			}
 			//trace(mth.methodName(), tctx, argTypes.map(a->a._and(aa=>aa.fullName())), complete);
 			return {
 				kind: kind,
 				tctx: tctx,
 				argTypes: argTypes,
-				ret: mth.ret._andOr(
-					ret => ret.getInTCtx(tctx).getFrom(sender).getInTCtx(tctx),
-					({t: Pass2.STD_Void.thisType.t, span: mth.span} : Type)
-				),
+				ret: mth.ret?.getInTCtx(tctx).getFrom(sender).getInTCtx(tctx)
+					?? ({t: Pass2.STD_Void.thisType.t, span: mth.span} : Type),
 				complete: complete
 			};
 		},
@@ -99,7 +97,7 @@ function reduceOverloads(kinds: Array<MultiStaticKind>, sender: Type, args: Arra
 			final tctx: TypeVarCtx = [];
 			var complete = true;
 
-			indexes._for(i => paramIndex, {
+			for(i => paramIndex in indexes) {
 				final param = mth.params[paramIndex];
 				args[i].t._andOr(atype => {
 					atype.getFrom(sender).bindTo(param.type.getInTCtx(tctx).getFrom(sender), tctx)._andOr(atype2 => {
@@ -111,16 +109,14 @@ function reduceOverloads(kinds: Array<MultiStaticKind>, sender: Type, args: Arra
 					complete = false;
 					argTypes.push(null);
 				});
-			});
+			}
 			
 			return {
 				kind: kind,
 				tctx: tctx,
 				argTypes: argTypes,
-				ret: mth.ret._andOr(
-					ret => ret.getInTCtx(tctx).getFrom(sender),
-					({t: Pass2.STD_Void.thisType.t, span: mth.span} : Type)
-				),
+				ret: mth.ret?.getInTCtx(tctx).getFrom(sender)
+					?? ({t: Pass2.STD_Void.thisType.t, span: mth.span} : Type),
 				complete: complete
 			};
 		},
@@ -129,7 +125,7 @@ function reduceOverloads(kinds: Array<MultiStaticKind>, sender: Type, args: Arra
 			final tctx: TypeVarCtx = [];
 			var complete = true;
 
-			init.params._for(i => param, {
+			for(i => param in init.params) {
 				args[i].t._andOr(atype => {
 					atype.getFrom(sender).bindTo(param.type.simplify().getInTCtx(tctx).getFrom(sender), tctx)._andOr(atype2 => {
 						//trace(atype.fullName(), param.type.simplify().fullName());
@@ -143,7 +139,7 @@ function reduceOverloads(kinds: Array<MultiStaticKind>, sender: Type, args: Arra
 					//trace(param.type.fullName());
 					argTypes.push(null);
 				});
-			});
+			}
 			//trace(init.methodName(), tctx, argTypes.map(a->a._and(aa=>aa.fullName())), complete);
 			return {
 				kind: kind,
@@ -158,7 +154,7 @@ function reduceOverloads(kinds: Array<MultiStaticKind>, sender: Type, args: Arra
 			final tctx: TypeVarCtx = [];
 			var complete = true;
 
-			indexes._for(i => paramIndex, {
+			for(i => paramIndex in indexes) {
 				final param = init.params[paramIndex];
 				args[i].t._andOr(atype => {
 					atype.getFrom(sender).bindTo(param.type.getInTCtx(tctx).getFrom(sender), tctx)._andOr(atype2 => {
@@ -170,7 +166,7 @@ function reduceOverloads(kinds: Array<MultiStaticKind>, sender: Type, args: Arra
 					complete = false;
 					argTypes.push(null);
 				});
-			});
+			}
 			
 			return {
 				kind: kind,
@@ -186,7 +182,7 @@ function reduceOverloads(kinds: Array<MultiStaticKind>, sender: Type, args: Arra
 			final tctx: TypeVarCtx = [];
 			var complete = true;
 
-			members._for(i => mem, {
+			for(i => mem in members) {
 				mem.type._andOr(mtype => {
 					args[i].t._andOr(atype => {
 						atype.getFrom(sender).bindTo(mtype.getInTCtx(tctx).getFrom(sender), tctx)._andOr(atype2 => {
@@ -202,7 +198,7 @@ function reduceOverloads(kinds: Array<MultiStaticKind>, sender: Type, args: Arra
 					trace('warning: null type for member `${mem.name.name}`');
 					argTypes.push(null);
 				});
-			});
+			}
 			
 			return {
 				kind: kind,
@@ -248,7 +244,7 @@ function reduceOverloads(kinds: Array<MultiStaticKind>, sender: Type, args: Arra
 			final tctx: TypeVarCtx = [];
 			var complete = true;
 
-			tcase.params._for(i => p, {
+			for(i => p in tcase.params) {
 				args[i].t._andOr(atype => {
 					atype.getFrom(sender).bindTo(p.type.getInTCtx(tctx).getFrom(sender), tctx)._andOr(atype2 => {
 						argTypes.push(atype2);
@@ -259,7 +255,7 @@ function reduceOverloads(kinds: Array<MultiStaticKind>, sender: Type, args: Arra
 					complete = false;
 					argTypes.push(null);
 				});
-			});
+			}
 			
 			return {
 				kind: kind,
@@ -274,7 +270,7 @@ function reduceOverloads(kinds: Array<MultiStaticKind>, sender: Type, args: Arra
 			final tctx: TypeVarCtx = [];
 			var complete = true;
 
-			indexes._for(i => paramIndex, {
+			for(i => paramIndex in indexes) {
 				final p = tcase.params[paramIndex];
 				args[i].t._andOr(atype => {
 					atype.getFrom(sender).bindTo(p.type.getInTCtx(tctx).getFrom(sender), tctx)._andOr(atype2 => {
@@ -286,7 +282,7 @@ function reduceOverloads(kinds: Array<MultiStaticKind>, sender: Type, args: Arra
 					complete = false;
 					argTypes.push(null);
 				});
-			});
+			}
 			
 			return {
 				kind: kind,

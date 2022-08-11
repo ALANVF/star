@@ -688,9 +688,9 @@ class Lexer {
 				);
 			},
 			_ => {
-				return dec._match(
-					at(null) => T_Int(span(), int, exp),
-					at(d!!) => T_Dec(span(), int, d, exp)
+				return dec._andOr(
+					d => T_Dec(span(), int, d, exp),
+					T_Int(span(), int, exp)
 				);
 			}
 		);

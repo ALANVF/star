@@ -33,5 +33,5 @@ function retType(self: MemberKind): Null<Type> return self._match(
 			ret.t.match(TThis(_)) ? ret : ret.getFrom(parent.simplify());
 		});
 	},
-	at(MKFromRefinee(ref, tctx, kind)) => retType(kind)._and(ret => ret.getInTCtx(tctx))
+	at(MKFromRefinee(ref, tctx, kind)) => retType(kind)?.getInTCtx(tctx)
 );

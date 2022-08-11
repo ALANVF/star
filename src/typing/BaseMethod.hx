@@ -44,13 +44,10 @@ inline function _findType<T: ITypeLookup & BaseGenericMethod>(method: T, path: L
 						} else {
 							finished = false;
 							{t: TApplied(tvar.thisType, args.map(arg -> arg.t._match(
-								at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
-									at(type!) => type,
-									_ => {
-										method.errors.push(Type_InvalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
-										arg;
-									}
-								),
+								at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth) ?? {
+									method.errors.push(Type_InvalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
+									arg;
+								},
 								_ => arg
 							))), span: span};
 						}
@@ -66,13 +63,10 @@ inline function _findType<T: ITypeLookup & BaseGenericMethod>(method: T, path: L
 						case [tvar]:
 							finished = false;
 							{t: TApplied(tvar, args.map(arg -> arg.t._match(
-								at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
-									at(type!) => type,
-									_ => {
-										method.errors.push(Type_InvalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
-										arg;
-									}
-								),
+								at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth) ?? {
+									method.errors.push(Type_InvalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
+									arg;
+								},
 								_ => arg
 							))), span: span};
 						case tvars:

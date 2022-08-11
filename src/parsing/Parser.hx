@@ -2210,9 +2210,9 @@ class Parser {
 		return tokens._match(
 			at([_.asSoftName() => T_Name(_1, name), ...rest]) => Success(EName(_1, name), rest),
 			at([T_Litsym(_1, sym), ...rest]) => Success(ELitsym(_1, sym), rest),
-			at([T_Int(_1, int, exp), ...rest]) => Success(EInt(_1, int.parseInt(), exp._and(e => e.parseInt())), rest),
+			at([T_Int(_1, int, exp), ...rest]) => Success(EInt(_1, int.parseInt(), exp?.parseInt()), rest),
 			at([T_Hex(_1, hex), ...rest]) => Success(EInt(_1, hex.parseHex(), null), rest),
-			at([T_Dec(_1, int, dec, exp), ...rest]) => Success(EDec(_1, int.parseInt(), dec, exp._and(e => e.parseInt())), rest),
+			at([T_Dec(_1, int, dec, exp), ...rest]) => Success(EDec(_1, int.parseInt(), dec, exp?.parseInt()), rest),
 			at([T_Str(_1, segs), ...rest]) => switch parseStrSegs(segs) {
 				case Success(parts, _): Success(EStr(_1, parts), rest);
 				case err: cast err;
@@ -3422,7 +3422,7 @@ class Parser {
 	/* REPARSE */
 
 	static function reparseExpr(expr: Expr): Expr {
-		return reparseInner(expr, Nil)._or(expr);
+		return reparseInner(expr, Nil) ?? expr;
 	}
 
 	static function reparseInner(expr: Expr, stack: Stack): Null<Expr> {
@@ -3500,7 +3500,7 @@ class Parser {
 					final expr2 = reparseInner(expr, stack);
 					if(msg2 != null && expr2 != null) {
 						if(!hadAny) hadAny = true;
-						cascade.kind = AssignMessage(msg2._or(msg), span, op, expr2._or(expr));
+						cascade.kind = AssignMessage(msg2 ?? msg, span, op, expr2 ?? expr);
 					}
 				},
 				at(StepMessage(msg, span, step)) => {
@@ -3527,9 +3527,8 @@ class Parser {
 
 	static function reparse(expression: Expr, stack: Stack): Null<Expr> return expression._match(
 		at(ETag(span, name, expr)) => {
-			reparse(expr, stack)._andOr(
-				e => ETag(span, name, e),
-				null
+			reparse(expr, stack)._and(
+				e => ETag(span, name, e)
 			);
 		},
 
@@ -3616,9 +3615,8 @@ class Parser {
 		},
 
 		at(ELiteralCtor(type, literal)) => {
-			reparse(literal, stack)._andOr(
-				lit => ELiteralCtor(type, lit),
-				null
+			reparse(literal, stack)._and(
+				lit => ELiteralCtor(type, lit)
 			);
 		},
 
@@ -3698,23 +3696,20 @@ class Parser {
 		},
 		
 		at(EObjMember(expr, member)) => {
-			reparse(expr, stack)._andOr(
-				e => EObjMember(e, member),
-				null
+			reparse(expr, stack)._and(
+				e => EObjMember(e, member)
 			);
 		},
 
 		at(EPrefix(span, op, right)) => {
-			reparse(right, stack)._andOr(
-				r => EPrefix(span, op, r),
-				null
+			reparse(right, stack)._and(
+				r => EPrefix(span, op, r)
 			);
 		},
 
 		at(ESuffix(left, span, op)) => {
-			reparse(left, stack)._andOr(
-				l => ESuffix(l, span, op),
-				null
+			reparse(left, stack)._and(
+				l => ESuffix(l, span, op)
 			);
 		},
 
@@ -3724,14 +3719,13 @@ class Parser {
 			if(left2 == null && right2 == null) {
 				null;
 			} else {
-				EInfix(left2._or(left), span, op, right2._or(right));
+				EInfix(left2 ?? left, span, op, right2 ?? right);
 			}
 		},
 
 		at(EVarDecl(span, name, type, value!)) => {
-			reparseInner(value, stack)._andOr(
-				value2 => EVarDecl(span, name, type, value2),
-				null
+			reparseInner(value, stack)._and(
+				value2 => EVarDecl(span, name, type, value2)
 			);
 		},
 

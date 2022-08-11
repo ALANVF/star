@@ -158,6 +158,12 @@ class Str of Values[Char], Ordered is strong {
 
 	;== Appending
 
+	on [add: char (Char)] (Char) is inline {
+		this[Super[Values[Char]] add: char]
+
+		return char
+	}
+
 	on [add: str (Str)] (Str) {
 		match str.length {
 			at 0 {}
@@ -210,6 +216,12 @@ class Str of Values[Char], Ordered is strong {
 	
 	
 	;== Prepending
+
+	on [prepend: char (Char)] (Char) is inline {
+		this[Super[Values[Char]] prepend: char]
+
+		return char
+	}
 	
 	on [prepend: str (Str)] (Str) {
 		match str.length {
@@ -350,6 +362,12 @@ class Str of Values[Char], Ordered is strong {
 		return This[new: length + 1]
 		-> [add: this]
 		-> [add: char]
+	}
+	
+	operator `+` [str (This)] (This) {
+		return This[new: length + str.length]
+		-> [add: this]
+		-> [add: str]
 	}
 
 	type T { on [Str] }

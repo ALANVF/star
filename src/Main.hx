@@ -95,7 +95,7 @@ class Main {
 			Sys.println('Typer pass 1 time: ${timePass1}ms');
 		}
 
-		if(opt.isStdlib) {
+		if(opt.isStdlib && !files.some(f -> f.hasErrors())) {
 			typing.Pass2.initSTD(project);
 		}
 
@@ -190,201 +190,203 @@ class Main {
 				pass2: true
 			});
 
-			/*for(type in [
-				typing.Pass2.STD_Int,
-				typing.Pass2.STD_Dec,
-				typing.Pass2.STD_Char,
-				typing.Pass2.STD_Bool,
-				typing.Pass2.STD_Str
-			].concat(typing.Pass2.STD_Array.t._match(
-				at(TMulti(types)) => types,
-				_ => throw "bad"
-			)).concat(typing.Pass2.STD_Dict.t._match(
-				at(TConcrete(decl)) => [typing.Pass2.STD_Dict],
-				at(TMulti(types)) => types,
-				_ => throw "bad"
-			))) type.t._match(
-				at(TConcrete(decl) | TModular({t: TConcrete(decl)}, _)) => {
-					stmtsDumper.dump(decl);
-					stmtsDumper.nextLine();
-					stmtsDumper.nextLine();
-				},
-				_ => throw "???"+type
-			);*/
+			if(!stdlib.allFiles().some(file -> file.hasErrors())) {
+				/*for(type in [
+					typing.Pass2.STD_Int,
+					typing.Pass2.STD_Dec,
+					typing.Pass2.STD_Char,
+					typing.Pass2.STD_Bool,
+					typing.Pass2.STD_Str
+				].concat(typing.Pass2.STD_Array.t._match(
+					at(TMulti(types)) => types,
+					_ => throw "bad"
+				)).concat(typing.Pass2.STD_Dict.t._match(
+					at(TConcrete(decl)) => [typing.Pass2.STD_Dict],
+					at(TMulti(types)) => types,
+					_ => throw "bad"
+				))) type.t._match(
+					at(TConcrete(decl) | TModular({t: TConcrete(decl)}, _)) => {
+						stmtsDumper.dump(decl);
+						stmtsDumper.nextLine();
+						stmtsDumper.nextLine();
+					},
+					_ => throw "???"+type
+				);*/
 
-			nl();
+				nl();
 
-			final outName = {
-				var i = args[0].lastIndexOf("/");
-				if(i == -1) i = args[0].lastIndexOf("\\");
-				if(i == -1) args[0] else args[0].splitAt(i+1)[1];
-			};
+				final outName = {
+					var i = args[0].lastIndexOf("/");
+					if(i == -1) i = args[0].lastIndexOf("\\");
+					if(i == -1) args[0] else args[0].splitAt(i+1)[1];
+				};
 
-			final outPath = if(args.length > 1) {
-				args[1]._match(
-					at("-o" | "--out") => args[2],
-					_ => throw "Invalid flag "+args[1]
-				);
-			} else {
-				'$outName.starbc';
-			};
+				final outPath = if(args.length > 1) {
+					args[1]._match(
+						at("-o" | "--out") => args[2],
+						_ => throw "Invalid flag "+args[1]
+					);
+				} else {
+					'$outName.starbc';
+				};
 
-			mainOutput = sys.io.File.write(outPath);
+				mainOutput = sys.io.File.write(outPath);
 
-			final main = testProject(args[0], {
-				pass1: true,
-				pass2: true
-			});
+				final main = testProject(args[0], {
+					pass1: true,
+					pass2: true
+				});
 
-			codegen.CodeGen.compileProgram(main);
-			
-			final bc = new codegen.Gen(mainOutput, codegen.CodeGen.world);
-			bc.writeWorld();
+				codegen.CodeGen.compileProgram(main);
+				
+				final bc = new codegen.Gen(mainOutput, codegen.CodeGen.world);
+				bc.writeWorld();
 
 
-			final gen = new codegen.GenDump(stdlibDump);
+				final gen = new codegen.GenDump(stdlibDump);
 
-			{
-				final proto = cast(typing.Pass2.STD_Value, typing.Protocol);
-				gen.write(proto);
-				gen.newline();
-			}
-
-			{
-				final proto = cast(typing.Pass2.STD_MultiKind, typing.Protocol);
-				gen.write(proto);
-				gen.newline();
-			}
-
-			//gen.write("Star.Core.Int:");
-			//gen.newline();
-			typing.Pass2.STD_Int._match(
-				at({t: TConcrete(decl) | TModular({t: TConcrete(decl)}, _)}) => {
-					final cls = cast(decl, typing.Class);
-					gen.write(cls);
-					gen.newline();
-				},
-				_ => throw "internal error: Star.Core.Int should be a concrete type!"
-			);
-
-			//gen.write("Star.Core.Dec:");
-			//gen.newline();
-			typing.Pass2.STD_Dec._match(
-				at({t: TConcrete(decl) | TModular({t: TConcrete(decl)}, _)}) => {
-					final cls = cast(decl, typing.Class);
-					gen.write(cls);
-					gen.newline();
-				},
-				_ => throw "internal error: Star.Core.Dec should be a concrete type!"
-			);
-
-			//gen.write("Star.Core.Char:");
-			//gen.newline();
-			typing.Pass2.STD_Char._match(
-				at({t: TConcrete(decl) | TModular({t: TConcrete(decl)}, _)}) => {
-					final cls = cast(decl, typing.Class);
-					gen.write(cls);
-					gen.newline();
-				},
-				_ => throw "internal error: Star.Core.Char should be a concrete type!"
-			);
-
-			//gen.write("Star.Core.Str:");
-			//gen.newline();
-			typing.Pass2.STD_Str._match(
-				at({t: TConcrete(decl) | TModular({t: TConcrete(decl)}, _)}) => {
-					final cls = cast(decl, typing.Class);
-					gen.write(cls);
-					gen.newline();
-				},
-				_ => throw "internal error: Star.Core.Str should be a concrete type!"
-			);
-
-			//gen.write("Star.Core.Array:");
-			//gen.newline();
-			typing.Pass2.STD_Array._match(
-				at({t: TMulti([{t: TConcrete(decl) | TModular({t: TConcrete(decl)}, _)}, _, _])}) => {
-					final cls = cast(decl, typing.Class);
-					gen.write(cls);
-					gen.newline();
-
-					for(ref in decl.refinements) {
-						final cls2 = cast(ref, typing.Class);
-						gen.write(cls2);
-						gen.newline();
-					}
-				},
-				_ => throw "internal error: Star.Core.Array should be a multi type!"
-			);
-
-			//gen.write("Star.Core.Values:");
-			//gen.newline();
-			stdlib.findType(
-				List3.of([null, "Star", []], [null, "Core", []], [null, "Values", []]),
-				Start,
-				null
-			)._match(
-				at({t: TConcrete(decl) | TModular({t: TConcrete(decl)}, _)}) => {
-					final proto = cast(decl, typing.Protocol);
+				{
+					final proto = cast(typing.Pass2.STD_Value, typing.Protocol);
 					gen.write(proto);
 					gen.newline();
-				},
-				_ => throw "internal error: Star.Core.Values should be a concrete type!"
-			);
+				}
 
-			stdlib.findType(
-				List3.of([null, "Star", []], [null, "Core", []], [null, "Maybe", []]),
-				Start,
-				null
-			)._match(
-				at({t: TMulti([{t: TConcrete(decl) | TModular({t: TConcrete(decl)}, _)}, _])}) => {
-					final tkind = cast(decl, typing.TaggedKind);
-					gen.write(tkind);
+				{
+					final proto = cast(typing.Pass2.STD_MultiKind, typing.Protocol);
+					gen.write(proto);
 					gen.newline();
+				}
 
-					for(ref in decl.refinements) {
-						final tkind2 = cast(ref, typing.TaggedKind);
-						gen.write(tkind2);
+				//gen.write("Star.Core.Int:");
+				//gen.newline();
+				typing.Pass2.STD_Int._match(
+					at({t: TConcrete(decl) | TModular({t: TConcrete(decl)}, _)}) => {
+						final cls = cast(decl, typing.Class);
+						gen.write(cls);
 						gen.newline();
+					},
+					_ => throw "internal error: Star.Core.Int should be a concrete type!"
+				);
+
+				//gen.write("Star.Core.Dec:");
+				//gen.newline();
+				typing.Pass2.STD_Dec._match(
+					at({t: TConcrete(decl) | TModular({t: TConcrete(decl)}, _)}) => {
+						final cls = cast(decl, typing.Class);
+						gen.write(cls);
+						gen.newline();
+					},
+					_ => throw "internal error: Star.Core.Dec should be a concrete type!"
+				);
+
+				//gen.write("Star.Core.Char:");
+				//gen.newline();
+				typing.Pass2.STD_Char._match(
+					at({t: TConcrete(decl) | TModular({t: TConcrete(decl)}, _)}) => {
+						final cls = cast(decl, typing.Class);
+						gen.write(cls);
+						gen.newline();
+					},
+					_ => throw "internal error: Star.Core.Char should be a concrete type!"
+				);
+
+				//gen.write("Star.Core.Str:");
+				//gen.newline();
+				typing.Pass2.STD_Str._match(
+					at({t: TConcrete(decl) | TModular({t: TConcrete(decl)}, _)}) => {
+						final cls = cast(decl, typing.Class);
+						gen.write(cls);
+						gen.newline();
+					},
+					_ => throw "internal error: Star.Core.Str should be a concrete type!"
+				);
+
+				//gen.write("Star.Core.Array:");
+				//gen.newline();
+				typing.Pass2.STD_Array._match(
+					at({t: TMulti([{t: TConcrete(decl) | TModular({t: TConcrete(decl)}, _)}, _, _])}) => {
+						final cls = cast(decl, typing.Class);
+						gen.write(cls);
+						gen.newline();
+
+						for(ref in decl.refinements) {
+							final cls2 = cast(ref, typing.Class);
+							gen.write(cls2);
+							gen.newline();
+						}
+					},
+					_ => throw "internal error: Star.Core.Array should be a multi type!"
+				);
+
+				//gen.write("Star.Core.Values:");
+				//gen.newline();
+				stdlib.findType(
+					List3.of([null, "Star", []], [null, "Core", []], [null, "Values", []]),
+					Start,
+					null
+				)._match(
+					at({t: TConcrete(decl) | TModular({t: TConcrete(decl)}, _)}) => {
+						final proto = cast(decl, typing.Protocol);
+						gen.write(proto);
+						gen.newline();
+					},
+					_ => throw "internal error: Star.Core.Values should be a concrete type!"
+				);
+
+				stdlib.findType(
+					List3.of([null, "Star", []], [null, "Core", []], [null, "Maybe", []]),
+					Start,
+					null
+				)._match(
+					at({t: TMulti([{t: TConcrete(decl) | TModular({t: TConcrete(decl)}, _)}, _])}) => {
+						final tkind = cast(decl, typing.TaggedKind);
+						gen.write(tkind);
+						gen.newline();
+
+						for(ref in decl.refinements) {
+							final tkind2 = cast(ref, typing.TaggedKind);
+							gen.write(tkind2);
+							gen.newline();
+						}
+					},
+					_ => throw "internal error: Star.Core.Array should be a multi type!"
+				);
+
+				stdlib.findType(
+					List3.of([null, "Star", []], [null, "Native", []], [null, "Ptr", []]),
+					Start,
+					null
+				)._match(
+					at({t: TConcrete(decl) | TModular({t: TConcrete(decl)}, _)}) => {
+						final cls = cast(decl, typing.Class);
+						gen.write(cls);
+						gen.newline();
+					},
+					_ => throw "internal error: Star.Native.Ptr should be a concrete type!"
+				);
+				
+				{
+					final files = stdlib.allFiles();
+					for(file in files) {
+						stdlibDumper.dump(file);
+						stdlibDumper.nextLine();
+						stdlibDumper.nextLine();
+						stdlibDumper.nextLine();
 					}
-				},
-				_ => throw "internal error: Star.Core.Array should be a multi type!"
-			);
-
-			stdlib.findType(
-				List3.of([null, "Star", []], [null, "Native", []], [null, "Ptr", []]),
-				Start,
-				null
-			)._match(
-				at({t: TConcrete(decl) | TModular({t: TConcrete(decl)}, _)}) => {
-					final cls = cast(decl, typing.Class);
-					gen.write(cls);
-					gen.newline();
-				},
-				_ => throw "internal error: Star.Native.Ptr should be a concrete type!"
-			);
-			
-			{
-				final files = stdlib.allFiles();
-				for(file in files) {
-					stdlibDumper.dump(file);
-					stdlibDumper.nextLine();
-					stdlibDumper.nextLine();
-					stdlibDumper.nextLine();
 				}
+
+				/*nl();
+				
+				final compiler = testProject('$STAR_HOME/star', {pass1: true, pass2: true}); {
+					final files = compiler.allFiles();
+					for(file in files) {
+						compilerDumper.dump(file);
+						compilerDumper.nextLine();
+						compilerDumper.nextLine();
+						compilerDumper.nextLine();
+					}
+				};*/
 			}
-
-			/*nl();
-			
-			final compiler = testProject('$STAR_HOME/star', {pass1: true, pass2: true}); {
-				final files = compiler.allFiles();
-				for(file in files) {
-					compilerDumper.dump(file);
-					compilerDumper.nextLine();
-					compilerDumper.nextLine();
-					compilerDumper.nextLine();
-				}
-			};*/
 		} catch(e: haxe.Exception) {
 			if(dumpTypes) typesDump.close();
 			if(dumpStmts) stmtsDump.close();

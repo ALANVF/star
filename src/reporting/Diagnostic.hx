@@ -5,7 +5,7 @@ class Diagnostic {
 	var severity: Null<Severity> = null;
 	var code: Null<String> = null;
 	var message: Null<String> = null;
-	var info: Array<DiagnosticInfo> = [];
+	var info: Array<DiagnosticInfo>;
 
 	function new(a: {
 		?severity: Severity,
@@ -16,6 +16,6 @@ class Diagnostic {
 		severity = a.severity;
 		code = a.code;
 		message = a.message;
-		info = a.info != null ? a.info : [];
+		info = a.info;
 	}
 }

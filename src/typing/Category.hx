@@ -34,9 +34,7 @@ class Category extends AnyTypeDecl {
 		category.path = path;
 		category.type = ast.type._and(x => category.makeTypePath(x));
 
-		category.thisType = category.type._or(
-			(cast lookup : AnyTypeDecl).thisType
-		);
+		category.thisType = category.type ?? (cast lookup : AnyTypeDecl).thisType;
 
 		for(typevar in ast.generics.mapArray(a -> TypeVar.fromAST(category, a))) {
 			category.typevars.add(typevar.name.name, typevar);
@@ -117,10 +115,7 @@ class Category extends AnyTypeDecl {
 		return path._match(
 			at([[span, "This", args]], when(depth == 0)) => {
 				if(args.length == 0) {
-					type._andOr(
-						t => t,
-						lookup.findType(path, Start, from, 0, cache)
-					);
+					type ?? lookup.findType(path, Start, from, 0, cache);
 				} else {
 					// prob shouldn't be attatched to *this* category decl, but eh
 					errors.push(Type_NotYetImplemented(span));
@@ -133,12 +128,12 @@ class Category extends AnyTypeDecl {
 					!cache.contains(tvar.thisType)
 					&& (tvar.params.length == 0 || tvar.params.length == args.length)
 				))._match(
-					at(None | Some([])) => lookup.findType(path, Outside, this, depth, cache)._or(
-						thisType.findType(path, Start, this, depth, cache)
-					),
-					at(Some(_), when(depth != 0)) => lookup.findType(path, Outside, this, depth - 1, cache)._or(
-						thisType.findType(path, Start, this, depth - 1, cache)
-					),
+					at(None | Some([])) =>
+						lookup.findType(path, Outside, this, depth, cache)
+						?? thisType.findType(path, Start, this, depth, cache),
+					at(Some(_), when(depth != 0)) =>
+						lookup.findType(path, Outside, this, depth - 1, cache)
+						?? thisType.findType(path, Start, this, depth - 1, cache),
 					at(Some([tvar])) => switch [args, tvar.params] {
 						case [[], _]:
 							finished = false;
@@ -157,13 +152,10 @@ class Category extends AnyTypeDecl {
 							} else {
 								finished = false;
 								{t: TApplied(tvar.thisType, args.map(arg -> arg.t._match(
-									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
-										at(type!) => type,
-										_ => {
-											errors.push(Type_InvalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
-											arg;
-										}
-									),
+									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth) ?? {
+										errors.push(Type_InvalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
+										arg;
+									},
 									_ => arg
 								))), span: span};
 							}
@@ -179,13 +171,10 @@ class Category extends AnyTypeDecl {
 							case [tvar]:
 								finished = false;
 								{t: TApplied(tvar, args.map(arg -> arg.t._match(
-									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth)._match(
-										at(type!) => type,
-										_ => {
-											errors.push(Type_InvalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
-											arg;
-										}
-									),
+									at(TPath(depth, lookup, source)) => source.findType(lookup, Start, from, depth) ?? {
+										errors.push(Type_InvalidTypeLookup(span, 'Unknown type `${arg.simpleName()}`'));
+										arg;
+									},
 									_ => arg
 								))), span: span};
 							case tvars:

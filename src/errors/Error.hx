@@ -1236,7 +1236,7 @@ function asDiagnostic(self: Error) { return new Diagnostic(self._match(
 		info: [
 			Spanned({
 				span: span,
-				message: why._or("Invalid type lookup"),
+				message: why ?? "Invalid type lookup",
 				isPrimary: true
 			})
 		]
@@ -1248,7 +1248,7 @@ function asDiagnostic(self: Error) { return new Diagnostic(self._match(
 		info: [
 			Spanned({
 				span: span,
-				message: why._or("Invalid type application"),
+				message: why ?? "Invalid type application",
 				isPrimary: true
 			})
 		]
@@ -1260,7 +1260,7 @@ function asDiagnostic(self: Error) { return new Diagnostic(self._match(
 		info: [
 			Spanned({
 				span: span,
-				message: why._or("This feature has not been implemented yet"),
+				message: why ?? "This feature has not been implemented yet",
 				isPrimary: true
 			})
 		]
@@ -1487,7 +1487,7 @@ function asDiagnostic(self: Error) { return new Diagnostic(self._match(
 					var msg = '${access.desc()} `${type.fullName()}` does not have member/setter `$name`';
 
 					value._and(expr => {
-						msg += ' of type ${expr.t._andOr(t=>t.fullName(), "???")}';
+						msg += ' of type ${expr.t?.fullName() ?? "???"}';
 					});
 
 					msg;

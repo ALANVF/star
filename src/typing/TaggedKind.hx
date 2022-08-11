@@ -173,18 +173,16 @@ class TaggedKind extends Kind {
 							while(begin < names.length) {
 								final name = names[begin];
 
-								mems.find(mem -> mem.name.name == name)._match(
-									at(mem!) => if(from.canSeeMember(mem)) {
+								mems.find(mem -> mem.name.name == name)._andOr(mem => {
+									if(from.canSeeMember(mem)) {
 										found1.push(mem);
 									} else {
 										bad = true;
 										break;
-									},
-
-									_ => {
-										break;
 									}
-								);
+								}, {
+									break;
+								});
 
 								begin++;
 							}
@@ -193,18 +191,16 @@ class TaggedKind extends Kind {
 							while(begin < end) {
 								final name = names[end];
 
-								mems.find(mem -> mem.name.name == name)._match(
-									at(mem!) => if(from.canSeeMember(mem)) {
+								mems.find(mem -> mem.name.name == name)._andOr(mem => {
+									if(from.canSeeMember(mem)) {
 										found2.unshift(mem);
 									} else {
 										bad = true;
 										break;
-									},
-
-									_ => {
-										break;
 									}
-								);
+								}, {
+									break;
+								});
 
 								end--;
 							}

@@ -22,8 +22,8 @@ package codegen;
 		this.outer = outer;
 		this.locals = locals;
 		this.labels = labels;
-		this.localsMap = localsMap._or(new Map());
-		this.labelsMap = labelsMap._or(new Map());
+		this.localsMap = localsMap ?? new Map();
+		this.labelsMap = labelsMap ?? new Map();
 		this.loopStack = loopStack;
 		this.thisStack = thisStack;
 	}
