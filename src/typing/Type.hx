@@ -169,8 +169,8 @@ function leastSpecific(types: Array<Type>): Array<Type> {
 }
 
 
+@:publicFields
 @:structInit
-@:build(util.Auto.build())
 class Type implements ITypeable {
 	var t: TypeKind;
 	var span: Null<Span> = null;

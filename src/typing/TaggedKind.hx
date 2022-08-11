@@ -1,20 +1,21 @@
 package typing;
 
-import errors.Error;
-
 private final EMPTY_ARRAY: Array<Member> = [];
 
+@:structInit
 class TaggedKind extends Kind {
 	final taggedCases: Array<TaggedCase> = [];
 	var defaultInit: Option<DefaultInit> = None;
 
 	static function fromAST(lookup: ITypeLookup, ast: parsing.ast.decls.Kind) {
-		final kind = new TaggedKind({
+		final kind: TaggedKind = {
 			lookup: lookup,
 			span: ast.span,
 			name: ast.name,
 			params: []
-		});
+		};
+
+		kind.initThisType();
 
 		for(typevar in ast.generics.mapArray(a -> TypeVar.fromAST(kind, a))) {
 			kind.typevars.add(typevar.name.name, typevar);

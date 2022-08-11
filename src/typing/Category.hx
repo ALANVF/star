@@ -1,13 +1,10 @@
 package typing;
 
-import text.Span;
 import parsing.ast.Ident;
-import errors.Error;
-import typing.Traits;
 
-@:build(util.Auto.build())
+@:structInit
 class Category extends AnyTypeDecl {
-	@ignore final typevars = new MultiMap<String, TypeVar>();
+	@:optional final typevars = new MultiMap<String, TypeVar>();
 	var path: Type;
 	var type: Null<Type>;
 	final staticMembers: Array<Member> = [];
@@ -21,13 +18,13 @@ class Category extends AnyTypeDecl {
 	final friends: Array<Type> = [];
 
 	static function fromAST(lookup: ITypeLookup, ast: parsing.ast.decls.Category) {
-		final category = new Category({
+		final category: Category = {
 			lookup: lookup,
 			span: ast.span,
 			name: new Ident(ast.path.span(), ast.path.simpleName()),
 			path: null, // hack for partial initialization
 			type: null  // hack for partial initialization
-		});
+		};
 
 		var path = (ast.path : TypePath).toType(category);
 

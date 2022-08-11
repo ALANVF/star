@@ -1,4 +1,6 @@
-haxe build.hxml
+if(-not (haxe build.hxml)) {
+	exit
+}
 
 $mainFile = "bin/output/main.c"
 $mainData = get-content $mainFile

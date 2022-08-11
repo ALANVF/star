@@ -5,20 +5,21 @@ import text.Span;
 import parsing.ast.Ident;
 import typing.Traits;
 
+@:structInit
 class MultiInit extends Init {
-	@ignore var typevars = new MultiMap<String, TypeVar>();
+	var typevars = new MultiMap<String, TypeVar>();
 	var params: MultiParams = [];
 	var fuzzyName: String;
 	var isUnordered: Bool = false;
 
 	static function fromAST(decl: AnyTypeDecl, ast: parsing.ast.decls.Init): MultiInit {
-		final init = new MultiInit({
+		final init: MultiInit = {
 			decl: decl,
 			span: ast.span,
 			params: null,    // hack for partial initialization
 			fuzzyName: null, // hack for partial initialization
 			body: ast.body?.stmts()
-		});
+		};
 
 		final params = switch ast.spec.of {
 			case Multi(params2): params2.map(p -> MultiParam.fromUntyped(init, p));

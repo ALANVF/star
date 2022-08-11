@@ -5,21 +5,22 @@ import parsing.ast.Expr;
 import parsing.ast.Ident;
 import typing.Traits;
 
+@:structInit
 class MultiStaticMethod extends StaticMethod {
-	@ignore var typevars = new MultiMap<String, TypeVar>();
+	var typevars = new MultiMap<String, TypeVar>();
 	var params: MultiParams = [];
 	var fuzzyName: String;
 	var isUnordered: Bool = false;
 
 	static function fromAST(decl: AnyTypeDecl, ast: parsing.ast.decls.Method) {
-		final method = new MultiStaticMethod({
+		final method: MultiStaticMethod = {
 			decl: decl,
 			span: ast.span,
 			params: null,    // hack for partial initialization
 			fuzzyName: null, // hack for partial initialization
 			ret: null,       // hack for partial initialization
 			body: ast.body?.stmts()
-		});
+		};
 
 		final params = switch ast.spec.of {
 			case Multi(params2): params2.map(p -> MultiParam.fromUntyped(method, p));

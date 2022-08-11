@@ -23,8 +23,8 @@ function toName(name: String) {
 	}
 }
 
-@:build(util.Auto.build())
-@:autoBuild(util.Auto.build())
+@:publicFields
+@:structInit
 abstract class Dir implements ITypeLookup {
 	final name: String;
 	final path: String;
@@ -92,11 +92,11 @@ abstract class Dir implements ITypeLookup {
 
 		for(dirName in dirNames) {
 			final unitName = toName(dirName);
-			final unit = new Unit({
+			final unit: Unit = {
 				name: unitName,
 				path: '$path/$dirName',
 				outer: this
-			});
+			};
 			final fileName = '$dirName.star';
 			final filePath = '$path/$fileName';
 
@@ -134,11 +134,11 @@ abstract class Dir implements ITypeLookup {
 
 			if(FileSystem.exists(unitPath) && FileSystem.isDirectory(unitPath)) {
 				final unitName = toName(name);
-				final unit = new Unit({
+				final unit: Unit = {
 					name: unitName,
 					path: unitPath,
 					outer: this
-				});
+				};
 
 				if(FileSystem.exists(filePath) && !FileSystem.isDirectory(filePath)) {
 					unit.primary = Some(new File(this, filePath, unit));

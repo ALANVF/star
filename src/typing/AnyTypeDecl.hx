@@ -4,13 +4,14 @@ import text.Span;
 import errors.Error;
 import parsing.ast.Ident;
 
-@:build(util.Auto.build())
+@:publicFields
+@:structInit
 abstract class AnyTypeDecl implements ITypeable implements ITypeLookupDecl {
 	final errors: Array<Error> = [];
 	var span: Span;
 	var name: Ident;
 	var lookup: ITypeLookup;
-	@ignore var thisType: Type;
+	@:optional var thisType: Type;
 
 	abstract function declName(): String;
 	

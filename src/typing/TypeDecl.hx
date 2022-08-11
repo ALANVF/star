@@ -1,20 +1,15 @@
 package typing;
 
-import errors.Error;
-import text.Span;
-import typing.Traits;
-
-@:build(util.Auto.build({keepInit: true}))
-@:autoBuild(util.Auto.build())
+@:structInit
 abstract class TypeDecl extends AnyFullTypeDecl {
-	@ignore final typevars = new MultiMap<String, TypeVar>();
+	final typevars = new MultiMap<String, TypeVar>();
 	var hidden: Null<Option<Type>> = null;
 	final friends: Array<Type> = [];
-	@ignore final refinements = new Array<TypeDecl>();
-	@ignore final refinees = new Array<TypeDecl>();
+	final refinements = new Array<TypeDecl>();
+	final refinees = new Array<TypeDecl>();
 
-	function new() {
-		thisType = new Type(TConcrete(this), null);
+	private inline function initThisType() {
+		thisType = {t: TConcrete(this), span: null};
 	}
 
 	function fullName(cache: TypeCache = Nil) {

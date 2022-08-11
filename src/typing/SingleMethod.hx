@@ -2,11 +2,12 @@ package typing;
 
 import parsing.ast.Ident;
 
+@:structInit
 class SingleMethod extends Method {
 	var name: Ident;
 
 	static function fromAST(decl, ast: parsing.ast.decls.Method) {
-		final method = new SingleMethod({
+		final method: SingleMethod = {
 			decl: decl,
 			span: ast.span,
 			name: switch ast.spec.of {
@@ -15,7 +16,7 @@ class SingleMethod extends Method {
 			},
 			ret: ast.ret._and(ret => decl.makeTypePath(ret)),
 			body: ast.body?.stmts()
-		});
+		};
 
 		for(attr => span in ast.attrs) switch attr {
 			case IsStatic: method.errors.push(Type_InvalidAttribute(method, method.name.name, "static", span));

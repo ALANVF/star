@@ -1,11 +1,10 @@
 package typing;
 
-import typing.Traits;
-
+@:structInit
 abstract class Namespace extends TypeDecl {
 	final parents: Array<Type> = [];
-	@ignore final decls = new MultiMap<String, TypeDecl>();
-	@ignore final sortedDecls: Array<TypeDecl> = [];
+	final decls = new MultiMap<String, TypeDecl>();
+	final sortedDecls: Array<TypeDecl> = [];
 	final staticMembers: Array<Member> = [];
 	final staticMethods: Array<StaticMethod> = [];
 	var staticInit: Option<StaticInit> = None;

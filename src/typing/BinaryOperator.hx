@@ -3,14 +3,15 @@ package typing;
 import errors.Error;
 import parsing.ast.Ident;
 
+@:structInit
 class BinaryOperator extends Operator {
-	@ignore var typevars = new MultiMap<String, TypeVar>();
+	var typevars = new MultiMap<String, TypeVar>();
 	var op: BinaryOp;
 	var paramName: Ident;
 	var paramType: Type;
 
 	static function fromAST(decl, op, paramName, paramType, ast: parsing.ast.decls.Operator) {
-		final oper = new BinaryOperator({
+		final oper: BinaryOperator = {
 			decl: decl,
 			span: ast.span,
 			op: op,
@@ -19,7 +20,7 @@ class BinaryOperator extends Operator {
 			paramType: null, // hack for partial initialization
 			ret: null,       // hack for partial initialization
 			body: ast.body?.stmts()
-		});
+		};
 
 		oper.paramType = oper.makeTypePath(paramType);
 		oper.ret = ast.ret._and(ret => oper.makeTypePath(ret));

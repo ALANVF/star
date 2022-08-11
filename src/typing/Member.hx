@@ -5,7 +5,8 @@ import parsing.ast.Expr;
 import parsing.ast.Ident;
 import text.Span;
 
-@:build(util.Auto.build())
+@:publicFields
+@:structInit
 class Member implements IDecl {
 	final errors: Array<Error> = [];
 	var decl: AnyTypeDecl;
@@ -19,19 +20,19 @@ class Member implements IDecl {
 	var setter: Null<Option<Ident>> = null;
 	var noInherit: Bool = false;
 	final value: Null<Expr>;
-	@ignore var typedValue: Null<TExpr> = null;
+	var typedValue: Null<TExpr> = null;
 	var refinee: Null<Member> = null;
 
 	static function fromAST(decl: AnyTypeDecl, ast: parsing.ast.decls.Member) {
 		final declSpan = Span.range(ast.span, ast.name.span);
 
-		final member = new Member({
+		final member: Member = {
 			decl: decl,
 			span: ast.span,
 			name: ast.name,
 			type: ast.type._and(t => decl.makeTypePath(t)),
 			value: ast.value
-		});
+		};
 
 		var getterSpan = null;
 		var setterSpan = null;

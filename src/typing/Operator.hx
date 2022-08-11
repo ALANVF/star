@@ -3,6 +3,7 @@ package typing;
 import errors.Error;
 import text.Span;
 
+@:structInit
 abstract class Operator extends AnyMethod {
 	var ret: Null<Type>;
 	var opSpan: Span;

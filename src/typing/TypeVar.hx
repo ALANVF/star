@@ -1,15 +1,10 @@
 package typing;
 
-import typing.Pass2.STD_MultiKind;
-import errors.Error;
-import text.Span;
-import typing.Traits;
-
 using typing.TypeRule.TypeRuleTools;
 
 // Dear god what have I gotten myself into
 
-@:build(util.Auto.build({keepInit: true}))
+@:structInit
 class TypeVar extends AnyFullTypeDecl {
 	//final lookup: ILookupType & ITypeVars;
 	var parents: Array<Type>;
@@ -31,20 +26,18 @@ class TypeVar extends AnyFullTypeDecl {
 	var _isFlags: Bool = false;
 	var _isStrong: Bool = false;
 	var _isUncounted: Bool = false;
-	
-	function new() {
-		thisType = new Type(TTypeVar(this), null);
-	}
 
 	static function fromAST(lookup: ITypeLookup, ast: parsing.ast.decls.GenericParam): TypeVar {
-		final typevar = new TypeVar({
+		final typevar: TypeVar = {
 			lookup: lookup,
 			span: ast.span,
 			name: ast.name,
 			params: null,  // hack for partial initialization
 			parents: null, // hack for partial initialization
 			rule: ast.rule._and(r => TypeRule.fromAST(cast lookup, r.rule))
-		});
+		};
+
+		typevar.thisType = {t: TTypeVar(typevar), span: null};
 
 		typevar.params = ast.params?.of.map(x -> typevar.makeTypePath(x)) ?? [];
 		typevar.parents = ast.parents?.parents.map(x -> typevar.makeTypePath(x)) ?? [];
@@ -1022,7 +1015,7 @@ class TypeVar extends AnyFullTypeDecl {
 		);
 
 		if(_isFlags) {
-			for(k in STD_MultiKind.findBinaryOp(ctx, op, from, cache)) {
+			for(k in Pass2.STD_MultiKind.findBinaryOp(ctx, op, from, cache)) {
 				candidates.push(BOFromTypevar(this, op, k));
 			}
 		}

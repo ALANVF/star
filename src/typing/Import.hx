@@ -4,9 +4,10 @@ import text.Span;
 
 typedef ImportFrom = parsing.ast.decls.UseFrom;
 
-@:build(util.Auto.build())
+@:publicFields
+@:structInit
 class Import {
-	@ignore final typevars = new MultiMap<String, TypeVar>();
+	final typevars = new MultiMap<String, TypeVar>();
 	final span: Span;
 	final spec: TypeTree;
 	final from: Option<ImportFrom> = None;

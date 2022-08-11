@@ -1,17 +1,18 @@
 package typing;
 
+@:structInit
 class CastMethod extends Method {
-	@ignore var typevars = new MultiMap<String, TypeVar>();
+	var typevars = new MultiMap<String, TypeVar>();
 	var type: Type;
 
 	static function fromAST(decl, ast: parsing.ast.decls.Method) {
-		final method = new CastMethod({
+		final method: CastMethod = {
 			decl: decl,
 			span: ast.span,
 			type: null, // hack for partial initialization
 			ret: null,
 			body: ast.body?.stmts()
-		});
+		};
 
 		method.type = switch ast.spec.of {
 			case Cast(type): method.makeTypePath(type);

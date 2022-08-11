@@ -1,18 +1,19 @@
 package typing;
 
-import typing.Traits;
-
+@:structInit
 class DirectAlias extends Alias {
 	var type: Type;
 
 	static function fromAST(lookup: ITypeLookup, ast: parsing.ast.decls.Alias) {
-		final alias = new DirectAlias({
+		final alias: DirectAlias = {
 			lookup: lookup,
 			span: ast.span,
 			name: ast.name,
 			params: [],
 			type: null // Hack for partial initialization
-		});
+		};
+
+		alias.initThisType();
 
 		for(typevar in ast.generics.mapArray(a -> TypeVar.fromAST(alias, a))) {
 			alias.typevars.add(typevar.name.name, typevar);

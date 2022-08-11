@@ -1,6 +1,6 @@
 package typing;
 
-@:build(util.Auto.build())
+@:structInit
 abstract class AnyFullTypeDecl extends AnyTypeDecl {
 	var params: Array<Type>;
 }

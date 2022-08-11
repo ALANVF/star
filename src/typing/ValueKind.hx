@@ -1,18 +1,19 @@
 package typing;
 
-import typing.Traits;
-
+@:structInit
 class ValueKind extends Kind {
 	var repr: Option<Type> = None;
 	final valueCases: Array<ValueCase> = [];
 
 	static function fromAST(lookup, ast: parsing.ast.decls.Kind) {
-		final kind = new ValueKind({
+		final kind: ValueKind = {
 			lookup: lookup,
 			span: ast.span,
 			name: ast.name,
 			params: []
-		});
+		};
+
+		kind.initThisType();
 
 		for(typevar in ast.generics.mapArray(a -> TypeVar.fromAST(kind, a))) {
 			kind.typevars.add(typevar.name.name, typevar);

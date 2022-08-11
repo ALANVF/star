@@ -8,8 +8,8 @@ import text.Span;
 import parsing.ast.Ident;
 import typing.Traits;
 
-@:build(util.Auto.build())
-@:autoBuild(util.Auto.build())
+@:publicFields
+@:structInit
 abstract class TaggedCase implements IDecl {
 	final errors: Array<Error> = [];
 	//final decl: ITaggedCases;
@@ -18,28 +18,28 @@ abstract class TaggedCase implements IDecl {
 	var assoc: Null<Message<parsing.ast.Type>>;
 	var init: Null<Array<Stmt>> = null;
 
-	@ignore var typedAssoc: Null<typing.Message<Type>> = null;
-	@ignore var typedInit: Null<TStmts> = null;
+	var typedAssoc: Null<typing.Message<Type>> = null;
+	var typedInit: Null<TStmts> = null;
 
 	static function fromAST<T: AnyTypeDecl/*, ITaggedCases*/>(decl: T, ast: parsing.ast.decls.Case): TaggedCase {
 		switch ast.kind {
 			case Tagged({of: Single(name)}, assoc):
-				return new SingleTaggedCase({
+				return ({
 					decl: decl,
 					span: ast.span,
 					name: name,
 					assoc: assoc,
 					init: ast.init?.stmts
-				});
+				}:SingleTaggedCase);
 			
 			case Tagged({of: Multi(params)}, assoc):
-				return new MultiTaggedCase({
+				return ({
 					decl: decl,
 					span: ast.span,
 					params: params.map(p -> MultiParam.fromUntyped(decl, p)),
 					assoc: assoc,
 					init: ast.init?.stmts
-				});
+				}:MultiTaggedCase);
 			
 			default: throw "Error!";
 		}

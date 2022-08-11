@@ -5,8 +5,8 @@ import parsing.ast.Stmt;
 import parsing.ast.Ident;
 import text.Span;
 
-@:build(util.Auto.build())
-@:autoBuild(util.Auto.build())
+@:publicFields
+@:structInit
 abstract class AnyMethod implements ITypeLookupDecl {
 	final errors: Array<Error> = [];
 	var decl: AnyTypeDecl;
@@ -16,8 +16,7 @@ abstract class AnyMethod implements ITypeLookupDecl {
 	var native: Null<Option<Ident>> = null;
 	var isAsm: Bool = false;
 	var body: Null<Array<Stmt>>;
-
-	@ignore var typedBody: Null<Array<TStmt>> = null;
+	var typedBody: Null<Array<TStmt>> = null;
 
 	function makeTypePath(path: TypePath) {
 		return path.toType(this);

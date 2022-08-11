@@ -1,5 +1,6 @@
 package typing;
 
+@:structInit
 abstract class Init extends AnyMethod {
 	var isMacro: Bool = false;
 	

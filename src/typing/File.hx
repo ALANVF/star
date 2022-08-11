@@ -9,7 +9,7 @@ import text.SourceFile;
 import typing.Traits;
 import Util.detuple;
 
-@:build(util.Auto.build())
+@:publicFields
 class File implements ITypeLookup implements IErrors {
 	final errors: Array<Error>;
 	final dir: Dir;
@@ -24,7 +24,7 @@ class File implements ITypeLookup implements IErrors {
 	final sortedDecls: Array<TypeDecl>;
 	final categories: Array<Category>;
 
-	function new(dir, path, ?unit) {
+	function new(dir: Dir, path: String, ?unit: Unit) {
 		errors = [];
 		this.dir = dir;
 		this.path = path;
@@ -86,12 +86,12 @@ class File implements ITypeLookup implements IErrors {
 
 					switch kind {
 					case Import(spec, from, as):
-						imports.push(new Import({
+						imports.push({
 							span: span,
 							spec: spec,
 							from: Option.fromNull(from),
 							as: as._andOr(a => Some(a._2), None)
-						}));
+						});
 					
 					case Pragma(span2, pragma):
 						status = false;

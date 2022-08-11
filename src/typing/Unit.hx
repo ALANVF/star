@@ -2,6 +2,7 @@ package typing;
 
 import typing.Traits;
 
+@:structInit
 class Unit extends Dir {
 	final outer: Dir;
 	var primary: Option<File> = None;

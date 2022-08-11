@@ -2,6 +2,7 @@ package typing;
 
 import typing.Traits;
 
+@:structInit
 abstract class ClassLike extends Namespace {
 	final members: Array<Member> = [];
 	final methods: Array<Method> = [];
@@ -13,7 +14,7 @@ abstract class ClassLike extends Namespace {
 	override function instMembers(from: AnyTypeDecl) {
 		return members.filter(mem -> from.canSeeMember(mem))
 			.concat(parents.flatMap(p -> p.instMembers(from).map(
-				mem -> new Member({
+				mem -> ({
 					errors: mem.errors,
 					decl: mem.decl,
 					span: mem.span,
@@ -28,7 +29,7 @@ abstract class ClassLike extends Namespace {
 					value: mem.value,
 					// does this need typedValue?
 					refinee: mem
-				})
+				}:Member)
 			)))
 			.concat(super.instMembers(from));
 	}

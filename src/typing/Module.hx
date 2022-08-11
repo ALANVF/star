@@ -1,19 +1,21 @@
 package typing;
 
 import parsing.ast.Ident;
-import errors.Error;
 
+@:structInit
 class Module extends Namespace {
 	var isMain: Bool = false;
 	var native: Option<Ident> = None;
 
 	static function fromAST(lookup, ast: parsing.ast.decls.Module) {
-		final module = new Module({
+		final module: Module = {
 			lookup: lookup,
 			span: ast.span,
 			name: ast.name,
 			params: []
-		});
+		};
+
+		module.initThisType();
 
 		for(typevar in ast.generics.mapArray(a -> TypeVar.fromAST(module, a))) {
 			module.typevars.add(typevar.name.name, typevar);

@@ -1,7 +1,6 @@
 package typing;
 
-import typing.Traits;
-
+@:structInit
 class StrongAlias extends Alias {
 	var type: Type;
 	final staticMembers: Array<Member> = [];
@@ -14,13 +13,15 @@ class StrongAlias extends Alias {
 	var noInherit: Bool = false;
 
 	static function fromAST(lookup, ast: parsing.ast.decls.Alias) {
-		final alias = new StrongAlias({
+		final alias: StrongAlias = {
 			lookup: lookup,
 			span: ast.span,
 			name: ast.name,
 			params: [],
 			type: null // Hack for partial initialization
-		});
+		};
+
+		alias.initThisType();
 
 		for(typevar in ast.generics.mapArray(a -> TypeVar.fromAST(alias, a))) {
 			alias.typevars.add(typevar.name.name, typevar);

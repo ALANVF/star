@@ -1,9 +1,6 @@
 package typing;
 
-import typing.Traits;
-import parsing.ast.Ident;
-import errors.Error;
-
+@:structInit
 class Class extends ClassLike {
 	final inits: Array<Init> = [];
 	var defaultInit: Option<DefaultInit> = None;
@@ -13,12 +10,14 @@ class Class extends ClassLike {
 	var _isUncounted: Bool = false;
 
 	static function fromAST(lookup, ast: parsing.ast.decls.Class) {
-		final cls = new Class({
+		final cls: Class = {
 			lookup: lookup,
 			span: ast.span,
 			name: ast.name,
 			params: []
-		});
+		};
+
+		cls.initThisType();
 
 		for(typevar in ast.generics.mapArray(a -> TypeVar.fromAST(cls, a))) {
 			cls.typevars.add(typevar.name.name, typevar);

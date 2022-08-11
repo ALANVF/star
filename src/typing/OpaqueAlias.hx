@@ -1,19 +1,20 @@
 package typing;
 
-import typing.Traits;
-
+@:structInit
 class OpaqueAlias extends Alias {
 	final staticMethods: Array<StaticMethod> = [];
 	final methods: Array<Method> = [];
 	final operators: Array<Operator> = [];
 
 	static function fromAST(lookup, ast: parsing.ast.decls.Alias) {
-		final alias = new OpaqueAlias({
+		final alias: OpaqueAlias = {
 			lookup: lookup,
 			span: ast.span,
 			name: ast.name,
 			params: []
-		});
+		};
+
+		alias.initThisType();
 
 		for(typevar in ast.generics.mapArray(a -> TypeVar.fromAST(alias, a))) {
 			alias.typevars.add(typevar.name.name, typevar);

@@ -1,5 +1,6 @@
 package typing;
 
+@:structInit
 abstract class Method extends AnyMethod {
 	var ret: Null<Type>;
 	var isMain: Bool = false;

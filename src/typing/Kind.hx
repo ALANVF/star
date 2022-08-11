@@ -1,7 +1,6 @@
 package typing;
 
-import typing.Traits;
-
+@:structInit
 abstract class Kind extends ClassLike {
 	var deinit: Option<Deinit> = None;
 	var _isFlags: Bool = false;

@@ -1,5 +1,6 @@
 package typing;
 
+@:structInit
 abstract class Alias extends TypeDecl {
 	static function fromAST(lookup, ast: parsing.ast.decls.Alias): Alias {
 		return switch ast.kind {

@@ -1,19 +1,20 @@
 package typing;
 
-import typing.Traits;
-
+@:structInit
 class Protocol extends ClassLike {
 	final inits: Array<Init> = [];
 	var defaultInit: Option<DefaultInit> = None;
 	var deinit: Option<Deinit> = None;
 
 	static function fromAST(lookup, ast: parsing.ast.decls.Protocol) {
-		final protocol = new Protocol({
+		final protocol: Protocol = {
 			lookup: lookup,
 			span: ast.span,
 			name: ast.name,
 			params: []
-		});
+		};
+
+		protocol.initThisType();
 
 		for(typevar in ast.generics.mapArray(a -> TypeVar.fromAST(protocol, a))) {
 			protocol.typevars.add(typevar.name.name, typevar);

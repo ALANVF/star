@@ -2,6 +2,7 @@ package typing;
 
 import sys.FileSystem;
 
+@:structInit
 class Project extends Dir {
 	static var STDLIB: Null<Project> = null;
 
@@ -19,11 +20,11 @@ class Project extends Dir {
 			throw 'Expected "$absPath" to be a directory, not a file!';
 		}
 
-		final root = new Project({
+		final root: Project = {
 			name: path.substringAfterLast("/"),
 			path: absPath,
 			useStdlib: useStdlib
-		});
+		};
 		
 		root.buildUnits();
 

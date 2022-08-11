@@ -2,11 +2,12 @@ package typing;
 
 import parsing.ast.Ident;
 
+@:structInit
 class SingleInit extends Init {
 	var name: Ident;
 
 	static function fromAST(decl, ast: parsing.ast.decls.Init) {
-		final init = new SingleInit({
+		final init: SingleInit = {
 			decl: decl,
 			span: ast.span,
 			name: switch ast.spec.of {
@@ -14,7 +15,7 @@ class SingleInit extends Init {
 				default: throw "Error!";
 			},
 			body: ast.body?.stmts()
-		});
+		};
 
 		for(attr => span in ast.attrs) switch attr {
 			case IsHidden(_) if(init.hidden != null): init.errors.push(Type_DuplicateAttribute(init, init.name.name, "hidden", span));
