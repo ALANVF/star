@@ -104,7 +104,7 @@ proc lookupTypevar(state: State, tv: TypeVar): TypeRef =
     
     if state.methodTVCtx != nil and state.methodTVCtx.contains(tv):
         return state.methodTVCtx[tv].t
-
+    
     assert(false, "???")
 
 # TODO: add a way to differentiate between concrete instances and non-concrete instances (aka they have typevars/this)
@@ -227,13 +227,17 @@ proc stringy(state: State, value: Value): string =
     
     of vClass:
         if value.t == state.world.defaultStrRef:
-            let length = value.c_fields[2].i32
-            let data = value.c_fields[0].`ptr`[]
+            let length = value.c_fields[][1].i32
+            let data = value.c_fields[][0].`ptr`[]
             var res: string
             res.setLen(length)
             shallow res
             
             for i, val in data:
+                if i == length: break
+                if val.kind != vUInt8: # TEMP
+                    echo "???" & $val
+                    break
                 res[i] = val.u8.char
             
             tname & res.escape()
@@ -401,7 +405,12 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result
 proc eval*(state: State, scope: Scope, ops: Opcodes): Result =
     when DEBUG: echo state.getDeclName(state.thisType)
     for op in ops[]:
-        when DEBUG: echo op
+        when DEBUG:
+            var stack: seq[string]
+            for v in state.stack:
+                stack.add state.stringy v
+            echo stack
+            echo op
         let res = eval(state, scope, op)
         if unlikely(res != nil): return res
 
@@ -2472,7 +2481,7 @@ proc eval*(state: State, scope: Scope, native: NativeOp): Result =
         let sizeValue = state.stack.pop; assert sizeValue.kind in {vInt8..vUInt64}, "Expected an integer"
         let pvalue1 = state.stack.pop
 
-        assert pvalue1.kind != pvalue2.kind
+        assert pvalue1.kind == pvalue2.kind
 
         let size =
             case sizeValue.kind
@@ -2504,7 +2513,7 @@ proc eval*(state: State, scope: Scope, native: NativeOp): Result =
         let sizeValue = state.stack.pop; assert sizeValue.kind in {vInt8..vUInt64}, "Expected an integer"
         let pvalue1 = state.stack.pop
 
-        assert pvalue1.kind != pvalue2.kind
+        assert pvalue1.kind == pvalue2.kind
 
         let size =
             case sizeValue.kind
@@ -2536,7 +2545,7 @@ proc eval*(state: State, scope: Scope, native: NativeOp): Result =
         let sizeValue = state.stack.pop; assert sizeValue.kind in {vInt8..vUInt64}, "Expected an integer"
         let pvalue1 = state.stack.pop
 
-        assert pvalue1.kind != pvalue2.kind
+        assert pvalue1.kind == pvalue2.kind
 
         let size =
             case sizeValue.kind
