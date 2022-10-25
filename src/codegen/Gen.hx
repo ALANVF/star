@@ -876,36 +876,36 @@ class Gen {
 				writeMemberID(id);
 			},
 
-			at(OInitThis_S(t, id)) => {
+			at(OInitThis_S(t, init)) => {
 				write(t);
-				writeInitID(id);
+				writeInitID(world.getID(init));
 				out.writeByte(0);
 			},
 
-			at(OInitThis_M(t, id, ctx) | OSend_IM(t, id, ctx)) => {
+			at(OInitThis_M(t, init, ctx) | OSend_IM(t, init, ctx)) => {
 				write(t);
-				writeInitID(id);
+				writeInitID(world.getID(init));
 				write(ctx);
 			},
 
-			at(OSend_IS(t, id)) => {
+			at(OSend_IS(t, init)) => {
 				write(t);
-				writeInitID(id);
+				writeInitID(world.getID(init));
 			},
 
-			at(OSend_SS(t, id)
-			| OSend_SI(t, id) | OSendDynamic_SI(t, id)
-			| OSend_UO(t, id) | OSendDynamic_UO(t, id)) => {
+			at(OSend_SS(t, mth)
+			| OSend_SI(t, mth) | OSendDynamic_SI(t, mth)
+			| OSend_UO(t, mth) | OSendDynamic_UO(t, mth)) => {
 				write(t);
-				writeMethodID(id);
+				writeMethodID(world.getID(mth));
 			},
 
-			at(OSend_MS(t, id, ctx)
-			| OSend_MI(t, id, ctx) | OSendDynamic_MI(t, id, ctx)
-			| OSend_C(t, id, ctx) | OSendDynamic_C(t, id, ctx)
-			| OSend_BO(t, id, ctx) | OSendDynamic_BO(t, id, ctx)) => {
+			at(OSend_MS(t, mth, ctx)
+			| OSend_MI(t, mth, ctx) | OSendDynamic_MI(t, mth, ctx)
+			| OSend_C(t, mth, ctx) | OSendDynamic_C(t, mth, ctx)
+			| OSend_BO(t, mth, ctx) | OSendDynamic_BO(t, mth, ctx)) => {
 				write(t);
-				writeMethodID(id);
+				writeMethodID(world.getID(mth));
 				write(ctx);
 			},
 

@@ -1418,8 +1418,8 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 	at(EInitThis(type, msg)) => {
 		final res = compile(ctx, type, type, msg, true);
 		res.setLast(res.last()._match(
-			at(OSend_IS(t, id)) => OInitThis_S(t, id),
-			at(OSend_IM(t, id, ctx)) => OInitThis_M(t, id, ctx),
+			at(OSend_IS(t, init)) => OInitThis_S(t, init),
+			at(OSend_IM(t, init, ctx)) => OInitThis_M(t, init, ctx),
 			_ => throw "bad"
 		));
 		res;
@@ -2177,8 +2177,7 @@ overload static function compile(ctx: GenCtx, resType: Type, type: Type, kind: S
 			}
 		);
 
-		final id = world.getID(init);
-		final res: Opcodes = [OSend_IS(world.getTypeRef(resType), id)];
+		final res: Opcodes = [OSend_IS(world.getTypeRef(resType), init)];
 		if(!wantValue) {
 			res.push(OPop);
 		}
@@ -2196,8 +2195,7 @@ overload static function compile(ctx: GenCtx, resType: Type, type: Type, kind: S
 			});
 		}
 
-		final id = world.getID(init);
-		res.push(OSend_IM(world.getTypeRef(resType), id));
+		res.push(OSend_IM(world.getTypeRef(resType), init));
 		if(!wantValue) {
 			res.push(OPop);
 		}
@@ -2211,8 +2209,7 @@ overload static function compile(ctx: GenCtx, resType: Type, type: Type, kind: S
 			}
 		);
 
-		final id = world.getID(mth);
-		final res: Opcodes = [OSend_SS(world.getTypeRef(type), id)];
+		final res: Opcodes = [OSend_SS(world.getTypeRef(type), mth)];
 		if(!wantValue && mth.ret._andOr(ret => ret != Pass2.STD_Void.thisType, false)) {
 			res.push(OPop);
 		}
@@ -2230,8 +2227,7 @@ overload static function compile(ctx: GenCtx, resType: Type, type: Type, kind: S
 			});
 		}
 
-		final id = world.getID(mth);
-		res.push(OSend_MS(world.getTypeRef(type), id));
+		res.push(OSend_MS(world.getTypeRef(type), mth));
 		if(!wantValue && mth.ret._andOr(ret => ret != Pass2.STD_Void.thisType, false)) {
 			res.push(OPop);
 		}
@@ -2284,8 +2280,7 @@ overload static function compile(ctx: GenCtx, sender: Type, kind: SingleInstKind
 		);
 
 		final typeref = world.getTypeRef(sender);
-		final id = world.getID(mth);
-		final res: Opcodes = [mth.typedBody != null && !sender.isProtocol() ? OSend_SI(typeref, id) : OSendDynamic_SI(typeref, id)];
+		final res: Opcodes = [mth.typedBody != null && !sender.isProtocol() ? OSend_SI(typeref, mth) : OSendDynamic_SI(typeref, mth)];
 		if(!wantValue && mth.ret._andOr(ret => ret != Pass2.STD_Void.thisType, false)) {
 			res.push(OPop);
 		}
@@ -2304,8 +2299,7 @@ overload static function compile(ctx: GenCtx, sender: Type, kind: SingleInstKind
 		}
 
 		final typeref = world.getTypeRef(sender);
-		final id = world.getID(mth);
-		res.push(mth.typedBody != null && !sender.isProtocol() ? OSend_MI(typeref, id) : OSendDynamic_MI(typeref, id));
+		res.push(mth.typedBody != null && !sender.isProtocol() ? OSend_MI(typeref, mth) : OSendDynamic_MI(typeref, mth));
 		if(!wantValue && mth.ret._andOr(ret => ret != Pass2.STD_Void.thisType, false)) {
 			res.push(OPop);
 		}
@@ -2391,12 +2385,11 @@ overload static function compile(ctx: GenCtx, resType: Type, type: Type, candida
 							null
 					), null);
 
-					final id = world.getID(init);
 					var res = [];
 					for(arg in args) {
 						res = res.concat(compile(ctx, arg));
 					}
-					res.push(OSend_IM(typeref, id, ictx));
+					res.push(OSend_IM(typeref, init, ictx));
 					if(!wantValue) {
 						res.push(OPop);
 					}
@@ -2434,14 +2427,13 @@ overload static function compile(ctx: GenCtx, resType: Type, type: Type, candida
 							null
 					), null);
 
-					final id = world.getID(mth);
 					var res = [];
 					
 					for(arg in args) {
 						res = res.concat(compile(ctx, arg));
 					}
 					
-					res.push(OSend_MS(typeref, id, ictx));
+					res.push(OSend_MS(typeref, mth, ictx));
 					
 					if(!wantValue && mth.ret._andOr(ret => ret != Pass2.STD_Void.thisType, false)) {
 						res.push(OPop);
@@ -2474,7 +2466,6 @@ overload static function compile(ctx: GenCtx, resType: Type, type: Type, candida
 							null
 					), null);
 
-					final id = world.getID(mth);
 					var res = [];
 
 					for(i in 0...mth.params.length) {
@@ -2504,7 +2495,7 @@ overload static function compile(ctx: GenCtx, resType: Type, type: Type, candida
 						);
 					}
 
-					res.push(OSend_MS(typeref, id, ictx));
+					res.push(OSend_MS(typeref, mth, ictx));
 					
 					if(!wantValue && mth.ret._andOr(ret => ret != Pass2.STD_Void.thisType, false)) {
 						res.push(OPop);
@@ -2690,7 +2681,6 @@ overload static function compile(ctx: GenCtx, sender: Type, candidates: Array<Ob
 					}
 				}, null);
 
-				final id = world.getID(mth);
 				var res = [];
 
 				for(arg in args) {
@@ -2712,8 +2702,8 @@ overload static function compile(ctx: GenCtx, sender: Type, candidates: Array<Ob
 				res.push(
 					(mth.typedBody != null && !sender.isProtocol()) || mth.hidden!=null // TEMP: change to sealed later
 					|| isSuper
-					? OSend_MI(typeref, id, ictx)
-					: OSendDynamic_MI(typeref, id, ictx)
+					? OSend_MI(typeref, mth, ictx)
+					: OSendDynamic_MI(typeref, mth, ictx)
 				);
 				
 				if(!wantValue && mth.ret._andOr(ret => ret != Pass2.STD_Void.thisType, false)) {
@@ -2759,7 +2749,6 @@ overload static function compile(ctx: GenCtx, sender: Type, candidates: Array<Ob
 						null
 				), null);
 
-				final id = world.getID(mth);
 				var res = [];
 
 				for(i in 0...mth.params.length) {
@@ -2804,7 +2793,7 @@ overload static function compile(ctx: GenCtx, sender: Type, candidates: Array<Ob
 				res.push(
 					(mth.typedBody != null && !sender.isProtocol()) || mth.hidden!=null // TEMP: change to sealed later
 					|| isSuper
-					? OSend_MI(typeref, id, ictx) : OSendDynamic_MI(typeref, id, ictx)
+					? OSend_MI(typeref, mth, ictx) : OSendDynamic_MI(typeref, mth, ictx)
 				);
 				
 				if(!wantValue && mth.ret._andOr(ret => ret != Pass2.STD_Void.thisType, false)) {
@@ -2878,8 +2867,7 @@ overload static function compile(sender: Type, target: Type, candidates: Array<C
 				}
 			}
 
-			final id = world.getID(mth);
-			[mth.typedBody != null && !sender.isProtocol() ? OSend_C(typeref, id, ictx) : OSendDynamic_C(typeref, id, ictx)];
+			[mth.typedBody != null && !sender.isProtocol() ? OSend_C(typeref, mth, ictx) : OSendDynamic_C(typeref, mth, ictx)];
 		},
 		at([CUpcast(parent)]) => {
 			final tref = world.getTypeRef(parent);
@@ -2983,8 +2971,7 @@ overload static function compile(ctx: GenCtx, sender: Type, kinds: Array<TExpr.B
 					), null);
 
 					final typeref = world.getTypeRef(sender);
-					final id = world.getID(mth);
-					res.push(mth.typedBody != null ? OSend_BO(typeref, id, ictx) : OSendDynamic_BO(typeref, id, ictx));
+					res.push(mth.typedBody != null ? OSend_BO(typeref, mth, ictx) : OSendDynamic_BO(typeref, mth, ictx));
 				});
 			}
 
@@ -3012,8 +2999,7 @@ static function compilePrefix(sender: Type, kind: UnaryOpKind, wantValue: Bool) 
 		);
 	}, {
 		final typeref = world.getTypeRef(sender);
-		final id = world.getID(mth);
-		res.push(mth.typedBody != null ? OSend_UO(typeref, id) : OSendDynamic_UO(typeref, id));
+		res.push(mth.typedBody != null ? OSend_UO(typeref, mth) : OSendDynamic_UO(typeref, mth));
 	});
 
 	if(!wantValue) {
@@ -3043,8 +3029,7 @@ static function compileSuffix(sender: Type, kind: UnaryOpKind, wantValue: Bool) 
 		);
 	}, {
 		final typeref = world.getTypeRef(sender);
-		final id = world.getID(mth);
-		res.push(mth.typedBody != null ? OSend_UO(typeref, id) : OSendDynamic_UO(typeref, id));
+		res.push(mth.typedBody != null ? OSend_UO(typeref, mth) : OSendDynamic_UO(typeref, mth));
 	});
 
 	if(!wantValue) {
@@ -3093,6 +3078,17 @@ static function genTVarEntry(ctx: GenCtx, tv: TypeVar, t: Type): Tuple2<TypeRef,
 				at(cm is CastMethod) => {
 					detuple(@final [de, me] = world.get(cm));
 					// TODO
+					var res = t.findCast(null/*BAD*/, cm.type, t);
+					res = typing.CastKind.reduceOverloads(res, t, cm.type);
+					res._match(
+						at([CMethod(cm2, _)]) => {
+							detuple(@final [de2, me2] = world.get(cm2));
+							m.castMethods[me.id] = tuple(de2.id, me2.id);
+						},
+						_ => throw "bad"
+					);
+
+					//m.castMethods.set(me.id, )
 				},
 				_ => throw "bad"
 			);

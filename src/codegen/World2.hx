@@ -1537,11 +1537,7 @@ class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
 									ONative(native);
 								}
 							}];
-							if(cm.ret._andOr(ret => !ret.isNative(NVoid), false)) {
-								ops.push(ORet);
-							} else {
-								ops.push(ORetVoid);
-							}
+							ops.push(ORet);
 							ops;
 						}
 					), {

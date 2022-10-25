@@ -121,8 +121,8 @@ class Arrays {
 	static function fill<T>(array: Array<T>, value: T, ?start: Int, ?end: Int) {
 		final len = array.length;
 
-		if(start == null) start = 1;
-		if(end == null) end = len;
+		start ??= 1;
+		end ??= len;
 
 		final k = Std.int(if(start < 0) Math.max(len + start, 0) else Math.min(start, len));
 		final finalValue = Std.int(if(end < 0) Math.max(len + end, 0) else Math.min(end, len));

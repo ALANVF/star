@@ -1,5 +1,9 @@
 package codegen;
 
+import typing.SingleInit;
+import typing.MultiInit;
+import typing.AnyMethod;
+
 enum Opcode {
 	// Storage and access
 
@@ -116,30 +120,30 @@ enum Opcode {
 
 	ODefaultInit(t: TypeRef);
 
-	OInitThis_S(t: TypeRef, id: InitID);
-	OInitThis_M(t: TypeRef, id: InitID, ?ctx: TVarInstCtx);
+	OInitThis_S(t: TypeRef, init: SingleInit);
+	OInitThis_M(t: TypeRef, init: MultiInit, ?ctx: TVarInstCtx);
 
 	// TODO: implement type variable method mappings for the tvar ctx
-	OSend_IS(t: TypeRef, id: InitID);
-	OSend_IM(t: TypeRef, id: InitID, ?ctx: TVarInstCtx);
+	OSend_IS(t: TypeRef, init: SingleInit);
+	OSend_IM(t: TypeRef, init: MultiInit, ?ctx: TVarInstCtx);
 
-	OSend_SS(t: TypeRef, id: MethodID);
-	OSend_MS(t: TypeRef, id: MethodID, ?ctx: TVarInstCtx);
+	OSend_SS(t: TypeRef, mth: AnyMethod);
+	OSend_MS(t: TypeRef, mth: AnyMethod, ?ctx: TVarInstCtx);
 
-	OSend_SI(t: TypeRef, id: MethodID);
-	OSendDynamic_SI(t: TypeRef, id: MethodID);
+	OSend_SI(t: TypeRef, mth: AnyMethod);
+	OSendDynamic_SI(t: TypeRef, mth: AnyMethod);
 
-	OSend_MI(t: TypeRef, id: MethodID, ?ctx: TVarInstCtx);
-	OSendDynamic_MI(t: TypeRef, id: MethodID, ?ctx: TVarInstCtx);
+	OSend_MI(t: TypeRef, mth: AnyMethod, ?ctx: TVarInstCtx);
+	OSendDynamic_MI(t: TypeRef, mth: AnyMethod, ?ctx: TVarInstCtx);
 
-	OSend_C(t: TypeRef, id: MethodID, ?ctx: TVarInstCtx);
-	OSendDynamic_C(t: TypeRef, id: MethodID, ?ctx: TVarInstCtx);
+	OSend_C(t: TypeRef, mth: AnyMethod, ?ctx: TVarInstCtx);
+	OSendDynamic_C(t: TypeRef, mth: AnyMethod, ?ctx: TVarInstCtx);
 
-	OSend_BO(t: TypeRef, id: MethodID, ?ctx: TVarInstCtx);
-	OSendDynamic_BO(t: TypeRef, id: MethodID, ?ctx: TVarInstCtx);
+	OSend_BO(t: TypeRef, mth: AnyMethod, ?ctx: TVarInstCtx);
+	OSendDynamic_BO(t: TypeRef, mth: AnyMethod, ?ctx: TVarInstCtx);
 
-	OSend_UO(t: TypeRef, id: MethodID);
-	OSendDynamic_UO(t: TypeRef, id: MethodID);
+	OSend_UO(t: TypeRef, mth: AnyMethod);
+	OSendDynamic_UO(t: TypeRef, mth: AnyMethod);
 
 
 	// Creation

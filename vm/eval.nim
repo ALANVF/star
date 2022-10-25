@@ -1115,17 +1115,32 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
         
         var mstate: State
         var mth: CastMethod
-        if unlikely(t == sender_t):
-            mstate = state.newState(addr t, addr sender, op.cm_ctx)
-            mth = mstate.thisDecl.instCastMethods[][op.cm_id]
-        else:
-            mstate = state.newState(addr sender_t, addr sender, op.cm_ctx)
-            let baseDecl = state.getDecl(t)
-            if mstate.thisDecl.instCastMethodVTable[].contains(baseDecl.id):
-                mth = mstate.thisDecl.instCastMethodVTable[][baseDecl.id][op.cm_id]
+        # TODO: implement this better & everywhere else
+        block lookupMethod:
+            if op.cm_t.kind == trTypeVar and op.cm_t.tvar.kind == tvMethod and state.methodTVCtx != nil:
+                let entry = state.methodTVCtx[][op.cm_t.tvar]
+                if entry.mappings != nil:
+                    let (tid, mid) = entry.mappings[].instCastMethods[op.cm_id]
+                    let this_t = TypeRef(kind: trDecl, declID: tid)
+                    mstate = state.newState(addr this_t, addr sender, op.cm_ctx)
+                    if mstate.thisDecl.instCastMethodVTable[].contains(tid):
+                        mth = mstate.thisDecl.instCastMethodVTable[][tid][mid]
+                    else:
+                        mth = mstate.thisDecl.instCastMethods[][mid]
+
+                    break lookupMethod
+
+            if unlikely(t == sender_t):
+                mstate = state.newState(addr t, addr sender, op.cm_ctx)
+                mth = mstate.thisDecl.instCastMethods[][op.cm_id]
+            else:
+                mstate = state.newState(addr sender_t, addr sender, op.cm_ctx)
+                let baseDecl = state.getDecl(t)
+                if mstate.thisDecl.instCastMethodVTable[].contains(baseDecl.id):
+                    mth = mstate.thisDecl.instCastMethodVTable[][baseDecl.id][op.cm_id]
         
         let mscope = Scope(locals: @[])
-
+        
         let res = eval(mstate, mscope, mth.body)
         if res != nil:
             case res.kind
