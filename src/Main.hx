@@ -23,14 +23,14 @@ class Main {
 	static final stdout = Sys.stdout();
 	public static final renderer = new TextDiagnosticRenderer(stdout);
 
-	static var typesDump: haxe.io.Output = null;
+	/*static var typesDump: haxe.io.Output = null;
 	public static var typesDumper: typing.Dumper = null;
 	static var stmtsDump: haxe.io.Output = null;
 	public static var stmtsDumper: typing.Dumper = null;
 	static var stdlibDump: haxe.io.Output = null;
 	public static var stdlibDumper: typing.Dumper = null;
 	static var compilerDump: haxe.io.Output = null;
-	public static var compilerDumper: typing.Dumper = null;
+	public static var compilerDumper: typing.Dumper = null;*/
 	static var mainOutput: sys.io.FileOutput = null;
 
 	static inline function nl() {
@@ -176,13 +176,13 @@ class Main {
 			_ => {}
 		);
 	
-		final dumpTypes = false;
-		final dumpStmts = false;
+		//final dumpTypes = false;
+		//final dumpStmts = false;
 			
-		if(dumpTypes) { typesDump = sys.io.File.write('$STAR_HOME/dump/types.stir'); typesDumper = new typing.Dumper(typesDump); }
-		if(dumpStmts) { stmtsDump = sys.io.File.write('$STAR_HOME/dump/stmts.stir'); stmtsDumper = new typing.Dumper(stmtsDump); }
-		stdlibDump = sys.io.File.write('$STAR_HOME/dump/stdlib.stir'); stdlibDumper = new typing.Dumper(stdlibDump);
-		compilerDump = sys.io.File.write('$STAR_HOME/dump/compiler.stir'); compilerDumper = new typing.Dumper(compilerDump);
+		//if(dumpTypes) { typesDump = sys.io.File.write('$STAR_HOME/dump/types.stir'); typesDumper = new typing.Dumper(typesDump); }
+		//if(dumpStmts) { stmtsDump = sys.io.File.write('$STAR_HOME/dump/stmts.stir'); stmtsDumper = new typing.Dumper(stmtsDump); }
+		//stdlibDump = sys.io.File.write('$STAR_HOME/dump/stdlib.stir'); stdlibDumper = new typing.Dumper(stdlibDump);
+		//compilerDump = sys.io.File.write('$STAR_HOME/dump/compiler.stir'); compilerDumper = new typing.Dumper(compilerDump);
 		try {
 			final stdlib = testProject('$STAR_HOME/stdlib', {
 				isStdlib: true,
@@ -243,7 +243,7 @@ class Main {
 				bc.writeWorld();
 
 
-				final gen = new codegen.GenDump(stdlibDump);
+				/*final gen = new codegen.GenDump(stdlibDump);
 
 				{
 					final proto = cast(typing.Pass2.STD_Value, typing.Protocol);
@@ -373,7 +373,7 @@ class Main {
 						stdlibDumper.nextLine();
 						stdlibDumper.nextLine();
 					}
-				}
+				}*/
 
 				/*nl();
 				
@@ -388,17 +388,17 @@ class Main {
 				};*/
 			}
 		} catch(e: haxe.Exception) {
-			if(dumpTypes) typesDump.close();
-			if(dumpStmts) stmtsDump.close();
-			stdlibDump.close();
-			compilerDump.close();
+			//if(dumpTypes) typesDump.close();
+			//if(dumpStmts) stmtsDump.close();
+			//stdlibDump.close();
+			//compilerDump.close();
 			mainOutput.close();
 			hl.Api.rethrow(e);
 		}
-		if(dumpTypes) typesDump.close();
-		if(dumpStmts) stmtsDump.close();
-		stdlibDump.close();
-		compilerDump.close();
+		//if(dumpTypes) typesDump.close();
+		//if(dumpStmts) stmtsDump.close();
+		//stdlibDump.close();
+		//compilerDump.close();
 		mainOutput.close();
 	}
 }
