@@ -568,11 +568,19 @@ class Util {
 								Context.error("NYI", Context.currentPos());
 							} else switch v2.expr {
 								case macro (cast cast($ve, $cd2) : $ct2):
+									function unify(type1: ComplexType, type2: ComplexType) {
+										return Context.typeof(macro {
+											var x1 = (null : $type1);
+											var x2 = (null : $type2);
+											[x1, x2][0];
+										});
+									}
+									
 									final ct1 = _unsafeNonNull(v.t).t;
-									final t = Context.typeof(macro [(null : $ct1), (null : $ct2)][0]);
+									final t = unify(ct1, ct2);
 									final ct = Context.toComplexType(t).nonNull();
 									final cd1 = _unsafeNonNull(v.t).d;
-									final d = Context.typeof(macro [(null : $cd1), (null : $cd2)][0]);
+									final d = unify(cd1, cd2);
 									final cd = Context.toComplexType(t).nonNull();
 									
 									v2.expr = macro (cast cast($ve, $ct) : $cd);
