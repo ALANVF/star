@@ -2,11 +2,11 @@ Param(
 	[string] $choice = "both"
 )
 
+if($choice -match "compiler|both") {
+
 if(-not (haxe build.hxml)) {
 	exit
 }
-
-if($choice -match "compiler|both") {
 
 $mainFile = "bin/output/main.c"
 $mainData = get-content $mainFile
@@ -80,6 +80,6 @@ $objs = (ls $env:HASHLINKPATH\x64\Release\*.obj | ForEach-Object {$_.FullName})
 
 if($choice -match "vm|both") {
 
-nim --out:bin/starvm.exe c vm/main.nim
+echo (nim --out:bin/starvm.exe c vm/main.nim)
 
 }

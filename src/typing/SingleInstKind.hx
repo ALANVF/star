@@ -30,3 +30,18 @@ function retType(self: SingleInstKind): Null<Type> return self._match(
 		});
 	}
 );
+
+// TODO: maybe allow this to return multiple candidates
+function reduceCategoryCalls(kinds: Array<SingleInstKind>) {
+	return kinds.reduce((k1, k2) -> {
+		final c1: Category = cast k1._match(
+			at(SIMethod({decl: d}) | SIMultiMethod({decl: d}) | SIMember({decl: d})) => d,
+			_ => throw "bad"
+		);
+		final c2: Category = cast k2._match(
+			at(SIMethod({decl: d}) | SIMultiMethod({decl: d}) | SIMember({decl: d})) => d,
+			_ => throw "bad"
+		);
+		if(c2.thisType.hasParentType(c1.thisType)) k2 else k1;
+	});
+}

@@ -769,8 +769,36 @@ class Type implements ITypeable {
 			at(TPath(depth, lookup, source)) => this.simplify().hasChildType(type),
 			at(TLookup(type2, lookup, source)) => throw "todo "+type2.fullName()+" "+lookup,
 			at(TConcrete(decl)) => decl.hasChildType(type),
-			at(TInstance(decl, params, _)) => {
-				decl.hasChildType(type); // TODO
+			at(TInstance(decl, params, tctx)) => {
+				decl.hasChildType(type) && {
+					/*final tctx2: TypeVarCtx = [];
+					final tt = type.bindTo(new Type(TApplied({t: TConcrete(decl), span: span}, decl.params), span).simplify(), tctx2);
+					if(tt != null && tctx.size() == tctx2.size()) {
+						for(tv => t in tctx) {
+							if(!(tctx2.exists(tv) && tctx2[tv] == t)) return false;
+						}
+						//trace(tt, tctx2.toString());
+						true;
+					} else {
+						false;
+					}*/
+
+					// BAD
+					type.t._match(
+						at(TInstance(decl2, params2, tctx2)) => {
+							if(tctx.size() == tctx2.size()) {
+								for(tv => t in tctx) {
+									if(!(tctx2.exists(tv) && tctx2[tv] == t)) return false;
+								}
+								//trace(tt, tctx2.toString());
+								true;
+							} else {
+								false;
+							}
+						},
+						_ => true // breaks if false???
+					);
+				}; // TODO
 			},
 			at(TThis(source)) => source.hasChildType(type),
 			at(TBlank) => throw "bad",
@@ -1257,7 +1285,7 @@ class Type implements ITypeable {
 										return parent.bindTo(onto, ctx);
 									}
 								}
-								trace("???");
+								//trace("???");
 								null;
 							},
 							_ => {

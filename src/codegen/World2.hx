@@ -398,7 +398,10 @@ class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
 				inits;
 			});
 		} else {
-			return null;
+			return staticInit._and(si => {
+				final genCtx = new GenCtx();
+				CodeGen.compile(genCtx, si.typedBody);
+			});
 		}
 	}
 
@@ -411,13 +414,16 @@ class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
 				ops;
 			});
 
-			return defaultInit._andOr(si => {
-				inits.concat(CodeGen.compile(genCtx, si.typedBody));
+			return defaultInit._andOr(di => {
+				inits.concat(CodeGen.compile(genCtx, di.typedBody));
 			}, {
 				inits;
 			});
 		} else {
-			return null;
+			return defaultInit._and(di => {
+				final genCtx = new GenCtx();
+				CodeGen.compile(genCtx, di.typedBody);
+			});
 		}
 	}
 
@@ -1344,7 +1350,7 @@ class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
 						at(Some({name: native})) => {
 							final ops: Opcodes = [];
 							for(id in 0...mi.params.length) {
-								ops.push(OGetLocal(id + 1));
+								ops.push(OGetLocal(id));
 							}
 							if(native == "ptr_new") {
 								final elemType = mi.decl.getNative()._match(
@@ -1420,7 +1426,7 @@ class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
 						at(Some({name: native})) => {
 							final ops: Opcodes = [];
 							for(id in 0...ms.params.length) {
-								ops.push(OGetLocal(id + 1));
+								ops.push(OGetLocal(id));
 							}
 							ops.push(ONative(native));
 							if(ms.ret._andOr(ret => !ret.isNative(NVoid), false)) {
@@ -1491,7 +1497,7 @@ class TypeVarEntryMappings extends TypeDeclEntry implements ITaggedCaseEntries {
 						at(Some({name: native})) => {
 							final ops: Opcodes = [OThis];
 							for(id in 0...mi.params.length) {
-								ops.push(OGetLocal(id + 1));
+								ops.push(OGetLocal(id));
 							}
 							ops.push(ONative(native));
 							if(mi.ret._andOr(ret => !ret.isNative(NVoid), false)) {

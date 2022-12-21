@@ -60,6 +60,32 @@ function retType(overloads: Array<InstOverload>, sender: Type): Null<Type> {
 	);
 }
 
+// TODO: maybe allow this to return multiple candidates
+function reduceCategoryCalls(kinds: Array<MultiInstKind>) {
+	final res = [];
+	kinds.reduce((k1, k2) -> {
+		final c1: Category = cast k1._match(
+			at(MIMethod({decl: d}) | MIMember({decl: d})) => d,
+			_ => throw "bad"
+		);
+		final c2: Category = cast k2._match(
+			at(MIMethod({decl: d}) | MIMember({decl: d})) => d,
+			_ => throw "bad"
+		);
+		final v = if(c2.thisType.hasParentType(c1.thisType)) k2 else k1;
+		res.push(v);
+		v;
+	});
+	
+	if(res.length == 0) {
+		return kinds;
+	} else if(res.length == kinds.length) {
+		return res;
+	} else {
+		return reduceCategoryCalls(res);
+	}
+}
+
 function reduceOverloads(kinds: Array<MultiInstKind>, ctx: Ctx, sender: Type, args: Array<TExpr>) {
 	if(kinds.length == 0) return [];
 

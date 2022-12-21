@@ -14,7 +14,6 @@ class Gen {
 	function new(out: sys.io.FileOutput, world: World2) {
 		this.out = out;
 		this.world = world;
-
 		this.out.bigEndian = false;
 	}
 
@@ -85,7 +84,7 @@ class Gen {
 
 		final startDefaultTypes = out.tell();
 
-		for(_ in 0...26) writeTypeID(0); // fill ids
+		for(_ in 0...27) writeTypeID(0); // fill ids
 
 		out.writeInt32(declsList.length);
 		for(decl in declsList) {
@@ -95,7 +94,7 @@ class Gen {
 		out.flush();
 		out.seek(startDefaultTypes, SeekBegin);
 
-		final defaultTypes = new Array<TypeID>(); defaultTypes.resize(26);
+		final defaultTypes = new Array<TypeID>(); defaultTypes.resize(27);
 		/*
 		0 Value
 		1 MultiKind
@@ -115,14 +114,15 @@ class Gen {
 		15 Char
 		16 Str
 		17 Ptr
-		18 Iterable1
-		19 Iterable2
-		20 Iterator1
-		21 Iterator2
-		22 Func0
-		23 Func1
-		24 Func2
-		25 Func3
+		18 VoidPtr
+		19 Iterable1
+		20 Iterable2
+		21 Iterator1
+		22 Iterator2
+		23 Func0
+		24 Func1
+		25 Func2
+		26 Func3
 		*/
 
 		defaultTypes[0] = declsMap[Pass2.STD_Value];
@@ -133,14 +133,14 @@ class Gen {
 		defaultTypes[14] = declsMap[Pass2.STD_Dec.getTypeDecl()];
 		defaultTypes[15] = declsMap[Pass2.STD_Char.getTypeDecl()];
 		defaultTypes[16] = declsMap[Pass2.STD_Str.getTypeDecl()];
-		defaultTypes[18] = declsMap[Pass2.STD_Iterable1];
-		defaultTypes[19] = declsMap[Pass2.STD_Iterable2];
-		defaultTypes[20] = declsMap[Pass2.STD_Iterator1];
-		defaultTypes[21] = declsMap[Pass2.STD_Iterator2];
-		defaultTypes[22] = declsMap[Pass2.STD_Func0];
-		defaultTypes[23] = declsMap[Pass2.STD_Func1];
-		defaultTypes[24] = declsMap[Pass2.STD_Func2];
-		defaultTypes[25] = declsMap[Pass2.STD_Func3];
+		defaultTypes[19] = declsMap[Pass2.STD_Iterable1];
+		defaultTypes[20] = declsMap[Pass2.STD_Iterable2];
+		defaultTypes[21] = declsMap[Pass2.STD_Iterator1];
+		defaultTypes[22] = declsMap[Pass2.STD_Iterator2];
+		defaultTypes[23] = declsMap[Pass2.STD_Func0];
+		defaultTypes[24] = declsMap[Pass2.STD_Func1];
+		defaultTypes[25] = declsMap[Pass2.STD_Func2];
+		defaultTypes[26] = declsMap[Pass2.STD_Func3];
 
 		for(decl => id in declsMap) {
 			decl._match(
@@ -158,6 +158,7 @@ class Gen {
 							at(NFloat32) => 12,
 							at(NFloat64) => 13,
 							at(NPtr(_)) => 17,
+							at(NVoidPtr) => 18,
 							_ => continue
 						)
 					);

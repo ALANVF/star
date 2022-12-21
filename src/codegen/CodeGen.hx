@@ -1306,7 +1306,7 @@ overload static function compile(ctx: GenCtx, expr: TExpr, wantValue = true): Op
 		);
 		
 		final res = compile(ctx, value);
-		res.push(setOrTeeName(ctx, name, loc, !isStep));
+		res.push(setOrTeeName(ctx, name, loc, if(isStep) false else wantValue));
 		res;
 	},
 
@@ -2234,7 +2234,7 @@ overload static function compile(ctx: GenCtx, resType: Type, type: Type, kind: S
 		res;
 	},
 	at(SSMember(mem)) => {
-		final id = world.getInstID(mem);
+		final id = world.getStaticID(mem);
 		[OGetStaticMember(world.getTypeRef(type), id)];
 	},
 	at(SSTaggedCase(c)) => {
@@ -2278,8 +2278,11 @@ overload static function compile(ctx: GenCtx, sender: Type, kind: SingleInstKind
 				return [ONative(name)];
 			}
 		);
-
-		final typeref = world.getTypeRef(sender);
+		
+		final typeref = mth.decl._match(
+			at(c is Category) => TypeRef.TDecl(world.getID(c)),
+			_ => world.getTypeRef(sender)
+		);
 		final res: Opcodes = [mth.typedBody != null && !sender.isProtocol() ? OSend_SI(typeref, mth) : OSendDynamic_SI(typeref, mth)];
 		if(!wantValue && mth.ret._andOr(ret => ret != Pass2.STD_Void.thisType, false)) {
 			res.push(OPop);
@@ -2698,7 +2701,11 @@ overload static function compile(ctx: GenCtx, sender: Type, candidates: Array<Ob
 						}
 					}
 				}
-				
+
+				final typeref = mth.decl._match(
+					at(c is Category) => TypeRef.TDecl(world.getID(c)),
+					_ => world.getTypeRef(sender)
+				);
 				res.push(
 					(mth.typedBody != null && !sender.isProtocol()) || mth.hidden!=null // TEMP: change to sealed later
 					|| isSuper
@@ -2881,6 +2888,10 @@ overload static function compile(sender: Type, target: Type, candidates: Array<C
 			final tref = world.getTypeRef(t);
 			[ONativeCast(tref)];
 		},
+		at([CNative(t), CDowncast(_)] | [CDowncast(_), CNative(t)], when(t.getNative() != null)) => {
+			final tref = world.getTypeRef(t);
+			[ONativeCast(tref)];
+		},
 		_ => {
 			trace("TODO: ", candidates.map(c -> c._match(
 				at(CMethod(m, _)) => m.span.display(),
@@ -2892,7 +2903,9 @@ overload static function compile(sender: Type, target: Type, candidates: Array<C
 }
 
 overload static function compile(ctx: GenCtx, sender: Type, kinds: Array<TExpr.BinaryOpCandidate>, right: TExpr, wantValue: Bool): Opcodes {
+	// TODO: detailed error when no candidates
 	return kinds._match(
+		at([]) => throw "No candidates for operator "+right.orig.mainSpan().display(),
 		at([{kind: kind, tctx: tctx}]) => {
 			var res: Opcodes = [];
 			

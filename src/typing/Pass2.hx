@@ -1512,12 +1512,12 @@ static function typeLocalAssign(
 
 					// Basic type inference
 					// TODO: work on this, likely doesn't work in more complex scenarios
-					if(tvalue.t.t.match(TMulti(_)) && local.type != null) {
+					if(tvalue.t?.t.match(TMulti(_)) && local.type != null) {
 						tvalue.e._match(
 							at(ETypeMessage(type, msg)) => {
 								if(type.t.match(TMulti(_))) {
 									tvalue.e = ETypeMessage({
-										t: local.type.t,
+										t: local.type?.t,
 										span: type.span
 									}, msg);
 								}
@@ -1526,7 +1526,7 @@ static function typeLocalAssign(
 						);
 			
 						tvalue.t = {
-							t: local.type.t,
+							t: local.type?.t,
 							span: tvalue.t.span
 						};
 					}
@@ -1880,7 +1880,7 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 		},
 		at(Single(cat!!, _, name)) => {
 			final tcat: Type = (ctx.getType(cat) ?? return null)._match(
-				at({t: TThis(source), span: span}) => source._match(
+				/*at({t: TThis(source), span: span}) => source._match(
 					at(td is TypeDecl) => { t: TConcrete(td), span: span },
 					at(tv is TypeVar) => { t: TTypeVar(tv), span: span },
 					at(c is Category) => c.type ?? c.lookup._match(
@@ -1889,15 +1889,16 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 						_ => throw "bad"
 					),
 					_ => throw "bad"
-				),
-				at(c) => c
+				),*/
+				at({t: TThis(source)}) => source.thisType.simplify(),
+				at(c) => c.simplify()
 			);
 			var categories = t.t._match(
 				at(TThis(td is TypeDecl)) => ({t: td.thisType.t, span: t.span} : Type),
 				_ => t
 			).findThisCategory(ctx, tcat, ctx.typeDecl).concat(
 				tcat.findCategory(ctx, tcat, t, ctx.typeDecl)
-			).unique();
+			).unique().filter(c -> c.path.simplify().hasChildType(tcat));
 			categories._match(
 				at([]) => {
 					ctx.addError(Type_UnknownCategory(ctx, Instance, t, tcat, cat.span()));
@@ -1921,7 +1922,19 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 						Single(kind),
 						kind.retType()?.getFrom(t)
 					),
-					at(kinds) => throw "todo"
+					at(kinds) => SingleInstKind.reduceCategoryCalls(kinds)._match(
+						at(null) => throw 'error: value of type `${t.fullName()}` does not respond to method `[$name]` in any categories of: `${found.map(f -> f.fullName()).join(", ")}`!',
+						at(kind!!) => {
+							trace(kind._match(
+								at(SIMethod(m)) => m.decl.fullName() + "#" + m.methodName(),
+								_ => ""
+							));
+							tuple(
+								Single(kind),
+								kind.retType()?.getFrom(t)
+							);
+						}
+					)
 				)
 			);
 		},
@@ -1977,7 +1990,7 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 		},
 		at(Multi(cat!!, labels)) => {
 			final tcat: Type = (ctx.getType(cat) ?? return null)._match(
-				at({t: TThis(source), span: s}) => source._match(
+				/*at({t: TThis(source), span: s}) => source._match(
 					at(td is TypeDecl) => { t: TConcrete(td), span: s },
 					at(tv is TypeVar) => { t: TTypeVar(tv), span: s },
 					at(c is Category) => c.type ?? c.lookup._match(
@@ -1986,8 +1999,9 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 						_ => throw "bad"
 					),
 					_ => throw "bad"
-				),
-				at(c) => c
+				),*/
+				//at({t: TThis(source)}) => source.thisType.simplify(),
+				at(c) => c.simplify()
 			);
 			detuple(@final [names, args] = getNamesArgs(ctx, labels));
 
@@ -1996,7 +2010,7 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 				_ => t
 			).findThisCategory(ctx, tcat, ctx.typeDecl).concat(
 				tcat.findCategory(ctx, tcat, t, ctx.typeDecl)
-			).unique()/*.filter(c -> {
+			).unique().filter(c -> c.path.simplify().hasChildType(tcat))/*.filter(c -> {
 				if(t.hasParentType(c.thisType) && c.thisType.hasChildType(t)) {
 					true;
 				} else {
@@ -2008,16 +2022,19 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 			//trace(categories.map(c->c.fullName()), begin.display());
 			categories._match(
 				at([]) => {
+					trace(1);
 					ctx.addError(Type_UnknownCategory(ctx, Instance, t, tcat, cat.span()));
 					null;
 				},
-				at([found]) => found.findMultiInst(ctx, names, ctx.typeDecl.thisType)._match(
+				at([found]) => found.findMultiInst(ctx, names, ctx.typeDecl.thisType).reduceCategoryCalls()._match(
 					at([]) => {
+						trace(2);
 						ctx.addError(Type_UnknownMethod(ctx, t, Multi(Instance, names), labels[0].span(), categories));
 						null;
 					},
 					at(kinds) => kinds.reduceOverloads(ctx, t, args)._match(
 						at([]) => {
+							trace(3);
 							ctx.addError(Type_UnknownMethod(ctx, t, Multi(Instance, names, args), labels[0].span(), categories));
 							null;
 						},
@@ -2231,7 +2248,7 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 		at(Cast(cat!!, type)) => {
 			final target = (ctx.getType(type) ?? return null).getLeastSpecific();
 			final tcat: Type = (ctx.getType(cat) ?? return null)._match(
-				at({t: TThis(source), span: span}) => source._match(
+				/*at({t: TThis(source), span: span}) => source._match(
 					at(td is TypeDecl) => { t: TConcrete(td), span: span },
 					at(tv is TypeVar) => { t: TTypeVar(tv), span: span },
 					at(c is Category) => c.type ?? c.lookup._match(
@@ -2240,7 +2257,8 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 						_ => throw "bad"
 					),
 					_ => throw "bad"
-				),
+				),*/
+				at({t: TThis(source)}) => source.thisType.simplify(),
 				at(c) => c
 			);
 			var categories = t.t._match(
@@ -3403,7 +3421,7 @@ static function typeStmt(ctx: Ctx, stmt: UStmt): TStmt {
 									tvt.fullSimplify();
 								});
 							}, {
-								trace("???", tv.e, tv.orig.mainSpan().display());
+								//trace("???", tv.e, tv.orig.mainSpan().display());
 								tv.t = ret;
 								ret;
 							});
