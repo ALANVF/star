@@ -1925,10 +1925,6 @@ static function sendObjMessage(ctx: Ctx, t: Type, begin: Span, end: Span, msg: U
 					at(kinds) => SingleInstKind.reduceCategoryCalls(kinds)._match(
 						at(null) => throw 'error: value of type `${t.fullName()}` does not respond to method `[$name]` in any categories of: `${found.map(f -> f.fullName()).join(", ")}`!',
 						at(kind!!) => {
-							trace(kind._match(
-								at(SIMethod(m)) => m.decl.fullName() + "#" + m.methodName(),
-								_ => ""
-							));
 							tuple(
 								Single(kind),
 								kind.retType()?.getFrom(t)
