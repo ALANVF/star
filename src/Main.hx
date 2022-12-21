@@ -119,15 +119,17 @@ class Main {
 		for(file in files) {
 			for(i => err in file.allErrors()) {
 				#if windows
-					renderer.writer.cursor(MoveDown(1));
-					renderer.writer.write("\033[G");
-					renderer.writer.clearLine();
+					//renderer.writer.cursor(MoveDown(1));
+					//renderer.writer.write("\033[G");
+					renderer.writer.write("\r\n");
+					//renderer.writer.clearLine();
 					Sys.sleep(0.15);
 				#end
 				renderer.render(err.asDiagnostic());
 				#if windows
 					renderer.writer.attr(RESET);
 					Sys.sleep(0.15);
+					Sys.sleep(1);
 					//renderer.writer.flush();
 				#end
 

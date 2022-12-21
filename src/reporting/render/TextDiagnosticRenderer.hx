@@ -20,6 +20,12 @@ private enum Line {
 
 @:publicFields
 class TextDiagnosticRenderer implements IDiagnosticRenderer {
+	private static inline final ANGLE_BAR = #if windows "|-" #else "┌─" #end;
+	private static inline final LINE_BAR = #if windows "|" #else "│" #end;
+	private static inline final CARET = #if windows "+" #else "⌃" #end;
+	private static inline final UP_ARROW = #if windows "^" #else "↑" #end;
+	private static inline final LINE_CURVE = #if windows "\\" #else "╰" #end;
+
 	var writer: AnsiWriter<haxe.io.Output>;
 	var surroundingLines = 1;
 	var connectUpLines = 1;
@@ -83,7 +89,7 @@ class TextDiagnosticRenderer implements IDiagnosticRenderer {
 		}).max();
 		final lineNumberPadding = " ".repeat(Std.string(maxLineIndex + 1).length);
 
-		buffer.write('$lineNumberPadding ┌─ ${sourceFile.path}');
+		buffer.write('$lineNumberPadding $ANGLE_BAR ${sourceFile.path}');
 		
 		switch infos.find(i -> i.isPrimary) {
 			case null:
@@ -91,24 +97,24 @@ class TextDiagnosticRenderer implements IDiagnosticRenderer {
 		}
 		
 		buffer.newLine();
-		buffer.writeLine('$lineNumberPadding │');
+		buffer.writeLine('$lineNumberPadding $LINE_BAR');
 		
 		for(line in linePrimitives) {
 			switch line {
 				case Source(source, line):
-					buffer.write('${Std.string(line + 1).lpad(lineNumberPadding.length)} │ ');
+					buffer.write('${Std.string(line + 1).lpad(lineNumberPadding.length)} $LINE_BAR');
 					renderSourceLine(source, line);
 					buffer.newLine();
 
 				case Annotation(line, annotations):
-					renderAnnotationLines(line, annotations, '$lineNumberPadding │ ');
+					renderAnnotationLines(line, annotations, '$lineNumberPadding $LINE_BAR');
 
 				case Dot:
-					buffer.writeLine('$lineNumberPadding │ ...');
+					buffer.writeLine('$lineNumberPadding $LINE_BAR...');
 			}
 		}
 		
-		buffer.writeLine('$lineNumberPadding │');
+		buffer.writeLine('$lineNumberPadding $LINE_BAR');
 	}
 	
 	private function renderSourceLine(source: SourceFile, line: Int) {
@@ -180,7 +186,7 @@ class TextDiagnosticRenderer implements IDiagnosticRenderer {
 			}
 			
 			final arrowHead =
-				if(annot.isPrimary || annot.isSecondary) '⌃'
+				if(annot.isPrimary || annot.isSecondary) CARET
 				else '-';
 			final startColumn = buffer.cursorX;
 			
@@ -190,7 +196,7 @@ class TextDiagnosticRenderer implements IDiagnosticRenderer {
 			else if(annot.isSecondary) buffer.fg = Some(YELLOW);
 			
 			if((annot.isPrimary || annot.isSecondary) && annot.message != null) {
-				buffer.write('↑');
+				buffer.write(UP_ARROW);
 				charIdx++;
 			}
 
@@ -232,8 +238,8 @@ class TextDiagnosticRenderer implements IDiagnosticRenderer {
 			else if(annot.isSecondary) buffer.fg = Some(YELLOW);
 
 			// Draw the arrow
-			buffer.fill(col, arrowBaseLine, 1, arrowBodyLength + i, '│');
-			buffer.plot(col, arrowBaseLine + arrowBodyLength + i, '╰');
+			buffer.fill(col, arrowBaseLine, 1, arrowBodyLength + i, LINE_BAR);
+			buffer.plot(col, arrowBaseLine + arrowBodyLength + i, LINE_CURVE);
 			arrowBodyLength++;
 			arrowBodyLength += i;
 			
