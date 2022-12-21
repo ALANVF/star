@@ -89,6 +89,7 @@ proc loadWorld*(input: Input): World =
     result.defaultChar = input.readTypeId
     result.defaultStr = input.readTypeId
     result.defaultPtr = input.readTypeId
+    result.defaultVoidPtr = input.readTypeId
     result.defaultIterable1 = input.readTypeId
     result.defaultIterable2 = input.readTypeId
     result.defaultIterator1 = input.readTypeId
@@ -113,6 +114,7 @@ proc loadWorld*(input: Input): World =
     result.defaultDec64Ref = TypeRef(kind: trDecl, declID: result.defaultDec64)
     result.defaultCharRef = TypeRef(kind: trDecl, declID: result.defaultChar)
     result.defaultStrRef = TypeRef(kind: trDecl, declID: result.defaultStr)
+    result.defaultVoidPtrRef = TypeRef(kind: trDecl, declID: result.defaultVoidPtr)
 
     let numDecls = input.readUint32
     result.typeDecls.setLen(numDecls)

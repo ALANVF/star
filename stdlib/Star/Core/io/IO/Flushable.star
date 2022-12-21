@@ -1,0 +1,3 @@
+protocol Flushable {
+	on [flush]
+}

@@ -1,4 +1,6 @@
 import macros
+import std/hashes
+import std/streams
 #import std/strutils
 
 macro public*(tyDecl: untyped): untyped =
@@ -105,3 +107,13 @@ public:
 
 proc makeLeft*[T, U](_: typedesc[Either[T, U]], value: T): Either[T, U] = Either[T, U](kind: eLeft, left: value)
 proc makeRight*[T, U](_: typedesc[Either[T, U]], value: U): Either[T, U] = Either[T, U](kind: eRight, right: value)
+
+
+proc getFile*(fs: FileStream): File {.inline.} =
+    for f,v in fieldPairs(fs[]):
+        when v.type is File:
+            return v
+
+
+proc hash*(fs: FileStream): Hash =
+    return hash cast[pointer](fs.getFile())

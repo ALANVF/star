@@ -13,6 +13,8 @@ import math
 import macros
 import std/strutils
 import std/tables
+import std/sets
+import std/streams
 
 {.experimental: "notNil".}
 
@@ -94,6 +96,17 @@ func makeStr(state: State, value: string): Value =
     var fields: ref seq[Value] not nil
     new(fields)
     fields[] = @[buffer, length, capacity]
+    
+    return Value(t: state.world.defaultStrRef, kind: vClass, c_fields: fields)
+func makeStr(state: State, values: var seq[Value]): Value =
+    let pchar = state.world.makePtrTo(state.world.defaultCharRef)
+    var buf = new seq[Value]
+    buf[] = move values
+    let buffer = Value(t: pchar, kind: vPtr, `ptr`: buf)
+    let length = state.makeInt32(values.len.int32)
+    var fields: ref seq[Value] not nil
+    new(fields)
+    fields[] = @[buffer, length, length]
     
     return Value(t: state.world.defaultStrRef, kind: vClass, c_fields: fields)
 
@@ -744,8 +757,7 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
         
         let elemType = state.getInCtx(op.ptr_t)
         
-        var buf: ref seq[Value]
-        new(buf)
+        var buf = new seq[Value]
         newSeq(buf[], size)
 
         state.stack.add Value(t: state.world.makePtrTo(elemType), kind: vPtr, offset: 0, `ptr`: buf)
@@ -1650,6 +1662,12 @@ macro binaryOp(kind, res, op: untyped): untyped =
 
 template binaryOp(kind, op: untyped): untyped = binaryOp(kind, kind, op)
 
+macro getFileStream(): untyped =
+    let stream = ident "stream"
+    quote do:
+        let io = state.stack.pop; assert io.kind == vVoidPtr, "Expected a void pointer"
+        let `stream` = cast[FileStream](io.vptr)
+
 proc eval*(state: State, scope: Scope, native: NativeOp): Result =
     case native
     # all values
@@ -2352,17 +2370,7 @@ proc eval*(state: State, scope: Scope, native: NativeOp): Result =
     of ptr_get_at:
         let pos = state.stack.pop; assert likely(pos.kind in {vInt8..vUInt64}), "Expected an integer"
         let pvalue = state.stack.pop; assert likely(pvalue.kind == vPtr), "Expected a typed pointer"
-        let offset =
-            case pos.kind
-            of vInt8: pvalue.offset + pos.i8.uint
-            of vUInt8: pvalue.offset + pos.u8.uint
-            of vInt16: pvalue.offset + pos.i16.uint
-            of vUInt16: pvalue.offset + pos.u16.uint
-            of vInt32: pvalue.offset + pos.i32.uint
-            of vUInt32: pvalue.offset + pos.u32.uint
-            of vInt64: pvalue.offset + pos.i64.uint
-            of vUInt64: pvalue.offset + pos.u64.uint
-            else: 0 # impossible
+        let offset = pvalue.offset + getIntAs[uint](pos)
         
         state.stack.add pvalue.`ptr`[offset]
     
@@ -2370,17 +2378,7 @@ proc eval*(state: State, scope: Scope, native: NativeOp): Result =
         let value = state.stack.pop
         let pos = state.stack.pop; assert likely(pos.kind in {vInt8..vUInt64}), "Expected an integer"
         let pvalue = state.stack.pop; assert likely(pvalue.kind == vPtr), "Expected a typed pointer"
-        let offset =
-            case pos.kind
-            of vInt8: pvalue.offset + pos.i8.uint
-            of vUInt8: pvalue.offset + pos.u8.uint
-            of vInt16: pvalue.offset + pos.i16.uint
-            of vUInt16: pvalue.offset + pos.u16.uint
-            of vInt32: pvalue.offset + pos.i32.uint
-            of vUInt32: pvalue.offset + pos.u32.uint
-            of vInt64: pvalue.offset + pos.i64.uint
-            of vUInt64: pvalue.offset + pos.u64.uint
-            else: 0 # impossible
+        let offset = pvalue.offset + getIntAs[uint](pos)
         
         pvalue.`ptr`[offset] = value
     
@@ -2390,32 +2388,10 @@ proc eval*(state: State, scope: Scope, native: NativeOp): Result =
 
         case pvalue.kind
         of vPtr:
-            let offset =
-                case by.kind
-                of vInt8: pvalue.offset + by.i8.uint
-                of vUInt8: pvalue.offset + by.u8.uint
-                of vInt16: pvalue.offset + by.i16.uint
-                of vUInt16: pvalue.offset + by.u16.uint
-                of vInt32: pvalue.offset + by.i32.uint
-                of vUInt32: pvalue.offset + by.u32.uint
-                of vInt64: pvalue.offset + by.i64.uint
-                of vUInt64: pvalue.offset + by.u64.uint
-                else: 0 # impossible
-            
+            let offset = pvalue.offset + getIntAs[uint](by)
             state.stack.add Value(t: pvalue.t, kind: vPtr, offset: offset, `ptr`: pvalue.ptr)
         of vVoidPtr:
-            let newPtr =
-                case by.kind
-                of vInt8: cast[pointer](cast[uint64](pvalue.vptr) + by.i8.uint64)
-                of vUInt8: cast[pointer](cast[uint64](pvalue.vptr) + by.u8.uint64)
-                of vInt16: cast[pointer](cast[uint64](pvalue.vptr) + by.i16.uint64)
-                of vUInt16: cast[pointer](cast[uint64](pvalue.vptr) + by.u16.uint64)
-                of vInt32: cast[pointer](cast[uint64](pvalue.vptr) + by.i32.uint64)
-                of vUInt32: cast[pointer](cast[uint64](pvalue.vptr) + by.u32.uint64)
-                of vInt64: cast[pointer](cast[uint64](pvalue.vptr) + by.i64.uint64)
-                of vUInt64: cast[pointer](cast[uint64](pvalue.vptr) + by.u64.uint64)
-                else: nil # impossible
-            
+            let newPtr = cast[pointer](cast[uint64](pvalue.vptr) + getIntAs[uint64](by))
             state.stack.add Value(t: pvalue.t, kind: vVoidPtr, vptr: newPtr)
         else:
             raise newException(ValueError, "Expected a pointer")
@@ -2426,32 +2402,10 @@ proc eval*(state: State, scope: Scope, native: NativeOp): Result =
         
         case pvalue.kind
         of vPtr:
-            let offset =
-                case by.kind
-                of vInt8: pvalue.offset - by.i8.uint
-                of vUInt8: pvalue.offset - by.u8.uint
-                of vInt16: pvalue.offset - by.i16.uint
-                of vUInt16: pvalue.offset - by.u16.uint
-                of vInt32: pvalue.offset - by.i32.uint
-                of vUInt32: pvalue.offset - by.u32.uint
-                of vInt64: pvalue.offset - by.i64.uint
-                of vUInt64: pvalue.offset - by.u64.uint
-                else: 0 # impossible
-            
+            let offset = pvalue.offset - getIntAs[uint](by)
             state.stack.add Value(t: pvalue.t, kind: vPtr, offset: offset, `ptr`: pvalue.ptr)
         of vVoidPtr:
-            let newPtr =
-                case by.kind
-                of vInt8: cast[pointer](cast[uint64](pvalue.vptr) - by.i8.uint64)
-                of vUInt8: cast[pointer](cast[uint64](pvalue.vptr) - by.u8.uint64)
-                of vInt16: cast[pointer](cast[uint64](pvalue.vptr) - by.i16.uint64)
-                of vUInt16: cast[pointer](cast[uint64](pvalue.vptr) - by.u16.uint64)
-                of vInt32: cast[pointer](cast[uint64](pvalue.vptr) - by.i32.uint64)
-                of vUInt32: cast[pointer](cast[uint64](pvalue.vptr) - by.u32.uint64)
-                of vInt64: cast[pointer](cast[uint64](pvalue.vptr) - by.i64.uint64)
-                of vUInt64: cast[pointer](cast[uint64](pvalue.vptr) - by.u64.uint64)
-                else: nil # impossible
-            
+            let newPtr = cast[pointer](cast[uint64](pvalue.vptr) - getIntAs[uint64](by))
             state.stack.add Value(t: pvalue.t, kind: vVoidPtr, vptr: newPtr)
         else:
             raise newException(ValueError, "Expected a pointer")
@@ -2468,17 +2422,7 @@ proc eval*(state: State, scope: Scope, native: NativeOp): Result =
         let newSize = state.stack.pop; assert likely(newSize.kind in {vInt8..vUInt64}), "Expected an integer"
         let pvalue = state.stack.pop; assert likely(pvalue.kind == vPtr), "Expected a typed pointer"
 
-        let size =
-            case newSize.kind
-            of vInt8: newSize.i8.uint
-            of vUInt8: newSize.u8.uint
-            of vInt16: newSize.i16.uint
-            of vUInt16: newSize.u16.uint
-            of vInt32: newSize.i32.uint
-            of vUInt32: newSize.u32.uint
-            of vInt64: newSize.i64.uint
-            of vUInt64: newSize.u64.uint
-            else: 0 # impossible
+        let size = getIntAs[uint](newSize)
         
         var pbuf: ref seq[Value] not nil
         new(pbuf)
@@ -2498,17 +2442,7 @@ proc eval*(state: State, scope: Scope, native: NativeOp): Result =
 
         assert pvalue1.kind == pvalue2.kind
 
-        let size =
-            case sizeValue.kind
-            of vInt8: sizeValue.i8.uint
-            of vUInt8: sizeValue.u8.uint
-            of vInt16: sizeValue.i16.uint
-            of vUInt16: sizeValue.u16.uint
-            of vInt32: sizeValue.i32.uint
-            of vUInt32: sizeValue.u32.uint
-            of vInt64: sizeValue.i64.uint
-            of vUInt64: sizeValue.u64.uint
-            else: 0 # impossible
+        let size = getIntAs[uint](sizeValue)
 
         case pvalue1.kind
         of vPtr:
@@ -2530,17 +2464,7 @@ proc eval*(state: State, scope: Scope, native: NativeOp): Result =
 
         assert pvalue1.kind == pvalue2.kind
 
-        let size =
-            case sizeValue.kind
-            of vInt8: sizeValue.i8.uint
-            of vUInt8: sizeValue.u8.uint
-            of vInt16: sizeValue.i16.uint
-            of vUInt16: sizeValue.u16.uint
-            of vInt32: sizeValue.i32.uint
-            of vUInt32: sizeValue.u32.uint
-            of vInt64: sizeValue.i64.uint
-            of vUInt64: sizeValue.u64.uint
-            else: 0 # impossible
+        let size = getIntAs[uint](sizeValue)
 
         case pvalue1.kind
         of vPtr:
@@ -2562,17 +2486,7 @@ proc eval*(state: State, scope: Scope, native: NativeOp): Result =
 
         assert pvalue1.kind == pvalue2.kind
 
-        let size =
-            case sizeValue.kind
-            of vInt8: sizeValue.i8.uint
-            of vUInt8: sizeValue.u8.uint
-            of vInt16: sizeValue.i16.uint
-            of vUInt16: sizeValue.u16.uint
-            of vInt32: sizeValue.i32.uint
-            of vUInt32: sizeValue.u32.uint
-            of vInt64: sizeValue.i64.uint
-            of vUInt64: sizeValue.u64.uint
-            else: 0 # impossible
+        let size = getIntAs[uint](sizeValue)
 
         case pvalue1.kind
         of vPtr:
@@ -2611,17 +2525,7 @@ proc eval*(state: State, scope: Scope, native: NativeOp): Result =
         let sizeValue = state.stack.pop; assert sizeValue.kind in {vInt8..vUInt64}, "Expected an integer"
         let pvalue = state.stack.pop
 
-        let size =
-            case sizeValue.kind
-            of vInt8: sizeValue.i8.uint
-            of vUInt8: sizeValue.u8.uint
-            of vInt16: sizeValue.i16.uint
-            of vUInt16: sizeValue.u16.uint
-            of vInt32: sizeValue.i32.uint
-            of vUInt32: sizeValue.u32.uint
-            of vInt64: sizeValue.i64.uint
-            of vUInt64: sizeValue.u64.uint
-            else: 0 # impossible
+        let size = getIntAs[uint](sizeValue)
 
         case pvalue.kind
         of vPtr:
@@ -2651,6 +2555,170 @@ proc eval*(state: State, scope: Scope, native: NativeOp): Result =
         let value = state.stack.pop
 
         echo state.stringy(value)
+    
+    # I/O
+    of io_stdin:
+        let s = newFileStream(stdin)
+        state.world.fileStreams.incl s
+        state.stack.add Value(
+            t: state.world.defaultVoidPtrRef,
+            kind: vVoidPtr,
+            vptr: cast[pointer](s)
+        )
+    of io_stdout:
+        let s = newFileStream(stdout)
+        state.world.fileStreams.incl s
+        state.stack.add Value(
+            t: state.world.defaultVoidPtrRef,
+            kind: vVoidPtr,
+            vptr: cast[pointer](s)
+        )
+    of io_stderr:
+        let s = newFileStream(stderr)
+        state.world.fileStreams.incl s
+        state.stack.add Value(
+            t: state.world.defaultVoidPtrRef,
+            kind: vVoidPtr,
+            vptr: cast[pointer](s)
+        )
+
+    of io_open:
+        let mode = state.stack.pop; assert mode.kind in {vInt8..vUInt64}, "Expected an integer"
+        let path = state.stack.pop; assert path.kind == vClass and path.t == state.world.defaultStrRef, "Expected a Str"
+
+        let realMode = getIntAs[FileMode](mode)
+        let realPath = block:
+            let length = path.c_fields[][1].i32
+            let data = path.c_fields[][0].`ptr`[]
+            var res = newString(length)
+            shallow res
+            
+            for i, val in pairs(data):
+                res[i] = val.u8.char
+
+            res
+        
+        let s = openFileStream(realPath, realMode)
+        state.world.fileStreams.incl s
+        state.stack.add Value(
+            t: state.world.defaultVoidPtrRef,
+            kind: vVoidPtr,
+            vptr: cast[pointer](s)
+        )
+    of io_close:
+        getFileStream
+        stream.close()
+        state.world.fileStreams.excl stream
+
+    of io_size: getFileStream; state.stack.add state.makeInt64(stream.getFile().getFileSize())
+    of io_eof: getFileStream; state.stack.add state.makeBool(stream.atEnd())
+    of io_seek:
+        let seek = state.stack.pop; assert seek.kind in {vInt8..vUInt64}, "Expected an integer"
+        let offset = state.stack.pop; assert offset.kind == vInt64, "Expected i64"
+        getFileStream
+
+        stream.getFile().setFilePos(offset.i64, getIntAs[FileSeekPos](seek))
+    of io_tell: getFileStream; state.stack.add state.makeInt64(stream.getFile().getFilePos())
+    of io_flush: getFileStream; stream.flush()
+
+    of io_read_bool: getFileStream; state.stack.add state.makeBool(stream.readBool())
+    of io_read_i8: getFileStream; state.stack.add state.makeInt8(stream.readInt8())
+    of io_read_u8: getFileStream; state.stack.add state.makeUInt8(stream.readUInt8())
+    of io_read_i16: getFileStream; state.stack.add state.makeInt16(stream.readInt16())
+    of io_read_u16: getFileStream; state.stack.add state.makeUInt16(stream.readUInt16())
+    of io_read_i32: getFileStream; state.stack.add state.makeInt32(stream.readInt32())
+    of io_read_u32: getFileStream; state.stack.add state.makeUInt32(stream.readUInt32())
+    of io_read_i64: getFileStream; state.stack.add state.makeInt64(stream.readInt64())
+    of io_read_u64: getFileStream; state.stack.add state.makeUInt64(stream.readUInt64())
+    of io_read_d64: getFileStream; state.stack.add state.makeDec64(toDec64 stream.readInt64())
+    of io_read_f32: getFileStream; state.stack.add state.makeFloat32(stream.readFloat32())
+    of io_read_f64: getFileStream; state.stack.add state.makeFloat64(stream.readFloat64())
+    of io_read_str:
+        let length = state.stack.pop; assert length.kind == vInt32 and length.i32 > 0, "Expected positive i32"
+        getFileStream
+
+        state.stack.add state.makeStr(stream.readStr(length.i32))
+    of io_read_full_str:
+        getFileStream
+        state.stack.add state.makeStr(stream.readAll())
+    of io_read_line_str:
+        getFileStream
+        state.stack.add state.makeStr(stream.readLine())
+    of io_read_cstr:
+        getFileStream
+
+        var data: seq[Value] = @[]
+        shallow data
+
+        while not stream.atEnd():
+            let c = stream.readChar()
+            if c == '\0': break
+            data.add state.makeChar(c.uint8)
+        
+        state.stack.add state.makeStr(data)
+    of io_read_ptr:
+        let realLengthPtr = state.stack.pop; assert realLengthPtr.kind == vPtr, "Expected pointer"
+        let length = state.stack.pop; assert length.kind == vInt32, "Expected i32"
+        getFileStream
+
+        var data = newSeq[Value](length.i32)
+        shallow data
+
+        var realLength: int32 = 0
+        while not stream.atEnd():
+            let c = stream.readUInt8()
+            data.add state.makeUInt8(c)
+            inc realLength
+
+        var dataPtr = new seq[Value]
+        dataPtr[] = data
+        realLengthPtr.`ptr`[][0] = state.makeInt32(realLength)
+        state.stack.add Value(
+            t: state.world.makePtrTo(state.world.defaultUInt8Ref),
+            kind: vPtr,
+            offset: 0,
+            `ptr`: dataPtr
+        )
+
+    of io_write_bool:
+        let v = state.stack.pop; getFileStream; stream.write v.b
+    of io_write_i8:
+        let v = state.stack.pop; getFileStream; stream.write v.i8
+    of io_write_u8:
+        let v = state.stack.pop; getFileStream; stream.write v.u8
+    of io_write_i16:
+        let v = state.stack.pop; getFileStream; stream.write v.i16
+    of io_write_u16:
+        let v = state.stack.pop; getFileStream; stream.write v.u16
+    of io_write_i32:
+        let v = state.stack.pop; getFileStream; stream.write v.i32
+    of io_write_u32:
+        let v = state.stack.pop; getFileStream; stream.write v.u32
+    of io_write_i64:
+        let v = state.stack.pop; getFileStream; stream.write v.i64
+    of io_write_u64:
+        let v = state.stack.pop; getFileStream; stream.write v.u64
+    of io_write_d64:
+        let v = state.stack.pop; getFileStream; stream.write v.d64
+    of io_write_f32:
+        let v = state.stack.pop; getFileStream; stream.write v.f32
+    of io_write_f64:
+        let v = state.stack.pop; getFileStream; stream.write v.f64
+    of io_write_str:
+        let v = state.stack.pop
+        getFileStream
+
+        let data = v.c_fields[][0].`ptr`[]
+        let length = v.c_fields[][1].i32
+        for i in 0..<length:
+            stream.getFile.write data[i].u8.char
+    of io_write_ptr:
+        let length = state.stack.pop
+        let v = state.stack.pop
+        getFileStream
+
+        for i in v.offset .. (v.offset + length.i32.uint):
+            stream.write v.`ptr`[][i].u8
     
     #else: raiseAssert "NYI!"
 

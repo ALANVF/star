@@ -1,0 +1,3 @@
+class Out of File {
+	
+}

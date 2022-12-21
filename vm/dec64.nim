@@ -11,7 +11,7 @@ type
         coef {.bitsize: 56.}: Coef
         exp {.bitsize: 8.}: Exp
 
-proc toDec64*(i: SomeInteger): Dec64 {.inline.} =
+proc toDec64*(i: SomeSignedInt): Dec64 {.inline.} =
     return Dec64(coef: i shr 8, exp: cast[int8](i and 255))
 
 converter toUint64(d: Dec64): uint64 {.inline.} =

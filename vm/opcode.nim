@@ -527,7 +527,54 @@ public:
         caseid_le,
 
         # debug
-        debug_print
+        debug_print,
+
+        # I/O
+        io_stdin,
+        io_stdout,
+        io_stderr,
+
+        io_open,
+        io_close,
+
+        io_size,
+        io_eof,
+        io_seek,
+        io_tell,
+        io_flush,
+
+        io_read_bool,
+        io_read_i8,
+        io_read_u8,
+        io_read_i16,
+        io_read_u16,
+        io_read_i32,
+        io_read_u32,
+        io_read_i64,
+        io_read_u64,
+        io_read_d64,
+        io_read_f32,
+        io_read_f64,
+        io_read_str,
+        io_read_line_str,
+        io_read_full_str,
+        io_read_cstr,
+        io_read_ptr,
+
+        io_write_bool,
+        io_write_i8,
+        io_write_u8,
+        io_write_i16,
+        io_write_u16,
+        io_write_i32,
+        io_write_u32,
+        io_write_i64,
+        io_write_u64,
+        io_write_d64,
+        io_write_f32,
+        io_write_f64,
+        io_write_str,
+        io_write_ptr
 
 
 public:

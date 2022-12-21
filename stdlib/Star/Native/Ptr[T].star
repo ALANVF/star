@@ -1,4 +1,4 @@
-use #[Int, Bool, Ordered, Comparable] from: Core
+use #[Int, Bool, Ordered] from: Core
 
 type T ;if T != Void
 class Ptr[T] of Ordered is native[repr: `ptr` elem: T] {

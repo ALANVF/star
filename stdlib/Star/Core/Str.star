@@ -135,6 +135,32 @@ class Str of Values[Char], Ordered is strong {
 	}
 
 
+	;== Trimming
+
+	on [trim] (This) {
+		my from = 0
+		my to = length - 1
+
+		while from < length {
+			match buffer[at: from] at #" " || #"\t" || #"\n" || #"\r" {
+				from++
+			} else {
+				break
+			}
+		}
+
+		while to >= 0 {
+			match buffer[at: to] at #" " || #"\t" || #"\n" || #"\r" {
+				to--
+			} else {
+				break
+			}
+		}
+
+		return this[:from :to]
+	}
+
+
 	;== Accessing
 	
 	on [at: index (Int) set: str (Str)] is setter {
@@ -153,6 +179,13 @@ class Str of Values[Char], Ordered is strong {
 		if 0 <= index < length {
 			this[Unsafe at: index set: str]
 		}
+	}
+
+
+	;== Inserting values
+
+	on [at: index (Int) add: str (Str)] (Str) {
+		return this[Super[Values[Char]] addAll: str]
 	}
 
 

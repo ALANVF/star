@@ -5,7 +5,9 @@ import world
 import reader
 import eval
 import dump
+import util
 import std/tables
+import std/sets
 import std/streams
 import std/os
 import std/syncio
@@ -73,7 +75,10 @@ try:
         of rRethrow: echo "[Runtime Error]: `rethrow` action not caught!"
         of rBreak: echo "[Runtime Error]: `break` action not caught!"
         of rNext: echo "[Runtime Error]: `next` action not caught!"
-        
+    
+    for fs in world.fileStreams:
+        if fs.getFile() notin [stdin, stdout, stderr]:
+            fs.close()
 
 finally:
     input.close()

@@ -1,0 +1,3 @@
+protocol Closeable {
+	on [close]
+}

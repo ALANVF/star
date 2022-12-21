@@ -60,3 +60,15 @@ public:
             vmk_map: VMultiKindMap
         of vTMultiKind:
             tmk_map: TMultiKindMap
+
+proc getIntAs*[T: Ordinal](value: Value): T {.inline.} =
+    return case value.kind
+        of vInt8: value.i8.T
+        of vUInt8: value.u8.T
+        of vInt16: value.i16.T
+        of vUInt16: value.u16.T
+        of vInt32: value.i32.T
+        of vUInt32: value.u32.T
+        of vInt64: value.i64.T
+        of vUInt64: value.u64.T
+        else: 0.T # bad

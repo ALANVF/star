@@ -4,6 +4,8 @@ import typeref
 import values
 import decls
 import std/tables
+import std/sets
+import std/streams
 
 public:
  type
@@ -25,7 +27,7 @@ public:
             defaultFloat32, defaultFloat64, defaultDec64,
             defaultChar,
             defaultStr,
-            defaultPtr,
+            defaultPtr, defaultVoidPtr,
             defaultIterable1, defaultIterable2,
             defaultIterator1, defaultIterator2,
             defaultFunc0, defaultFunc1, defaultFunc2, defaultFunc3: TypeID
@@ -35,7 +37,10 @@ public:
             defaultUInt8Ref, defaultUInt16Ref, defaultUInt32Ref, defaultUInt64Ref,
             defaultFloat32Ref, defaultFloat64Ref, defaultDec64Ref,
             defaultCharRef,
-            defaultStrRef: TypeRef
+            defaultStrRef,
+            defaultVoidPtrRef: TypeRef
+        
+        fileStreams: HashSet[FileStream]
 
 proc makePtrTo*(world: World, t: TypeRef): TypeRef =
     if world.ptrTypeCache.contains(t):

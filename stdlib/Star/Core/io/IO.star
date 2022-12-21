@@ -1,3 +1,4 @@
-protocol IO {
+type T
+protocol IO[T] {
 	
 }

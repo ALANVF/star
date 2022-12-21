@@ -138,6 +138,7 @@ proc write*(output: Output, world: World) =
             writeLine "Char = decl#" & $world.defaultChar
             writeLine "Str = decl#" & $world.defaultStr
             writeLine "Ptr = decl#" & $world.defaultPtr
+            writeLine "VoidPtr = decl#" & $world.defaultVoidPtr
             writeLine "Iterable1 = decl#" & $world.defaultIterable1
             writeLine "Iterable2 = decl#" & $world.defaultIterable2
             writeLine "Iterator1 = decl#" & $world.defaultIterator1
