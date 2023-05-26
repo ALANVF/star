@@ -3,6 +3,7 @@
 -D analyzer-optimize
 --dce full
 -D hl-ver=1.12.0
+-D no-deprecation-warnings
 --library haxe-strings
 -main Main
 --hl bin/output/main.c

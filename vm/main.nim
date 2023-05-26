@@ -54,6 +54,7 @@ try:
                 of rReturnVoid: discard
                 of rThrow:
                     echo "[Runtime Error]: Thrown: " & $result.thrown # TODO
+                    echo "                 " & state.stringy(result.thrown)
                     for info in result.infos:
                         echo "From: " & info
                 of rRethrow: echo "[Runtime Error]: `rethrow` action not caught!"
@@ -70,6 +71,7 @@ try:
         of rReturnVoid: discard
         of rThrow:
             echo "[Runtime Error]: Thrown: " & $result.thrown # TODO
+            echo "                 " & state.stringy(result.thrown)
             for info in result.infos:
                 echo "From: " & info
         of rRethrow: echo "[Runtime Error]: `rethrow` action not caught!"

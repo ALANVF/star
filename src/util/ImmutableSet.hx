@@ -59,7 +59,6 @@ abstract BaseISet<T>(_ISet<T>) from _ISet<T> {
 	public inline function new() this = End;
 
 	private var repr(get, never): _ISet<T>; private inline function get_repr() return this;
-	private var self(get, never): BaseISet<T>; private inline function get_self(): BaseISet<T> return this;
 
 	@:op([])
 	public function contains(value: T): Bool {
@@ -90,9 +89,9 @@ abstract BaseISet<T>(_ISet<T>) from _ISet<T> {
 	@:op(A | B)
 	public function union(other: BaseISet<T>): BaseISet<T> {
 		if(this.match(End)) return other;
-		else if(other.repr.match(End)) return self;
+		else if(other.repr.match(End)) return abstract;
 		else {
-			var res = self;
+			var res = abstract;
 
 			for(value in other) {
 				res = res.add(value);

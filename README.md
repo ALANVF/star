@@ -77,7 +77,7 @@ module Main {
 ### Running Star
 
 Things you'll need in order to run Star:
-- Haxe (latest release build of 4.3.0)
+- Haxe (4.3.1 or later)
 - [My fork of HashLink](https://github.com/ALANVF/hashlink/tree/star) (you'll have to build it yourself, sorry!)
 - Haxe libraries:
 	- haxe-strings

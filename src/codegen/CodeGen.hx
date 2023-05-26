@@ -2281,6 +2281,12 @@ overload static function compile(ctx: GenCtx, sender: Type, kind: SingleInstKind
 		
 		final typeref = mth.decl._match(
 			at(c is Category) => TypeRef.TDecl(world.getID(c)),
+			at(d is TypeDecl, when(!sender.t.match(TTypeVar(_)))) => world.getTypeRef(
+				if(sender.hasParentDecl(cast mth.decl) && sender.getTypeDecl() != cast mth.decl)
+					mth.decl.thisType
+				else
+					sender
+			),
 			_ => world.getTypeRef(sender)
 		);
 		final res: Opcodes = [mth.typedBody != null && !sender.isProtocol() ? OSend_SI(typeref, mth) : OSendDynamic_SI(typeref, mth)];
@@ -2704,6 +2710,12 @@ overload static function compile(ctx: GenCtx, sender: Type, candidates: Array<Ob
 
 				final typeref = mth.decl._match(
 					at(c is Category) => TypeRef.TDecl(world.getID(c)),
+					at(d is TypeDecl, when(!sender.t.match(TTypeVar(_)))) => world.getTypeRef(
+						if(sender.hasParentDecl(cast mth.decl) && sender.getTypeDecl() != cast mth.decl)
+							mth.decl.thisType
+						else
+							sender
+					),
 					_ => world.getTypeRef(sender)
 				);
 				res.push(
@@ -2797,6 +2809,17 @@ overload static function compile(ctx: GenCtx, sender: Type, candidates: Array<Ob
 					}
 				}
 
+				// broken for some reason?? messes up field/member access
+				/*final typeref = mth.decl._match(
+					at(c is Category) => TypeRef.TDecl(world.getID(c)),
+					at(d is TypeDecl, when(!sender.t.match(TTypeVar(_)))) => world.getTypeRef(
+						if(sender.hasParentDecl(cast mth.decl) && sender.getTypeDecl() != cast mth.decl)
+							mth.decl.thisType
+						else
+							sender
+					),
+					_ => world.getTypeRef(sender)
+				);*/
 				res.push(
 					(mth.typedBody != null && !sender.isProtocol()) || mth.hidden!=null // TEMP: change to sealed later
 					|| isSuper

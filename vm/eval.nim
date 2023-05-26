@@ -208,7 +208,7 @@ proc ofType(state: State, d1, d2: BaseDecl, ctx1, ctx2: ptr TypeInstCtx): bool =
     false
 
 
-proc stringy(state: State, value: Value): string =
+proc stringy*(state: State, value: Value): string =
     let dname = state.getDeclName(value.t)
     let tname = dname & " "
 
@@ -862,6 +862,9 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
                 discard
             of rReturn:
                 assert false, "???"
+            of rThrow:
+                res.infos.add mstate.thisDecl.name & "[" & mth.name & "] " & $mth.id
+                return res
             else:
                 return res
     
@@ -887,6 +890,9 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
                 discard
             of rReturn:
                 assert false, "???"
+            of rThrow:
+                res.infos.add mstate.thisDecl.name & "[" & mth.name & "] " & $mth.id
+                return res
             else:
                 return res
 
@@ -906,6 +912,9 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
                 discard
             of rReturn:
                 assert false, "???"
+            of rThrow:
+                res.infos.add mstate.thisDecl.name & "[" & mth.name & "] " & $mth.id
+                return res
             else:
                 return res
         
@@ -935,6 +944,9 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
                 discard
             of rReturn:
                 assert false, "???"
+            of rThrow:
+                res.infos.add mstate.thisDecl.name & "[" & mth.name & "] " & $mth.id
+                return res
             else:
                 return res
         when DEBUG: echo "end"
@@ -955,6 +967,9 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
                 discard
             of rReturn:
                 state.stack.add res.value
+            of rThrow:
+                res.infos.add mstate.thisDecl.name & "[" & mth.name & "] " & $mth.id
+                return res
             else:
                 return res
     
@@ -980,6 +995,9 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
                 discard
             of rReturn:
                 state.stack.add res.value
+            of rThrow:
+                res.infos.add mstate.thisDecl.name & "[" & mth.name & "] " & $mth.id
+                return res
             else:
                 return res
     
@@ -999,6 +1017,9 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
                 discard
             of rReturn:
                 state.stack.add res.value
+            of rThrow:
+                res.infos.add mstate.thisDecl.name & "#[" & mth.name & "] " & $mth.id
+                return res
             else:
                 return res
     
@@ -1028,6 +1049,9 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
                 discard
             of rReturn:
                 state.stack.add res.value
+            of rThrow:
+                res.infos.add mstate.thisDecl.name & "#[" & mth.name & "] " & $mth.id
+                return res
             else:
                 return res
 
@@ -1057,6 +1081,9 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
                 discard
             of rReturn:
                 state.stack.add res.value
+            of rThrow:
+                res.infos.add mstate.thisDecl.name & "#[" & mth.name & "] " & $mth.id
+                return res
             else:
                 return res
         when DEBUG: echo "end"
@@ -1095,6 +1122,9 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
                 discard
             of rReturn:
                 state.stack.add res.value
+            of rThrow:
+                res.infos.add mstate.thisDecl.name & "#[" & mth.name & "] " & $mth.id
+                return res
             else:
                 return res
     
@@ -1114,6 +1144,9 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
                 assert false, "???"
             of rReturn:
                 state.stack.add res.value
+            of rThrow:
+                res.infos.add mstate.thisDecl.name & "#[" & state.getDeclName(mth.`type`) & "] " & $mth.id
+                return res
             else:
                 return res
         else:
@@ -1160,6 +1193,9 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
                 assert false, "???"
             of rReturn:
                 state.stack.add res.value
+            of rThrow:
+                res.infos.add mstate.thisDecl.name & "#[" & state.getDeclName(mth.`type`) & "] " & $mth.id
+                return res
             else:
                 return res
         else:
@@ -1182,6 +1218,9 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
                 discard
             of rReturn:
                 state.stack.add res.value
+            of rThrow:
+                res.infos.add mstate.thisDecl.name & "#[`" & mth.name & "`:] " & $mth.id
+                return res
             else:
                 return res
     
@@ -1212,6 +1251,9 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
                 discard
             of rReturn:
                 state.stack.add res.value
+            of rThrow:
+                res.infos.add mstate.thisDecl.name & "#[`" & mth.name & "`:] " & $mth.id
+                return res
             else:
                 return res
 
@@ -1231,6 +1273,9 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
                 discard
             of rReturn:
                 state.stack.add res.value
+            of rThrow:
+                res.infos.add mstate.thisDecl.name & "#[`" & mth.name & "`] " & $mth.id
+                return res
             else:
                 return res
     
@@ -1260,6 +1305,9 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
                 discard
             of rReturn:
                 state.stack.add res.value
+            of rThrow:
+                res.infos.add mstate.thisDecl.name & "#[`" & mth.name & "`] " & $mth.id
+                return res
             else:
                 return res
     
