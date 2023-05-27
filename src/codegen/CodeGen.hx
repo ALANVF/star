@@ -1914,6 +1914,7 @@ overload static function compile(
 		at(PTypeValueCase(type, valueCase)) => {
 			var res: Opcodes = if(isRhs) [ODup] else [];
 			
+			res.push(OKindID);
 			res.push(OVCaseID(world.getTypeRef(type), world.getID(valueCase)));
 			res.push(ONative("caseid_eq"));
 			res.push(exitCase);
@@ -1924,6 +1925,7 @@ overload static function compile(
 		at(PTypeTaggedCaseSingle(type, taggedCase)) => {
 			var res: Opcodes = if(isRhs) [ODup] else [];
 			
+			res.push(OKindID);
 			res.push(OTCaseID(world.getTypeRef(target.strictUnifyWithType(type)), world.getID(taggedCase)));
 			res.push(ONative("caseid_eq"));
 			res.push(exitCase);
@@ -1939,6 +1941,7 @@ overload static function compile(
 				res.push(ODup);
 			}
 			
+			res.push(OKindID);
 			res.push(OTCaseID(world.getTypeRef(type), world.getID(taggedCase)));
 			res.push(ONative("caseid_eq"));
 			res.push(exitCase);

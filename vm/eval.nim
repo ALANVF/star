@@ -1041,7 +1041,7 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
                 mth = mstate.thisDecl.instSingleMethodVTable[][baseDecl.id][op.si_id]
         when DEBUG: echo mth.name
         let mscope = Scope(locals: @[])
-
+        
         let res = eval(mstate, mscope, mth.body)
         if res != nil:
             case res.kind
@@ -1333,7 +1333,7 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
         
         let tag = op.kind_tag
         let tcase = kindDecl.cases[tag]
-        let numSlots = tcase.slots[].len
+        let numSlots = if tcase.slots == nil: 0 else: tcase.slots[].len
         let slots =
             if numSlots == 0:
                 nil
@@ -1426,7 +1426,7 @@ proc eval*(state: State, scope: Scope, op: Opcode): Result =
         
         let tag = op.kind_tag
         let tcase = kindDecl.cases[tag]
-        let numSlots = tcase.slots[].len
+        let numSlots = if tcase.slots == nil: 0 else: tcase.slots[].len
         let slots =
             if numSlots == 0:
                 nil
