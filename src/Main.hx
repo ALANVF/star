@@ -239,10 +239,18 @@ class Main {
 					pass2: true
 				});
 
+				final startGen = haxe.Timer.stamp();
 				codegen.CodeGen.compileProgram(main);
+				final stopGen = haxe.Timer.stamp();
+				final timePass1 = round(stopGen*1000 - startGen*1000);
+				Sys.println('\nCodegen time: ${timePass1}ms');
 				
 				final bc = new codegen.Gen(mainOutput, codegen.CodeGen.world);
+				final startWrite = haxe.Timer.stamp();
 				bc.writeWorld();
+				final stopWrite = haxe.Timer.stamp();
+				final timePass2 = round(stopWrite*1000 - startWrite*1000);
+				Sys.println('Codegen write time: ${timePass2}ms');
 
 
 				/*final gen = new codegen.GenDump(stdlibDump);

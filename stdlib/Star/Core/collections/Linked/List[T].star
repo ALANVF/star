@@ -237,6 +237,17 @@ class List[T] of Positional[T] {
 		return value
 	}
 
+	type Iter of Iterable[T]
+	on [addAll: values (Iter)] (Iter) {
+		my link = tail.prev
+		for my value in: values {
+			link[insertNext: Value[T][:value]]
+			length++
+		}
+		
+		return values
+	}
+
 	
 	;== Prepending
 
@@ -283,7 +294,7 @@ class List[T] of Positional[T] {
 	
 	;== Removing sections
 
-	on [removeFromLink: link (Value[T])] is inline {
+	on [removeFromLink: link (Value[T])] is inline is hidden {
 		link.prev.next = tail
 	}
 
@@ -300,6 +311,10 @@ class List[T] of Positional[T] {
 		} else {
 			throw RangeError[:from to: -1]
 		}
+	}
+
+	on [removeToLink: link (Value[T])] is inline is hidden {
+		head.next = link
 	}
 	
 	on [removeTo: to (Int)] (This) {

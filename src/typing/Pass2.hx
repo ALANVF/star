@@ -117,8 +117,6 @@ var STD_Iterator1: TypeDecl;
 var STD_Iterator2: TypeDecl;
 
 function initSTD(std: Project) {
-	final t: Type = {t: TBlank, span: null};
-	
 	STD_Value = std.findType(List3.of([null, "Star", []], [null, "Value", []]), Inside, null).getTypeDecl();
 	STD_MultiKind = std.findType(List3.of([null, "Star", []], [null, "MultiKind", []]), Inside, null).getTypeDecl();
 	STD_Void = std.findType(List3.of([null, "Star", []], [null, "Void", []]), Inside, null).getTypeDecl();
