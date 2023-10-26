@@ -396,7 +396,7 @@ proc `+`*(x, y: Dec64): Dec64 =
     if (x.exp or y.exp) == 0:
         # integer case: both exponents are zero.
         try:
-            return toDec64(x.int64 + y.int64)
+            return Dec64(coef: x.coef + y.coef, exp: 0)
         except OverflowDefect:
             # If there was an overflow (extremely unlikely) then we must make it fit.
             # pack knows how to do that.
@@ -413,7 +413,7 @@ proc `+`*(x, y: Dec64): Dec64 =
             if r == 0:
                 return DEC64_ZERO
             else:
-                return Dec64(coef: r, exp: e)
+                return makeDec64(r, e)
         except OverflowDefect:
             return makeDec64(x.coef + y.coef, e)
     else:
@@ -467,7 +467,7 @@ proc `*`*(x, y: Dec64): Dec64 =
     if ex == -128 and ey == -128: return DEC64_NAN
 
     var r_big {.noInit.}: Int128
-    {.emit: [r_big, " = (__int128)", cx, "*", cy, ";"].}
+    {.emit: [r_big, " = ((__int128)", cx, ")*", cy, ";"].}
     var r_high {.noInit.}: int64
     {.emit: [r_high, " = (", int64, ")(", r_big, " >> 64);"].}
     var r = cast[int64](r_big)
@@ -559,7 +559,7 @@ proc divide(x, y: Dec64): tuple[status: -1..1, q: int64, qexp: int] =
     # the divisor. Because of the scaling, the quotient is guaranteed to use most
     # of the 64 bits in r0, and never more. Reduce the final exponent by the number
     # of digits scaled.
-    {.emit: [result.q, " = (", int64, ")((__int128)", cx * POWER[log10_prescale] div y, ");"].}
+    {.emit: [result.q, " = (", int64, ")(((__int128)", cx, ")*", POWER[log10_prescale], "/", cy, ");"].}
     result.qexp = ex - ey - log10_prescale
     result.status = 1
     return
@@ -693,7 +693,7 @@ proc fma*(x, y, z: Dec64): Dec64 =
     let cz = z.coef
 
     var r_big {.noInit.}: Int128
-    {.emit: [r_big, " = (__int128)", cx, "*", cy, ";"].}
+    {.emit: [r_big, " = ((__int128)", cx, ")*", cy, ";"].}
     var r_high {.noInit.}: int64
     {.emit: [r_high, " = (", int64, ")(", r_big, " >> 64);"].}
     var r = cast[int64](r_big)
@@ -809,7 +809,7 @@ proc round*(d, place: Dec64): Dec64 =
     var abs_c = cast[uint64](abs c)
     var abs_c_scaled = 0'u64
     while true:
-        {.emit: [abs_c_scaled, " = (", uint64, ")((unsigned __int128)", abs_c, " * (", uint64, ")-3689348814741910323 >> 64);"].}
+        {.emit: [abs_c_scaled, " = (", uint64, ")(((unsigned __int128)", abs_c, ") * (", uint64, ")-3689348814741910323 >> 64);"].}
         abs_c = abs_c_scaled shr 3
         
         inc e
@@ -1701,9 +1701,10 @@ proc sin*(radians: Dec64): Dec64 =
     if neg: result = -result
     return result
 
+proc `$`*(d: Dec64): string
 
 proc sqrt*(radicand: Dec64): Dec64 =
-    if not(is_nan radicand) and radicand.coef >= 0:
+    if not(is_nan radicand) and radicand.int64 >= 0:
         if radicand.coef == 0: return DEC64_ZERO
         result = radicand
         while true:
@@ -1781,3 +1782,7 @@ if false:
     echo dec64ToInt[int64](makeDec64(123, -1))
     echo dec64ToInt[int64](makeDec64(123, -2))
     echo dec64ToInt[int64](makeDec64(123, 1))
+
+    echo $makeDec64(4,0) & " " & $sqrt(makeDec64(4,0))
+    echo $makeDec64(16,0) & " " & $sqrt(makeDec64(16,0))
+    echo $makeDec64(12,0) & " " & $sqrt(makeDec64(12,0))
