@@ -18,8 +18,10 @@
 - [ ] mixes (like raku)
 - [ ] bitsets
 - [ ] nested maps
-- [ ] sequences (like kotlin)
+- [ ] sequences (like kotlin) REF: https://www.youtube.com/watch?v=NwYx5l5Zzes
 - [ ] unrolled buffers (like scala)
 - [ ] sorted variants of various types
 - [ ] maps that supports lookup of keys and values
-- [ ] Dec64 as default dec type: https://www.crockford.com/dec64.html
+- [ ] suffix trees
+- [ ] prefix trees
+- [ ] suffix/lcp arrays

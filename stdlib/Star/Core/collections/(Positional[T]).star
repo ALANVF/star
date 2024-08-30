@@ -218,6 +218,92 @@ protocol Positional[T] of Collection[T] {
 		
 		return result
 	}
+
+	
+	;== Reducing
+
+	on [reduceRight: func (Func[T, T, T])] (Maybe[T]) {
+		if !this => return Maybe[none]
+
+		my result (T) = this[Unsafe at: 0]
+
+		for my i from: 1 upto: this.length {
+			my value = this[Unsafe at: i]
+			result = func[call: result, value]
+		}
+		
+		return Maybe[the: result]
+	}
+
+	on [reduceRight: func (Func[T, T, T, Int])] (Maybe[T]) {
+		if !this => return Maybe[none]
+
+		my result (T) = this[Unsafe at: 0]
+
+		for my i from: 1 upto: this.length {
+			my value = this[Unsafe at: i]
+			result = func[call: result, value, i]
+		}
+		
+		return Maybe[the: result]
+	}
+
+	type T'
+	on [reduceRight: func (Func[T', T', T, Int]) with: result (T')] (T') {
+		for my i, my value in: this {
+			result = func[call: result, value, i]
+		}
+
+		return result
+	}
+
+	on [reduceLeft: func (Func[T, T, T])] (Maybe[T]) {
+		if !this => return Maybe[none]
+
+		my result (T) = this[Unsafe at: this.length - 1]
+
+		for my i after: this.length - 1 downto: 0 {
+			my value = this[Unsafe at: i]
+			result = func[call: value, result, i]
+		}
+		
+		return Maybe[the: result]
+	}
+	
+	on [reduceLeft: func (Func[T, T, T, Int])] (Maybe[T]) {
+		if !this => return Maybe[none]
+
+		my result (T) = this[Unsafe at: this.length - 1]
+
+		for my i after: this.length - 1 downto: 0 {
+			my value = this[Unsafe at: i]
+			result = func[call: value, result, i]
+		}
+		
+		return Maybe[the: result]
+	}
+
+	type T'
+	on [reduceLeft: func (Func[T', T', T]) with: result (T')] (T') {
+		for my i after: this.length downto: 0 {
+			my value = this[Unsafe at: i]
+			result = func[call: result, value]
+		}
+
+		return result
+	}
+
+	type T'
+	on [reduceLeft: func (Func[T', T', T, Int]) with: result (T')] (T') {
+		for my i after: this.length downto: 0 {
+			my value = this[Unsafe at: i]
+			result = func[call: result, value, i]
+		}
+
+		return result
+	}
+
+	;@@ TODO: add tree-based reductions
 	
 	
 	;== Observing

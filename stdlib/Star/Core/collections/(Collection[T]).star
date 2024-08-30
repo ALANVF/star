@@ -84,6 +84,37 @@ protocol Collection[T] of Iterable[T] {
 		
 		return result
 	}
+
+	;== Reducing
+
+	on [reduceRight: func (Func[T, T, T])] (Maybe[T]) {
+		if !this => return Maybe[none]
+
+		my result (T)
+		my first = true
+
+		for my value in: this {
+			;-- there's theoretically a better way to do this, but I'm way too lazy to figure it out lol
+			if first {
+				result = value
+				first = false
+				next
+			} else {
+				result = func[call: result, value]
+			} 
+		}
+		
+		return Maybe[the: result]
+	}
+
+	type T'
+	on [reduceRight: func (Func[T', T', T]) with: result (T')] (T') {
+		for my value in: this {
+			result = func[call: result, value]
+		}
+
+		return result
+	}
 	
 	
 	;== Observing
@@ -303,7 +334,7 @@ protocol Collection[T] of Comparable {
 	;== Querying
 	
 	on [min] (T) {
-		if this.length ?= 0 {
+		if !this {
 			throw NotFound[new]
 		} else {
 			my min (T)
@@ -327,7 +358,7 @@ protocol Collection[T] of Comparable {
 	}
 
 	on [max] (T) {
-		if this.length ?= 0 {
+		if !this {
 			throw NotFound[new]
 		} else {
 			my max (T)
