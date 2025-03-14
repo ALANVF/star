@@ -61,6 +61,13 @@ kind Stmt {
 		do: (Then)
 	]
 
+	has [
+		recurse: (Span)
+		lvars: (Array[Expr]) ;-- rly it's just var decls, but we need to allow existing vars too
+		label: (Maybe[Tuple[Span, Ident]])
+		do: (Then)
+	]
+
 	has [do: (Span) label: (Maybe[Tuple[Span, Ident]]), (Block)]
 
 	has [return: (Span)]
@@ -70,9 +77,9 @@ kind Stmt {
 	has [break: (Span) depth: (Span), (Int)]
 	has [break: (Span) label: (Span), (Str)]
 
-	has [next: (Span)]
-	has [next: (Span) depth: (Span), (Int)]
-	has [next: (Span) label: (Span), (Str)]
+	has [next: (Span) with: (Maybe[Array[Expr]])]
+	has [next: (Span) depth: (Span), (Int) with: (Maybe[Array[Expr]])]
+	has [next: (Span) label: (Span), (Str) with: (Maybe[Array[Expr]])]
 
 	has [throw: (Span), (Expr)]
 

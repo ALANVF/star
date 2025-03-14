@@ -175,6 +175,11 @@ enum Error {
 		_1: Span
 	);
 
+	Parse_NextWithRequiresExpr(
+		_1: Span,
+		with: Span
+	);
+
 
 	// Typing errors
 
@@ -902,6 +907,23 @@ function asDiagnostic(self: Error) { return new Diagnostic(self._match(
 				span: _1,
 				message: "Deinitializers are not allowed to be generic",
 				isPrimary: true
+			})
+		]
+	},
+
+	at(Parse_NextWithRequiresExpr(_1, with)) => {
+		severity: Severity.ERROR,
+		message: "Invalid statement",
+		info: [
+			Spanned({
+				span: _1,
+				message: "`next` statement with `with:` label requires at least one value",
+				isPrimary: true
+			}),
+			Spanned({
+				span: with,
+				message: "Here",
+				isSecondary: true
 			})
 		]
 	},

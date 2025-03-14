@@ -59,6 +59,12 @@ enum Stmt {
 		body: TStmts
 	);
 
+	SRecurse(
+		lvars: Array<TExpr>,
+		?label: String,
+		body: TStmts
+	);
+
 	SDo(
 		?label: String,
 		body: TStmts
@@ -66,7 +72,7 @@ enum Stmt {
 
 	SReturn(?value: TExpr);
 	SBreak(?depth: Either<Int, String>);
-	SNext(?depth: Either<Int, String>);
+	SNext(?depth: Either<Int, String>, ?lvars: Array<Tuple2<String, Local>>, ?with: Array<TExpr>);
 	
 	SThrow(span: Span, value: TExpr);
 	STry(

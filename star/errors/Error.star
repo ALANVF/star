@@ -572,6 +572,25 @@ kind ParseError of Error {
 			]
 		]
 	}
+
+	has [nextWithRequiresExpr: span (Span), span' (Span)] {
+		diag = Diagnostic[
+			severity: Severity.error
+			message: "Invalid statement"
+			info: #[
+				Info[
+					:span
+					message: "`next` statement with `with:` label requires at least one value"
+					priority: Priority.primary
+				]
+				Info[
+					span: span'
+					message: "Here"
+					priority: Priority.secondary
+				]
+			]
+		]
+	}
 }
 
 kind TypeError of Error {

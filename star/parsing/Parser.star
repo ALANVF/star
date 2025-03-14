@@ -1971,6 +1971,33 @@ module Parser {
 				}
 				at my fail => return fail[Result[Stmt] fatalIfFailed]
 			}
+
+			at #[Token[recurse: my recurse], ...my rest] => match This[parseExpr: rest] {
+				at Result[success: my lvar1, my rest'] {
+					my lvars = #[lvar1]
+					while true {
+						match rest' at #[Token[comma], ...my rest''] {
+							match This[parseExpr: rest''] {
+								at Result[success: my lvar, my rest'''] {
+									lvars[add: lvar]
+									rest' = rest'''
+								}
+								at my fail => return fail[Result[Stmt] fatalIfFailed]
+							}
+						} else {
+							break
+						}
+					}
+
+					#{my label, rest'} = This[parseLoopLabel: rest']
+
+					match This[parseThenStmt: rest'] {
+						at Result[success: my do, my rest''] => return Result[success: Stmt[:recurse :lvars :label :do], rest'']
+						at my fail => return fail[Result[Stmt] fatalIfFailed]
+					}
+				}
+				at my fail => return fail[Result[Stmt] fatalIfFailed]
+			}
 			
 			at #[Token[return: my return], ...my rest] => match This[parseFullExpr: rest] {
 				at Result[success: my value, my rest'] => return Result[success: Stmt[:return :value], rest']
@@ -1998,18 +2025,35 @@ module Parser {
 			
 			at #[Token[next: my next], ...my rest] => match rest {
 				at #[Token[int: my int exp: my exp span: my span], ...my rest'] {
-					return Result[success: Stmt[:next depth: span, {
-						match exp at Maybe[the: my exp'] {
-							return "\(int)e\(exp')"[Int]
-						} else {
-							return int[Int]
+					match This[parseNextWith: rest'] {
+						at Result[success: my with, my rest''] {
+							return Result[success: Stmt[:next depth: span, {
+								match exp at Maybe[the: my exp'] {
+									return "\(int)e\(exp')"[Int]
+								} else {
+									return int[Int]
+								}
+							} :with], rest'']
 						}
-					}], rest']
+						at my fail => return fail[Result[Stmt]]
+					}
 				}
 				at #[Token[span: my span litsym: my label], ...my rest'] {
-					return Result[success: Stmt[:next label: span, label], rest']
+					match This[parseNextWith: rest'] {
+						at Result[success: my with, my rest''] {
+							return Result[success: Stmt[:next label: span, label :with], rest'']
+						}
+						at my fail => return fail[Result[Stmt]]
+					}
 				}
-				else => return Result[success: Stmt[:next], rest]
+				else {
+					match This[parseNextWith: rest'] {
+						at Result[success: my with, my rest''] {
+							return Result[success: Stmt[:next], rest]
+						}
+						at my fail => return fail[Result[Stmt]]
+					}
+				}
 			}
 			
 			at #[Token[throw: my throw], ...my rest] => match This[parseFullExpr: rest] {
@@ -2214,6 +2258,32 @@ module Parser {
 				else => return Result[fatal: tokens, Maybe[the: rest]]
 			}
 			at my fail => return fail[Result[Stmt] fatalIfFailed]
+		}
+	}
+
+	on [parseNextWith: start (Span), tokens (Tokens)] (Result[Maybe[Array[Expr]]]) {
+		match tokens at #[Token[span: my span label: "with"], ...my rest] {
+			match This[parseExpr: rest] at Result[success: my e1, my rest'] {
+				my exprs = #[e1]
+				while true {
+					match rest' at #[Token[comma], ...my rest''] {
+						match This[parseExpr: rest''] {
+							at Result[success: my e, my rest'''] {
+								exprs[add: e]
+								rest' = rest'''
+							}
+							at my fail => return fail[Result[Maybe[Array[Expr]]] fatalIfFailed]
+						}
+					} else {
+						break
+					}
+				}
+				return Result[success: Maybe[the: exprs]]]
+			} else {
+				return Result[fatalError: ParseError[nextWithRequiresExpr: start, span]]
+			}
+		} else {
+			return Result[success: Maybe[none], tokens]
 		}
 	}
 

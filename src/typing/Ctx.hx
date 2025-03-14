@@ -15,6 +15,7 @@ enum Where {
 	WBlock;
 	WBlockExpr;
 	WPattern;
+	WRecurse(lvars: Array<Tuple2<String, Local>>);
 	WObjCascade(t: Null<Type>);
 	WTypeCascade;
 	WTypevars(typevars: TypeVarCtx);
@@ -57,7 +58,7 @@ enum Where {
 			at(WMethod({type: ret} is CastMethod)) => ret,
 			at(WMethod({ret: ret} is Method | {ret: ret} is StaticMethod | {ret: ret} is Operator)) => ret,
 			at(WMethod(_)) => throw "bad",
-			at(WBlock | WPattern | WTypevars(_)) => outer?.expectedReturnType
+			at(WBlock | WPattern | WRecurse(_) | WTypevars(_)) => outer?.expectedReturnType
 		);
 	}
 
@@ -131,6 +132,14 @@ enum Where {
 			outer: this,
 			thisType: thisType
 		};
+	}
+
+	function innerRecurse(lvars: Array<Tuple2<String, Local>>): Ctx {
+		return {
+			where: WRecurse(lvars),
+			outer: this,
+			thisType: thisType
+		}
 	}
 
 	function innerCascade(?t: Type): Ctx {
@@ -215,7 +224,7 @@ enum Where {
 						}
 					});
 				},
-				at(WTypevars(_)) => outer.findLocal(name, depth)
+				at(WTypevars(_) | WRecurse(_)) => outer.findLocal(name, depth)
 			)
 		);
 	}
@@ -288,7 +297,7 @@ enum Where {
 			case WMethod(m): !(m is StaticMethod) && outer.allowsThis();
 			case WMember(m): !m.isStatic && outer.allowsThis();
 			case WTaggedCase(_): true;
-			case WBlock | WBlockExpr | WPattern: outer.allowsThis();
+			case WBlock | WBlockExpr | WPattern | WRecurse(_): outer.allowsThis();
 			case WObjCascade(_): true;
 			case WTypeCascade: outer.allowsThis();
 			case WTypevars(_): outer.allowsThis();
@@ -307,6 +316,14 @@ enum Where {
 
 	function isPattern() {
 		return where.match(WPattern);
+	}
+
+	function tryGetRecurse() {
+		return where._match(
+			at(WRecurse(lvars)) => lvars,
+			at(WBlock | WBlockExpr | WPattern | WObjCascade(_) | WTypeCascade) => outer?.tryGetRecurse(),
+			_ => null
+		);
 	}
 
 	function description() {
@@ -331,6 +348,7 @@ enum Where {
 					_ => cast(lookup, AnyTypeDecl).fullName()
 				);
 			},
+			at(WRecurse(_)) => "recurse ... in " + outer.description(),
 			at(WObjCascade(_)) => throw "todo",
 			at(WTypeCascade) => throw "todo",
 			at(WTypevars(_)) => outer.description()

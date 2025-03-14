@@ -1985,6 +1985,34 @@ class Parser {
 			case err: fatalIfFailed(cast err);
 		},
 
+		at([T_Recurse(_1), ...rest]) => parseExpr(rest)._match(
+			at(Success(lvar1, rest2)) => {
+				final lvars = [lvar1];
+				while(true) rest2._match(
+					at([T_Comma(_), ...rest3]) => parseExpr(rest3)._match(
+						at(Success(lvar, rest4)) => {
+							lvars.push(lvar);
+							rest2 = rest4;
+						},
+						at(err) => return fatalIfFailed(cast err)
+					),
+					_ => break
+				);
+				final label = rest2._match(
+					at([T_Label(_2, "label"), T_Litsym(_3, name), ...rest3]) => {
+						rest2 = rest3;
+						tuple(_2, new Ident(_3, name));
+					},
+					_ => null
+				);
+				parseThenStmt(rest2)._match(
+					at(Success(body, rest3)) => Success(SRecurse(_1, lvars, label, body), rest3),
+					at(err) => fatalIfFailed(cast err)
+				);
+			},
+			at(err) => fatalIfFailed(cast err)
+		),
+
 		at([T_Return(_1), ...rest]) => switch parseFullExpr(rest) {
 			case Success(expr, rest2):
 				expr = reparseExpr(expr);
@@ -1998,10 +2026,43 @@ class Parser {
 		at([T_Break(_1), T_Litsym(_2, label), ...rest]) => Success(SBreak(_1, tuple(_2, Right(label))), rest),
 		at([T_Break(_1), ...rest]) => Success(SBreak(_1, null), rest),
 
-		at([T_Next(_1), T_Int(_2, depth, null), ...rest]) => Success(SNext(_1, tuple(_2, Left(depth.parseInt()))), rest),
-		at([T_Next(_1), T_Int(_2, depth, exp!!), ...rest]) => Success(SNext(_1, tuple(_2, Left('${depth}e$exp'.parseInt()))), rest),
-		at([T_Next(_1), T_Litsym(_2, label), ...rest]) => Success(SNext(_1, tuple(_2, Right(label))), rest),
-		at([T_Next(_1), ...rest]) => Success(SNext(_1, null), rest),
+		at([T_Next(_1), ...rest]) => {
+			final label: Null<Tuple2<Span, Either<Int, String>>> = rest._match(
+				at([T_Int(_2, depth, null), ...rest2]) => {
+					rest = rest2;
+					new Tuple2(_2, Left(depth.parseInt()));
+				},
+				at([T_Int(_2, depth, exp!!), ...rest2]) => {
+					rest = rest2;
+					new Tuple2(_2, Left('${depth}e$exp'.parseInt()));
+				},
+				at([T_Litsym(_2, sym), ...rest2]) => {
+					rest = rest2;
+					new Tuple2(_2, Right(sym));
+				},
+				_ => null
+			);
+			rest._match(
+				at([T_Label(_3, "with"), ...rest2]) => parseExpr(rest2)._match(
+					at(Success(e1, rest3)) => {
+						final exprs = [e1];
+						while(true) rest3._match(
+							at([T_Comma(_), ...rest4]) => parseExpr(rest4)._match(
+								at(Success(e, rest5)) => {
+									exprs.push(e);
+									rest3 = rest5;
+								},
+								at(err) => return fatalIfFailed(cast err)
+							),
+							at(_) => break
+						);
+						Success(SNext(_1, label, exprs), rest3);
+					},
+					at(_) => FatalError(Parse_NextWithRequiresExpr(_1, _3))
+				),
+				_ => Success(SNext(_1, label, null), rest)
+			);
+		},
 
 		at([T_Throw(_1), ...rest]) => switch parseFullExpr(rest) {
 			case Success(expr, rest2):

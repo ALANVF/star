@@ -671,6 +671,14 @@ overload static function compile(ctx: GenCtx, stmt: TStmt): Opcodes return stmt.
 		res;
 	},
 
+	at(SRecurse(lvars, label, body)) => {
+		final ctx2 = ctx.inner();
+		final label2 = ctx2.loop(label);
+		lvars.flatMap(lvar -> compile(ctx2, lvar, false)).concat([
+			OLoop(label2, compile(ctx2, body))
+		]);
+	},
+
 	at(SDo(label, body)) => {
 		final ctx2 = ctx.inner();
 		final label2 = ctx2.loop(label);
@@ -688,9 +696,28 @@ overload static function compile(ctx: GenCtx, stmt: TStmt): Opcodes return stmt.
 	at(SBreak(Left(depth))) => [OBreak(ctx.getLoop(depth) ?? throw "Cannot break here!")],
 	at(SBreak(Right(label))) => [OBreak(ctx.label(label))],
 
-	at(SNext(null)) => [ONext(ctx.getLoop() ?? throw "Cannot continue here!")],
+	/*at(SNext(null)) => [ONext(ctx.getLoop() ?? throw "Cannot continue here!")],
 	at(SNext(Left(depth))) => [ONext(ctx.getLoop(depth) ?? throw "Cannot continue here!")],
-	at(SNext(Right(label))) => [ONext(ctx.label(label))],
+	at(SNext(Right(label))) => [ONext(ctx.label(label))],*/
+	at(SNext(next, lvars, with)) => {
+		final res = [];
+		if(lvars != null && with != null) {
+			if(lvars.length != with.length) throw "bad";
+			for(i => lvar in lvars) {
+				final value = with[i];
+				res.pushAll(compile(ctx, value));
+				res.push(setName(ctx, lvar._1, lvar._2));
+			}
+		} else if(lvars != null) { // theoretically shouldn't happen
+			throw "bad";
+		}
+		res.push(next._match(
+			at(null) => ONext(ctx.getLoop() ?? throw "Cannot continue here!"),
+			at(Left(depth)) => ONext(ctx.getLoop(depth) ?? throw "Cannot continue here!"),
+			at(Right(label)) => ONext(ctx.label(label))
+		));
+		res;
+	},
 
 	at(SThrow(span, value)) => {
 		compile(ctx, value).concat([

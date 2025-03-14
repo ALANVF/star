@@ -29,6 +29,9 @@ kind Ctx {
 	;-- A pattern (TODO: should this track the target type?)
 	has [pattern]
 
+	;-- A `recurse` statement
+	has [recurse: lvars (Array[Tuple[String, Local]])]
+
 	;-- Code in an instance cascade
 	has [objCascade: (Maybe[Type])]
 
@@ -136,6 +139,12 @@ kind Ctx {
 
 	on [innerPattern] (This) {
 		return This[pattern]
+		-> outer = Maybe[the: this]
+		-> thisType = thisType
+	}
+
+	on [innerRecurse: lvars (Array[Tuple[String, Local]])] (This) {
+		return This[recurse: lvars]
 		-> outer = Maybe[the: this]
 		-> thisType = thisType
 	}
@@ -315,6 +324,22 @@ kind Ctx {
 		}
 	}
 
+	on [tryGetRecurse] (Maybe[Array[Tuple[String, Local]]]) {
+		match this {
+			at This[recurse: my lvars] => return Maybe[the: lvars]
+			at (
+				|| This[block] || This[blockExpr]
+				|| This[pattern]
+				|| This[objCascade: _] || This[typeCascade]
+			) => match outer at Maybe[the: my outer'] {
+				return outer[tryGetRecurse]
+			} else {
+				return Maybe[none]
+			}
+			else => return Maybe[none]
+		}
+	}
+
 
 	;== Type lookup
 
@@ -451,6 +476,8 @@ kind Ctx {
 			at This[code] if isTop => return "{ ... } in \(outer.value[description: false])"
 
 			at This[pattern] if isTop => return "pattern ... in \(outer.value[description: false])"
+
+			at This[recurse: _] => return "recurse ... in \(outer.value[description: false])"
 
 			at This[objCascade: _] => throw "todo"
 

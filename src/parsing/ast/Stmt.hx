@@ -91,10 +91,16 @@ enum Stmt {
 		label: Null<Tuple2<Span, Ident>>,
 		body: Then
 	);
+	SRecurse(
+		_: Span,
+		lvars: Array<Expr /* rly it's just var decls, but we need to allow existing vars too */>,
+		label: Null<Tuple2<Span, Ident>>,
+		body: Then
+	);
 	SDo(_: Span, label: Null<Tuple2<Span, Ident>>, block: Block);
 	SReturn(_: Span, value: Null<Expr>);
 	SBreak(_: Span, depth: Null<Tuple2<Span, Either<Int, String>>>);
-	SNext(_: Span, depth: Null<Tuple2<Span, Either<Int, String>>>);
+	SNext(_: Span, depth: Null<Tuple2<Span, Either<Int, String>>>, with: Null<Array<Expr>>);
 	SThrow(_: Span, value: Expr);
 	STry(
 		_: Span,
@@ -116,6 +122,7 @@ inline function mainSpan(self: Stmt) return self._match(
 		| SDoWhile(s, _, _)
 		| SForIn(s, _, _, _, _, _, _)
 		| SForRange(s, _, _, _, _, _, _, _, _, _, _)
+		| SRecurse(s, _, _)
 		| SDo(s, _, _)
 		| SReturn(s, _)
 		| SBreak(s, _)

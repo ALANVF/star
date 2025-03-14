@@ -36,6 +36,7 @@ enum Token {
 	T_While(_: Span);
 	T_For(_: Span);
 	T_Do(_: Span);
+	T_Recurse(_: Span);
 	T_Case(_: Span);
 	T_Match(_: Span);
 	T_At(_: Span);
@@ -226,6 +227,7 @@ class TokenHelper {
 		case T_Else(span): T_Name(span, "else");
 		case T_While(span): T_Name(span, "while");
 		case T_For(span): T_Name(span, "for");
+		case T_Recurse(span): T_Name(span, "recurse");
 		case T_Do(span): T_Name(span, "do");
 		case T_Case(span): T_Name(span, "case");
 		case T_Match(span): T_Name(span, "match");

@@ -64,6 +64,12 @@ kind Stmt {
 	]
 
 	has [
+		recurse: lvars (Array[Expr])
+		label: (Maybe[Str])
+		do: (Stmts)
+	]
+
+	has [
 		label: (Maybe[Str])
 		do: (Stmts)
 	]
@@ -71,11 +77,9 @@ kind Stmt {
 	has [return]
 	has [return: value (Expr)]
 
-	has [break]
-	has [breakDepth: (Int)], has [breakLabel: (Str)]
+	has [break: label (Maybe[Either[Int, Str]])]
 
-	has [next]
-	has [nextDepth: (Int)], has [nextLabel: (Str)]
+	has [next: label (Maybe[Either[Int, Str]]) with: (Maybe[Array[Tuple[String, Local, Expr]]])]
 
 	has [throw: (Expr) at: span (Span)]
 	has [

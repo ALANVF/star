@@ -3391,6 +3391,24 @@ static function typeStmt(ctx: Ctx, stmt: UStmt): TStmt {
 					label?._2.name,
 					typeThen(forCtx, body)
 				);
+			
+			case SRecurse(_, lvars, label, body):
+				final tlvars = [];
+				final tlvars2 = [];
+				final recCtx = ctx.innerRecurse(tlvars2);
+				for(lvar in lvars) tlvars.push(typeExpr(recCtx, lvar));
+				for(tlvar in tlvars) tlvars2.push(tlvar.e._match(
+					at(EName(name, local)) => tuple(name, local),
+					at(EVarDecl(name, null, _)) => tuple(name, recCtx.findLocal(name)),
+					at(ESetName(name, local, _)) => tuple(name, local),
+					// TODO: foo.bar = 0
+					_ => throw "bad"
+				));
+				SRecurse(
+					tlvars,
+					label?._2.name,
+					typeThen(recCtx, body)
+				);
 
 			case SDo(_, label, blk):
 				SDo(
@@ -3433,11 +3451,22 @@ static function typeStmt(ctx: Ctx, stmt: UStmt): TStmt {
 				if(ctx.findLabel(label) != null) throw 'label `$label` does not exist!';
 				SBreak(Right(label));
 			
-			case SNext(_, null): SNext(null);
-			case SNext(_, {_2: Left(depth)}): SNext(Left(depth));
-			case SNext(_, {_2: Right(label)}):
+			/*case SNext(_, null, with): SNext(null, with._and(w => typeExprs(ctx, w)));
+			case SNext(_, {_2: Left(depth)}, with): SNext(Left(depth), with._and(w => typeExprs(ctx, w)));
+			case SNext(_, {_2: Right(label)}, with):
 				if(ctx.findLabel(label) != null) throw 'label `$label` does not exist!';
-				SNext(Right(label));
+				SNext(Right(label), with._and(w => typeExprs(ctx, w)));*/
+			case SNext(_, label, with):
+				final lvars = ctx.tryGetRecurse();
+				final twith = with._and(w => typeExprs(ctx, w));
+				switch label {
+					case null: SNext(null, lvars, twith);
+					case {_2: Left(depth)}: SNext(Left(depth), lvars, twith);
+					case {_2: Right(label)}:
+						if(ctx.findLabel(label) != null) throw 'label `$label` does not exist!';
+						SNext(Right(label), lvars, twith);
+				}
+
 			
 			case SThrow(span, value):
 				SThrow(span, typeExpr(ctx, value));

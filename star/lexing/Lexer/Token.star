@@ -28,6 +28,7 @@ kind Token {
 	has [else: span (Span)]     => [else]     { this.span = span }
 	has [while: span (Span)]    => [while]    { this.span = span }
 	has [for: span (Span)]      => [for]      { this.span = span }
+	has [recurse: span (Span)]  => [recurse]  { this.span = span }
 	has [do: span (Span)]       => [do]       { this.span = span }
 	has [case: span (Span)]     => [case]     { this.span = span }
 	has [match: span (Span)]    => [match]    { this.span = span }
@@ -213,6 +214,7 @@ kind Token {
 			at Token[else] => return Token[:span name: "else"]
 			at Token[while] => return Token[:span name: "while"]
 			at Token[for] => return Token[:span name: "for"]
+			at Token[recurse] => return Token[:span name: "recurse"]
 			at Token[do] => return Token[:span name: "do"]
 			at Token[case] => return Token[:span name: "case"]
 			at Token[match] => return Token[:span name: "match"]

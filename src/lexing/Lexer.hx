@@ -70,6 +70,7 @@ class Lexer {
 		"else" => T_Else,
 		"while" => T_While,
 		"for" => T_For,
+		"recurse" => T_Recurse,
 		"do" => T_Do,
 		"case" => T_Case,
 		"match" => T_Match,

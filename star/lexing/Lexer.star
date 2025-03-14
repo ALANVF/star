@@ -36,6 +36,7 @@ class Lexer {
 		"else" => Token[else: Span$.0]
 		"while" => Token[while: Span$.0]
 		"for" => Token[for: Span$.0]
+		"recurse" => Token[recurse: Span$.0]
 		"do" => Token[do: Span$.0]
 		"case" => Token[case: Span$.0]
 		"match" => Token[match: Span$.0]
