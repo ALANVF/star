@@ -45,7 +45,7 @@ kind LexError of Error {
 
 	has [invalidInput: input (Char), span (Span) afterHash: begin (Span)] {
 		diag = Diagnostic[
-            severity: Severity.error
+		severity: Severity.error
 			message: "Syntax error"
 			info: #[
 				Info[
@@ -58,7 +58,7 @@ kind LexError of Error {
 					priority: Priority.secondary
 				]
 			]
-        ]
+		]
 	}
 
 	has [invalidEqEq: span (Span)] {
@@ -95,16 +95,16 @@ kind LexError of Error {
 
 	has [invalidInput: span (Span)] {
 		diag = Diagnostic[
-            severity: Severity.error
-            message: "Syntax error"
-            info: #[
-                Info[
-                    :span
-                    message: "This is not the syntax that you are looking for"
-                    priority: Priority.primary
-                ]
-            ]
-        ]
+			severity: Severity.error
+			message: "Syntax error"
+			info: #[
+				Info[
+					:span
+					message: "This is not the syntax that you are looking for"
+					priority: Priority.primary
+				]
+			]
+		]
 	}
 
 	has [invalidHexStart: begin (Span)] {
