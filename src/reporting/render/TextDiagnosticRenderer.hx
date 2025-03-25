@@ -248,7 +248,7 @@ class TextDiagnosticRenderer implements IDiagnosticRenderer {
 				final msgLines = annot.message.split8("\n");
 				final oldX = buffer.cursorX;
 				buffer.write(' ${msgLines.shift()}');
-				for(j => msgLine in msgLines) {
+				for(msgLine in msgLines) {
 					buffer.cursorX = oldX;
 					buffer.cursorY++;
 					arrowBaseLine++;

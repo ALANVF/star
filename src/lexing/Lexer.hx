@@ -360,7 +360,7 @@ class Lexer {
 							at('-'.code) => {
 								reader.next();
 								
-								var depth = 2;
+								var depth = 3;
 
 								while(reader.eat('-'.code)) depth++;
 
