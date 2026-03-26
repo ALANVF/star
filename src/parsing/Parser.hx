@@ -314,7 +314,7 @@ class Parser {
 	}
 
 	static function parseGenericRule(tokens): ParseResult<GenericRule> return switch parseGenericRuleTerm(tokens) {
-		case Success(left, rest): updateIfBad(rest, parseGenericRuleCond(left, rest));
+		case Success(left, rest): updateIfBad(tokens, parseGenericRuleCond(left, rest));
 		case err: updateIfBad(tokens, err);
 	}
 
@@ -1043,7 +1043,7 @@ class Parser {
 	
 
 	static function parseMemberDecl(_1, tokens: Tokens) return tokens._match(
-		at([T_Name(_2, name), ...rest]) => {
+		at([_.asSoftName() => T_Name(_2, name), ...rest]) => {
 			final type = switch parseTypeAnno(rest) {
 				case Success(of, rest2):
 					rest = rest2;
@@ -1121,7 +1121,7 @@ class Parser {
 
 	
 	static function parseCaseDecl(_1, tokens: Tokens) return tokens._match(
-		at([T_Name(_2, name), ...rest]) => {
+		at([_.asAnyName() => T_Name(_2, name), ...rest]) => {
 			final value = rest._match(
 				at([T_EqGt(_), ...rest2]) => switch parseExpr(rest2) {
 					case Success(expr, rest3):
